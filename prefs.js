@@ -91,9 +91,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             const q = searchEntry.get_text().trim();
             if (q.length < 2)
                 return;
-            searchEntry.set_spinner(true);
             client.geocode(q).then(results => {
-                searchEntry.set_spinner(false);
                 clearResults();
                 if (results.length === 0) {
                     const none = new Adw.ActionRow({
@@ -112,7 +110,6 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                 }
                 resultsGroup.visible = true;
             }).catch(e => {
-                searchEntry.set_spinner(false);
                 searchEntry.add_css_class('error');
                 logError(e, 'Animated Weather prefs geocode');
             });

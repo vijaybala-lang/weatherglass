@@ -137,9 +137,11 @@ export class WeatherClient {
 
     /**
      * auto=true → coordinates come from IP-based detection first.
+     * Values always come back in canonical metric units (°C, km/h, mm/h);
+     * callers convert for display.
      * Resolves with the parsed forecast, or rejects with an Error.
      */
-    async fetch({latitude, longitude, auto, units, days = 7}) {
+    async fetch({latitude, longitude, auto, days = 7}) {
         let lat = latitude;
         let lon = longitude;
         let detectedName = null;
@@ -149,7 +151,6 @@ export class WeatherClient {
             lon = det.longitude;
             detectedName = det.name || null;
         }
-        const imperial = units === 'imperial';
         const params = {
             latitude: lat,
             longitude: lon,
@@ -165,8 +166,11 @@ export class WeatherClient {
             ].join(','),
             timezone: 'auto',
             forecast_days: days,
-            temperature_unit: imperial ? 'fahrenheit' : 'celsius',
-            wind_speed_unit: imperial ? 'mph' : 'kmh',
+            // canonical units are always metric; the formatters convert for
+            // display, so all internal math (wind threshold, rain slant,
+            // drop density) works on one set of units
+            temperature_unit: 'celsius',
+            wind_speed_unit: 'kmh',
         };
         const raw = await get(`${API}?${qs(params)}`);
 
@@ -179,10 +183,10 @@ export class WeatherClient {
             isDay: !!c.is_day,
             humidity: c.relative_humidity_2m,
             precip: c.precipitation ?? 0,
-            wind: c.wind_speed_10m,          // already in the requested unit
+            wind: c.wind_speed_10m,          // always km/h
             windDeg: c.wind_direction_10m,
-            // mm/h is only meaningful for metric rain rates; scale mph back
-            intensity: imperial ? (c.precipitation ?? 0) / 2.54 : (c.precipitation ?? 0),
+            // mm/h always (API called with metric); drives drop/flake density
+            intensity: c.precipitation ?? 0,
         };
 
         const daily = (d.time ?? []).map((date, i) => ({
@@ -197,7 +201,7 @@ export class WeatherClient {
             windMax: d.wind_speed_10m_max[i] ?? 0,
         }));
 
-        return {current, daily, units, detectedName, latitude: lat, longitude: lon};
+        return {current, daily, detectedName, latitude: lat, longitude: lon};
     }
 
     /** City search for the preferences dialog. */

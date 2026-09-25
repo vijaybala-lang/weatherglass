@@ -26,6 +26,8 @@ class WeatherIndicator extends PanelMenu.Button {
         this._settings = extension.getSettings();
         this._client = new WeatherClient();
         this._timer = 0;
+        this._locTimer = 0;
+        this._refetch = false;
         this._lastFetch = 0;        // GLib DateTime seconds, 0 = never
         this._data = null;
         this._busy = false;
@@ -91,8 +93,13 @@ class WeatherIndicator extends PanelMenu.Button {
     }
 
     async _fetch(force) {
-        if (this._busy || (!force && !this._isStale()))
+        if (this._busy) {
+            // a forced request while one is in flight means settings changed
+            // mid-fetch — remember it and refetch with the final values
+            if (force)
+                this._refetch = true;
             return;
+        }
         this._busy = true;
 
         this._icon.setScene('loading');
@@ -105,7 +112,6 @@ class WeatherIndicator extends PanelMenu.Button {
                 auto,
                 latitude: this._settings.get_double('location-latitude'),
                 longitude: this._settings.get_double('location-longitude'),
-                units: this._units(),
             });
             this._data = data;
             this._lastFetch = GLib.get_monotonic_time() / 1000000;
@@ -122,6 +128,10 @@ class WeatherIndicator extends PanelMenu.Button {
             this._scheduleRetry();
         } finally {
             this._busy = false;
+            if (this._refetch) {
+                this._refetch = false;
+                this._fetch(true);
+            }
         }
     }
 
@@ -155,10 +165,8 @@ class WeatherIndicator extends PanelMenu.Button {
         const threshold = this._settings.get_int('windy-threshold');
         if (threshold === 0)
             return false;
-        const kmh = this._units() === 'imperial'
-            ? data.current.wind * 1.60934
-            : data.current.wind;
-        return kmh >= threshold;
+        // data.current.wind is canonical km/h, threshold is stored in km/h
+        return data.current.wind >= threshold;
     }
 
     _update() {
@@ -179,7 +187,7 @@ class WeatherIndicator extends PanelMenu.Button {
             windy: windy && panelScene !== 'wind',
             night: !current.isDay,
             intensity: current.intensity,
-            windKmh: units === 'imperial' ? current.wind * 1.60934 : current.wind,
+            windKmh: current.wind,          // canonical km/h
         });
 
         this._tempLbl.set_text(
@@ -191,7 +199,7 @@ class WeatherIndicator extends PanelMenu.Button {
             daily,
             units,
             windy,
-            windKmh: units === 'imperial' ? current.wind * 1.60934 : current.wind,
+            windKmh: current.wind,          // canonical km/h
             updated: GLib.DateTime.new_now_local(),
         });
     }
@@ -203,9 +211,10 @@ class WeatherIndicator extends PanelMenu.Button {
         case 'auto-location':
         case 'location-latitude':
         case 'location-longitude':
+        case 'location-name':
         case 'units':
             this._panel.setPlaceName(this._placeName());
-            this._fetch(true);
+            this._scheduleLocationFetch();
             break;
         case 'refresh-minutes':
             this._restartTimer();
@@ -228,6 +237,21 @@ class WeatherIndicator extends PanelMenu.Button {
                 this._update();
             break;
         }
+    }
+
+    /**
+     * Choosing a city writes auto-location=false + lat + lon + name in quick
+     * succession; each key fires 'changed'. Coalesce those into one fetch so
+     * we never request the weather for a half-updated location.
+     */
+    _scheduleLocationFetch() {
+        if (this._locTimer)
+            return;
+        this._locTimer = GLib.timeout_add(GLib.PRIORITY_LOW, 250, () => {
+            this._locTimer = 0;
+            this._fetch(true);
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     _rebuildPanel(animate) {
