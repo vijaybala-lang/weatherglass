@@ -33,10 +33,11 @@
   body {
     font-family: system-ui, "Cantarell", "SF Pro Text", sans-serif;
     background: #0a0c10; color: var(--ink);
-    display: grid; place-items: center; overflow: hidden;
+    display: grid; place-items: center; overflow: auto;
   }
   #card {
     position: relative; width: min(1060px, 96vw); height: min(680px, 94vh);
+    min-width: 320px; min-height: 460px;
     border-radius: var(--radius); overflow: hidden;
     box-shadow: 0 24px 80px rgba(0,0,0,.55);
     transition: background .8s;
@@ -44,35 +45,46 @@
   #sky { position: absolute; inset: 0; width: 100%; height: 100%; }
 
   .content {
-    position: absolute; inset: 0; padding: 30px 36px 22px;
-    display: flex; flex-direction: column; gap: 14px;
+    position: absolute; inset: 0;
+    padding: clamp(14px, 3vh, 30px) clamp(14px, 3.4vw, 36px) clamp(10px, 2vh, 22px);
+    display: flex; flex-direction: column; gap: clamp(6px, 1.8vh, 14px);
     text-shadow: 0 1px 8px rgba(0, 0, 20, .35);
   }
 
   /* ── header ──────────────────────────────────────────────────────── */
-  header { display: flex; align-items: flex-start; gap: 26px; }
-  #big-ico { width: 92px; height: 92px; flex: 0 0 auto; }
-  .temp-wrap { display: flex; align-items: flex-start; }
-  #temp { font-size: 108px; font-weight: 200; line-height: .95;
-          letter-spacing: -4px; }
-  .unit-toggle { margin-top: 12px; margin-left: 6px; display: flex;
-                 font-size: 20px; font-weight: 500; }
+  header { display: flex; align-items: flex-start;
+           gap: clamp(10px, 2.4vw, 26px); min-width: 0; }
+  #big-ico { width: clamp(48px, 8.4vw, 92px); height: clamp(48px, 8.4vw, 92px);
+             flex: 0 0 auto; }
+  .temp-wrap { display: flex; align-items: flex-start; flex: 0 1 auto;
+               min-width: 0; }
+  #temp { font-size: clamp(52px, 10vw, 108px); font-weight: 200;
+          line-height: .95; letter-spacing: -.04em; }
+  .unit-toggle { margin-top: .3em; margin-left: 6px; display: flex;
+                 font-size: clamp(12px, 1.9vw, 20px); font-weight: 500; }
   .unit-toggle button { all: unset; cursor: pointer; color: var(--ink-faint);
                         padding: 2px 5px; transition: color .2s; }
   .unit-toggle button.on { color: var(--ink); }
   .unit-toggle .bar { color: var(--ink-faint); align-self: center; }
-  #details { font-size: 16.5px; color: var(--ink-dim); line-height: 1.62;
-             padding-top: 8px; }
+  #details { font-size: clamp(11.5px, 1.55vw, 16.5px); color: var(--ink-dim);
+             line-height: 1.62; padding-top: .4em; flex: 1 1 auto;
+             min-width: 0; white-space: nowrap; }
   #details b { color: var(--ink); font-weight: 550; }
-  header .right { margin-left: auto; text-align: right; line-height: 1.5; }
-  header .right .t1 { font-size: 27px; font-weight: 600; }
-  header .right .t2 { font-size: 18px; color: var(--ink-dim); }
-  header .right .t3 { font-size: 18px; color: var(--ink-dim); }
+  header .right { margin-left: auto; text-align: right; line-height: 1.45;
+                  flex: 0 0 auto; }
+  header .right .t1 { font-size: clamp(16px, 2.6vw, 27px); font-weight: 600;
+                      white-space: nowrap; }
+  header .right .t2 { font-size: clamp(11.5px, 1.7vw, 18px);
+                      color: var(--ink-dim); white-space: nowrap; }
+  header .right .t3 { font-size: clamp(11.5px, 1.7vw, 18px);
+                      color: var(--ink-dim); white-space: nowrap; }
 
   /* ── tabs ────────────────────────────────────────────────────────── */
-  nav { display: flex; gap: 30px; padding: 4px 4px 0; position: relative; }
+  nav { display: flex; gap: clamp(12px, 2.8vw, 30px);
+        padding: 4px 4px 0; position: relative; flex-wrap: wrap; }
   nav button {
-    all: unset; cursor: pointer; font-size: 19px; font-weight: 550;
+    all: unset; cursor: pointer; font-size: clamp(13px, 1.9vw, 19px);
+    font-weight: 550;
     color: var(--ink-dim); padding: 6px 2px 10px; position: relative;
     transition: color .25s;
   }
@@ -87,27 +99,44 @@
   .glass-line { height: 1px; background: rgba(255,255,255,.14); }
 
   /* ── chart ───────────────────────────────────────────────────────── */
-  #chart { flex: 1 1 auto; min-height: 180px; position: relative; }
+  #chart { flex: 1 1 auto; min-height: clamp(110px, 26vh, 180px);
+           position: relative; }
   #chart svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .v-label { font-size: 15px; font-weight: 600; fill: var(--ink-dim); }
+  .v-label { font-size: clamp(11px, 1.45vw, 15px); font-weight: 600;
+             fill: var(--ink-dim); }
   .v-label.now { fill: var(--accent); font-weight: 700; }
-  .x-label { font-size: 14.5px; fill: var(--ink-dim); }
+  .x-label { font-size: clamp(10.5px, 1.35vw, 14.5px); fill: var(--ink-dim); }
   .now-line { stroke: rgba(255,255,255,.35); stroke-dasharray: 3 5; }
 
   /* ── day strip ───────────────────────────────────────────────────── */
-  #days { display: grid; grid-template-columns: repeat(8, 1fr); gap: 12px; }
+  #days { display: grid; grid-template-columns: repeat(8, 1fr);
+          gap: clamp(5px, 1.1vw, 12px); }
   .day {
-    all: unset; cursor: pointer; border-radius: 18px; padding: 14px 6px 12px;
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    all: unset; cursor: pointer; border-radius: clamp(10px, 1.7vw, 18px);
+    padding: clamp(7px, 1.7vh, 14px) 4px clamp(6px, 1.4vh, 12px);
+    display: flex; flex-direction: column; align-items: center;
+    gap: clamp(3px, 1vh, 8px); min-width: 0;
     background: transparent; transition: background .35s, transform .2s;
   }
   .day:hover { background: var(--glass); }
   .day.sel { background: var(--glass-strong);
              box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
-  .day .wd { font-size: 19px; font-weight: 600; }
-  .day svg { width: 58px; height: 58px; }
-  .day .hl { font-size: 16.5px; font-weight: 550; }
-  .day .hl .lo { color: var(--ink-faint); margin-left: 7px; }
+  .day .wd { font-size: clamp(12px, 1.8vw, 19px); font-weight: 600; }
+  .day svg { width: clamp(30px, 5.4vw, 58px); height: clamp(30px, 5.4vw, 58px); }
+  .day .hl { font-size: clamp(10.5px, 1.55vw, 16.5px); font-weight: 550;
+             white-space: nowrap; }
+  .day .hl .lo { color: var(--ink-faint); margin-left: .4em; }
+
+  /* ── narrow fallbacks ────────────────────────────────────────────── */
+  @media (max-width: 780px) {
+    #details { display: none; }          /* chart > detail column */
+    header .right .t2, header .right .t3 { display: none; }
+  }
+  @media (max-width: 560px) {
+    #days { grid-template-columns: repeat(4, 1fr); }   /* 2 rows of 4 */
+    #big-ico { display: none; }
+    nav .sep { display: none; }
+  }
 
   /* mini-icon animations */
   @keyframes spin  { to { transform: rotate(360deg); } }
@@ -492,6 +521,7 @@ const METRICS = {
             vals: i => H.wind_speed_10m[i] },
 };
 let metric = 'temp', selDay = 0;
+let IDX_LAST = null;                    // hours of the last full draw
 let shown = null;                       // currently displayed y-values (morph src)
 let morphStart = 0, morphFrom = null, morphTo = null;
 
@@ -514,6 +544,7 @@ function chartVals(idx) { return idx.map(i => METRICS[metric].vals(i)); }
 
 function drawChart(vals, idx, animate) {
   const M = METRICS[metric];
+  IDX_LAST = idx;
   const box = svg.getBoundingClientRect();
   const W = box.width, Hh = box.height, dpr = devicePixelRatio;
   svg.setAttribute('viewBox', `0 0 ${W} ${Hh}`);
@@ -538,13 +569,15 @@ function drawChart(vals, idx, animate) {
   };
   for (let i = 0; i < vals.length; i += 3) {
     const cls = (selDay === 0 && i === 0) ? 'v-label now' : 'v-label';
-    const anchor = i === 0 ? 'start' : i >= vals.length - 3 ? 'end' : 'middle';
-    const lx = anchor === 'start' ? Math.max(4, X(i) - 8)
-             : anchor === 'end'   ? Math.min(W - 4, X(i) + 8) : X(i);
-    labels += `<text class="${cls}" x="${lx}" y="${Y(vals[i]) - 12}"
+    const ax = X(i);
+    const anchor = ax < 46 ? 'start' : ax > W - 46 ? 'end' : 'middle';
+    const lx = anchor === 'start' ? Math.max(4, ax - 6)
+             : anchor === 'end'   ? Math.min(W - 4, ax + 6) : ax;
+    const ly = Y(vals[i]) - (cls.includes('now') ? 22 : 12);   // lift "now"
+    labels += `<text class="${cls}" x="${lx}" y="${ly}"
                  text-anchor="${anchor}">${M.label(vals[i])}</text>`;
-    xlab += `<text class="x-label" x="${X(i)}" y="${Hh - 8}"
-               text-anchor="${anchor === 'start' ? 'start' : anchor === 'end' ? 'end' : 'middle'}">${fmtHour(i)}</text>`;
+    xlab += `<text class="x-label" x="${lx}" y="${Hh - 8}"
+               text-anchor="${anchor}">${fmtHour(i)}</text>`;
   }
   if (selDay === 0) {
     const now = new Date();
@@ -671,6 +704,15 @@ selectDay(0, false);
   }
   if (q.get('day')) selectDay(Math.min(7, Math.max(0, +q.get('day'))), false);
   else if (qm) tween(chartVals(daySlice(0)), daySlice(0), false);
+}
+
+/* redraw chart labels when the card resizes (sky canvas handled by fit()) */
+{
+  let timer = 0;
+  addEventListener('resize', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { if (shown && IDX_LAST) drawChart(shown, IDX_LAST); }, 120);
+  });
 }
 </script>
 </body>
