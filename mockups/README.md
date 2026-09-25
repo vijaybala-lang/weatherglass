@@ -43,7 +43,12 @@ Example: `weather-menu.html?scene=storm&night=1&metric=wind&f=1`
 ```sh
 curl -s "https://api.open-meteo.com/v1/forecast?latitude=37.3394&longitude=-121.8950&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,visibility,cape&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,wind_speed_10m_max&forecast_days=8&timezone=auto" > /tmp/f.json
 { echo 'window.WEATHER_DATA ='; cat /tmp/f.json; echo ';'; } > data.js
+echo "window.WEATHER_CITY = { display: 'San Jose, CA' };" >> data.js
 ```
+
+The city shown top-right comes from `WEATHER_CITY.display` — in the real
+extension this maps to the `location-name` setting (searched city or
+"Detected location").
 
 ## Porting notes → the real GNOME menu
 

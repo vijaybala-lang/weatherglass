@@ -100,7 +100,10 @@
 
   /* ── chart ───────────────────────────────────────────────────────── */
   #chart { flex: 1 1 auto; min-height: clamp(110px, 26vh, 180px);
-           position: relative; }
+           position: relative;
+           /* full-bleed: pull out of .content's side padding so the curve
+              and gradient touch the card edges */
+           margin-inline: calc(-1 * clamp(14px, 3.4vw, 36px)); }
   #chart svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .v-label { font-size: clamp(11px, 1.45vw, 15px); font-weight: 600;
              fill: var(--ink-dim); }
@@ -130,7 +133,7 @@
   /* ── narrow fallbacks ────────────────────────────────────────────── */
   @media (max-width: 780px) {
     #details { display: none; }          /* chart > detail column */
-    header .right .t2, header .right .t3 { display: none; }
+    header .right .and, header .right .t3 { display: none; }  /* keep city + clock */
   }
   @media (max-width: 560px) {
     #days { grid-template-columns: repeat(4, 1fr); }   /* 2 rows of 4 */
@@ -167,8 +170,8 @@
       </div>
       <div id="details"></div>
       <div class="right">
-        <div class="t1" id="h-clock"></div>
-        <div class="t2" id="h-date"></div>
+        <div class="t1" id="h-city"></div>
+        <div class="t2"><span id="h-clock"></span><span class="and"> · <span id="h-date"></span></span></div>
         <div class="t3" id="h-cond"></div>
       </div>
     </header>
@@ -527,6 +530,17 @@ let morphStart = 0, morphFrom = null, morphTo = null;
 
 const svg = document.getElementById('svg');
 
+/* The box height shifts once fonts/icons settle (viewBox measured early ≠
+   final box); without a redraw, SVG's default preserveAspectRatio letterboxes
+   the whole chart and pulls the curve away from the card edges. */
+if (window.ResizeObserver) {
+  let raf = 0;
+  new ResizeObserver(() => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => { if (shown && IDX_LAST) drawChart(shown, IDX_LAST); });
+  }).observe(svg);
+}
+
 function smoothPath(pts) {                  /* Catmull-Rom → cubic Bézier */
   if (pts.length < 2) return '';
   let d = `M${pts[0][0]},${pts[0][1]}`;
@@ -548,7 +562,8 @@ function drawChart(vals, idx, animate) {
   const box = svg.getBoundingClientRect();
   const W = box.width, Hh = box.height, dpr = devicePixelRatio;
   svg.setAttribute('viewBox', `0 0 ${W} ${Hh}`);
-  const PADX = 16, TOP = 46, BOT = 34;
+  const PADX = 2, TOP = 46, BOT = 34;   // 2 px only so the 3 px stroke isn't
+                                        // clipped at the card edge
   let lo = Math.min(...vals), hi = Math.max(...vals);
   if (metric === 'precip') { lo = Math.min(lo, 0); hi = Math.max(hi, 20); }
   const pad = (hi - lo) * .35 + 1;
@@ -626,8 +641,9 @@ function renderHeader() {
     `Humidity: <b>${CUR.relative_humidity_2m}%</b><br>` +
     `Wind: <b>${fmtW(CUR.wind_speed_10m)}</b>`;
   const now = new Date();
+  $('#h-city').textContent = window.WEATHER_CITY?.display || 'My location';
   $('#h-clock').textContent = now.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
-  $('#h-date').textContent = now.toLocaleDateString([], {weekday: 'long', month: 'short', day: 'numeric'});
+  $('#h-date').textContent = now.toLocaleDateString([], {weekday: 'short', month: 'short', day: 'numeric'});
   $('#h-cond').textContent = descOf(CUR.weather_code);
 }
 
