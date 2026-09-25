@@ -37,6 +37,18 @@ gnome-extensions disable animated-weather@vbala.dev
 rm -rf ~/.local/share/gnome-shell/extensions/animated-weather@vbala.dev
 ```
 
+## Editing the code? Restart the shell session
+
+GNOME Shell 50 caches an extension's ES modules inside the long-lived
+`gnome-shell` process. `gnome-extensions disable/enable` (and even the
+Extensions app's toggle) re-run `enable()` on the **already-imported** module
+objects — they do **not** re-read `weather.js`, `menu.js`, etc. from disk. So
+after editing any file, **log out and back in** (Wayland can't Alt-F2 restart).
+The prefs window is exempt: it runs in a fresh process each time you open it.
+
+The `Animated Weather v…` line in `journalctl --user -o cat` tells you which
+build the running shell actually loaded.
+
 ## Notes
 
 - With *Detect location automatically* the request includes your public IP

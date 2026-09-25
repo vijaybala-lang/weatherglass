@@ -280,6 +280,10 @@ class WeatherIndicator extends PanelMenu.Button {
 
 export default class AnimatedWeatherExtension extends Extension {
     enable() {
+        // build stamp: journalctl --user -o cat | grep "Animated Weather v"
+        // shows which on-disk code the long-lived shell process is running
+        // (GJS caches extension modules; code edits need a session restart)
+        console.log('Animated Weather v3 (metric-canonical, city-search-fix)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }
