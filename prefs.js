@@ -19,7 +19,7 @@ function locationLabel(r) {
 const ResultRow = GObject.registerClass(class ResultRow extends Adw.ActionRow {
     _init(title, cb) {
         super._init({title, activatable: true});
-        this.add_suffix(new Gtk.Image.from_icon_name('go-next-symbolic'));
+        this.add_suffix(new Gtk.Image({icon_name: 'go-next-symbolic'}));
         this.connect('activated', () => cb());
     }
 });
