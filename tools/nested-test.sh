@@ -39,6 +39,11 @@ timeout 120 dbus-run-session -- bash -c "
     echo '=== scenario 3: prefs ==='
     busctl --user call org.gnome.Shell.Extensions /org/gnome/Shell/Extensions org.gnome.Shell.Extensions OpenExtensionPrefs ssa{sv} animated-weather@vbala.dev '' 0
     sleep 6
+    echo '=== scenario 4: preview-scene round trip (shell must revert key) ==='
+    gsettings set $SCHEMA preview-scene 'hail'
+    sleep 16
+    echo 'preview-scene after preview window (want empty string):'
+    gsettings get $SCHEMA preview-scene
     kill \$GPID; exit 0
   done
   kill \$GPID

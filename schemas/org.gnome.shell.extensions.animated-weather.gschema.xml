@@ -56,6 +56,13 @@
       <summary>Weather refresh interval in minutes</summary>
     </key>
 
+    <key name="preview-scene" type="s">
+      <default>''</default>
+      <summary>Temporarily preview an animation on the panel icon</summary>
+      <description>Set by the preferences window; the extension clears it back
+to empty when the preview ends</description>
+    </key>
+
     <key name="windy-threshold" type="i">
       <range min="0" max="120"/>
       <default>30</default>

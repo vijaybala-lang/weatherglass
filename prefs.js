@@ -224,6 +224,37 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         updGroup.add(windyRow);
         page.add(updGroup);
 
+        // ── animation previews ────────────────────────────────────────────
+        const previewGroup = new Adw.PreferencesGroup({
+            title: 'Preview animations',
+            description: 'Play an animation on the panel icon for ~12 seconds — ' +
+                         'handy for scenes your sky rarely shows (hail, storm, fog)',
+        });
+        const SCENE_PREVIEWS = [
+            ['sun',    'Clear sky'],
+            ['moon',   'Clear night'],
+            ['partly', 'Partly cloudy'],
+            ['cloud',  'Overcast'],
+            ['fog',    'Fog'],
+            ['wind',   'Windy'],
+            ['rain',   'Rain'],
+            ['sleet',  'Sleet / freezing rain'],
+            ['snow',   'Snow'],
+            ['hail',   'Hail'],
+            ['storm',  'Thunderstorm'],
+        ];
+        for (const [scene, label] of SCENE_PREVIEWS) {
+            const row = new Adw.ActionRow({
+                title: label,
+                activatable: true,
+            });
+            row.add_suffix(new Gtk.Image({icon_name: 'media-playback-start-symbolic'}));
+            row.connect('activated', () =>
+                settings.set_string('preview-scene', scene));
+            previewGroup.add(row);
+        }
+        page.add(previewGroup);
+
         return page;
     }
 }

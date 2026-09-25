@@ -9,7 +9,7 @@ import GLib from 'gi://GLib';
 import {paintWeather, createParticles, GRID} from '../painter.js';
 
 const PX = 96;                      // render size in px
-const scenes = ['sun', 'moon', 'partly', 'cloud', 'fog', 'rain', 'snow',
+const scenes = ['sun', 'moon', 'partly', 'cloud', 'fog', 'rain', 'snow', 'sleet', 'hail',
                 'storm', 'wind', 'error', 'loading'];
 const outDir = GLib.build_filenamev([GLib.get_current_dir(), 'tools', 'out']);
 GLib.mkdir_with_parents(outDir, 0o755);

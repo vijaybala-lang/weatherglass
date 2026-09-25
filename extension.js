@@ -13,7 +13,7 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import {WeatherIcon} from './animation.js';
 import {ForecastPanel} from './menu.js';
-import {WeatherClient, sceneFor, fmtTemp} from './weather.js';
+import {WeatherClient, sceneFor, deriveScene, fmtTemp} from './weather.js';
 
 const PANEL_ICON_SIZE = 20;
 
@@ -27,6 +27,7 @@ class WeatherIndicator extends PanelMenu.Button {
         this._client = new WeatherClient();
         this._timer = 0;
         this._locTimer = 0;
+        this._previewId = 0;
         this._refetch = false;
         this._lastFetch = 0;        // GLib DateTime seconds, 0 = never
         this._data = null;
@@ -176,7 +177,8 @@ class WeatherIndicator extends PanelMenu.Button {
 
         const units = this._units();
         const {current, daily} = data;
-        const {scene} = sceneFor(current.code, current.isDay);
+        const effective = deriveScene(current);
+        const {scene} = effective;
         const windy = this._windy(data);
 
         // panel icon: strong wind swaps in the dedicated wind scene when the
@@ -199,6 +201,7 @@ class WeatherIndicator extends PanelMenu.Button {
             daily,
             units,
             windy,
+            effective,
             windKmh: current.wind,          // canonical km/h
             updated: GLib.DateTime.new_now_local(),
         });
@@ -236,7 +239,39 @@ class WeatherIndicator extends PanelMenu.Button {
             if (this._data)
                 this._update();
             break;
+        case 'preview-scene':
+            this._previewScene();
+            break;
         }
+    }
+
+    /**
+     * The preferences window writes a scene name to 'preview-scene' to force
+     * that animation on the panel icon for a while (so users can watch rare
+     * scenes without waiting for the sky). We reset the key when done, which
+     * re-fires 'changed' — the empty-string guard below breaks that loop.
+     */
+    _previewScene() {
+        const scene = this._settings.get_string('preview-scene');
+        if (!scene)
+            return;
+        if (this._previewId)
+            GLib.source_remove(this._previewId);
+        this._icon.setScene(scene, {
+            windy: ['sun', 'moon', 'partly', 'cloud', 'fog', 'wind'].includes(scene),
+            night: scene === 'moon',
+            intensity: 7,
+            windKmh: 34,
+        });
+        this._previewId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 12, () => {
+            this._previewId = 0;
+            this._settings.set_string('preview-scene', '');
+            if (this._data)
+                this._update();
+            else
+                this._icon.setScene('loading');
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     /**
@@ -270,6 +305,10 @@ class WeatherIndicator extends PanelMenu.Button {
     destroy() {
         if (this._timer)
             GLib.source_remove(this._timer);
+        if (this._locTimer)
+            GLib.source_remove(this._locTimer);
+        if (this._previewId)
+            GLib.source_remove(this._previewId);
         if (this._settingsId)
             this._settings.disconnect(this._settingsId);
         if (this._openId)
@@ -283,7 +322,7 @@ export default class AnimatedWeatherExtension extends Extension {
         // build stamp: journalctl --user -o cat | grep "Animated Weather v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
-        console.log('Animated Weather v3 (metric-canonical, city-search-fix)');
+        console.log('Animated Weather v4 (hail+sleet scenes, physics-based fog/storm, previews)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }

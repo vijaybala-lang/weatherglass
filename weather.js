@@ -19,13 +19,13 @@ const WMO = {
     51: {desc: 'Light drizzle',    day: 'rain',   night: 'rain'},
     53: {desc: 'Drizzle',          day: 'rain',   night: 'rain'},
     55: {desc: 'Dense drizzle',    day: 'rain',   night: 'rain'},
-    56: {desc: 'Freezing drizzle', day: 'rain',   night: 'rain'},
-    57: {desc: 'Freezing drizzle', day: 'rain',   night: 'rain'},
+    56: {desc: 'Freezing drizzle', day: 'sleet',  night: 'sleet'},
+    57: {desc: 'Freezing drizzle', day: 'sleet',  night: 'sleet'},
     61: {desc: 'Light rain',       day: 'rain',   night: 'rain'},
     63: {desc: 'Rain',             day: 'rain',   night: 'rain'},
     65: {desc: 'Heavy rain',       day: 'rain',   night: 'rain'},
-    66: {desc: 'Freezing rain',    day: 'rain',   night: 'rain'},
-    67: {desc: 'Freezing rain',    day: 'rain',   night: 'rain'},
+    66: {desc: 'Freezing rain',    day: 'sleet',  night: 'sleet'},
+    67: {desc: 'Freezing rain',    day: 'sleet',  night: 'sleet'},
     71: {desc: 'Light snow',       day: 'snow',   night: 'snow'},
     73: {desc: 'Snow',             day: 'snow',   night: 'snow'},
     75: {desc: 'Heavy snow',       day: 'snow',   night: 'snow'},
@@ -36,13 +36,36 @@ const WMO = {
     85: {desc: 'Snow showers',     day: 'snow',   night: 'snow'},
     86: {desc: 'Heavy snow showers', day: 'snow', night: 'snow'},
     95: {desc: 'Thunderstorm',     day: 'storm',  night: 'storm'},
-    96: {desc: 'Thunderstorm, hail', day: 'storm', night: 'storm'},
-    99: {desc: 'Thunderstorm, hail', day: 'storm', night: 'storm'},
+    96: {desc: 'Thunderstorm, hail', day: 'hail', night: 'hail'},
+    99: {desc: 'Thunderstorm, hail', day: 'hail', night: 'hail'},
 };
 
 export function sceneFor(code, isDay = true) {
     const w = WMO[code] ?? {desc: 'Unknown', day: 'cloud', night: 'cloud'};
     return {scene: isDay ? w.day : w.night, desc: w.desc};
+}
+
+/**
+ * Pick the animated scene from the WMO code PLUS raw physical variables.
+ * Open-Meteo's code derivation almost never emits fog (45/48), thunder (95)
+ * or hail (96/99) — measured across live forecasts and reanalysis — so we
+ * trust the underlying data too:
+ *   fog  : visibility < 1 km while it isn't precipitating
+ *   storm: CAPE >= 1200 J/kg with liquid precipitation (embedded convection)
+ *   hail : CAPE >= 2500 J/kg with liquid precipitation (severe convection)
+ */
+export function deriveScene(current) {
+    const {code, visibility, cape, isDay} = current;
+    const liquid = code >= 51 && code <= 82;   // drizzle … showers
+    if (code === 96 || code === 99 || (cape >= 2500 && liquid))
+        return {scene: 'hail', desc: 'Thunderstorm, hail'};
+    if (code === 95 || (cape >= 1200 && liquid))
+        return {scene: 'storm', desc: 'Thunderstorm'};
+    if (code === 45 || code === 48)
+        return sceneFor(code, isDay);
+    if (visibility !== null && visibility < 1000 && !liquid)
+        return {scene: 'fog', desc: 'Fog'};
+    return sceneFor(code, isDay);
 }
 
 /* ── formatting helpers ─────────────────────────────────────────────────── */
@@ -158,6 +181,9 @@ export class WeatherClient {
                 'temperature_2m', 'relative_humidity_2m', 'apparent_temperature',
                 'is_day', 'precipitation', 'weather_code', 'cloud_cover',
                 'wind_speed_10m', 'wind_direction_10m',
+                // physical proxies: WMO codes almost never report fog or
+                // storms, but these two variables catch them reliably
+                'visibility', 'cape',
             ].join(','),
             daily: [
                 'weather_code', 'temperature_2m_max', 'temperature_2m_min',
@@ -185,6 +211,8 @@ export class WeatherClient {
             precip: c.precipitation ?? 0,
             wind: c.wind_speed_10m,          // always km/h
             windDeg: c.wind_direction_10m,
+            visibility: c.visibility ?? null,   // metres
+            cape: c.cape ?? null,               // J/kg convective available energy
             // mm/h always (API called with metric); drives drop/flake density
             intensity: c.precipitation ?? 0,
         };

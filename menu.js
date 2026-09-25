@@ -87,7 +87,7 @@ export class ForecastPanel {
         this._miniIcons = [];
 
         const today = daily[0];
-        const {scene, desc} = sceneFor(current.code, current.isDay);
+        const {scene, desc} = state.effective ?? sceneFor(current.code, current.isDay);
         const windy = !!state.windy;
 
         // ── today ─────────────────────────────────────────────────────────

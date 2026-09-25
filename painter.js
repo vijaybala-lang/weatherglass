@@ -27,11 +27,26 @@ export function createParticles() {
     for (let i = 0; i < 12; i++)
         flakes.push({x: rand(3, 21), y: rand(9, 24), r: rand(0.8, 1.4),
                      sp: rand(2.5, 4.5), ph: rand(0, TAU)});
+    const hail = [];
+    for (let i = 0; i < 10; i++) {
+        // scatter initial heights so the first cycle doesn't fall in unison
+        hail.push(Object.assign(newHailStone(), {y: rand(9, FLOOR), vy: rand(2, 9)}));
+    }
     const stars = [
         {x: 19.5, y: 4.5, ph: 0.0}, {x: 21.5, y: 9, ph: 1.7},
         {x: 17.5, y: 8, ph: 3.1}, {x: 20.5, y: 13.5, ph: 4.4},
     ];
-    return {drops, flakes, stars, lastT: null};
+    return {drops, flakes, hail, stars, lastT: null};
+}
+
+const FLOOR = 21.8;   // where hailstones bounce
+
+function newHailStone() {
+    return {
+        x: rand(3, 21), y: rand(8.5, 11),
+        vx: rand(-1, 1.5), vy: rand(6, 10),
+        r: rand(0.7, 1.25), bounces: 0,
+    };
 }
 
 /* ── small drawing helpers ──────────────────────────────────────────────── */
@@ -131,6 +146,32 @@ function snowFlakes(cr, p, t, count) {
         }
         cr.stroke();
         cr.restore();
+    }
+}
+
+/** Hailstones: fall under gravity, bounce & scatter on the floor, respawn. */
+function hailStones(cr, p, t, count) {
+    const dt = p.lastT === null ? 0 : Math.min(0.06, t - p.lastT);
+    for (let i = 0; i < count; i++) {
+        const h = p.hail[i];
+        h.vy += 24 * dt;                  // gravity
+        h.x += h.vx * dt;
+        h.y += h.vy * dt;
+        if (h.y >= FLOOR && h.vy > 0) {   // bounce with energy loss
+            h.y = FLOOR;
+            h.vy *= -0.42;
+            h.vx = rand(-3, 3);
+            h.bounces++;
+        }
+        if (h.bounces > 2 || Math.abs(h.vy) < 0.6 && h.bounces > 0 ||
+            h.x < -1 || h.x > 25)
+            Object.assign(h, newHailStone());
+        cr.setSourceRGBA(0.91, 0.94, 0.97, 0.95);
+        circle(cr, h.x, h.y, h.r);
+        cr.fill();
+        cr.setSourceRGBA(1, 1, 1, 0.55);  // glint
+        circle(cr, h.x - h.r * 0.3, h.y - h.r * 0.35, h.r * 0.35);
+        cr.fill();
     }
 }
 
@@ -264,12 +305,39 @@ function sceneSnow(cr, ctx) {
         windStreaks(cr, t, 0.35, 2);
 }
 
+/** Sleet / freezing rain: half drops, half flakes, extra slant. */
+function sceneSleet(cr, ctx) {
+    const {t, p, intensity, windKmh, windy} = ctx;
+    cloud(cr, 12 + Math.sin(t * 0.5) * 0.5, 7.5, 0.92, CLOUD_RAIN[0], CLOUD_RAIN[1]);
+    const n = 5 + Math.min(5, Math.round(intensity * 1.4));
+    rainDrops(cr, p, t, n, Math.min(1.1, windKmh / 36 + 0.25), 0.8);
+    snowFlakes(cr, p, t, Math.max(4, n - 2));
+    if (windy)
+        windStreaks(cr, t, 0.35, 2);
+}
+
+/** Hail: dark storm cloud, a few hard rain streaks, bouncing ice stones. */
+function sceneHail(cr, ctx) {
+    const {t, p, windKmh, windy} = ctx;
+    cloud(cr, 12 + Math.sin(t * 0.45) * 0.5, 7.2, 0.98, CLOUD_DARK[0], CLOUD_DARK[1]);
+    rainDrops(cr, p, t, 5, Math.min(0.9, windKmh / 45), 0.5);
+    hailStones(cr, p, t, p.hail.length);
+    if (windy)
+        windStreaks(cr, t, 0.35, 2);
+}
+
+const BOLTS = [
+    [[13, 10.8], [10.8, 14.6], [12.7, 14.6], [10.2, 19.6]],
+    [[10.6, 10.4], [13.2, 14.0], [11.4, 14.2], [13.8, 19.8]],
+];
+
 function sceneStorm(cr, ctx) {
     const {t, p, intensity, windKmh, windy} = ctx;
     cloud(cr, 12 + Math.sin(t * 0.4) * 0.5, 7.2, 1.0, CLOUD_DARK[0], CLOUD_DARK[1]);
     rainDrops(cr, p, t, 8 + Math.min(8, Math.round(intensity * 2)), Math.min(0.9, windKmh / 45), 0.85);
 
-    // double-flick lightning every ~2.8 s
+    // double-flick lightning every ~2.8 s, alternating bolt shape
+    const cycle = Math.floor(t / 2.8);
     const c = t % 2.8;
     let flash = 0;
     if (c < 0.07)       flash = c / 0.07;
@@ -277,10 +345,17 @@ function sceneStorm(cr, ctx) {
     else if (c < 0.20)  flash = 0.6 * (c - 0.14) / 0.06;
     else if (c < 0.28)  flash = 0.6 * (1 - (c - 0.20) / 0.08);
     if (flash > 0) {
+        // soft sky glow behind the bolt
+        const glow = new Cairo.RadialGradient(12, 12, 2, 12, 12, 15);
+        glow.addColorStopRGBA(0, 1, 1, 0.94, 0.22 * flash);
+        glow.addColorStopRGBA(1, 1, 1, 0.94, 0);
+        cr.setSource(glow);
+        cr.paint();
+
         cr.save();
         cr.setLineJoin(Cairo.LineJoin.ROUND);
         cr.setLineCap(Cairo.LineCap.ROUND);
-        const bolt = [[13, 10.8], [10.8, 14.6], [12.7, 14.6], [10.2, 19.6]];
+        const bolt = BOLTS[cycle % BOLTS.length];
         cr.setSourceRGBA(1, 0.92, 0.23, flash);
         cr.setLineWidth(2.4);
         cr.moveTo(bolt[0][0], bolt[0][1]);
@@ -296,11 +371,30 @@ function sceneStorm(cr, ctx) {
         windStreaks(cr, t, 0.3, 2);
 }
 
+/** Curling gust that travels across the scene (wind-scene garnish). */
+function gustCurl(cr, x, y, s, alpha) {
+    cr.save();
+    cr.translate(x, y);
+    cr.setSourceRGBA(0.55, 0.85, 1.0, alpha);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.setLineWidth(0.8);
+    cr.newPath();
+    cr.arc(0, 0, s, Math.PI * 0.9, Math.PI * 2.2);     // open spiral
+    cr.stroke();
+    cr.newPath();
+    cr.arc(s * 0.5, s * 0.4, s * 0.45, Math.PI * 1.1, Math.PI * 2.5);
+    cr.stroke();
+    cr.restore();
+}
+
 function sceneWind(cr, ctx) {
     const {t} = ctx;
     windStreaks(cr, t, 1.0, 4);
     // one longer high streak for depth
     streak(cr, 3.2 + Math.sin(t) * 0.4, 0.7, 0.35, 3.5, 6, -(t * 5) % 9.5);
+    // two curling gusts sweeping left→right at different depths
+    gustCurl(cr, (t * 4.4) % 28 - 2, 8.5 + Math.sin(t * 1.6) * 0.8, 1.5, 0.6);
+    gustCurl(cr, ((t * 3.1) % 28) - 2 + 9, 16 + Math.cos(t * 1.2) * 0.8, 1.1, 0.4);
 }
 
 function sceneError(cr) {
@@ -334,8 +428,9 @@ function sceneLoading(cr, ctx) {
 
 const SCENES = {
     sun: sceneSun, moon: sceneMoon, partly: scenePartly, cloud: sceneCloud,
-    fog: sceneFog, rain: sceneRain, snow: sceneSnow, storm: sceneStorm,
-    wind: sceneWind, error: sceneError, loading: sceneLoading,
+    fog: sceneFog, rain: sceneRain, snow: sceneSnow, sleet: sceneSleet,
+    hail: sceneHail, storm: sceneStorm, wind: sceneWind,
+    error: sceneError, loading: sceneLoading,
 };
 
 /**

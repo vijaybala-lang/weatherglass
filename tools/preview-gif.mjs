@@ -1,4 +1,4 @@
-/* tools/preview-gif.mjs — renders an 8-scene animated contact sheet and
+/* tools/preview-gif.mjs — renders a 12-scene animated contact sheet and
  * (with ffmpeg) turns it into a looping GIF. From the project root:
  *     gjs -m tools/preview-gif.mjs
  *     ffmpeg -framerate 20 -i tools/out/grid/grid_%03d.png \
@@ -11,7 +11,9 @@ import GLib from 'gi://GLib';
 import {paintWeather, createParticles, GRID} from '../painter.js';
 
 const TILE = 96, FPS = 20, FRAMES = 56;
-const scenes = ['sun', 'rain', 'wind', 'snow', 'partly', 'storm', 'cloud', 'moon'];
+const scenes = ['sun', 'partly', 'cloud', 'moon',
+                'rain', 'sleet', 'snow', 'hail',
+                'storm', 'fog', 'wind', 'loading'];
 
 const outDir = GLib.build_filenamev([GLib.get_current_dir(), 'tools', 'out', 'grid']);
 GLib.mkdir_with_parents(outDir, 0o755);
@@ -34,7 +36,7 @@ function backdrop(cr, x, y, s) {
     cr.fill();
 }
 
-const cols = 4, rows = 2;
+const cols = 4, rows = 3;
 const W = TILE * cols, H = TILE * rows;
 
 for (let f = 0; f < FRAMES; f++) {
