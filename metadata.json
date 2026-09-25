@@ -1,0 +1,9 @@
+{
+  "uuid": "animated-weather@vbala.dev",
+  "name": "Animated Weather",
+  "description": "Animated panel weather: live sun, rain, wind and snow animations beside the current temperature. Click for today's forecast and the next 6 days.",
+  "shell-version": ["50"],
+  "settings-schema": "org.gnome.shell.extensions.animated-weather",
+  "url": "",
+  "version": 1
+}

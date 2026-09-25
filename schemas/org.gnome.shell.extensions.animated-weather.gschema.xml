@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.animated-weather"
+          path="/org/gnome/shell/extensions/animated-weather/">
+
+    <key name="auto-location" type="b">
+      <default>true</default>
+      <summary>Detect location automatically</summary>
+      <description>Use IP-based location detection instead of a manual place</description>
+    </key>
+
+    <key name="location-latitude" type="d">
+      <default>12.9716</default>
+      <summary>Latitude</summary>
+    </key>
+
+    <key name="location-longitude" type="d">
+      <default>77.5946</default>
+      <summary>Longitude</summary>
+    </key>
+
+    <key name="location-name" type="s">
+      <default>'My location'</default>
+      <summary>Place display name</summary>
+    </key>
+
+    <key name="units" type="s">
+      <choices>
+        <choice value="metric"/>
+        <choice value="imperial"/>
+      </choices>
+      <default>'metric'</default>
+      <summary>Measurement units</summary>
+      <description>metric = °C / km/h, imperial = °F / mph</description>
+    </key>
+
+    <key name="show-temperature" type="b">
+      <default>true</default>
+      <summary>Show temperature in the panel</summary>
+    </key>
+
+    <key name="show-icon" type="b">
+      <default>true</default>
+      <summary>Show the animated icon in the panel</summary>
+    </key>
+
+    <key name="animate" type="b">
+      <default>true</default>
+      <summary>Animate the panel icon</summary>
+      <description>When off, the icon renders a single static frame</description>
+    </key>
+
+    <key name="refresh-minutes" type="i">
+      <range min="5" max="120"/>
+      <default>15</default>
+      <summary>Weather refresh interval in minutes</summary>
+    </key>
+
+    <key name="windy-threshold" type="i">
+      <range min="0" max="120"/>
+      <default>30</default>
+      <summary>Wind speed (km/h) that triggers the wind animation</summary>
+      <description>0 disables the wind scene override</description>
+    </key>
+
+  </schema>
+</schemalist>

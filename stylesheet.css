@@ -1,0 +1,149 @@
+/* animated-weather */
+
+.aw-panel-box {
+    spacing: 5px;
+    padding: 0 2px;
+}
+
+.aw-temp {
+    font-weight: bold;
+}
+
+/* ── dropdown ─────────────────────────────────────────────────────────── */
+
+.aw-menu {
+    padding: 10px 12px;
+}
+
+.aw-panel {
+    min-width: 22em;
+    max-width: 30em;
+    spacing: 8px;
+}
+
+.aw-scroll {
+    max-height: 26em;
+}
+
+.aw-header {
+    spacing: 8px;
+}
+
+.aw-location {
+    font-weight: bold;
+    font-size: 1.05em;
+}
+
+.aw-icon-btn {
+    border-radius: 99px;
+    padding: 4px;
+}
+
+.aw-icon-btn:hover {
+    background-color: rgba(128, 128, 128, 0.18);
+}
+
+.aw-sep {
+    background-color: rgba(128, 128, 128, 0.35);
+    margin: 2px 0;
+}
+
+.aw-body {
+    spacing: 8px;
+}
+
+/* ── today ─────────────────────────────────────────────────────────────── */
+
+.aw-today {
+    spacing: 12px;
+    padding: 2px 2px 4px 2px;
+}
+
+.aw-today-main {
+    spacing: 2px;
+}
+
+.aw-current-temp {
+    font-size: 2.2em;
+    font-weight: bold;
+}
+
+.aw-desc {
+    font-weight: bold;
+}
+
+.aw-feels {
+    color: rgba(160, 160, 160, 1);
+}
+
+.aw-today-side {
+    spacing: 2px;
+}
+
+.aw-hilo {
+    font-weight: bold;
+    color: rgba(160, 160, 160, 1);
+}
+
+/* ── details grid ──────────────────────────────────────────────────────── */
+
+.aw-details {
+    spacing: 18px;
+    padding: 2px 4px;
+}
+
+.aw-details-col {
+    spacing: 4px;
+}
+
+.aw-detail {
+    color: rgba(160, 160, 160, 1);
+}
+
+/* ── days ──────────────────────────────────────────────────────────────── */
+
+.aw-section-title {
+    font-weight: bold;
+    color: rgba(160, 160, 160, 1);
+    padding: 0 2px;
+}
+
+.aw-day {
+    spacing: 10px;
+    padding: 3px 2px;
+}
+
+.aw-day-name {
+    width: 3.4em;
+    font-weight: bold;
+}
+
+.aw-day-desc {
+    color: rgba(160, 160, 160, 1);
+    width: 8em;
+}
+
+.aw-day-rain {
+    width: 3em;
+    text-align: right;
+    color: rgba(110, 175, 230, 1);
+}
+
+.aw-day-temps {
+    width: 6.5em;
+    text-align: right;
+}
+
+.aw-footer {
+    color: rgba(140, 140, 140, 1);
+    font-size: 0.85em;
+}
+
+.aw-placeholder {
+    spacing: 10px;
+    padding: 10px 0;
+}
+
+.aw-placeholder-text {
+    color: rgba(160, 160, 160, 1);
+}
