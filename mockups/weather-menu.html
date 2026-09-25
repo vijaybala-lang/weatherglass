@@ -68,8 +68,14 @@
   .unit-toggle .bar { color: var(--ink-faint); align-self: center; }
   #details { font-size: clamp(11px, 1.4vw, 14.5px); color: var(--ink-dim);
              line-height: 1.55; padding-top: .35em; flex: 1 1 auto;
-             min-width: 0; white-space: nowrap; }
+             min-width: 0; display: grid; grid-template-rows: auto auto;
+             grid-auto-flow: column; column-gap: clamp(14px, 2.8vw, 34px);
+             justify-content: start; }
+  #details span { white-space: nowrap; }
   #details b { color: var(--ink); font-weight: 550; }
+  .uvdot { display: inline-block; width: .52em; height: .52em;
+           border-radius: 50%; margin: 0 .35em 0 .1em;
+           vertical-align: baseline; }
   header .right { margin-left: auto; text-align: right; line-height: 1.4;
                   flex: 0 0 auto; }
   header .right .t1 { font-size: clamp(14px, 2.2vw, 23px); font-weight: 600;
@@ -230,6 +236,21 @@ function deriveNow() {
 }
 
 const cToF   = c => c * 9 / 5 + 32;
+
+/* EPA UV bands → [color, label]; index shown bold + category dim */
+function uvBand(uv) {
+  if (uv === null || uv === undefined)
+    return '<b>–</b>';
+  const n = Math.round(uv);
+  const [color, label] =
+    uv <= 2   ? ['#5ec26a', 'Low'] :
+    uv <= 5   ? ['#e8d24a', 'Moderate'] :
+    uv <= 7   ? ['#ef9440', 'High'] :
+    uv <= 10  ? ['#e35d5b', 'Very High'] :
+                ['#9b6dd6', 'Extreme'];
+  return `<i class="uvdot" style="background:${color}"></i>` +
+         `<b>${n}</b> ${label}`;
+}
 const kmhToM = k => k * 0.621371;
 let IMPERIAL = false;
 const fmtT   = c => Math.round(IMPERIAL ? cToF(c) : c) + '°';
@@ -638,10 +659,12 @@ function renderHeader() {
   $('#big-ico').outerHTML = wrapIcon(iconSVG(deriveNow(), !CUR.is_day))
     .replace('<svg', '<svg id="big-ico"');
   const pMax = DY.precipitation_probability_max?.[0] ?? 0;
+  const uv = CUR.uv_index ?? null;
   $('#details').innerHTML =
-    `Precipitation: <b>${pMax}%</b><br>` +
-    `Humidity: <b>${CUR.relative_humidity_2m}%</b><br>` +
-    `Wind: <b>${fmtW(CUR.wind_speed_10m)}</b>`;
+    `<span>Precipitation: <b>${pMax}%</b></span>` +
+    `<span>Humidity: <b>${CUR.relative_humidity_2m}%</b></span>` +
+    `<span>UV Index: ${uvBand(uv)}</span>` +
+    `<span>Wind: <b>${fmtW(CUR.wind_speed_10m)}</b></span>`;
   const now = new Date();
   $('#h-city').textContent = window.WEATHER_CITY?.display || 'My location';
   $('#h-clock').textContent = now.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});

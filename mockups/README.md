@@ -41,7 +41,7 @@ Example: `weather-menu.html?scene=storm&night=1&metric=wind&f=1`
 ## Refreshing the data
 
 ```sh
-curl -s "https://api.open-meteo.com/v1/forecast?latitude=37.3394&longitude=-121.8950&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,visibility,cape&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,wind_speed_10m_max&forecast_days=8&timezone=auto" > /tmp/f.json
+curl -s "https://api.open-meteo.com/v1/forecast?latitude=37.3394&longitude=-121.8950&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,visibility,cape,uv_index&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,wind_speed_10m_max&forecast_days=8&timezone=auto" > /tmp/f.json
 { echo 'window.WEATHER_DATA ='; cat /tmp/f.json; echo ';'; } > data.js
 echo "window.WEATHER_CITY = { display: 'San Jose, CA' };" >> data.js
 ```
