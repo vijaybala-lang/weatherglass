@@ -160,12 +160,16 @@ class WeatherIndicator extends PanelMenu.Button {
                 latitude: this._settings.get_double('location-latitude'),
                 longitude: this._settings.get_double('location-longitude'),
             });
+            if (this._dead)
+                return;   // disabled while the fetch was in flight
             this._data = data;
             this._lastFetch = GLib.get_monotonic_time() / 1000000;
             this._panel.setPlaceName(
                 (auto && data.detectedName) || this._placeName());
             this._update();
         } catch (e) {
+            if (this._dead)
+                return;
             logError(e, 'Animated Weather');
             this._icon.setScene('error');
             if (!this._data) {
@@ -175,7 +179,7 @@ class WeatherIndicator extends PanelMenu.Button {
             this._scheduleRetry();
         } finally {
             this._busy = false;
-            if (this._refetch) {
+            if (this._refetch && !this._dead) {
                 this._refetch = false;
                 this._fetch(true);
             }
@@ -354,6 +358,7 @@ class WeatherIndicator extends PanelMenu.Button {
     /* ── teardown ───────────────────────────────────────────────────────── */
 
     destroy() {
+        this._dead = true;   // async _fetch continuations check this
         if (this._timer)
             GLib.source_remove(this._timer);
         if (this._locTimer)
@@ -366,6 +371,12 @@ class WeatherIndicator extends PanelMenu.Button {
             this._iface.disconnect(this._darkId);
         if (this._openId)
             this.menu.disconnect(this._openId);
+        // ForecastPanel is plain JS, not an actor: actor teardown below does
+        // NOT reach its city-clock GLib timeout. Without this the timer keeps
+        // ticking set_text() on disposed labels after every disable
+        // (observed: disposed-label storm → SIGSEGV on theme reload).
+        this._panel?.destroy();
+        this._panel = null;
         super.destroy();
     }
 });
@@ -375,7 +386,7 @@ export default class AnimatedWeatherExtension extends Extension {
         // build stamp: journalctl --user -o cat | grep "Animated Weather v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
-        console.log('Animated Weather v5.3 (mock-faithful narrow layout: 4x2 tiles, °F|°C toggle, flat tabs)');
+        console.log('Animated Weather v5.4 (teardown fix: panel timers no longer outlive disable)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }

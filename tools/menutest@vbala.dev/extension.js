@@ -16,6 +16,7 @@ export default class MenuTest extends Extension {
             const b = Main.panel.statusArea['animated-weather@vbala.dev'];
             if (!b?.menu) {
                 log('menutest: status button not found');
+                this._id = 0;
                 return GLib.SOURCE_REMOVE;
             }
             b.menu.toggle();
@@ -23,6 +24,7 @@ export default class MenuTest extends Extension {
             log(`menutest: toggle ${this._n} → ${b.menu.isOpen ? 'open' : 'closed'}`);
             if (this._n >= TOGGLES) {
                 log('menutest: DONE, shell survived popup painting');
+                this._id = 0;
                 return GLib.SOURCE_REMOVE;
             }
             return GLib.SOURCE_CONTINUE;

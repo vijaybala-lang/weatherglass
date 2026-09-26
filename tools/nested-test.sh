@@ -51,6 +51,12 @@ timeout 120 dbus-run-session -- bash -c "
     echo '=== scenario 5: popup open/close paint (crash regression) ==='
     sleep 4
     kill -0 \$GPID 2>/dev/null || { echo 'FAIL: shell died during menu toggles'; exit 1; }
+    echo '=== scenario 6: disable/enable teardown (disposed-timer regression) ==='
+    gnome-extensions disable animated-weather@vbala.dev
+    sleep 8
+    gnome-extensions enable animated-weather@vbala.dev
+    sleep 8
+    kill -0 \$GPID 2>/dev/null || { echo 'FAIL: shell died across disable/enable'; exit 1; }
     kill \$GPID; exit 0
   done
   kill \$GPID
@@ -59,3 +65,6 @@ echo "exit: $?"
 echo "--- menutest lines ---"
 grep "menutest" "$LOG" | tail -3
 grep -q "menutest: DONE" "$LOG" && echo "popup paint: PASS" || echo "popup paint: FAIL (menutest never finished)"
+# our disposed-object storm used to fire every clock tick after a disable:
+echo "--- disposed warnings implicating our extension ---"
+grep -A4 "has been already disposed" "$LOG" | grep -c "animated-weather" || true
