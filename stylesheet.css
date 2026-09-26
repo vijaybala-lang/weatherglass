@@ -137,6 +137,8 @@
 
 .aw-days-grid {
     spacing: 4px;
+    /* extra breathing room between the chart's hour labels and the tiles */
+    margin-top: 7px;
 }
 
 .aw-days {

@@ -129,7 +129,11 @@ export function paintChart(cr, opts) {
     lo -= pad; hi += pad * (strip ? 1.75 : 1.15);
 
     const X = i => PADX + i * (w - PADX * 2) / (n - 1);
-    const Y = v => TOP + (1 - (v - lo) / (hi - lo)) * (h - TOP - BOT);
+    // with the band docked bottom, the line + its value labels lift off the
+    // floor so nothing sits in the pill zone; the area fill still flows to
+    // its usual depth (behind the translucent band, Apple-style)
+    const bot = opts.stripBottom && Array.isArray(opts.scenes) ? BOT + 14 : BOT;
+    const Y = v => TOP + (1 - (v - lo) / (hi - lo)) * (h - TOP - bot);
     const pts = values.map((v, i) => [X(i), Y(v)]);
 
     // All grid ink (area fill, curve, value/hour labels) is drawn into an
@@ -180,7 +184,7 @@ export function paintChart(cr, opts) {
         if (fmtHour) {
             const t = fmtHour(i);
             if (t)
-                drawText(cr, t, lx, h - 8, {size: FS, rgba: [...INK, 0.62], anchor});
+                drawText(cr, t, lx, h - 5, {size: FS, rgba: [...INK, 0.62], anchor});
         }
     }
 
@@ -197,9 +201,12 @@ export function paintChart(cr, opts) {
         const span = (w - PADX * 2) / Math.max(1, n - 1);
         const nights = Array.isArray(opts.nights) ? opts.nights : [];
         const dark = opts.dark !== false;
-        // band sits at the chart top, or just above the hour labels when
-        // the user docks it to the axis ('stripBottom')
-        const stripY = opts.stripBottom ? h - 26 : STRIP_Y;
+        // band sits at the chart top, or docked above the hour labels when
+        // the user picks 'bottom'. drawText anchors text UP from its y, so
+        // the label glyphs occupy ~h-18..h-5: the docked pill bottom lands
+        // 5+ px clear of that, and even the lowest value label (floor
+        // h-42) stays off the band top.
+        const stripY = opts.stripBottom ? h - 34 : STRIP_Y;
         const paint1 = (scene, cx, night, scale, cy = stripY) => {
             cr.save();
             cr.translate(cx - 12 * scale, cy - 12 * scale);
