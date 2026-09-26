@@ -15,10 +15,19 @@
  * = dark ink over a washed-out sky (the scrim is painted by the engine).
  */
 
+/* Own the popup chrome: the theme's .popup-menu-content padding would shrink
+ * the 330px card and leave a gap around the full-bleed sky. */
+.aw-menu,
+.aw-menu .popup-menu-content {
+    padding: 0;
+}
+
 .aw-content {
-    width: 840px;
-    padding: 16px 18px 10px 18px;
-    spacing: 8px;
+    width: 330px;
+    min-height: 430px;
+    padding: 12px 14px 8px 14px;
+    spacing: 6px;
+    border-radius: 18px;
 }
 
 .aw-main {
@@ -26,8 +35,7 @@
 }
 
 .aw-header {
-    spacing: 18px;
-    padding-bottom: 4px;
+    spacing: 10px;
 }
 
 .aw-temp-col {
@@ -35,45 +43,44 @@
 }
 
 .aw-temp-line {
-    spacing: 8px;
+    spacing: 6px;
 }
 
 .aw-current-temp {
-    font-size: 2.6em;
+    font-size: 2em;
     font-weight: 300;
 }
 
 .aw-unit-btn {
     border-radius: 99px;
-    padding: 2px 10px;
-    margin-bottom: 8px;
+    padding: 2px 8px;
+    margin-bottom: 6px;
 }
 
 .aw-unit-label {
-    font-size: 0.85em;
+    font-size: 0.8em;
     font-weight: bold;
 }
 
 .aw-feels {
-    font-size: 0.9em;
+    font-size: 0.8em;
     font-weight: 400;
 }
 
 .aw-details {
-    spacing: 6px;
-    padding-top: 2px;
+    spacing: 4px;
 }
 
 .aw-details-line {
-    spacing: 16px;
+    spacing: 10px;
 }
 
 .aw-detail {
-    font-size: 0.85em;
+    font-size: 0.78em;
 }
 
 .aw-uv-line {
-    spacing: 6px;
+    spacing: 5px;
 }
 
 .aw-city-col {
@@ -81,12 +88,12 @@
 }
 
 .aw-city {
-    font-size: 1.2em;
+    font-size: 1.05em;
     font-weight: bold;
 }
 
 .aw-clockline {
-    font-size: 0.9em;
+    font-size: 0.8em;
 }
 
 /* ── metric tabs ──────────────────────────────────────────────────────────
@@ -99,7 +106,7 @@
 
 .aw-tab {
     border-radius: 8px;
-    padding: 4px 12px 5px 12px;
+    padding: 3px 11px 4px 11px;
     border: none;
     border-bottom: 3px solid transparent;
     box-shadow: none;
@@ -107,30 +114,35 @@
 }
 
 .aw-tab-label {
-    font-size: 0.9em;
+    font-size: 0.8em;
     font-weight: bold;
 }
 
 /* ── day tiles ──────────────────────────────────────────────────────────── */
 
 .aw-days {
-    spacing: 6px;
-    padding-top: 2px;
-}
-
-.aw-day {
-    border-radius: 12px;
-    padding: 7px 4px;
-    border: 1px solid transparent;
-}
-
-.aw-day-col {
     spacing: 3px;
 }
 
+.aw-day {
+    border-radius: 10px;
+    padding: 4px 2px;
+    border: 1px solid transparent;
+    min-height: 0;
+}
+
+.aw-day-col {
+    spacing: 2px;
+}
+
 .aw-day-name {
-    font-size: 0.85em;
+    font-size: 0.72em;
     font-weight: bold;
+}
+
+.aw-day-hi,
+.aw-day-lo {
+    font-size: 0.72em;
 }
 
 /* hierarchy by weight, never opacity — lows must survive sun-bright skies */
@@ -146,16 +158,15 @@
 
 .aw-footer-row {
     spacing: 6px;
-    padding-top: 2px;
 }
 
 .aw-footer {
-    font-size: 0.8em;
+    font-size: 0.72em;
 }
 
 .aw-icon-btn {
     border-radius: 99px;
-    padding: 4px;
+    padding: 3px;
 }
 
 /* ── placeholder (loading / error) ──────────────────────────────────────── */

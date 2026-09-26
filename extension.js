@@ -366,7 +366,7 @@ export default class AnimatedWeatherExtension extends Extension {
         // build stamp: journalctl --user -o cat | grep "Animated Weather v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
-        console.log('Animated Weather v5 (apple-style card: sky backdrop, hourly chart, day tiles, dark/light themes)');
+        console.log('Animated Weather v5.1 (compact 330x430 card: sky backdrop, hourly chart, day tiles, dark/light themes)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }

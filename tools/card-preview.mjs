@@ -11,7 +11,7 @@ import GLib from 'gi://GLib';
 import {paintSky, createSky} from '../sky.js';
 import {paintChart} from '../chart.js';
 
-const CARD = {w: 880, h: 470}, CHART = {y: 150, h: 190};
+const CARD = {w: 330, h: 430}, CHART = {y: 158, h: 150};
 
 /* real San Jose hourly temps from the mockup snapshot */
 const [, raw] = Gio.File.new_for_path('mockups/data.js').load_contents(null);
@@ -44,18 +44,19 @@ for (const [i, c] of CASES.entries()) {
     const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, CARD.w, CARD.h);
     const cr = new Cairo.Context(surf);
     paintSky(cr, {w: CARD.w, h: CARD.h, time: 2.9, scene: c.scene,
-                  night: c.night, sky: pool});
+                  night: c.night, sky: pool, radius: 18});
 
     // real chart over the animated backdrop (header uses St.Label in the
     // actual menu, so we don't simulate it here)
     cr.save();
     cr.translate(0, CHART.y);
-    cr.scale(1, (CARD.h - CHART.y) / (CHART.h + 60));   // fit the band 1:1
+    const spacing = (CARD.w - 4) / 23;
     paintChart(cr, {
-        w: CARD.w, h: CHART.h + 60, values: c.values,
+        w: CARD.w, h: CHART.h, values: c.values,
         fmtValue: (idx, v) => c.accent === CASES[1].accent ? `${Math.round(v)} km/h` : fmtTemp(v),
         fmtHour: idx => fmtHour(DATA.hourly.time[16 + idx] ?? 'T00'),
         accent: c.accent, nowFrac: c.nowFrac ?? null,
+        labelEvery: Math.max(2, Math.round(60 / spacing)), fontSize: 7.5,
     });
     cr.restore();
 

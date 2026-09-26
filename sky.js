@@ -111,7 +111,8 @@ function rebuild(sky, w, h, scene) {
     sky.w = w; sky.h = h; sky.scene = scene; sky.lastT = null;
 }
 
-export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null}) {
+export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
+                              radius = 0}) {
     if (sky.scene !== scene || sky.w !== Math.round(w) || sky.h !== Math.round(h))
         rebuild(sky, Math.round(w), Math.round(h), scene);
 
@@ -122,7 +123,22 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null}) {
     const s = h / 420;                      // size scale vs mockup
 
     cr.save();
-    cr.rectangle(0, 0, w, h);
+    if (radius > 0) {
+        // rounded clip so a full-bleed sky never squares off the popup's corners
+        const r = Math.min(radius, w / 2, h / 2), k = 0.5523 * r;
+        cr.moveTo(r, 0);
+        cr.lineTo(w - r, 0);
+        cr.curveTo(w - r + k, 0, w, r - k, w, r);
+        cr.lineTo(w, h - r);
+        cr.curveTo(w, h - r + k, w - r + k, h, w - r, h);
+        cr.lineTo(r, h);
+        cr.curveTo(r - k, h, 0, h - r + k, 0, h - r);
+        cr.lineTo(0, r);
+        cr.curveTo(0, r - k, r - k, 0, r, 0);
+        cr.closePath();
+    } else {
+        cr.rectangle(0, 0, w, h);
+    }
     cr.clip();
 
     // ── gradient backdrop ───────────────────────────────────────────────

@@ -62,6 +62,8 @@ function tracePath(cr, pts) {
  *   fmtHour(i):      string   x label ('3 PM'); '' hides
  *   accent:          [r, g, b] 0..1
  *   nowFrac:         0..1 | null — dashed marker + accent first label
+ *   labelEvery:      label stride (default 3; narrow cards pass a bigger one)
+ *   fontSize:        label font size in pt (default 8.5)
  * }
  */
 export function paintChart(cr, opts) {
@@ -69,6 +71,8 @@ export function paintChart(cr, opts) {
     const n = values.length;
     if (n < 2)
         return;
+    const EVERY = Math.max(1, opts.labelEvery ?? LABEL_EVERY);
+    const FS = opts.fontSize ?? 8.5;
 
     const [acR, acG, acB] = accent;
     const INK = opts.ink ?? [0.96, 0.97, 0.98];   // dark theme: pass dark ink
@@ -116,7 +120,7 @@ export function paintChart(cr, opts) {
     }
 
     // value + hour labels
-    for (let i = 0; i < n; i += LABEL_EVERY) {
+    for (let i = 0; i < n; i += EVERY) {
         const ax = X(i);
         const anchor = ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
         const lx = anchor === 'start' ? Math.max(4, ax - 6)
@@ -124,12 +128,12 @@ export function paintChart(cr, opts) {
         const isNow = i === 0 && nowFrac !== null && nowFrac < 0.1;
         drawText(cr, fmtValue ? fmtValue(i, values[i]) : String(values[i]),
                  lx, Y(values[i]) - (isNow ? 22 : 12) + 1,
-                 {size: 8.5, bold: true,
+                 {size: FS, bold: true,
                   rgba: isNow ? [acR, acG, acB, 1] : [...INK, 0.62], anchor});
         if (fmtHour) {
             const t = fmtHour(i);
             if (t)
-                drawText(cr, t, lx, h - 8, {size: 8.5, rgba: [...INK, 0.62], anchor});
+                drawText(cr, t, lx, h - 8, {size: FS, rgba: [...INK, 0.62], anchor});
         }
     }
 }

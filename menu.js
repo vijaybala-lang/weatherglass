@@ -101,7 +101,8 @@ class SkyArea extends St.DrawingArea {
         cr.scale(sw / lw, sh / lh);
         const o = this._panel._skyOpts;
         paintSky(cr, {w: lw, h: lh, time: this._time,
-                      scene: o.scene, night: o.night, scrim: o.scrim, sky: o.sky});
+                      scene: o.scene, night: o.night, scrim: o.scrim,
+                      sky: o.sky, radius: o.radius ?? 0});
         cr.$dispose();
     }
 
@@ -131,7 +132,7 @@ class SkyArea extends St.DrawingArea {
 const ChartArea = GObject.registerClass(
 class ChartArea extends St.DrawingArea {
     _init(panel) {
-        super._init({x_align: FILL, y_expand: true, x_expand: true, height: 190});
+        super._init({x_align: FILL, y_expand: true, x_expand: true, height: 150});
         this._panel = panel;
     }
 
@@ -144,6 +145,8 @@ class ChartArea extends St.DrawingArea {
         if (lw <= 0 || lh <= 0)
             return;
         const p = this._panel, m = METRICS[p._metric];
+        // keep hour labels ~60px apart: wide cards every 3h, narrow ~every 4-5h
+        const spacing = (lw - 4) / Math.max(1, p._shown.length - 1);
         const cr = this.get_context();
         cr.setOperator(Cairo.Operator.CLEAR);
         cr.paint();
@@ -157,6 +160,8 @@ class ChartArea extends St.DrawingArea {
             accent: m.accent,
             ink: p._theme().ink,
             nowFrac: p._day === 0 ? 0 : null,
+            labelEvery: Math.max(2, Math.round(60 / spacing)),
+            fontSize: lw < 480 ? 7.5 : 8.5,
         });
         cr.$dispose();
     }
@@ -183,8 +188,9 @@ export class ForecastPanel {
         this._fmtHour = null;
 
         this._sky = createSky();
+        // radius 18 matches the shell's polished-popup corner radius
         this._skyOpts = {scene: 'loading', night: false, scrim: THEME.dark.scrim,
-                         sky: this._sky};
+                         sky: this._sky, radius: 18};
 
         // St.Widget with BinLayout = overlay: sky fills, content rides on top
         this.actor = new St.Widget({layout_manager: new Clutter.BinLayout()});
@@ -224,10 +230,10 @@ export class ForecastPanel {
         const main = column('aw-main');
         this._main = main;
 
-        // header: big icon | temp + unit | details 2×2 | spacer | city + clock
+        // header: big icon | temp + unit | spacer | city + clock
         const header = row('aw-header');
 
-        this._bigIcon = new WeatherIcon({size: 44, animate: this._animate});
+        this._bigIcon = new WeatherIcon({size: 40, animate: this._animate});
         this._bigIcon.setScene('loading');
         header.add_child(this._bigIcon);
 
@@ -245,6 +251,20 @@ export class ForecastPanel {
         tempCol.add_child(this._hiloLbl);
         header.add_child(tempCol);
 
+        header.add_child(spacer());
+
+        const right = new St.BoxLayout({vertical: true, style_class: 'aw-city-col',
+                                        x_align: Clutter.ActorAlign.END});
+        this._cityLbl = label('Weather', 'aw-city');
+        this._clockLbl = label('', 'aw-clockline');
+        this._clockLbl.set_x_align(Clutter.ActorAlign.END);
+        right.add_child(this._cityLbl);
+        right.add_child(this._clockLbl);
+        header.add_child(right);
+        main.add_child(header);
+
+        // details 2×2 — its own full-width block; at 330px the header has no
+        // room to squeeze it between the temperature and the city
         const details = column('aw-details');
         const dRow = (a, b) => {
             const r = row('aw-details-line');
@@ -263,19 +283,7 @@ export class ForecastPanel {
         uvLine.add_child(this._uvLbl);
         details.add_child(dRow(this._precipLbl, uvLine));
         details.add_child(dRow(this._humLbl, this._windLbl));
-        header.add_child(details);
-
-        header.add_child(spacer());
-
-        const right = new St.BoxLayout({vertical: true, style_class: 'aw-city-col',
-                                        x_align: Clutter.ActorAlign.END});
-        this._cityLbl = label('Weather', 'aw-city');
-        this._clockLbl = label('', 'aw-clockline');
-        this._clockLbl.set_x_align(Clutter.ActorAlign.END);
-        right.add_child(this._cityLbl);
-        right.add_child(this._clockLbl);
-        header.add_child(right);
-        main.add_child(header);
+        main.add_child(details);
 
         // metric tabs
         const tabs = row('aw-tabs');
@@ -295,7 +303,7 @@ export class ForecastPanel {
 
         // chart — full bleed to the card edges (negative side margins)
         this._chart = new ChartArea(this);
-        this._chart.margin_left = this._chart.margin_right = -18;
+        this._chart.margin_left = this._chart.margin_right = -14;
         main.add_child(this._chart);
 
         // day tiles (rebuilt on every render)
@@ -543,7 +551,7 @@ export class ForecastPanel {
             col.add_child(new St.Label({text: dayName(d.date),
                                         style_class: 'aw-day-name',
                                         x_align: Clutter.ActorAlign.CENTER}));
-            const icon = new WeatherIcon({size: 26, animate: false,
+            const icon = new WeatherIcon({size: 22, animate: false,
                                           time: STATIC_TIME + i * 0.2});
             icon.setScene(scene, {intensity: d.precipProb / 25, windKmh: d.windMax});
             col.add_child(icon);
