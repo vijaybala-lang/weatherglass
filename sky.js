@@ -10,6 +10,7 @@
  */
 
 import Cairo from 'gi://cairo';
+import {paintMoon, moonPhase, illumOf} from './moon.js';
 
 const TAU = Math.PI * 2;
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -112,7 +113,7 @@ function rebuild(sky, w, h, scene) {
 }
 
 export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
-                              radius = 0}) {
+                              radius = 0, phase = null}) {
     if (sky.scene !== scene || sky.w !== Math.round(w) || sky.h !== Math.round(h))
         rebuild(sky, Math.round(w), Math.round(h), scene);
 
@@ -180,20 +181,16 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
             cr.fill();
         }
         if (f.moon) {
-            const mg = new Cairo.RadialGradient(sx, sy, R * 0.4, sx, sy, R * 2.4);
-            mg.addColorStopRGBA(0, 0.89, 0.91, 0.96, 0.5);
-            mg.addColorStopRGBA(1, 0.89, 0.91, 0.96, 0);
+            // warm halo scaled by the actual illuminated fraction
+            const ph = Number.isFinite(phase) ? phase : moonPhase().phase;
+            const mg = new Cairo.RadialGradient(sx, sy, R * 0.5, sx, sy, R * 2.2);
+            mg.addColorStopRGBA(0, 0.97, 0.94, 0.85, 0.10 + 0.26 * illumOf(ph));
+            mg.addColorStopRGBA(1, 0.97, 0.94, 0.85, 0);
             cr.setSource(mg);
-            cr.arc(sx, sy, R * 2.4, 0, TAU);
+            cr.arc(sx, sy, R * 2.2, 0, TAU);
             cr.fill();
-            cr.setSourceRGBA(0.90, 0.92, 0.96, 1);
-            cr.arc(sx, sy, R * 0.85, 0, TAU);
-            cr.fill();
-            cr.setSourceRGBA(0.63, 0.67, 0.78, 0.35);
-            cr.arc(sx - R * 0.3, sy - R * 0.25, R * 0.18, 0, TAU);
-            cr.fill();
-            cr.arc(sx + R * 0.25, sy + R * 0.2, R * 0.12, 0, TAU);
-            cr.fill();
+            // tonight's real phase, cratered, off-white (moon.js)
+            paintMoon(cr, sx, sy, R * 0.85, ph, 'sky');
         }
     }
 

@@ -15,6 +15,7 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {WeatherIcon} from './animation.js';
 import {ForecastPanel} from './menu.js';
 import {WeatherClient, sceneFor, deriveScene, fmtTemp} from './weather.js';
+import {moonPhase} from './moon.js';
 
 const PANEL_ICON_SIZE = 20;
 
@@ -235,11 +236,13 @@ class WeatherIndicator extends PanelMenu.Button {
         // sky scene has no precipitation of its own
         const panelScene = windy && ['sun', 'moon', 'partly', 'cloud', 'fog'].includes(scene)
             ? 'wind' : scene;
+        const phase = moonPhase().phase;   // tonight's real lunar phase
         this._icon.setScene(panelScene, {
             windy: windy && panelScene !== 'wind',
             night: !current.isDay,
             intensity: current.intensity,
             windKmh: current.wind,          // canonical km/h
+            phase,
         });
 
         this._tempLbl.set_text(
@@ -256,6 +259,7 @@ class WeatherIndicator extends PanelMenu.Button {
             effective,
             windKmh: current.wind,          // canonical km/h
             dark: this._dark,
+            phase,                          // tonight's real lunar phase
             updated: GLib.DateTime.new_now_local(),
         });
     }
@@ -386,7 +390,7 @@ export default class AnimatedWeatherExtension extends Extension {
         // build stamp: journalctl --user -o cat | grep "Animated Weather v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
-        console.log('Animated Weather v5.4 (teardown fix: panel timers no longer outlive disable)');
+        console.log('Animated Weather v5.5 (real moon phase + cratered face: moon.js)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }

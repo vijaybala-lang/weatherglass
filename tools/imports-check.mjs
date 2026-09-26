@@ -3,7 +3,7 @@
  * From the project root:  gjs -m tools/imports-check.mjs
  */
 
-for (const m of ['weather', 'chart', 'sky', 'painter', 'menu']) {
+for (const m of ['weather', 'moon', 'chart', 'sky', 'painter', 'menu']) {
     import(`../${m}.js`)
         .then(() => print(`${m}: ok`))
         .catch(e => print(`${m}: FAIL ${e.message}`));

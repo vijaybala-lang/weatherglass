@@ -35,7 +35,7 @@ class WeatherIcon extends St.DrawingArea {
         this._time = time ?? Math.random() * 3;   // de-sync animated icons
         this._particles = createParticles();
         this._opts = {scene: 'loading', windy: false, night: false,
-                      intensity: 0, windKmh: 0};
+                      intensity: 0, windKmh: 0, phase: null};
 
         this._clockId = 0;
         // GNOME 50's Clutter has no map/unmap signals: the tick self-idles
@@ -45,8 +45,9 @@ class WeatherIcon extends St.DrawingArea {
             this._startClock();
     }
 
-    setScene(scene, {windy = false, night = false, intensity = 0, windKmh = 0} = {}) {
-        Object.assign(this._opts, {scene, windy, night, intensity, windKmh});
+    setScene(scene, {windy = false, night = false, intensity = 0, windKmh = 0,
+                     phase = null} = {}) {
+        Object.assign(this._opts, {scene, windy, night, intensity, windKmh, phase});
         this.queue_repaint();
     }
 

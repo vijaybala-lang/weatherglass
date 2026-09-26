@@ -21,7 +21,7 @@ if command -v rsync >/dev/null; then
 else
     find "$DEST" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
     for f in metadata.json extension.js animation.js menu.js painter.js \
-             weather.js prefs.js stylesheet.css schemas; do
+             moon.js chart.js sky.js weather.js prefs.js stylesheet.css schemas; do
         cp -r "$SRC/$f" "$DEST/"
     done
 fi

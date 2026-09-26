@@ -95,7 +95,7 @@ class SkyArea extends St.DrawingArea {
         const o = this._panel._skyOpts;
         paintSky(cr, {w, h, time: this._time,
                       scene: o.scene, night: o.night, scrim: o.scrim,
-                      sky: o.sky, radius: o.radius ?? 0});
+                      sky: o.sky, radius: o.radius ?? 0, phase: o.phase ?? null});
         cr.$dispose();
     }
 
@@ -466,6 +466,7 @@ export class ForecastPanel {
         }
         this._skyOpts.scene = scene;
         this._skyOpts.night = night;
+        this._skyOpts.phase = Number.isFinite(s.phase) ? s.phase : null;
         this._skyArea.queue_repaint();
     }
 

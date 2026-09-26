@@ -8,6 +8,7 @@
  */
 
 import Cairo from 'gi://cairo';
+import {paintMoon, moonPhase, illumOf} from './moon.js';
 
 export const GRID = 24;
 
@@ -213,24 +214,17 @@ function sunBody(cr, cx, cy, r, t, rayLen) {
     cr.fill();
 }
 
-function moonBody(cr, cx, cy, r, t, p) {
+function moonBody(cr, cx, cy, r, t, p, phase) {
+    const ph = Number.isFinite(phase) ? phase : moonPhase().phase;
     const glow = new Cairo.RadialGradient(cx, cy, r * 0.5, cx, cy, r * 2.2);
-    glow.addColorStopRGBA(0, 0.80, 0.85, 1.0, 0.35);
-    glow.addColorStopRGBA(1, 0.80, 0.85, 1.0, 0);
+    glow.addColorStopRGBA(0, 0.95, 0.92, 0.82, 0.30 * (0.25 + 0.75 * illumOf(ph)));
+    glow.addColorStopRGBA(1, 0.95, 0.92, 0.82, 0);
     cr.setSource(glow);
     cr.paint();
 
-    // crescent: full disk minus an offset disk, carved with a transparency group
-    cr.pushGroup();
-    cr.setSourceRGBA(0.93, 0.95, 1.0, 1);
-    circle(cr, cx, cy, r);
-    cr.fill();
-    cr.setOperator(Cairo.Operator.CLEAR);
-    circle(cr, cx + r * 0.45, cy - r * 0.22, r * 0.86);
-    cr.fill();
-    cr.setOperator(Cairo.Operator.OVER);
-    cr.popGroupToSource();
-    cr.paint();
+    // tonight's REAL phase (moon.js) — flat lit shape, transparent shadow:
+    // the one rendering that reads at 16px on the panel
+    paintMoon(cr, cx, cy, r, ph, 'icon');
 
     // twinkling stars
     for (const s of p.stars) {
@@ -252,7 +246,7 @@ function sceneSun(cr, ctx) {
 
 function sceneMoon(cr, ctx) {
     const {t, p, windy} = ctx;
-    moonBody(cr, 12, 12, 4.8, t, p);
+    moonBody(cr, 12, 12, 4.8, t, p, ctx.phase);
     if (windy)
         windStreaks(cr, t, 0.45, 2);
 }
@@ -260,7 +254,7 @@ function sceneMoon(cr, ctx) {
 function scenePartly(cr, ctx) {
     const {t, windy, night} = ctx;
     if (night)
-        moonBody(cr, 8.5, 8, 3.6, t, ctx.p);
+        moonBody(cr, 8.5, 8, 3.6, t, ctx.p, ctx.phase);
     else
         sunBody(cr, 8.5, 8, 3.6, t, 2.6);
     const dx = Math.sin(t * 0.7) * 0.7;
@@ -453,6 +447,7 @@ export function paintWeather(cr, opts) {
         night: !!opts.night,
         intensity: opts.intensity || 0,
         windKmh: opts.windKmh || 0,
+        phase: Number.isFinite(opts.phase) ? opts.phase : moonPhase().phase,
     };
     cr.save();
     // fade rain/storm drops out from under the cloud
