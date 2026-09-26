@@ -237,6 +237,19 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         condRow.connect('notify::selected', () =>
             settings.set_string('condition-strip', COND[condRow.get_selected()] ?? 'icons'));
         bgGroup.add(condRow);
+        const POS = ['top', 'bottom'];
+        const posRow = new Adw.ComboRow({
+            title: 'Condition band position',
+            subtitle: 'Along the chart top, or above the hour labels',
+            model: new Gtk.StringList({
+                strings: ['Chart top', 'Above hours'],
+            }),
+        });
+        const pi = POS.indexOf(settings.get_string('condition-pos'));
+        posRow.set_selected(pi < 0 ? 0 : pi);
+        posRow.connect('notify::selected', () =>
+            settings.set_string('condition-pos', POS[posRow.get_selected()] ?? 'top'));
+        bgGroup.add(posRow);
         page.add(bgGroup);
 
         const dataGroup = new Adw.PreferencesGroup({title: 'Data source'});

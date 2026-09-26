@@ -70,6 +70,13 @@ timeout 120 dbus-run-session -- bash -c "
     gsettings set $SCHEMA condition-strip 'off'
     sleep 2
     gsettings set $SCHEMA condition-strip 'icons'
+    gsettings set $SCHEMA condition-pos 'bottom'
+    sleep 2
+    gnome-extensions disable menutest@vbala.dev
+    sleep 2
+    gnome-extensions enable menutest@vbala.dev
+    sleep 8
+    gsettings set $SCHEMA condition-pos 'top'
     sleep 2
     gsettings set $SCHEMA menu-style 'animated'
     sleep 2

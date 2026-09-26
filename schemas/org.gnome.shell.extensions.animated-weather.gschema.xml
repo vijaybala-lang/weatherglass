@@ -82,6 +82,16 @@ pills = consecutive same-condition hours grouped into rounded pills along the
 time axis with the icon centred</description>
     </key>
 
+    <key name="condition-pos" type="s">
+      <choices>
+        <choice value="top"/>
+        <choice value="bottom"/>
+      </choices>
+      <default>'top'</default>
+      <summary>Where the condition band rides</summary>
+      <description>top = along the chart top; bottom = directly above the
+hour labels, Apple-weather style</description>
+    </key>
     <key name="menu-style" type="s">
       <choices>
         <choice value="animated"/>

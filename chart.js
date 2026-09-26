@@ -197,9 +197,12 @@ export function paintChart(cr, opts) {
         const span = (w - PADX * 2) / Math.max(1, n - 1);
         const nights = Array.isArray(opts.nights) ? opts.nights : [];
         const dark = opts.dark !== false;
-        const paint1 = (scene, cx, night, scale) => {
+        // band sits at the chart top, or just above the hour labels when
+        // the user docks it to the axis ('stripBottom')
+        const stripY = opts.stripBottom ? h - 26 : STRIP_Y;
+        const paint1 = (scene, cx, night, scale, cy = stripY) => {
             cr.save();
-            cr.translate(cx - 12 * scale, STRIP_Y - 12 * scale);
+            cr.translate(cx - 12 * scale, cy - 12 * scale);
             cr.scale(scale, scale);
             paintWeather(cr, {scene: scene ?? 'cloud', time: 4.1, night: !!night,
                               dark, intensity: STRIP_INT[scene] ?? 0});
@@ -213,17 +216,17 @@ export function paintChart(cr, opts) {
             // from longer neighbours, so pills stay consistent AND can never
             // overlap. MINW/MINH = the largest scene glyph (sun incl. rays,
             // 15 px) + padding, so no pill is ever smaller than any icon.
-            // Tint: accent wash on plain (accent-style) cards; the day-tile
-            // hover glass, a shade lighter, on animated/solid skies so pills
-            // and tiles speak one design language over the moving sky.
+            // Tint: a light neutral gray box on plain (accent-style) cards;
+            // the day-tile hover glass, a shade lighter, on animated/solid
+            // skies so pills and tiles speak one design language over the sky.
             const PH = 10.5, INSET = 2, SS = 0.58, MINW = 23, PILL_R = 6;
             const glass = !!opts.pillGlass;
             const fill = glass
                 ? (dark ? [16 / 255, 20 / 255, 28 / 255, 0.22] : [1, 1, 1, 0.36])
-                : [acR, acG, acB, dark ? 0.16 : 0.12];
+                : (dark ? [1, 1, 1, 0.10] : [0.14, 0.16, 0.19, 0.07]);
             const edge = glass
                 ? (dark ? [1, 1, 1, 0.16] : [16 / 255, 24 / 255, 35 / 255, 0.15])
-                : [acR, acG, acB, dark ? 0.30 : 0.22];
+                : (dark ? [1, 1, 1, 0.16] : [0.14, 0.16, 0.19, 0.12]);
             const runs = [];
             let a = 0;
             while (a < n) {
@@ -251,7 +254,7 @@ export function paintChart(cr, opts) {
                 cur += rw;
                 cr.save();
                 cr.setSourceRGBA(fill[0], fill[1], fill[2], fill[3]);
-                pillPath(cr, x0, STRIP_Y - PH, x1, STRIP_Y + PH, PILL_R);
+                pillPath(cr, x0, stripY - PH, x1, stripY + PH, PILL_R);
                 cr.fillPreserve();
                 cr.setSourceRGBA(edge[0], edge[1], edge[2], edge[3]);
                 cr.setLineWidth(1);
@@ -260,7 +263,7 @@ export function paintChart(cr, opts) {
                 // glyph clipped to the pill body so boosted scenes (moon
                 // glow/stars) never leak over the pill's rounded edge
                 cr.save();
-                pillPath(cr, x0, STRIP_Y - PH, x1, STRIP_Y + PH, PILL_R);
+                pillPath(cr, x0, stripY - PH, x1, stripY + PH, PILL_R);
                 cr.clip();
                 paint1(r.scene, (x0 + x1) / 2, r.night, SS * (FOOT[r.scene] ?? 1));
                 cr.restore();

@@ -161,6 +161,7 @@ class ChartArea extends St.DrawingArea {
             nights: p._conditions !== 'off' ? p._strip?.nights ?? null : null,
             pills: p._conditions === 'pills',
             dark: p._dark,
+            stripBottom: p._condPos === 'bottom',
             // over the sky (animated/solid): pills take the day-tile hover
             // glass; the accent style keeps the accent tint on its calm
             // backdrop
@@ -198,6 +199,7 @@ export class ForecastPanel {
         this._nowFrac = null;
         this._style = 'animated';                 // animated | solid | accent
         this._conditions = 'icons';               // chart strip: off | icons | pills
+        this._condPos = 'top';                    // strip band: top | bottom
         this._strip = null;                       // {scenes[], nights[]} for the chart
         this._accent = [0.21, 0.52, 0.89];        // GNOME blue fallback
 
@@ -394,6 +396,12 @@ export class ForecastPanel {
     /** chart condition strip: 'off' | 'icons' | 'pills' */
     setConditions(mode) {
         this._conditions = ['off', 'icons', 'pills'].includes(mode) ? mode : 'icons';
+        this._chart.queue_repaint();
+    }
+
+    /** where the strip rides: 'top' of chart | 'bottom' above the hours */
+    setCondPos(pos) {
+        this._condPos = pos === 'bottom' ? 'bottom' : 'top';
         this._chart.queue_repaint();
     }
 

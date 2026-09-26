@@ -45,7 +45,7 @@ const CASES = [
     // menu-style demos: 'accent' mode = theme popup bg (grey stand-in)
     // with the charts unified in the OS accent colour
     {scene: 'accent', night: true, plain: true, bgAccent: [0.19, 0.19, 0.19], accent: [0.21, 0.52, 0.89], values: DATA.hourly.temperature_2m.slice(16, 40)},
-    {scene: 'accent-light', night: false, plain: true, bgAccent: [0.98, 0.98, 0.98], accent: [0.835, 0.38, 0.60], values: DATA.hourly.temperature_2m.slice(16, 40), strip: 'pills'},
+    {scene: 'accent-light', night: false, plain: true, bgAccent: [0.98, 0.98, 0.98], accent: [0.835, 0.38, 0.60], values: DATA.hourly.temperature_2m.slice(16, 40), strip: 'pills', stripPos: 'bottom'},
 ];
 
 const outDir = GLib.build_filenamev([GLib.get_current_dir(), 'tools', 'out', 'cards']);
@@ -82,6 +82,7 @@ for (const [i, c] of CASES.entries()) {
         accent: c.accent, nowFrac: c.nowFrac ?? null,
         scenes, nights,
         pills: c.strip === 'pills',
+        stripBottom: c.stripPos === 'bottom',
         dark: c.plain ? false : true,   // plain cards sit on a light backdrop
         pillGlass: !c.plain,
         // real menu passes its theme ink; plain light card needs dark ink too
