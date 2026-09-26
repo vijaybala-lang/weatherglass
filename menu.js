@@ -28,13 +28,6 @@ const FRAME_MS = 50;         // sky: 20 fps is plenty
 const STATIC_TIME = 1.1;     // frame that makes static mini icons look lively
 const MORPH_MS = 420, MORPH_TICK = 25;
 
-/* hourly condition strip: pill words (icon-only if a scene has no word) */
-const COND_WORD = {
-    sun: 'Clear', moon: 'Clear night', partly: 'Partly cloudy',
-    cloud: 'Cloudy', fog: 'Fog', rain: 'Rain', sleet: 'Sleet',
-    snow: 'Snow', hail: 'Hail', storm: 'Storm',
-};
-
 const METRICS = {
     temp:   {label: 'Temperature',   accent: [0.96, 0.65, 0.14], underline: 'aw-tab-temp'},
     precip: {label: 'Precipitation', accent: [0.30, 0.64, 1.00], underline: 'aw-tab-precip'},
@@ -168,7 +161,6 @@ class ChartArea extends St.DrawingArea {
             nights: p._conditions !== 'off' ? p._strip?.nights ?? null : null,
             pills: p._conditions === 'pills',
             dark: p._dark,
-            condLabel: s => COND_WORD[s] ?? null,
             fontSize: w < 480 ? 8 : 8.5,
         });
         cr.$dispose();

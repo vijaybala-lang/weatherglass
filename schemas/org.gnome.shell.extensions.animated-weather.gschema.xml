@@ -78,8 +78,8 @@ probabilities, so the precipitation chart is model-derived)</description>
       <default>'icons'</default>
       <summary>Hourly condition strip on the chart</summary>
       <description>off = none; icons = one small condition icon per few hours;
-pills = consecutive same-condition hours grouped into a rounded pill with the
-icon and word centred</description>
+pills = consecutive same-condition hours grouped into rounded pills along the
+time axis with the icon centred</description>
     </key>
 
     <key name="menu-style" type="s">

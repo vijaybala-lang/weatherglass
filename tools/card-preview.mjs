@@ -18,13 +18,6 @@ const isDayHour = t => {
     return h >= 6 && h < 21;
 };
 
-/* mirrors menu.js COND_WORD for the grouped-pill demo */
-const COND_WORD = {
-    sun: 'Clear', moon: 'Clear night', partly: 'Partly cloudy',
-    cloud: 'Cloudy', fog: 'Fog', rain: 'Rain', sleet: 'Sleet',
-    snow: 'Snow', hail: 'Hail', storm: 'Storm',
-};
-
 const CARD = {w: 330, h: 430}, CHART = {y: 107, h: 165};
 
 /* real San Jose hourly temps from the mockup snapshot */
@@ -90,7 +83,6 @@ for (const [i, c] of CASES.entries()) {
         scenes, nights,
         pills: c.strip === 'pills',
         dark: c.plain ? false : true,   // plain cards sit on a light backdrop
-        condLabel: s => (COND_WORD[s] ?? null),
         // real menu passes its theme ink; plain light card needs dark ink too
         ink: c.plain && !c.night ? [0.10, 0.13, 0.19] : undefined,
         fontSize: 8,

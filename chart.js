@@ -89,13 +89,6 @@ function pillPath(cr, x0, y0, x1, y1, r) {
     cr.closePath();
 }
 
-function pillLayout(cr, text, size) {
-    const layout = PangoCairo.create_layout(cr);
-    layout.set_font_description(Pango.FontDescription.from_string(`Sans Bold ${size}pt`));
-    call(layout, 'setText', 'set_text', text, -1);
-    return layout;
-}
-
 export function paintChart(cr, opts) {
     const {w, h, values, fmtValue, fmtHour, accent, nowFrac = null} = opts;
     const n = values.length;
@@ -176,7 +169,7 @@ export function paintChart(cr, opts) {
     // icon (painter.js), posed statically. Two modes:
     //   'icons': one icon per stride slot (>=30 px apart), edge ones nudge in
     //   'pills': consecutive same-condition hours merge into one rounded pill
-    //            spanning that run, the icon (+ short condition word) centred
+    //            spanning exactly their slice of the axis, icon centred
     // dark=true paints for the dark sky; light cards pass dark:false so pale
     // glyphs (moon/snow/fog) use their darker twins (painter.js INK_*).
     if (strip) {
@@ -193,7 +186,11 @@ export function paintChart(cr, opts) {
         };
 
         if (opts.pills) {
-            const SS = 0.72, GAP = 3.5, PH = 9, FS2 = opts.condSize ?? 8;
+            // grouped: consecutive same-condition hours tile the axis as one
+            // pill per run — pill edges sit at the boundary hours' midpoints,
+            // so pills share borders and can never overlap. No text: just the
+            // icon, centred, shrunk to fit the narrowest slice.
+            const PH = 9, INSET = 1.5;
             const fill = dark ? [1, 1, 1] : [...INK];
             let a = 0;
             while (a < n) {
@@ -201,41 +198,22 @@ export function paintChart(cr, opts) {
                 let b = a;
                 while (b + 1 < n && `${strip[b + 1]}|${nights[b + 1] ? 1 : 0}` === key)
                     b++;
-                const word = opts.condLabel ? opts.condLabel(strip[a], nights[a]) : null;
-                const iconW = 24 * SS;
-                let lw = 0, lh = 0;
-                let layout = null;
-                if (word) {
-                    layout = pillLayout(cr, word, FS2);
-                    [lw, lh] = layout.get_pixel_size();
-                }
-                const contentW = iconW + (word ? GAP + lw : 0);
-                const cx0 = (X(a) + X(b)) / 2;
-                const halfSpan = (X(b) - X(a)) / 2 + span * 0.42;
-                const pillW = Math.min(w - 4, Math.max(halfSpan * 2, contentW + 12));
-                let x0 = cx0 - pillW / 2;
-                x0 = Math.max(2, Math.min(x0, w - 2 - pillW));
-                const cx = x0 + pillW / 2;
-                // pill body
+                const x0 = (a === 0 ? PADX : (X(a - 1) + X(a)) / 2) + INSET;
+                const x1 = (b === n - 1 ? w - PADX : (X(b) + X(b + 1)) / 2) - INSET;
+                const pw = Math.max(x1 - x0, 8);
                 cr.save();
                 cr.setSourceRGBA(fill[0], fill[1], fill[2], dark ? 0.13 : 0.10);
-                pillPath(cr, x0, STRIP_Y - PH, x0 + pillW, STRIP_Y + PH,
-                         Math.min(PH, pillW / 2));
+                pillPath(cr, x0, STRIP_Y - PH, x0 + pw, STRIP_Y + PH,
+                         Math.min(PH, pw / 2));
                 cr.fillPreserve();
-                cr.setSourceRGBA(fill[0], fill[1], fill[2], dark ? 0.26 : 0.22);
+                cr.setSourceRGBA(fill[0], fill[1], fill[2], dark ? 0.22 : 0.18);
                 cr.setLineWidth(1);
                 cr.stroke();
                 cr.restore();
-                // centred content: icon (+ word)
-                const groupW = contentW;
-                let ix = cx - groupW / 2;
-                paint1(strip[a], ix + iconW / 2, nights[a], SS);
-                ix += iconW;
-                if (layout) {
-                    cr.setSourceRGBA(...(dark ? [1, 1, 1, 0.92] : [...INK, 0.9]));
-                    cr.moveTo(ix + GAP, STRIP_Y - lh / 2);
-                    (PangoCairo.showLayout ?? PangoCairo.show_layout)(cr, layout);
-                }
+                // floor at 0.5: a 1 h slice (~13 px) would shrink a strict
+                // fit below legibility — slight pill overflow reads better
+                const sc = Math.max(0.5, Math.min(0.62, (pw / 24) * 0.92));
+                paint1(strip[a], x0 + pw / 2, nights[a], sc);
                 a = b + 1;
             }
         } else {
