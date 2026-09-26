@@ -217,16 +217,16 @@ export function paintChart(cr, opts) {
         };
 
         if (opts.pills) {
-            // grouped: consecutive same-condition hours tile the axis as one
-            // pill per run. Widths start as the exact time slice (edges at the
-            // boundary hours' midpoints); runs narrower than MINW borrow width
-            // from longer neighbours, so pills stay consistent AND can never
-            // overlap. MINW/MINH = the largest scene glyph (sun incl. rays,
-            // 15 px) + padding, so no pill is ever smaller than any icon.
-            // Tint: a light neutral gray box on plain (accent-style) cards;
-            // the day-tile hover glass, a shade lighter, on animated/solid
-            // skies so pills and tiles speak one design language over the sky.
-            const PH = 10.5, INSET = 2, SS = 0.58, MINW = 23, PILL_R = 6;
+            // Grouped band: consecutive same-condition hours become one
+            // CELL; cells share edges (no gaps) inside a single rounded
+            // band. Dotted vertical seams mark condition changes (never at
+            // the band's outer edges) and a heavier bottom rule grounds it
+            // as an axis — doubly so when docked above the hour labels.
+            // Cells narrower than MINW borrow width from longer neighbours,
+            // so they stay consistent AND can never overlap. Tint: light
+            // neutral gray on plain (accent-style) cards; the day-tile
+            // hover glass, a shade lighter, on animated/solid skies.
+            const PH = 10.5, SS = 0.58, MINW = 23, PILL_R = 6, BW = 2.5;
             const glass = !!opts.pillGlass;
             const fill = glass
                 ? (dark ? [16 / 255, 20 / 255, 28 / 255, 0.22] : [1, 1, 1, 0.36])
@@ -250,31 +250,50 @@ export function paintChart(cr, opts) {
             const debt = def.reduce((s, v) => s + v, 0);
             const pool = runs.reduce((s, r) => s + Math.max(0, r.w - MINW), 0);
             const back = pool > 0 ? Math.min(1, debt / pool) : 0;
-            let cur = PADX;
-            for (let k = 0; k < runs.length; k++) {
-                const r = runs[k];
-                const rw = def[k] > 0
-                    ? r.w + def[k]
-                    : r.w - Math.max(0, r.w - MINW) * back;
-                const x0 = cur + INSET;
-                const x1 = Math.max(x0 + 4, cur + rw - INSET);
-                cur += rw;
-                cr.save();
-                cr.setSourceRGBA(fill[0], fill[1], fill[2], fill[3]);
-                pillPath(cr, x0, stripY - PH, x1, stripY + PH, PILL_R);
-                cr.fillPreserve();
-                cr.setSourceRGBA(edge[0], edge[1], edge[2], edge[3]);
-                cr.setLineWidth(1);
-                cr.stroke();
-                cr.restore();
-                // glyph clipped to the pill body so boosted scenes (moon
-                // glow/stars) never leak over the pill's rounded edge
-                cr.save();
-                pillPath(cr, x0, stripY - PH, x1, stripY + PH, PILL_R);
-                cr.clip();
-                paint1(r.scene, (x0 + x1) / 2, r.night, SS * (FOOT[r.scene] ?? 1));
-                cr.restore();
+            const cellW = runs.map((r, k) =>
+                def[k] > 0 ? r.w + def[k] : r.w - Math.max(0, r.w - MINW) * back);
+            const bandX1 = PADX + cellW.reduce((s, v) => s + v, 0);
+            const band = () =>
+                pillPath(cr, PADX, stripY - PH, bandX1, stripY + PH, PILL_R);
+
+            cr.save();
+            band();
+            cr.setSourceRGBA(fill[0], fill[1], fill[2], fill[3]);
+            cr.fillPreserve();
+            cr.setSourceRGBA(edge[0], edge[1], edge[2], edge[3]);
+            cr.setLineWidth(1);
+            cr.stroke();
+            cr.restore();
+
+            // everything below rides inside the band clip: the bottom rule
+            // follows the rounded corners, and boosted scenes (moon glow,
+            // stars) can never leak over the band edges
+            cr.save();
+            band();
+            cr.clip();
+            cr.setSourceRGBA(edge[0], edge[1], edge[2], Math.min(0.42, edge[3] * 1.9));
+            cr.rectangle(PADX, stripY + PH - BW, bandX1 - PADX, BW);
+            cr.fill();
+
+            // dotted seams at interior cell borders (GJS cairo has no
+            // setDash — real dots it is)
+            cr.setSourceRGBA(edge[0], edge[1], edge[2], Math.min(0.65, edge[3] * 2.6));
+            let acc = PADX;
+            for (let k = 0; k < runs.length - 1; k++) {
+                acc += cellW[k];
+                for (let y = stripY - PH + 2.5; y <= stripY + PH - 2.5; y += 3.2) {
+                    cr.arc(acc, y, 0.6, 0, Math.PI * 2);
+                    cr.fill();
+                }
             }
+
+            acc = PADX;
+            for (const [k, r] of runs.entries()) {
+                paint1(r.scene, acc + cellW[k] / 2, r.night,
+                       SS * (FOOT[r.scene] ?? 1));
+                acc += cellW[k];
+            }
+            cr.restore();
         } else {
             const every = Math.max(2, Math.ceil(30 / span));
             for (let i = 0; i < n; i += every) {
