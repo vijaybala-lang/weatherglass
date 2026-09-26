@@ -45,7 +45,7 @@ const CASES = [
     // menu-style demos: 'accent' mode = theme popup bg (grey stand-in)
     // with the charts unified in the OS accent colour
     {scene: 'accent', night: true, plain: true, bgAccent: [0.19, 0.19, 0.19], accent: [0.21, 0.52, 0.89], values: DATA.hourly.temperature_2m.slice(16, 40)},
-    {scene: 'accent-light', night: false, plain: true, bgAccent: [0.98, 0.98, 0.98], accent: [0.835, 0.38, 0.60], values: DATA.hourly.temperature_2m.slice(16, 40), strip: 'icons'},
+    {scene: 'accent-light', night: false, plain: true, bgAccent: [0.98, 0.98, 0.98], accent: [0.835, 0.38, 0.60], values: DATA.hourly.temperature_2m.slice(16, 40), strip: 'pills'},
 ];
 
 const outDir = GLib.build_filenamev([GLib.get_current_dir(), 'tools', 'out', 'cards']);

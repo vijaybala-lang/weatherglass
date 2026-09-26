@@ -187,34 +187,47 @@ export function paintChart(cr, opts) {
 
         if (opts.pills) {
             // grouped: consecutive same-condition hours tile the axis as one
-            // pill per run — pill edges sit at the boundary hours' midpoints,
-            // so pills share borders and can never overlap. No text: just the
-            // icon, centred, shrunk to fit the narrowest slice.
-            const PH = 9, INSET = 1.5;
-            const fill = dark ? [1, 1, 1] : [...INK];
+            // pill per run. Widths start as the exact time slice (edges at the
+            // boundary hours' midpoints); runs narrower than MINW (the max
+            // icon footprint at strip scale) borrow width from longer
+            // neighbours, so pills stay consistent AND can never overlap.
+            // Tint = the metric accent, semi-transparent (Apple-style wash).
+            const PH = 9, INSET = 1.5, SS = 0.62, MINW = 17;
+            const runs = [];
             let a = 0;
             while (a < n) {
                 const key = `${strip[a]}|${nights[a] ? 1 : 0}`;
                 let b = a;
                 while (b + 1 < n && `${strip[b + 1]}|${nights[b + 1] ? 1 : 0}` === key)
                     b++;
-                const x0 = (a === 0 ? PADX : (X(a - 1) + X(a)) / 2) + INSET;
-                const x1 = (b === n - 1 ? w - PADX : (X(b) + X(b + 1)) / 2) - INSET;
-                const pw = Math.max(x1 - x0, 8);
+                const x0 = a === 0 ? PADX : (X(a - 1) + X(a)) / 2;
+                const x1 = b === n - 1 ? w - PADX : (X(b) + X(b + 1)) / 2;
+                runs.push({scene: strip[a], night: nights[a], w: x1 - x0});
+                a = b + 1;
+            }
+            const def = runs.map(r => Math.max(0, MINW - r.w));
+            const debt = def.reduce((s, v) => s + v, 0);
+            const pool = runs.reduce((s, r) => s + Math.max(0, r.w - MINW), 0);
+            const back = pool > 0 ? Math.min(1, debt / pool) : 0;
+            let cur = PADX;
+            for (let k = 0; k < runs.length; k++) {
+                const r = runs[k];
+                const rw = def[k] > 0
+                    ? r.w + def[k]
+                    : r.w - Math.max(0, r.w - MINW) * back;
+                const x0 = cur + INSET;
+                const x1 = Math.max(x0 + 4, cur + rw - INSET);
+                cur += rw;
                 cr.save();
-                cr.setSourceRGBA(fill[0], fill[1], fill[2], dark ? 0.13 : 0.10);
-                pillPath(cr, x0, STRIP_Y - PH, x0 + pw, STRIP_Y + PH,
-                         Math.min(PH, pw / 2));
+                cr.setSourceRGBA(acR, acG, acB, dark ? 0.16 : 0.12);
+                pillPath(cr, x0, STRIP_Y - PH, x1, STRIP_Y + PH,
+                         Math.min(PH, (x1 - x0) / 2));
                 cr.fillPreserve();
-                cr.setSourceRGBA(fill[0], fill[1], fill[2], dark ? 0.22 : 0.18);
+                cr.setSourceRGBA(acR, acG, acB, dark ? 0.30 : 0.22);
                 cr.setLineWidth(1);
                 cr.stroke();
                 cr.restore();
-                // floor at 0.5: a 1 h slice (~13 px) would shrink a strict
-                // fit below legibility — slight pill overflow reads better
-                const sc = Math.max(0.5, Math.min(0.62, (pw / 24) * 0.92));
-                paint1(strip[a], x0 + pw / 2, nights[a], sc);
-                a = b + 1;
+                paint1(r.scene, (x0 + x1) / 2, r.night, SS);
             }
         } else {
             const every = Math.max(2, Math.ceil(30 / span));
