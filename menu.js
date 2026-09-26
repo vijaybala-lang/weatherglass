@@ -257,16 +257,19 @@ export class ForecastPanel {
         right.add_child(this._cityLbl);
 
         // mock keeps the clock alone at this width (no condition line);
-        // refresh/settings ride the same line as compact ghost icons
+        // refresh/settings get their own row under the clock — inline they
+        // collided with the time text and the moon behind it
         const infoRow = row('aw-info-row');
         this._clockLbl = label('', 'aw-clockline');
         infoRow.add_child(this._clockLbl);
+        right.add_child(infoRow);
+        const btnRow = row('aw-btn-row');
         this._refreshBtn = this._iconButton('view-refresh-symbolic', 'Refresh now',
                                             () => this._onRefresh?.());
-        infoRow.add_child(this._refreshBtn);
-        infoRow.add_child(this._iconButton('emblem-system-symbolic', 'Preferences',
-                                           () => this._onSettings?.()));
-        right.add_child(infoRow);
+        btnRow.add_child(this._refreshBtn);
+        btnRow.add_child(this._iconButton('emblem-system-symbolic', 'Preferences',
+                                          () => this._onSettings?.()));
+        right.add_child(btnRow);
         header.add_child(right);
         main.add_child(header);
 

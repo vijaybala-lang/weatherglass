@@ -54,7 +54,7 @@ class WeatherIndicator extends PanelMenu.Button {
 
         this._ext = extension;
         this._settings = extension.getSettings();
-        this._client = new WeatherClient();
+        this._client = new WeatherClient(this._settings.get_string('provider'));
         this._timer = 0;
         this._locTimer = 0;
         this._previewId = 0;
@@ -329,6 +329,10 @@ class WeatherIndicator extends PanelMenu.Button {
             if (this._data)
                 this._update();
             break;
+        case 'provider':
+            this._client.providerId = this._settings.get_string('provider');
+            this._fetch(true);
+            break;
         case 'menu-style':
             this._panel.setStyle(this._settings.get_string('menu-style'));
             break;
@@ -440,7 +444,7 @@ export default class AnimatedWeatherExtension extends Extension {
         // build stamp: journalctl --user -o cat | grep "Animated Weather v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
-        console.log('Animated Weather v5.5 (real moon phase + cratered face: moon.js)');
+        console.log('Animated Weather v5.6 (provider adapters: Open-Meteo + MET Norway)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }

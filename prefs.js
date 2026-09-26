@@ -223,6 +223,25 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         bgGroup.add(styleRow);
         page.add(bgGroup);
 
+        const dataGroup = new Adw.PreferencesGroup({title: 'Data source'});
+        const provRow = new Adw.ComboRow({
+            title: 'Weather provider',
+            subtitle: 'MET Norway data licensed CC BY-SA 4.0 · Norwegian Meteorological Institute',
+            model: new Gtk.StringList({
+                strings: [
+                    'Open-Meteo (default)',
+                    'MET Norway (api.met.no)',
+                ],
+            }),
+        });
+        const provIds = ['open-meteo', 'met-norway'];
+        const sel = provIds.indexOf(settings.get_string('provider'));
+        provRow.set_selected(sel < 0 ? 0 : sel);
+        provRow.connect('notify::selected', () =>
+            settings.set_string('provider', provIds[provRow.get_selected()] ?? 'open-meteo'));
+        dataGroup.add(provRow);
+        page.add(dataGroup);
+
         const updGroup = new Adw.PreferencesGroup({title: 'Updates'});
         const refreshRow = new Adw.SpinRow({
             title: 'Refresh interval (minutes)',

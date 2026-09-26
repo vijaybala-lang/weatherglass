@@ -62,6 +62,11 @@ timeout 120 dbus-run-session -- bash -c "
     sleep 12
     gsettings set $SCHEMA menu-style 'animated'
     sleep 2
+    echo '=== scenario 4c: provider switch → MET Norway (live api.met.no) ==='
+    gsettings set $SCHEMA provider 'met-norway'
+    sleep 10
+    gsettings set $SCHEMA provider 'open-meteo'
+    sleep 6
     echo '=== scenario 5: popup open/close paint (crash regression) ==='
     sleep 4
     kill -0 \$GPID 2>/dev/null || { echo 'FAIL: shell died during menu toggles'; exit 1; }

@@ -56,6 +56,19 @@
       <summary>Weather refresh interval in minutes</summary>
     </key>
 
+    <key name="provider" type="s">
+      <choices>
+        <choice value="open-meteo"/>
+        <choice value="met-norway"/>
+      </choices>
+      <default>'open-meteo'</default>
+      <summary>Weather data provider</summary>
+      <description>Both providers are keyless and free. open-meteo = Open-Meteo
+global forecast (default); met-norway = Norwegian Meteorological Institute
+locationforecast, CC BY-SA 4.0 attribution (reports precipitation amounts, not
+probabilities, so the precipitation chart is model-derived)</description>
+    </key>
+
     <key name="menu-style" type="s">
       <choices>
         <choice value="animated"/>
