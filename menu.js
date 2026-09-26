@@ -19,7 +19,7 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import {WeatherIcon} from './animation.js';
-import {paintSky, paintPlain, createSky} from './sky.js';
+import {paintSky, createSky} from './sky.js';
 import {paintChart, ease, lerp} from './chart.js';
 import {sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn} from './weather.js';
 
@@ -95,13 +95,13 @@ class SkyArea extends St.DrawingArea {
             return;
         const cr = this.get_context();
         const o = this._panel._skyOpts;
-        if (this._panel._style === 'accent')
-            paintPlain(cr, {w, h, accent: this._panel._accent,
-                            dark: this._panel._dark, radius: o.radius ?? 0});
-        else
+        if (this._panel._style !== 'accent')
             paintSky(cr, {w, h, time: this._time,
                           scene: o.scene, night: o.night, scrim: o.scrim,
                           sky: o.sky, radius: o.radius ?? 0, phase: o.phase ?? null});
+        // 'accent' style paints NOTHING: the surface stays transparent and
+        // the shell theme's own popup background becomes the menu surface —
+        // the theme's specified solid colour, any theme, auto-contrast.
         cr.$dispose();
     }
 
@@ -141,6 +141,9 @@ class ChartArea extends St.DrawingArea {
         if (w <= 0 || h <= 0)
             return;
         const p = this._panel, m = METRICS[p._metric];
+        // 'accent' style unifies the data in the OS accent colour; sky
+        // modes keep the mock's per-metric palette
+        const accent = p._style === 'accent' ? p._accent : m.accent;
         // full card width: .aw-content has no horizontal padding (rows pad
         // themselves), so the fill bleeds to the edges like the mockup; the
         // mock's narrow chart labels every 3rd hour, ink-dim, 8pt
@@ -150,7 +153,7 @@ class ChartArea extends St.DrawingArea {
             values: p._shown,
             fmtValue: p._fmtValue ?? (() => ''),
             fmtHour: p._fmtHour ?? (() => ''),
-            accent: m.accent,
+            accent,
             ink: p._theme().ink,
             nowFrac: p._day === 0 ? (p._nowFrac ?? 0) : null,
             fontSize: w < 480 ? 8 : 8.5,
@@ -361,12 +364,14 @@ export class ForecastPanel {
         else
             this._skyArea._start();
         this._skyArea.queue_repaint();
+        this._chart.queue_repaint();   // chart accent follows the style
     }
 
-    /** [r, g, b] in 0..1 — OS accent colour for the 'accent' style. */
+    /** [r, g, b] in 0..1 — OS accent colour: charts in the 'accent' style. */
     setAccent(rgb) {
         this._accent = rgb;
         this._skyArea.queue_repaint();
+        this._chart.queue_repaint();
     }
 
     /** state = {current, daily, hourly, currentIso, units, windy, effective,

@@ -34,10 +34,10 @@ const CASES = [
     {scene: 'rain',  night: false, values: DATA.hourly.temperature_2m.slice(40, 64), accent: [0.96, 0.65, 0.14]},
     {scene: 'snow',  night: false, values: DATA.hourly.temperature_2m.slice(64, 88), accent: [0.96, 0.65, 0.14]},
     {scene: 'moon',  night: true,  values: DATA.hourly.wind_speed_10m.slice(64, 88), accent: [0.24, 0.81, 0.56]},
-    // menu-style demos: flat OS-accent backgrounds (no sky); the chart keeps
-    // its own per-metric accent while the wash uses the "OS" one
-    {scene: 'accent', night: true, plain: true, bgAccent: [0.21, 0.52, 0.89], accent: [0.96, 0.65, 0.14], values: DATA.hourly.temperature_2m.slice(16, 40)},
-    {scene: 'accent-light', night: false, plain: true, bgAccent: [0.83, 0.38, 0.60], accent: [0.24, 0.81, 0.56], values: DATA.hourly.temperature_2m.slice(16, 40)},
+    // menu-style demos: 'accent' mode = theme popup bg (grey stand-in)
+    // with the charts unified in the OS accent colour
+    {scene: 'accent', night: true, plain: true, bgAccent: [0.19, 0.19, 0.19], accent: [0.21, 0.52, 0.89], values: DATA.hourly.temperature_2m.slice(16, 40)},
+    {scene: 'accent-light', night: false, plain: true, bgAccent: [0.98, 0.98, 0.98], accent: [0.835, 0.38, 0.60], values: DATA.hourly.temperature_2m.slice(16, 40)},
 ];
 
 const outDir = GLib.build_filenamev([GLib.get_current_dir(), 'tools', 'out', 'cards']);

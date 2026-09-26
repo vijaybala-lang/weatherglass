@@ -163,23 +163,22 @@ function roundClip(cr, w, h, radius) {
 }
 
 /**
- * paintPlain(cr, {w, h, accent, dark, radius}) — the "accent" menu style:
- * no sky at all, just a whisper of the OS accent colour blended into the
- * theme base (top slightly richer than bottom, so it reads as depth, not a
- * flat sheet). Content/ink/labels ride on top exactly as over the sky.
+ * paintPlain(cr, {w, h, accent, dark, radius}) — offscreen preview stand-in
+ * for the 'accent' menu style. That style paints nothing in the live shell
+ * (the shell theme's own popup background shows through the transparent
+ * surface), so this just renders a supplied theme-colour stand-in with a
+ * whisper of vertical gradient for the card previews. `accent` here is that
+ * background colour (a mid grey for dark themes, near-white for light).
  */
-export function paintPlain(cr, {w, h, accent = [0.21, 0.52, 0.89],
+export function paintPlain(cr, {w, h, accent = [0.19, 0.19, 0.19],
                                 dark = true, radius = 0}) {
-    const base = dark ? [0.055, 0.07, 0.105] : [0.965, 0.972, 0.985];
-    const mix = (m) => base.map((b, i) => b + (accent[i] - b) * m);
-    const top = mix(dark ? 0.26 : 0.17);
-    const bot = mix(dark ? 0.13 : 0.08);
+    const shade = (f) => [...accent.map(c => Math.min(1, Math.max(0, c * f))), 1];
     cr.save();
     roundClip(cr, w, h, radius);
     cr.clip();
     const g = new Cairo.LinearGradient(0, 0, 0, h);
-    g.addColorStopRGBA(0, top[0], top[1], top[2], 1);
-    g.addColorStopRGBA(1, bot[0], bot[1], bot[2], 1);
+    g.addColorStopRGBA(0, ...shade(1.08));
+    g.addColorStopRGBA(1, ...shade(0.9));
     cr.setSource(g);
     cr.paint();
     cr.restore();

@@ -65,8 +65,8 @@
       <default>'animated'</default>
       <summary>Menu background style</summary>
       <description>animated = translucent weather sky, solid = the sky dimmed
-under a wash, accent = no sky, a flat background tinted with the OS accent
-colour</description>
+under a wash, accent = no sky: the shell theme's own popup background with
+the charts drawn in the OS accent colour</description>
     </key>
 
     <key name="preview-scene" type="s">

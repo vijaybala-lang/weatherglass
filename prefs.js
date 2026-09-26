@@ -213,7 +213,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                 strings: [
                     'Animated sky (translucent)',
                     'Solid (sky dimmed under a wash)',
-                    'Accent colour (no sky)',
+                    'Theme background, accent charts',
                 ],
             }),
         });
