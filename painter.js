@@ -217,8 +217,8 @@ function sunBody(cr, cx, cy, r, t, rayLen) {
 function moonBody(cr, cx, cy, r, t, p, phase) {
     const ph = Number.isFinite(phase) ? phase : moonPhase().phase;
     const glow = new Cairo.RadialGradient(cx, cy, r * 0.5, cx, cy, r * 2.2);
-    glow.addColorStopRGBA(0, 0.95, 0.92, 0.82, 0.30 * (0.25 + 0.75 * illumOf(ph)));
-    glow.addColorStopRGBA(1, 0.95, 0.92, 0.82, 0);
+    glow.addColorStopRGBA(0, 0.86, 0.87, 0.97, 0.30 * (0.25 + 0.75 * illumOf(ph)));
+    glow.addColorStopRGBA(1, 0.86, 0.87, 0.97, 0);
     cr.setSource(glow);
     cr.paint();
 

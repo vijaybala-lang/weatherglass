@@ -184,8 +184,8 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
             // warm halo scaled by the actual illuminated fraction
             const ph = Number.isFinite(phase) ? phase : moonPhase().phase;
             const mg = new Cairo.RadialGradient(sx, sy, R * 0.5, sx, sy, R * 2.2);
-            mg.addColorStopRGBA(0, 0.97, 0.94, 0.85, 0.10 + 0.26 * illumOf(ph));
-            mg.addColorStopRGBA(1, 0.97, 0.94, 0.85, 0);
+            mg.addColorStopRGBA(0, 0.82, 0.84, 0.95, 0.10 + 0.26 * illumOf(ph));
+            mg.addColorStopRGBA(1, 0.82, 0.84, 0.95, 0);
             cr.setSource(mg);
             cr.arc(sx, sy, R * 2.2, 0, TAU);
             cr.fill();
