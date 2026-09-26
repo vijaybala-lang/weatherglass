@@ -375,7 +375,7 @@ export default class AnimatedWeatherExtension extends Extension {
         // build stamp: journalctl --user -o cat | grep "Animated Weather v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
-        console.log('Animated Weather v5.2 (24h rolling chart, repaint-safety vs GNOME 50 sync-repaint abort)');
+        console.log('Animated Weather v5.3 (mock-faithful narrow layout: 4x2 tiles, °F|°C toggle, flat tabs)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }

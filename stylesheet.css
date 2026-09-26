@@ -10,14 +10,16 @@
 }
 
 /* ── dropdown card ────────────────────────────────────────────────────────
- * The sky backdrop is painted by sky.js underneath; this stylesheet only
- * styles the St content riding on top. Dark theme = white ink; light theme
- * = dark ink over a washed-out sky (the scrim is painted by the engine).
+ * Mirrors the mockup (mockups/weather-menu.html) at its narrow breakpoint:
+ * flat text tabs over a hairline, huge thin temperature, plain °F | °C text
+ * toggle, transparent day tiles that only glass up when selected, and a
+ * chart that bleeds to the card edges. The sky itself is painted by sky.js
+ * underneath; this file only styles the St content riding on top.
  */
 
 /* Own the popup chrome: the theme's .popup-menu-content padding would shrink
- * the 330px card and leave a gap around the full-bleed sky. The compound
- * selector outranks the theme rule; extension.js also zeroes these inline. */
+ * the 330px card and frame the full-bleed sky in grey. The compound selector
+ * outranks the theme rule; extension.js also zeroes these inline. */
 .aw-menu,
 .aw-menu.popup-menu-content,
 .aw-menu .popup-menu-content {
@@ -30,22 +32,19 @@
     /* no horizontal padding: the chart spans the full card and bleeds its
      * fill to the edges (mockup behaviour); rows pad themselves instead */
     padding: 12px 0 8px 0;
-    spacing: 6px;
     border-radius: 18px;
+    text-shadow: 0 1px 8px rgba(0, 0, 20, 0.35);
 }
 
 .aw-main {
-    spacing: 6px;
+    spacing: 4px;
 }
+
+/* ── header ─────────────────────────────────────────────────────────────── */
 
 .aw-header {
     spacing: 10px;
-    padding-left: 14px;
-    padding-right: 14px;
-}
-
-.aw-temp-col {
-    spacing: 2px;
+    padding: 2px 14px 0 14px;
 }
 
 .aw-temp-line {
@@ -53,92 +52,94 @@
 }
 
 .aw-current-temp {
-    font-size: 2em;
-    font-weight: 300;
+    font-size: 3em;               /* the mock's oversized thin numeral */
+    font-weight: 200;
+}
+
+.aw-unit-toggle {
+    spacing: 2px;
+    margin-top: 10px;             /* sits at the numeral's x-height, mock-style */
 }
 
 .aw-unit-btn {
-    border-radius: 99px;
-    padding: 2px 8px;
-    margin-bottom: 6px;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+    padding: 2px 4px;
+    min-height: 0;
 }
 
 .aw-unit-label {
-    font-size: 0.8em;
-    font-weight: bold;
+    font-size: 0.9em;
+    font-weight: 600;
 }
 
-.aw-feels {
-    font-size: 0.8em;
-    font-weight: 400;
-}
-
-.aw-details {
-    spacing: 4px;
-    padding-left: 14px;
-    padding-right: 14px;
-}
-
-.aw-details-line {
-    spacing: 10px;
-}
-
-.aw-detail {
-    font-size: 0.78em;
-}
-
-.aw-uv-line {
-    spacing: 5px;
+.aw-unit-bar {
+    font-size: 0.9em;
 }
 
 .aw-city-col {
-    spacing: 2px;
+    spacing: 3px;
 }
 
 .aw-city {
-    font-size: 1.05em;
+    font-size: 1.15em;
     font-weight: bold;
 }
 
-.aw-clockline {
-    font-size: 0.8em;
+.aw-info-row {
+    spacing: 4px;
 }
 
-/* ── metric tabs ──────────────────────────────────────────────────────────
+.aw-clockline {
+    font-size: 0.85em;
+}
+
+/* ── metric tabs (flat text, mock style) ──────────────────────────────────
  * The 3px transparent border on every tab keeps the active underline from
- * shifting text when it lights up. */
+ * shifting text when it lights up. .aw-rule is the mock's glass hairline. */
 
 .aw-tabs {
-    spacing: 4px;
-    padding-left: 14px;
-    padding-right: 14px;
+    spacing: 16px;
+    padding: 2px 14px 0 14px;
 }
 
 .aw-tab {
-    border-radius: 8px;
-    padding: 3px 11px 4px 11px;
     border: none;
+    border-radius: 0;
     border-bottom: 3px solid transparent;
+    background-color: transparent;
     box-shadow: none;
+    padding: 3px 2px 5px 2px;
     min-height: 0;
 }
 
 .aw-tab-label {
-    font-size: 0.8em;
+    font-size: 0.9em;
     font-weight: bold;
 }
 
-/* ── day tiles ──────────────────────────────────────────────────────────── */
+.aw-rule {
+    min-height: 1px;
+    margin: 2px 14px 0 14px;
+    background-color: rgba(255, 255, 255, 0.14);
+}
+
+/* ── day tiles: mock narrow grid = two rows of four ─────────────────────── */
+
+.aw-days-grid {
+    spacing: 4px;
+}
 
 .aw-days {
-    spacing: 3px;
-    padding-left: 14px;
-    padding-right: 14px;
+    spacing: 5px;
+    padding: 0 14px;
 }
 
 .aw-day {
-    border-radius: 10px;
-    padding: 4px 2px;
+    border-radius: 12px;
+    padding: 6px 2px 5px 2px;
     border: 1px solid transparent;
     min-height: 0;
 }
@@ -148,13 +149,17 @@
 }
 
 .aw-day-name {
-    font-size: 0.72em;
+    font-size: 0.8em;
     font-weight: bold;
+}
+
+.aw-day-hl {
+    spacing: 5px;
 }
 
 .aw-day-hi,
 .aw-day-lo {
-    font-size: 0.72em;
+    font-size: 0.8em;
 }
 
 /* hierarchy by weight, never opacity — lows must survive sun-bright skies */
@@ -166,21 +171,14 @@
     font-weight: 400;
 }
 
-/* ── footer ─────────────────────────────────────────────────────────────── */
-
-.aw-footer-row {
-    spacing: 6px;
-    padding-left: 14px;
-    padding-right: 14px;
-}
-
-.aw-footer {
-    font-size: 0.72em;
-}
+/* ── ghost icon buttons (refresh / preferences, clock row) ──────────────── */
 
 .aw-icon-btn {
     border-radius: 99px;
     padding: 3px;
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
 }
 
 /* ── placeholder (loading / error) ──────────────────────────────────────── */
@@ -201,13 +199,16 @@
     color: rgba(255, 255, 255, 0.95);
 }
 
-.aw-dark .aw-feels,
-.aw-dark .aw-detail,
 .aw-dark .aw-clockline,
-.aw-dark .aw-footer,
+.aw-dark .aw-unit-off,
+.aw-dark .aw-unit-bar,
 .aw-dark .aw-day-lo,
 .aw-dark .aw-placeholder-text {
-    color: rgba(255, 255, 255, 0.78);
+    color: rgba(255, 255, 255, 0.62);
+}
+
+.aw-dark .aw-unit-on {
+    color: #ffffff;
 }
 
 .aw-dark .aw-tab {
@@ -215,36 +216,34 @@
 }
 
 .aw-dark .aw-tab:hover {
-    background-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .aw-dark .aw-tab-active {
     color: #ffffff;
 }
 
-.aw-dark .aw-unit-btn,
 .aw-dark .aw-icon-btn {
-    background-color: rgba(255, 255, 255, 0.14);
-    color: #ffffff;
+    color: rgba(255, 255, 255, 0.85);
 }
 
-.aw-dark .aw-unit-btn:hover,
 .aw-dark .aw-icon-btn:hover {
-    background-color: rgba(255, 255, 255, 0.28);
+    background-color: rgba(255, 255, 255, 0.16);
 }
 
+/* tiles are transparent until hovered/selected (mock behaviour) */
 .aw-dark .aw-day {
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: transparent;
     color: rgba(255, 255, 255, 0.92);
 }
 
 .aw-dark .aw-day:hover {
-    background-color: rgba(255, 255, 255, 0.22);
+    background-color: rgba(255, 255, 255, 0.10);
 }
 
 .aw-dark .aw-day-sel {
-    background-color: rgba(255, 255, 255, 0.30);
-    border: 1px solid rgba(255, 255, 255, 0.75);
+    background-color: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     color: #ffffff;
 }
 
@@ -259,13 +258,20 @@
     color: #101823;
 }
 
-.aw-light .aw-feels,
-.aw-light .aw-detail,
 .aw-light .aw-clockline,
-.aw-light .aw-footer,
+.aw-light .aw-unit-off,
+.aw-light .aw-unit-bar,
 .aw-light .aw-day-lo,
 .aw-light .aw-placeholder-text {
-    color: rgba(16, 24, 35, 0.72);
+    color: rgba(16, 24, 35, 0.66);
+}
+
+.aw-light .aw-unit-on {
+    color: #0b1220;
+}
+
+.aw-light .aw-rule {
+    background-color: rgba(16, 24, 35, 0.15);
 }
 
 .aw-light .aw-tab {
@@ -273,35 +279,32 @@
 }
 
 .aw-light .aw-tab:hover {
-    background-color: rgba(16, 24, 35, 0.08);
+    color: rgba(16, 24, 35, 0.8);
 }
 
 .aw-light .aw-tab-active {
     color: #0b1220;
 }
 
-.aw-light .aw-unit-btn,
 .aw-light .aw-icon-btn {
-    background-color: rgba(255, 255, 255, 0.55);
-    color: #101823;
+    color: rgba(16, 24, 35, 0.75);
 }
 
-.aw-light .aw-unit-btn:hover,
 .aw-light .aw-icon-btn:hover {
-    background-color: rgba(255, 255, 255, 0.8);
+    background-color: rgba(16, 24, 35, 0.1);
 }
 
 .aw-light .aw-day {
-    background-color: rgba(255, 255, 255, 0.45);
+    background-color: transparent;
     color: #101823;
 }
 
 .aw-light .aw-day:hover {
-    background-color: rgba(255, 255, 255, 0.65);
+    background-color: rgba(255, 255, 255, 0.4);
 }
 
 .aw-light .aw-day-sel {
-    background-color: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(16, 24, 35, 0.55);
+    background-color: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(16, 24, 35, 0.28);
     color: #0b1220;
 }

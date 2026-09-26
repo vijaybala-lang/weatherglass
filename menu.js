@@ -1,6 +1,11 @@
 /* menu.js — the dropdown: an Apple-Weather-style card with an animated sky
  * backdrop, an hourly chart (Temperature / Precipitation / Wind tabs) and
- * eight selectable day tiles.
+ * eight selectable day tiles in a 4×2 grid.
+ *
+ * This file mirrors the mockup's narrow (≤560px) breakpoint, which is the
+ * card's actual size (330×430): no big header icon and no details grid (the
+ * chart beats them for space there), flat tabs over a hairline rule, a plain
+ * °F | °C text toggle, hi/lo on one line, "Today" labels the first tile.
  *
  * All drawing is delegated to the pure-cairo modules sky.js and chart.js;
  * this file is St glue + selection state. Dark and light themes (tracked
@@ -16,7 +21,7 @@ import St from 'gi://St';
 import {WeatherIcon} from './animation.js';
 import {paintSky, createSky} from './sky.js';
 import {paintChart, ease, lerp} from './chart.js';
-import {sceneFor, fmtTemp, fmtWind, windDir, dayName, fmtTime, daySlice} from './weather.js';
+import {sceneFor, fmtTemp, fmtWind, dayName, daySlice} from './weather.js';
 
 const FRAME_MS = 50;         // sky: 20 fps is plenty
 const STATIC_TIME = 1.1;     // frame that makes static mini icons look lively
@@ -27,12 +32,6 @@ const METRICS = {
     precip: {label: 'Precipitation', accent: [0.30, 0.64, 1.00], underline: 'aw-tab-precip'},
     wind:   {label: 'Wind',          accent: [0.24, 0.81, 0.56], underline: 'aw-tab-wind'},
 };
-
-/* EPA UV bands → [upper bound, dot color, band name] */
-const UV_BANDS = [
-    [3, '#43a047', 'Low'], [6, '#fbc02d', 'Moderate'], [8, '#fb8c00', 'High'],
-    [11, '#e53935', 'Very high'], [Infinity, '#8e24aa', 'Extreme'],
-];
 
 /* Theme = label ink + a scrim painted over the sky. Dark keeps the sky as
  * painted (white ink); light washes it pale so dark ink stays legible. */
@@ -67,10 +66,13 @@ function hourLabel(iso) {
 }
 
 /* ── animated painting areas ──────────────────────────────────────────────
- * Both scale the cairo context from device px to logical px so HiDPI stays
- * crisp, and both read their options off the panel at repaint time — the
- * allocation is measured per paint, which kills the classic stale-size
- * letterboxing bug (same lesson as the mockup's ResizeObserver).
+ * GNOME 50's St.DrawingArea emits repaint SYNCHRONOUSLY from allocate and
+ * style-changed. Querying allocation/theme inside repaint re-enters that
+ * machinery, frees the mapped Cogl buffer underfoot and aborts the shell
+ * (observed live: cogl_buffer_dispose MAPPED assert → null cairo context →
+ * SIGABRT). So repaint handlers touch get_surface_size() + get_context()
+ * and NOTHING else — the surface size is already logical px and the context
+ * arrives device-scaled and pre-cleared.
  */
 
 const SkyArea = GObject.registerClass(
@@ -85,13 +87,6 @@ class SkyArea extends St.DrawingArea {
         this._start();
     }
 
-    /* GNOME 50's St.DrawingArea emits repaint SYNCHRONOUSLY from allocate
-     * and style-changed. Querying allocation/theme inside repaint re-enters
-     * that machinery, frees the mapped Cogl buffer underfoot and aborts the
-     * shell (observed live: cogl_buffer_dispose MAPPED assert → null cairo
-     * context → SIGABRT). So: touch get_surface_size() + get_context() and
-     * NOTHING else — the surface size is already logical px and the context
-     * arrives device-scaled and pre-cleared. */
     vfunc_repaint() {
         const [w, h] = this.get_surface_size();
         if (w <= 0 || h <= 0)
@@ -134,16 +129,14 @@ class ChartArea extends St.DrawingArea {
         this._panel = panel;
     }
 
-    /* Same repaint-safety contract as SkyArea: surface size only, no
-     * allocation or theme queries (see the comment up there). */
     vfunc_repaint() {
         const [w, h] = this.get_surface_size();
         if (w <= 0 || h <= 0)
             return;
         const p = this._panel, m = METRICS[p._metric];
-        // full 330px wide: .aw-content has no horizontal padding (rows pad
-        // themselves), so the area fill bleeds to the card edges naturally
-        const spacing = (w - 4) / Math.max(1, p._shown.length - 1);
+        // full card width: .aw-content has no horizontal padding (rows pad
+        // themselves), so the fill bleeds to the edges like the mockup; the
+        // mock's narrow chart labels every 3rd hour, ink-dim, 8pt
         const cr = this.get_context();
         paintChart(cr, {
             w, h,
@@ -153,8 +146,7 @@ class ChartArea extends St.DrawingArea {
             accent: m.accent,
             ink: p._theme().ink,
             nowFrac: p._day === 0 ? 0 : null,
-            labelEvery: Math.max(2, Math.round(60 / spacing)),
-            fontSize: w < 480 ? 7.5 : 8.5,
+            fontSize: w < 480 ? 8 : 8.5,
         });
         cr.$dispose();
     }
@@ -223,62 +215,50 @@ export class ForecastPanel {
         const main = column('aw-main');
         this._main = main;
 
-        // header: big icon | temp + unit | spacer | city + clock
+        // header (mockup narrow breakpoint): huge temp + °F | °C text toggle,
+        // then city / clock+actions pushed right. No big icon, no details —
+        // the mock hides both at this width; the chart earns the space.
         const header = row('aw-header');
 
-        this._bigIcon = new WeatherIcon({size: 40, animate: this._animate});
-        this._bigIcon.setScene('loading');
-        header.add_child(this._bigIcon);
-
-        const tempCol = column('aw-temp-col');
-        const tempLine = row('aw-temp-line');
+        const tempWrap = row('aw-temp-line');
         this._tempLbl = label('', 'aw-current-temp');
-        this._unitBtn = this._pillButton('°F', 'Switch units',
-                                         () => this._onUnits?.());
-        tempLine.add_child(this._tempLbl);
-        tempLine.add_child(this._unitBtn);
-        tempCol.add_child(tempLine);
-        this._feelsLbl = label('', 'aw-feels');
-        this._hiloLbl = label('', 'aw-feels');
-        tempCol.add_child(this._feelsLbl);
-        tempCol.add_child(this._hiloLbl);
-        header.add_child(tempCol);
+        tempWrap.add_child(this._tempLbl);
+
+        const unitBox = row('aw-unit-toggle');
+        this._unitBtns = {
+            imperial: this._unitButton('°F', () => this._pickUnit('imperial')),
+            metric:   this._unitButton('°C', () => this._pickUnit('metric')),
+        };
+        unitBox.add_child(this._unitBtns.imperial);
+        unitBox.add_child(label('|', 'aw-unit-bar'));
+        unitBox.add_child(this._unitBtns.metric);
+        tempWrap.add_child(unitBox);
+        header.add_child(tempWrap);
 
         header.add_child(spacer());
 
         const right = new St.BoxLayout({vertical: true, style_class: 'aw-city-col',
-                                        x_align: Clutter.ActorAlign.END});
+                                        x_align: Clutter.ActorAlign.END,
+                                        y_align: Clutter.ActorAlign.START});
         this._cityLbl = label('Weather', 'aw-city');
-        this._clockLbl = label('', 'aw-clockline');
-        this._clockLbl.set_x_align(Clutter.ActorAlign.END);
         right.add_child(this._cityLbl);
-        right.add_child(this._clockLbl);
+
+        // mock keeps the clock alone at this width (no condition line);
+        // refresh/settings ride the same line as compact ghost icons
+        const infoRow = row('aw-info-row');
+        this._clockLbl = label('', 'aw-clockline');
+        infoRow.add_child(this._clockLbl);
+        this._refreshBtn = this._iconButton('view-refresh-symbolic', 'Refresh now',
+                                            () => this._onRefresh?.());
+        infoRow.add_child(this._refreshBtn);
+        infoRow.add_child(this._iconButton('emblem-system-symbolic', 'Preferences',
+                                           () => this._onSettings?.()));
+        right.add_child(infoRow);
         header.add_child(right);
         main.add_child(header);
 
-        // details 2×2 — its own full-width block; at 330px the header has no
-        // room to squeeze it between the temperature and the city
-        const details = column('aw-details');
-        const dRow = (a, b) => {
-            const r = row('aw-details-line');
-            r.add_child(a);
-            r.add_child(spacer());
-            r.add_child(b);
-            return r;
-        };
-        this._precipLbl = label('', 'aw-detail');
-        this._uvDot = label('●', 'aw-uv-dot');
-        this._uvLbl = label('', 'aw-detail');
-        this._humLbl = label('', 'aw-detail');
-        this._windLbl = label('', 'aw-detail');
-        const uvLine = row('aw-uv-line');
-        uvLine.add_child(this._uvDot);
-        uvLine.add_child(this._uvLbl);
-        details.add_child(dRow(this._precipLbl, uvLine));
-        details.add_child(dRow(this._humLbl, this._windLbl));
-        main.add_child(details);
-
-        // metric tabs
+        // flat text tabs (mock): dim inactive, ink + 3px accent underline
+        // active — then the mock's glass hairline across the card
         const tabs = row('aw-tabs');
         this._tabBtns = {};
         for (const [key, m] of Object.entries(METRICS)) {
@@ -292,32 +272,22 @@ export class ForecastPanel {
             tabs.add_child(btn);
             this._tabBtns[key] = btn;
         }
-        // the initial metric (temperature) starts active — _selectMetric only
-        // fires on *changes*, so light its underline up front
         this._tabBtns[this._metric].add_style_class_name('aw-tab-active');
         this._tabBtns[this._metric].add_style_class_name(METRICS[this._metric].underline);
         main.add_child(tabs);
+
+        main.add_child(new St.Widget({style_class: 'aw-rule',
+                                      y_align: Clutter.ActorAlign.START}));
 
         // chart — full card width (.aw-content has no horizontal padding,
         // the padded rows above/below make their own 14px insets)
         this._chart = new ChartArea(this);
         main.add_child(this._chart);
 
-        // day tiles (rebuilt on every render)
-        this._daysRow = row('aw-days');
-        main.add_child(this._daysRow);
+        // day tiles: mock's narrow grid = 2 rows × 4 (rebuilt on render)
+        this._daysGrid = column('aw-days-grid');
+        main.add_child(this._daysGrid);
         this._dayBtns = [];
-
-        // footer: updated text + refresh + settings
-        const footer = row('aw-footer-row');
-        this._updatedLbl = label('', 'aw-footer');
-        footer.add_child(this._updatedLbl);
-        footer.add_child(spacer());
-        footer.add_child(this._iconButton('view-refresh-symbolic', 'Refresh now',
-                                          () => this._onRefresh?.()));
-        footer.add_child(this._iconButton('emblem-system-symbolic', 'Preferences',
-                                          () => this._onSettings?.()));
-        main.add_child(footer);
 
         return main;
     }
@@ -326,6 +296,7 @@ export class ForecastPanel {
         const btn = new St.Button({
             style_class: 'aw-icon-btn',
             can_focus: true,
+            y_align: Clutter.ActorAlign.CENTER,
             child: new St.Icon({icon_name: iconName, icon_size: 16,
                                 y_align: Clutter.ActorAlign.CENTER}),
         });
@@ -334,14 +305,15 @@ export class ForecastPanel {
         return btn;
     }
 
-    _pillButton(text, name, cb) {
+    _unitButton(text, cb) {
         const btn = new St.Button({
             style_class: 'aw-unit-btn',
             can_focus: true,
+            y_align: Clutter.ActorAlign.START,
             child: label(text, 'aw-unit-label'),
         });
-        btn.set_accessible_name(name);
-        btn.connect('clicked', () => cb());
+        btn.set_accessible_name(`Show temperatures in ${text}`);
+        btn.connect('clicked', cb);
         return btn;
     }
 
@@ -385,27 +357,11 @@ export class ForecastPanel {
         const windy = !!state.windy;
         this._desc = desc;
 
-        this._bigIcon.setScene(scene, {windy, night: !current.isDay,
-                                       intensity: current.intensity,
-                                       windKmh: state.windKmh});
-
         this._tempLbl.set_text(fmtTemp(current.temp, units));
-        this._unitBtn.get_child().set_text(units === 'imperial' ? '°C' : '°F');
-        this._feelsLbl.set_text(`Feels like ${fmtTemp(current.feels, units)}`);
-        if (today)
-            this._hiloLbl.set_text(`H ${fmtTemp(today.tmax, units)}   ` +
-                                   `L ${fmtTemp(today.tmin, units)}`);
-
-        if (today) {
-            this._precipLbl.set_text(`Precipitation  ${today.precipProb}%`);
-            const uv = current.uv ?? today.uv ?? 0;
-            const band = UV_BANDS.find(b => uv < b[0]) ?? UV_BANDS.at(-1);
-            // St.Label has no markup API in GNOME 50 — dot is its own label
-            this._uvDot.set_style(`color: ${band[1]};`);
-            this._uvLbl.set_text(`UV Index  ${Math.round(uv)} ${band[2]}`);
-            this._humLbl.set_text(`Humidity  ${current.humidity}%`);
-            this._windLbl.set_text(
-                `Wind  ${fmtWind(current.wind, units)} ${windDir(current.windDeg)}`);
+        for (const [u, btn] of Object.entries(this._unitBtns)) {
+            btn.remove_style_class_name('aw-unit-on');
+            btn.remove_style_class_name('aw-unit-off');
+            btn.add_style_class_name(u === units ? 'aw-unit-on' : 'aw-unit-off');
         }
 
         // city clock ticks from the API timestamp (city timezone, not ours)
@@ -419,9 +375,11 @@ export class ForecastPanel {
             });
         }
 
+        // the mock has no "updated" row — keep it as the refresh button's
+        // accessible name instead of visible clutter
         if (state.updated)
-            this._updatedLbl.set_text(
-                `Updated ${state.updated.format('%H:%M')} · Open-Meteo`);
+            this._refreshBtn.set_accessible_name(
+                `Refresh forecast — updated ${state.updated.format('%H:%M')}`);
 
         this._buildDayTiles();
         if (this._day >= daily.length)
@@ -439,6 +397,12 @@ export class ForecastPanel {
     }
 
     /* ── selection logic ────────────────────────────────────────────────── */
+
+    _pickUnit(units) {
+        if (this._state && this._state.units === units)
+            return;                      // already showing that unit
+        this._onUnits?.();               // extension flips the gsetting
+    }
 
     _selectDay(i) {
         if (i === this._day)
@@ -533,36 +497,43 @@ export class ForecastPanel {
 
     _buildDayTiles() {
         const {daily, units} = this._state;
-        this._daysRow.destroy_all_children();
+        this._daysGrid.destroy_all_children();
         this._dayBtns = [];
-        for (let i = 0; i < Math.min(daily.length, 8); i++) {
-            const d = daily[i];
-            const {scene} = sceneFor(d.code, true);
-            const btn = new St.Button({
-                style_class: 'aw-day',
-                can_focus: true,
-                x_expand: true,
-            });
-            const col = new St.BoxLayout({vertical: true, style_class: 'aw-day-col',
-                                          x_align: FILL});
-            col.add_child(new St.Label({text: dayName(d.date),
-                                        style_class: 'aw-day-name',
-                                        x_align: Clutter.ActorAlign.CENTER}));
-            const icon = new WeatherIcon({size: 22, animate: false,
-                                          time: STATIC_TIME + i * 0.2});
-            icon.setScene(scene, {intensity: d.precipProb / 25, windKmh: d.windMax});
-            col.add_child(icon);
-            col.add_child(new St.Label({text: fmtTemp(d.tmax, units),
-                                        style_class: 'aw-day-hi',
-                                        x_align: Clutter.ActorAlign.CENTER}));
-            // low uses font WEIGHT, never opacity — stays readable on sun-bright skies
-            col.add_child(new St.Label({text: fmtTemp(d.tmin, units),
-                                        style_class: 'aw-day-lo',
-                                        x_align: Clutter.ActorAlign.CENTER}));
-            btn.set_child(col);
-            btn.connect('clicked', () => this._selectDay(i));
-            this._daysRow.add_child(btn);
-            this._dayBtns.push(btn);
+        const n = Math.min(daily.length, 8);
+        for (let r = 0; r < n; r += 4) {
+            const rowTiles = row('aw-days');
+            for (let i = r; i < Math.min(r + 4, n); i++) {
+                const d = daily[i];
+                const {scene} = sceneFor(d.code, true);
+                const btn = new St.Button({
+                    style_class: 'aw-day',
+                    can_focus: true,
+                    x_expand: true,
+                });
+                const col = new St.BoxLayout({vertical: true, style_class: 'aw-day-col',
+                                              x_align: FILL});
+                col.add_child(new St.Label({text: i === 0 ? 'Today' : dayName(d.date),
+                                            style_class: 'aw-day-name',
+                                            x_align: Clutter.ActorAlign.CENTER}));
+                const icon = new WeatherIcon({size: 26, animate: false,
+                                              time: STATIC_TIME + i * 0.2});
+                icon.setScene(scene, {intensity: d.precipProb / 25, windKmh: d.windMax});
+                col.add_child(icon);
+                // hi + lo share one line (mock .hl); hierarchy by weight,
+                // never opacity — lows must survive sun-bright skies
+                const hl = new St.BoxLayout({style_class: 'aw-day-hl',
+                                             x_align: Clutter.ActorAlign.CENTER});
+                hl.add_child(new St.Label({text: fmtTemp(d.tmax, units),
+                                           style_class: 'aw-day-hi'}));
+                hl.add_child(new St.Label({text: fmtTemp(d.tmin, units),
+                                           style_class: 'aw-day-lo'}));
+                col.add_child(hl);
+                btn.set_child(col);
+                btn.connect('clicked', () => this._selectDay(i));
+                rowTiles.add_child(btn);
+                this._dayBtns.push(btn);
+            }
+            this._daysGrid.add_child(rowTiles);
         }
     }
 
@@ -597,15 +568,15 @@ export class ForecastPanel {
 
     _tickClock() {
         if (!this._cityMs) {
-            this._clockLbl.set_text(this._desc);
+            this._clockLbl.set_text('');
             return;
         }
         const ms = this._cityMs +
                    Math.round((GLib.get_monotonic_time() - this._cityBaseUs) / 1000);
         const d = new Date(ms);   // parsed+rendered in machine TZ: cancels out
-        const p = n => String(n).padStart(2, '0');
+        const h12 = d.getHours() % 12 || 12;
         this._clockLbl.set_text(
-            this._desc ? `${p(d.getHours())}:${p(d.getMinutes())} · ${this._desc}`
-                       : `${p(d.getHours())}:${p(d.getMinutes())}`);
+            `${h12}:${String(d.getMinutes()).padStart(2, '0')} ` +
+            `${d.getHours() < 12 ? 'AM' : 'PM'}`);
     }
 }
