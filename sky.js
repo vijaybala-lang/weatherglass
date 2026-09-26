@@ -142,20 +142,10 @@ function sparkle(cr, x, y, s, a, cool) {
     cr.restore();
 }
 
-export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
-                              radius = 0, phase = null}) {
-    if (sky.scene !== scene || sky.w !== Math.round(w) || sky.h !== Math.round(h))
-        rebuild(sky, Math.round(w), Math.round(h), scene);
-
-    const dt = sky.lastT === null ? 0 : Math.min(0.1, time - sky.lastT);
-    sky.lastT = time;
-    const f = FEATURES[scene] ?? {};
-    const [top, bottom] = hexPal(scene, night);
-    const s = h / 420;                      // size scale vs mockup
-
-    cr.save();
+/* Rounded (or square) clip path so a full-bleed background never squares
+ * off the popup's corners. Caller saves/restores. */
+function roundClip(cr, w, h, radius) {
     if (radius > 0) {
-        // rounded clip so a full-bleed sky never squares off the popup's corners
         const r = Math.min(radius, w / 2, h / 2), k = 0.5523 * r;
         cr.moveTo(r, 0);
         cr.lineTo(w - r, 0);
@@ -170,6 +160,44 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
     } else {
         cr.rectangle(0, 0, w, h);
     }
+}
+
+/**
+ * paintPlain(cr, {w, h, accent, dark, radius}) — the "accent" menu style:
+ * no sky at all, just a whisper of the OS accent colour blended into the
+ * theme base (top slightly richer than bottom, so it reads as depth, not a
+ * flat sheet). Content/ink/labels ride on top exactly as over the sky.
+ */
+export function paintPlain(cr, {w, h, accent = [0.21, 0.52, 0.89],
+                                dark = true, radius = 0}) {
+    const base = dark ? [0.055, 0.07, 0.105] : [0.965, 0.972, 0.985];
+    const mix = (m) => base.map((b, i) => b + (accent[i] - b) * m);
+    const top = mix(dark ? 0.26 : 0.17);
+    const bot = mix(dark ? 0.13 : 0.08);
+    cr.save();
+    roundClip(cr, w, h, radius);
+    cr.clip();
+    const g = new Cairo.LinearGradient(0, 0, 0, h);
+    g.addColorStopRGBA(0, top[0], top[1], top[2], 1);
+    g.addColorStopRGBA(1, bot[0], bot[1], bot[2], 1);
+    cr.setSource(g);
+    cr.paint();
+    cr.restore();
+}
+
+export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
+                              radius = 0, phase = null}) {
+    if (sky.scene !== scene || sky.w !== Math.round(w) || sky.h !== Math.round(h))
+        rebuild(sky, Math.round(w), Math.round(h), scene);
+
+    const dt = sky.lastT === null ? 0 : Math.min(0.1, time - sky.lastT);
+    sky.lastT = time;
+    const f = FEATURES[scene] ?? {};
+    const [top, bottom] = hexPal(scene, night);
+    const s = h / 420;                      // size scale vs mockup
+
+    cr.save();
+    roundClip(cr, w, h, radius);
     cr.clip();
 
     // ── gradient backdrop ───────────────────────────────────────────────

@@ -19,7 +19,7 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import {WeatherIcon} from './animation.js';
-import {paintSky, createSky} from './sky.js';
+import {paintSky, paintPlain, createSky} from './sky.js';
 import {paintChart, ease, lerp} from './chart.js';
 import {sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn} from './weather.js';
 
@@ -36,8 +36,10 @@ const METRICS = {
 /* Theme = label ink + a scrim painted over the sky. Dark keeps the sky as
  * painted (white ink); light washes it pale so dark ink stays legible. */
 const THEME = {
-    dark:  {ink: [0.96, 0.97, 0.98], scrim: null,            cls: 'aw-dark'},
-    light: {ink: [0.10, 0.13, 0.19], scrim: [1, 1, 1, 0.42], cls: 'aw-light'},
+    dark:  {ink: [0.96, 0.97, 0.98], scrim: null,            cls: 'aw-dark',
+            scrimSolid: [0.03, 0.045, 0.08, 0.78]},
+    light: {ink: [0.10, 0.13, 0.19], scrim: [1, 1, 1, 0.42], cls: 'aw-light',
+            scrimSolid: [0.97, 0.975, 0.995, 0.80]},
 };
 
 const FILL = Clutter.ActorAlign.FILL;
@@ -93,15 +95,20 @@ class SkyArea extends St.DrawingArea {
             return;
         const cr = this.get_context();
         const o = this._panel._skyOpts;
-        paintSky(cr, {w, h, time: this._time,
-                      scene: o.scene, night: o.night, scrim: o.scrim,
-                      sky: o.sky, radius: o.radius ?? 0, phase: o.phase ?? null});
+        if (this._panel._style === 'accent')
+            paintPlain(cr, {w, h, accent: this._panel._accent,
+                            dark: this._panel._dark, radius: o.radius ?? 0});
+        else
+            paintSky(cr, {w, h, time: this._time,
+                          scene: o.scene, night: o.night, scrim: o.scrim,
+                          sky: o.sky, radius: o.radius ?? 0, phase: o.phase ?? null});
         cr.$dispose();
     }
 
-    /* self-idles while unmapped (menu closed) — GNOME 50 has no map signals */
+    /* self-idles while unmapped (menu closed) — GNOME 50 has no map signals;
+     * stays parked in 'accent' style too: no sky to animate there. */
     _start() {
-        if (this._clockId || !this._animate)
+        if (this._clockId || !this._animate || this._panel._style === 'accent')
             return;
         this._lastUs = GLib.get_monotonic_time();
         this._clockId = GLib.timeout_add(GLib.PRIORITY_LOW, FRAME_MS, () => {
@@ -177,6 +184,8 @@ export class ForecastPanel {
         this._skyOpts = {scene: 'loading', night: false, scrim: THEME.dark.scrim,
                          sky: this._sky, radius: 18};
         this._nowFrac = null;
+        this._style = 'animated';                 // animated | solid | accent
+        this._accent = [0.21, 0.52, 0.89];        // GNOME blue fallback
 
         // St.Widget with BinLayout = overlay: sky fills, content rides on top
         this.actor = new St.Widget({layout_manager: new Clutter.BinLayout()});
@@ -341,6 +350,23 @@ export class ForecastPanel {
     setDark(on) {
         this._dark = on;
         this._applyTheme();
+    }
+
+    /** Menu background treatment: 'animated' | 'solid' | 'accent'. */
+    setStyle(style) {
+        this._style = style;
+        this._syncScrim();
+        if (style === 'accent')
+            this._skyArea._stop();     // no sky to tick: park the clock
+        else
+            this._skyArea._start();
+        this._skyArea.queue_repaint();
+    }
+
+    /** [r, g, b] in 0..1 — OS accent colour for the 'accent' style. */
+    setAccent(rgb) {
+        this._accent = rgb;
+        this._skyArea.queue_repaint();
     }
 
     /** state = {current, daily, hourly, currentIso, units, windy, effective,
@@ -560,9 +586,16 @@ export class ForecastPanel {
         this._content.remove_style_class_name(THEME.dark.cls);
         this._content.remove_style_class_name(THEME.light.cls);
         this._content.add_style_class_name(this._theme().cls);
-        this._skyOpts.scrim = this._theme().scrim;
+        this._syncScrim();
         this._skyArea.queue_repaint();
         this._chart.queue_repaint();
+    }
+
+    /* which wash rides over the background for the current menu style */
+    _syncScrim() {
+        const t = this._theme();
+        this._skyOpts.scrim = this._style === 'solid' ? t.scrimSolid
+                            : this._style === 'accent' ? null : t.scrim;
     }
 
     _showBody(haveData) {

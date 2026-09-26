@@ -8,7 +8,7 @@
 import Cairo from 'gi://cairo';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import {paintSky, createSky} from '../sky.js';
+import {paintSky, paintPlain, createSky} from '../sky.js';
 import {paintChart} from '../chart.js';
 
 const CARD = {w: 330, h: 430}, CHART = {y: 107, h: 165};
@@ -34,6 +34,10 @@ const CASES = [
     {scene: 'rain',  night: false, values: DATA.hourly.temperature_2m.slice(40, 64), accent: [0.96, 0.65, 0.14]},
     {scene: 'snow',  night: false, values: DATA.hourly.temperature_2m.slice(64, 88), accent: [0.96, 0.65, 0.14]},
     {scene: 'moon',  night: true,  values: DATA.hourly.wind_speed_10m.slice(64, 88), accent: [0.24, 0.81, 0.56]},
+    // menu-style demos: flat OS-accent backgrounds (no sky); the chart keeps
+    // its own per-metric accent while the wash uses the "OS" one
+    {scene: 'accent', night: true, plain: true, bgAccent: [0.21, 0.52, 0.89], accent: [0.96, 0.65, 0.14], values: DATA.hourly.temperature_2m.slice(16, 40)},
+    {scene: 'accent-light', night: false, plain: true, bgAccent: [0.83, 0.38, 0.60], accent: [0.24, 0.81, 0.56], values: DATA.hourly.temperature_2m.slice(16, 40)},
 ];
 
 const outDir = GLib.build_filenamev([GLib.get_current_dir(), 'tools', 'out', 'cards']);
@@ -43,8 +47,12 @@ let pool = createSky();
 for (const [i, c] of CASES.entries()) {
     const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, CARD.w, CARD.h);
     const cr = new Cairo.Context(surf);
-    paintSky(cr, {w: CARD.w, h: CARD.h, time: 2.9, scene: c.scene,
-                  night: c.night, sky: pool, radius: 18});
+    if (c.plain)
+        paintPlain(cr, {w: CARD.w, h: CARD.h, accent: c.bgAccent,
+                        dark: c.night, radius: 18});
+    else
+        paintSky(cr, {w: CARD.w, h: CARD.h, time: 2.9, scene: c.scene,
+                      night: c.night, sky: pool, radius: 18});
 
     // real chart over the animated backdrop (header uses St.Label in the
     // actual menu, so we don't simulate it here)
@@ -55,6 +63,8 @@ for (const [i, c] of CASES.entries()) {
         fmtValue: (idx, v) => c.accent === CASES[1].accent ? `${Math.round(v)} km/h` : fmtTemp(v),
         fmtHour: idx => fmtHour(DATA.hourly.time[16 + idx] ?? 'T00'),
         accent: c.accent, nowFrac: c.nowFrac ?? null,
+        // real menu passes its theme ink; plain light card needs dark ink too
+        ink: c.plain && !c.night ? [0.10, 0.13, 0.19] : undefined,
         fontSize: 8,
     });
     cr.restore();

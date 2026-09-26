@@ -17,6 +17,34 @@ import {ForecastPanel} from './menu.js';
 import {WeatherClient, sceneFor, deriveScene, fmtTemp} from './weather.js';
 import {moonPhase} from './moon.js';
 
+/* Adwaita accent swatches (org.gnome.desktop.interface accent-color) */
+const ACCENTS = {
+    blue:     [0.208, 0.518, 0.894],   // #3584e4
+    teal:     [0.129, 0.565, 0.655],   // #2190a7
+    green:    [0.227, 0.580, 0.290],   // #3a944a
+    yellow:   [0.784, 0.533, 0.000],   // #c88800
+    orange:   [0.929, 0.357, 0.000],   // #ed5b00
+    red:      [0.878, 0.106, 0.141],   // #e01b24
+    pink:     [0.835, 0.380, 0.600],   // #d56199
+    purple:   [0.569, 0.255, 0.675],   // #9141ac
+    slate:    [0.435, 0.514, 0.588],   // #6f8396
+    lavender: [0.388, 0.271, 0.812],   // #6345cf
+    violet:   [0.486, 0.306, 0.635],   // #7c4ea2
+    sage:     [0.396, 0.569, 0.380],
+    rose:     [0.925, 0.420, 0.506],
+};
+const FALLBACK_ACCENT = ACCENTS.blue;
+
+function hexRgb(s) {
+    const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/.exec(s);
+    if (!m)
+        return null;
+    let hex = m[1];
+    if (hex.length === 3)
+        hex = hex.split('').map(c => c + c).join('');
+    return [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+}
+
 const PANEL_ICON_SIZE = 20;
 
 const WeatherIndicator = GObject.registerClass(
@@ -55,19 +83,24 @@ class WeatherIndicator extends PanelMenu.Button {
         this._panel.onSettings(() => this._ext.openPreferences());
         this._panel.onUnits(() => this._toggleUnits());
 
-        // OS dark-mode tracking: color-scheme wins, legacy bool is the fallback
+        // OS dark-mode + accent tracking: color-scheme wins, legacy bool is
+        // the fallback; accent-color feeds the 'accent' menu style
         this._dark = true;
+        this._accent = FALLBACK_ACCENT;
         try {
             this._iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
             this._dark = this._isDark();
+            this._accent = this._accentColor();
             this._darkId = this._iface.connect('changed', (s, key) => {
                 if (key === 'color-scheme' || key === 'gtk-application-prefer-dark-theme')
                     this._panel.setDark(this._isDark());
+                else if (key === 'accent-color')
+                    this._panel.setAccent(this._accentColor());
             });
         } catch {
             this._iface = null;   // exotic distro without the interface schema
         }
-        this._panel.setDark(this._dark);
+        this._syncPanelLook();
 
         const section = new PopupMenu.PopupMenuSection();
         section.actor.add_child(this._panel.actor);
@@ -296,6 +329,9 @@ class WeatherIndicator extends PanelMenu.Button {
             if (this._data)
                 this._update();
             break;
+        case 'menu-style':
+            this._panel.setStyle(this._settings.get_string('menu-style'));
+            break;
         case 'preview-scene':
             this._previewScene();
             break;
@@ -354,9 +390,23 @@ class WeatherIndicator extends PanelMenu.Button {
         this._panel.onRefresh(() => this._fetch(true));
         this._panel.onSettings(() => this._ext.openPreferences());
         this._panel.onUnits(() => this._toggleUnits());
-        this._panel.setDark(this._dark);
+        this._syncPanelLook();
         this._panel.setPlaceName(this._placeName());
         this._section.actor.add_child(this._panel.actor);
+    }
+
+    /** (re)apply all OS/settings look state a fresh panel needs */
+    _syncPanelLook() {
+        this._panel.setDark(this._dark);
+        this._panel.setAccent(this._accent);
+        this._panel.setStyle(this._settings.get_string('menu-style'));
+    }
+
+    /** OS accent colour as [r, g, b] 0..1: Adwaita swatch names or a custom
+     *  '#rrggbb'; anything unknown (or no schema) falls back to GNOME blue. */
+    _accentColor() {
+        const raw = (this._iface.get_string('accent-color') ?? '').trim().toLowerCase();
+        return ACCENTS[raw] ?? hexRgb(raw) ?? FALLBACK_ACCENT;
     }
 
     /* ── teardown ───────────────────────────────────────────────────────── */

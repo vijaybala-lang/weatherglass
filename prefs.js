@@ -10,6 +10,7 @@ import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/ex
 import {WeatherClient} from './weather.js';
 
 const UNITS = ['metric', 'imperial'];
+const STYLES = ['animated', 'solid', 'accent'];
 
 function locationLabel(r) {
     return [r.name, r.admin, r.country].filter(Boolean).join(', ');
@@ -203,6 +204,24 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         lookGroup.add(tempRow);
         lookGroup.add(animRow);
         page.add(lookGroup);
+
+        const bgGroup = new Adw.PreferencesGroup({title: 'Menu background'});
+        const styleRow = new Adw.ComboRow({
+            title: 'Background style',
+            subtitle: 'How the dropdown fills itself behind the forecast',
+            model: new Gtk.StringList({
+                strings: [
+                    'Animated sky (translucent)',
+                    'Solid (sky dimmed under a wash)',
+                    'Accent colour (no sky)',
+                ],
+            }),
+        });
+        styleRow.set_selected(STYLES.indexOf(settings.get_string('menu-style')));
+        styleRow.connect('notify::selected', () =>
+            settings.set_string('menu-style', STYLES[styleRow.get_selected()] ?? 'animated'));
+        bgGroup.add(styleRow);
+        page.add(bgGroup);
 
         const updGroup = new Adw.PreferencesGroup({title: 'Updates'});
         const refreshRow = new Adw.SpinRow({

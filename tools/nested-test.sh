@@ -48,6 +48,20 @@ timeout 120 dbus-run-session -- bash -c "
     sleep 16
     echo 'preview-scene after preview window (want empty string):'
     gsettings get $SCHEMA preview-scene
+    echo '=== scenario 4b: menu-style accent/solid (background modes) ==='
+    gsettings set $SCHEMA menu-style 'accent'
+    sleep 3
+    gsettings set $SCHEMA menu-style 'solid'
+    sleep 3
+    gsettings set $SCHEMA menu-style 'accent'
+    sleep 2
+    # re-run the popup toggler so its opens/closes paint the accent bg
+    gnome-extensions disable menutest@vbala.dev
+    sleep 2
+    gnome-extensions enable menutest@vbala.dev
+    sleep 12
+    gsettings set $SCHEMA menu-style 'animated'
+    sleep 2
     echo '=== scenario 5: popup open/close paint (crash regression) ==='
     sleep 4
     kill -0 \$GPID 2>/dev/null || { echo 'FAIL: shell died during menu toggles'; exit 1; }

@@ -56,6 +56,19 @@
       <summary>Weather refresh interval in minutes</summary>
     </key>
 
+    <key name="menu-style" type="s">
+      <choices>
+        <choice value="animated"/>
+        <choice value="solid"/>
+        <choice value="accent"/>
+      </choices>
+      <default>'animated'</default>
+      <summary>Menu background style</summary>
+      <description>animated = translucent weather sky, solid = the sky dimmed
+under a wash, accent = no sky, a flat background tinted with the OS accent
+colour</description>
+    </key>
+
     <key name="preview-scene" type="s">
       <default>''</default>
       <summary>Temporarily preview an animation on the panel icon</summary>
