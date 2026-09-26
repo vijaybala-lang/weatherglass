@@ -302,16 +302,19 @@ export class ForecastPanel {
         this._cityLbl = label('Weather', 'aw-city');
         // long city names must never crowd the temperature side
         this._cityLbl.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        this._cityLbl.x_align = Clutter.ActorAlign.END;   // flush right edge
         right.add_child(this._cityLbl);
 
         // mock keeps the clock alone at this width (no condition line);
         // refresh/settings get their own row under the clock — inline they
         // collided with the time text and the moon behind it
         const infoRow = row('aw-info-row');
+        infoRow.x_align = Clutter.ActorAlign.END;
         this._clockLbl = label('', 'aw-clockline');
         infoRow.add_child(this._clockLbl);
         right.add_child(infoRow);
         const btnRow = row('aw-btn-row');
+        btnRow.x_align = Clutter.ActorAlign.END;
         this._refreshBtn = this._iconButton('view-refresh-symbolic', 'Refresh now',
                                             () => this._onRefresh?.());
         btnRow.add_child(this._refreshBtn);
