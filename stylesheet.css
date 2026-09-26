@@ -232,6 +232,14 @@
     color: rgba(255, 255, 255, 0.85);
 }
 
+/* StIcon reads icon-shadow from its own theme node (color inherits, shadows
+ * do not): the same emboss the card text uses, so the ghost buttons survive
+ * drifting over the moon. icon-shadow = real silhouette blur in GNOME 50. */
+.aw-dark .aw-icon-btn StIcon {
+    color: #ffffff;
+    icon-shadow: 0 1px 4px rgba(0, 0, 10, 0.85);
+}
+
 .aw-dark .aw-icon-btn:hover {
     background-color: rgba(255, 255, 255, 0.16);
 }
@@ -300,6 +308,12 @@
 
 .aw-light .aw-icon-btn {
     color: rgba(16, 24, 35, 0.75);
+}
+
+/* light theme: dark ink icons get the mirror treatment — white halo */
+.aw-light .aw-icon-btn StIcon {
+    color: rgba(11, 18, 32, 0.95);
+    icon-shadow: 0 1px 3px rgba(255, 255, 255, 0.9);
 }
 
 .aw-light .aw-icon-btn:hover {
