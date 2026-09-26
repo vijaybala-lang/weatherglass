@@ -92,9 +92,10 @@ class WeatherIndicator extends PanelMenu.Button {
             this._dark = this._isDark();
             this._accent = this._accentColor();
             this._darkId = this._iface.connect('changed', (s, key) => {
-                if (key === 'color-scheme' || key === 'gtk-application-prefer-dark-theme')
-                    this._panel.setDark(this._isDark());
-                else if (key === 'accent-color')
+                if (key === 'color-scheme' || key === 'gtk-application-prefer-dark-theme') {
+                    this._dark = this._isDark();   // keep the field current:
+                    this._panel.setDark(this._dark);  // _syncPanelLook replays it
+                } else if (key === 'accent-color')
                     this._panel.setAccent(this._accentColor());
             });
         } catch {
@@ -153,6 +154,8 @@ class WeatherIndicator extends PanelMenu.Button {
     /** Mirror GNOME's own dark-mode rule: color-scheme preference wins,
      *  falling back to the legacy prefer-dark-theme boolean. */
     _isDark() {
+        if (!this._iface)
+            return this._dark;   // no interface schema: keep last known state
         try {
             const scheme = this._iface.get_string('color-scheme');
             if (scheme === 'prefer-dark' || scheme === 'force-dark')
@@ -291,7 +294,7 @@ class WeatherIndicator extends PanelMenu.Button {
             windy,
             effective,
             windKmh: current.wind,          // canonical km/h
-            dark: this._dark,
+            dark: this._isDark(),   // live read: survives toggles since boot
             phase,                          // tonight's real lunar phase
             updated: GLib.DateTime.new_now_local(),
         });

@@ -216,7 +216,7 @@ export function paintChart(cr, opts) {
             // Tint: accent wash on plain (accent-style) cards; the day-tile
             // hover glass, a shade lighter, on animated/solid skies so pills
             // and tiles speak one design language over the moving sky.
-            const PH = 9.5, INSET = 1.5, SS = 0.62, MINW = 19, PILL_R = 5;
+            const PH = 10.5, INSET = 2, SS = 0.58, MINW = 23, PILL_R = 6;
             const glass = !!opts.pillGlass;
             const fill = glass
                 ? (dark ? [16 / 255, 20 / 255, 28 / 255, 0.22] : [1, 1, 1, 0.36])
