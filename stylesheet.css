@@ -33,7 +33,8 @@
      * fill to the edges (mockup behaviour); rows pad themselves instead */
     padding: 12px 0 8px 0;
     border-radius: 18px;
-    text-shadow: 0 1px 8px rgba(0, 0, 20, 0.35);
+    /* firmer than the mock's .35: card ink must clear sun-bright skies */
+    text-shadow: 0 1px 4px rgba(0, 0, 10, 0.65);
 }
 
 .aw-main {
@@ -202,9 +203,13 @@
 .aw-dark .aw-clockline,
 .aw-dark .aw-unit-off,
 .aw-dark .aw-unit-bar,
-.aw-dark .aw-day-lo,
 .aw-dark .aw-placeholder-text {
     color: rgba(255, 255, 255, 0.62);
+}
+
+/* the mock dims lows only to .85 + weight — .62 was unreadable */
+.aw-dark .aw-day-lo {
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .aw-dark .aw-unit-on {
@@ -231,19 +236,21 @@
     background-color: rgba(255, 255, 255, 0.16);
 }
 
-/* tiles are transparent until hovered/selected (mock behaviour) */
+/* tiles are transparent until hovered/selected; the glass is DARK-tinted
+ * (the mock's rgba(16,20,28,·)) — white ink on white-tinted glass vanishes
+ * over bright skies, dark glass is what makes it pop */
 .aw-dark .aw-day {
     background-color: transparent;
-    color: rgba(255, 255, 255, 0.92);
+    color: rgba(255, 255, 255, 0.95);
 }
 
 .aw-dark .aw-day:hover {
-    background-color: rgba(255, 255, 255, 0.10);
+    background-color: rgba(16, 20, 28, 0.28);
 }
 
 .aw-dark .aw-day-sel {
-    background-color: rgba(255, 255, 255, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    background-color: rgba(16, 20, 28, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     color: #ffffff;
 }
 
@@ -256,14 +263,19 @@
 
 .aw-light {
     color: #101823;
+    /* dark ink gets the mirror treatment: a light halo instead of a shadow */
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.6);
 }
 
 .aw-light .aw-clockline,
 .aw-light .aw-unit-off,
 .aw-light .aw-unit-bar,
-.aw-light .aw-day-lo,
 .aw-light .aw-placeholder-text {
     color: rgba(16, 24, 35, 0.66);
+}
+
+.aw-light .aw-day-lo {
+    color: rgba(16, 24, 35, 0.8);
 }
 
 .aw-light .aw-unit-on {
@@ -304,7 +316,7 @@
 }
 
 .aw-light .aw-day-sel {
-    background-color: rgba(255, 255, 255, 0.55);
-    border: 1px solid rgba(16, 24, 35, 0.28);
+    background-color: rgba(255, 255, 255, 0.68);
+    border: 1px solid rgba(16, 24, 35, 0.35);
     color: #0b1220;
 }
