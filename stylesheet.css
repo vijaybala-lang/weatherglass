@@ -342,3 +342,15 @@
     border: 1px solid rgba(16, 24, 35, 0.35);
     color: #0b1220;
 }
+
+/* ── emboss off (preference) ───────────────────────────────────────────────
+ * Same node as the theme classes, so .aw-content.aw-flat outranks both the
+ * base and light text-shadow rules; the icon rule trails the theme blocks
+ * and adds a class, winning its tie by order + specificity. */
+.aw-content.aw-flat {
+    text-shadow: none;
+}
+
+.aw-content.aw-flat .aw-icon-btn StIcon {
+    icon-shadow: none;
+}

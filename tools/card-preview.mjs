@@ -8,9 +8,32 @@
 import Cairo from 'gi://cairo';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import {paintSky, paintPlain, createSky} from '../sky.js';
+import {paintSky, paintPlain, createSky, sampleSky} from '../sky.js';
 import {paintChart} from '../chart.js';
 import {sceneFor} from '../weather.js';
+
+/* mirrors menu.js contrast math so the preview proves the "now" label color */
+const _lumOf = c => {
+    const f = v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+};
+const _ratio = (a, b) => {
+    const la = _lumOf(a), lb = _lumOf(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+};
+function contrastSafe(accent, bg) {
+    if (_ratio(accent, bg) >= 3.1)
+        return accent;
+    const darkT = [0.09, 0.11, 0.15], lightT = [1, 1, 1];
+    const target = _ratio(darkT, bg) >= _ratio(lightT, bg) ? darkT : lightT;
+    let best = accent;
+    for (let t = 0.1; t <= 1.001; t += 0.1) {
+        best = accent.map((v, i) => v + (target[i] - v) * t);
+        if (_ratio(best, bg) >= 3.1)
+            return best;
+    }
+    return best;
+}
 
 /* same naive local-hour fallback the menu uses when the provider omits is_day */
 const isDayHour = t => {
@@ -35,7 +58,7 @@ const fmtHour = iso => {
 };
 
 const CASES = [
-    {scene: 'fog',   night: false, values: DATA.hourly.temperature_2m.slice(16, 40), accent: [0.96, 0.65, 0.14], nowFrac: 2 / 23, strip: 'pills'},
+    {scene: 'fog',   night: false, values: DATA.hourly.temperature_2m.slice(16, 40), accent: [0.96, 0.65, 0.14], nowFrac: 2 / 23, strip: 'pills', scrim: [0.97, 0.975, 0.995, 0.80]},
     {scene: 'clear', night: false, values: DATA.hourly.wind_speed_10m.slice(16, 40), accent: [0.24, 0.81, 0.56]},
     {scene: 'storm', night: true,  values: DATA.hourly.precipitation_probability.slice(16, 40).map((v, i) => v + i * 2), accent: [0.30, 0.64, 1.0]},
     {scene: 'rain',  night: false, values: DATA.hourly.temperature_2m.slice(40, 64), accent: [0.96, 0.65, 0.14]},
@@ -60,7 +83,7 @@ for (const [i, c] of CASES.entries()) {
                         dark: c.night, radius: 18});
     else
         paintSky(cr, {w: CARD.w, h: CARD.h, time: 2.9, scene: c.scene,
-                      night: c.night, sky: pool, radius: 18});
+                      night: c.night, sky: pool, radius: 18, scrim: c.scrim});
 
     // real chart over the animated backdrop (header uses St.Label in the
     // actual menu, so we don't simulate it here)
@@ -87,6 +110,13 @@ for (const [i, c] of CASES.entries()) {
         pillGlass: !c.plain,
         // real menu passes its theme ink; plain light card needs dark ink too
         ink: c.plain && !c.night ? [0.10, 0.13, 0.19] : undefined,
+        // "now" label: contrast-safe variant of the accent over the actual
+        // backdrop (themed card bg, or the sampled sky mid-chart + scrim)
+        nowLabel: contrastSafe(c.accent, c.plain
+            ? (c.night ? [0.185, 0.185, 0.19] : [0.96, 0.96, 0.97])
+            : (c.scrim ? sampleSky(c.scene, c.night, 0.62)
+                .map((v, i) => v * (1 - c.scrim[3]) + c.scrim[i] * c.scrim[3])
+                : sampleSky(c.scene, c.night, 0.62))),
         fontSize: 8,
     });
     cr.restore();

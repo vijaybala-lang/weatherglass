@@ -224,6 +224,12 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         styleRow.connect('notify::selected', () =>
             settings.set_string('menu-style', STYLES[styleRow.get_selected()] ?? 'animated'));
         bgGroup.add(styleRow);
+        const embossRow = new Adw.SwitchRow({
+            title: 'Text emboss',
+            subtitle: 'Soft shadow under card text and icons over the sky',
+        });
+        settings.bind('text-emboss', embossRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        bgGroup.add(embossRow);
         const COND = ['off', 'icons', 'pills'];
         const condRow = new Adw.ComboRow({
             title: 'Hourly conditions',

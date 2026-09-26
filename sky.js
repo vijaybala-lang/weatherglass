@@ -51,6 +51,15 @@ const FEATURES = {
     wind:   {streaks: 22},
 };
 
+/** Approximate the composited sky RGB at height fraction f (0 top .. 1
+ *  bottom) — lets the menu run real contrast math for accent-colored
+ *  text instead of guessing from the theme flag. Scrim not included:
+ *  callers blend that themselves (menu THEME table). */
+export function sampleSky(scene, night, f = 0.62) {
+    const [top, bot] = hexPal(scene, night);
+    return top.map((v, i) => v + (bot[i] - v) * f);
+}
+
 function hexPal(scene, night) {
     const pal = (PAL[scene] ?? PAL.cloud)[night ? 'n' : 'd'];
     return pal;

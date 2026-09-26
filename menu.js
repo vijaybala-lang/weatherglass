@@ -20,7 +20,7 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import {WeatherIcon} from './animation.js';
-import {paintSky, createSky} from './sky.js';
+import {paintSky, createSky, sampleSky} from './sky.js';
 import {paintChart, ease, lerp} from './chart.js';
 import {sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn} from './weather.js';
 
@@ -44,6 +44,34 @@ const THEME = {
 };
 
 const FILL = Clutter.ActorAlign.FILL;
+
+/* WCAG-flavored contrast for accent-colored text over an estimated
+ * background: keep the accent while it clears ~3:1, then slide it toward
+ * the high-contrast end (dark ink on light skies, white on dark) in fine
+ * steps until it reads. Used for the chart's "now" value label. */
+const _lumOf = c => {
+    const f = v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+};
+const _ratio = (a, b) => {
+    const la = _lumOf(a), lb = _lumOf(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+};
+function contrastSafe(accent, bg) {
+    if (_ratio(accent, bg) >= 3.1)
+        return accent;
+    // pick whichever ink wins on contrast (dark is better down to L≈0.18,
+    // white above) — a luminance threshold misclassifies mid-bright skies
+    const darkT = [0.09, 0.11, 0.15], lightT = [1, 1, 1];
+    const target = _ratio(darkT, bg) >= _ratio(lightT, bg) ? darkT : lightT;
+    let best = accent;
+    for (let t = 0.1; t <= 1.001; t += 0.1) {
+        best = accent.map((v, i) => v + (target[i] - v) * t);
+        if (_ratio(best, bg) >= 3.1)
+            return best;
+    }
+    return best;
+}
 
 function label(text, cls) {
     return new St.Label({text, style_class: cls, y_align: Clutter.ActorAlign.CENTER});
@@ -166,6 +194,10 @@ class ChartArea extends St.DrawingArea {
             // glass; the accent style keeps the accent tint on its calm
             // backdrop
             pillGlass: p._style !== 'accent',
+            // the "now" value label rides the sky, not the ink theme: hand
+            // it a contrast-safe variant of the accent (no-op when the
+            // accent already clears ~3:1 against the composited backdrop)
+            nowLabel: contrastSafe(accent, p._bgUnderChart()),
             fontSize: w < 480 ? 8 : 8.5,
         });
         cr.$dispose();
@@ -202,6 +234,7 @@ export class ForecastPanel {
         this._condPos = 'top';                    // strip band: top | bottom
         this._strip = null;                       // {scenes[], nights[]} for the chart
         this._accent = [0.21, 0.52, 0.89];        // GNOME blue fallback
+        this._emboss = true;                      // CSS text/icon shadows
 
         // St.Widget with BinLayout = overlay: sky fills, content rides on top
         this.actor = new St.Widget({layout_manager: new Clutter.BinLayout()});
@@ -403,6 +436,31 @@ export class ForecastPanel {
     setCondPos(pos) {
         this._condPos = pos === 'bottom' ? 'bottom' : 'top';
         this._chart.queue_repaint();
+    }
+
+    /** flat ink: drops the CSS emboss shadows (text + ghost buttons) */
+    setEmboss(on) {
+        this._emboss = on !== false;
+        if (this._emboss)
+            this._content.remove_style_class_name('aw-flat');
+        else
+            this._content.add_style_class_name('aw-flat');
+    }
+
+    /* The pixel color actually riding under the chart: themed cards are a
+     * flat theme bg; animated/solid = sky gradient sampled mid-chart, then
+     * the active scrim composited over it. Contrast reference for accent-
+     * colored text (the "now" label). */
+    _bgUnderChart() {
+        if (this._style === 'accent')
+            return this._dark ? [0.185, 0.185, 0.19] : [0.96, 0.96, 0.97];
+        const c = sampleSky(this._skyOpts.scene, this._skyOpts.night, 0.62);
+        const t = this._theme();
+        const scrim = this._style === 'solid' ? t.scrimSolid : t.scrim;
+        if (!scrim)
+            return c;
+        const a = scrim[3];
+        return c.map((v, i) => v * (1 - a) + scrim[i] * a);
     }
 
     /** state = {current, daily, hourly, currentIso, units, windy, effective,

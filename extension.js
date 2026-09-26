@@ -345,6 +345,9 @@ class WeatherIndicator extends PanelMenu.Button {
         case 'condition-pos':
             this._panel.setCondPos(this._settings.get_string('condition-pos'));
             break;
+        case 'text-emboss':
+            this._panel.setEmboss(this._settings.get_boolean('text-emboss'));
+            break;
         case 'preview-scene':
             this._previewScene();
             break;
@@ -415,6 +418,7 @@ class WeatherIndicator extends PanelMenu.Button {
         this._panel.setStyle(this._settings.get_string('menu-style'));
         this._panel.setConditions(this._settings.get_string('condition-strip'));
         this._panel.setCondPos(this._settings.get_string('condition-pos'));
+        this._panel.setEmboss(this._settings.get_boolean('text-emboss'));
     }
 
     /** OS accent colour as [r, g, b] 0..1: Adwaita swatch names or a custom

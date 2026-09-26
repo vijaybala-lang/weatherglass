@@ -323,7 +323,8 @@ export function paintChart(cr, opts) {
         const lx = anchor === 'start' ? Math.max(4, ax - 6)
                  : anchor === 'end'   ? Math.min(w - 4, ax + 6) : ax;
         drawText(cr, fmtValue(nowI, values[nowI]), lx, Y(values[nowI]) - 22 + 1,
-                 {size: FS, bold: true, rgba: [acR, acG, acB, 1], anchor});
+                 {size: FS, bold: true,
+                  rgba: [...(opts.nowLabel ?? [acR, acG, acB]), 1], anchor});
     }
 }
 
