@@ -61,7 +61,9 @@ function tracePath(cr, pts) {
  *   fmtValue(i, v):  string   value label text
  *   fmtHour(i):      string   x label ('3 PM'); '' hides
  *   accent:          [r, g, b] 0..1
- *   nowFrac:         0..1 | null — dashed marker + accent label on that point
+ *   nowFrac:         0..1 | null — dashed marker + accent label on that
+ *                    point; everything left of it fades to pastKeep
+ *   pastKeep:        alpha kept by past ink (default 0.55)
  *   labelEvery:      label stride (default 3; narrow cards pass a bigger one)
  *   fontSize:        label font size in pt (default 8.5)
  * }
@@ -109,6 +111,44 @@ export function paintChart(cr, opts) {
     cr.stroke();
     cr.restore();
 
+    // value + hour labels. The "now" point and its immediate neighbours
+    // make way: the accent label gets drawn AFTER the past veil below so
+    // it stays crisp (the 2 h backfill usually puts now off the label
+    // stride anyway, hence the crowded() logic).
+    const nowI = nowFrac === null ? -1 : Math.round(nowFrac * (n - 1));
+    for (let i = 0; i < n; i += EVERY) {
+        const ax = X(i);
+        const anchor = ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
+        const lx = anchor === 'start' ? Math.max(4, ax - 6)
+                 : anchor === 'end'   ? Math.min(w - 4, ax + 6) : ax;
+        const crowded = nowI >= 0 && Math.abs(i - nowI) < 2;
+        if (!crowded)
+            drawText(cr, fmtValue ? fmtValue(i, values[i]) : String(values[i]),
+                     lx, Y(values[i]) - 12 + 1,
+                     {size: FS, bold: true, rgba: [...INK, 0.62], anchor});
+        if (fmtHour) {
+            const t = fmtHour(i);
+            if (t)
+                drawText(cr, t, lx, h - 8, {size: FS, rgba: [...INK, 0.62], anchor});
+        }
+    }
+
+    // past veil: ink left of "now" recedes slightly — hours already lived.
+    // Porter-Duff DEST_OUT multiplies the alpha of everything the chart has
+    // painted so far (line, area fill, grid labels) by pastKeep; the surface
+    // stays transparent elsewhere, so the animated sky beneath is untouched
+    // and there is no seam at the boundary.
+    if (nowFrac !== null && nowFrac > 0 && nowFrac <= 1) {
+        const destOut = Cairo.Operator?.DEST_OUT ?? Cairo.OPERATOR_DEST_OUT;
+        if (destOut !== undefined) {
+            cr.save();
+            cr.setOperator(destOut);
+            cr.rectangle(0, 0, PADX + nowFrac * (w - PADX * 2), h);
+            cr.paintWithAlpha(1 - (opts.pastKeep ?? 0.55));
+            cr.restore();
+        }
+    }
+
     // now marker (manual dashes — cr.setDash binding is unreliable in GJS)
     if (nowFrac !== null && nowFrac >= 0 && nowFrac <= 1) {
         const nx = PADX + nowFrac * (w - PADX * 2);
@@ -123,29 +163,8 @@ export function paintChart(cr, opts) {
         cr.restore();
     }
 
-    // value + hour labels. The accent label marks "now": with the 2 h
-    // backfill that point usually falls off the 3-hour label stride, so
-    // nearby grid value labels make way and now gets its own accent draw.
-    const nowI = nowFrac === null ? -1 : Math.round(nowFrac * (n - 1));
-    for (let i = 0; i < n; i += EVERY) {
-        const ax = X(i);
-        const anchor = ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
-        const lx = anchor === 'start' ? Math.max(4, ax - 6)
-                 : anchor === 'end'   ? Math.min(w - 4, ax + 6) : ax;
-        const isNow = i === nowI;
-        const crowded = nowI >= 0 && !isNow && Math.abs(i - nowI) < 2;
-        if (!crowded)
-            drawText(cr, fmtValue ? fmtValue(i, values[i]) : String(values[i]),
-                     lx, Y(values[i]) - (isNow ? 22 : 12) + 1,
-                     {size: FS, bold: true,
-                      rgba: isNow ? [acR, acG, acB, 1] : [...INK, 0.62], anchor});
-        if (fmtHour) {
-            const t = fmtHour(i);
-            if (t)
-                drawText(cr, t, lx, h - 8, {size: FS, rgba: [...INK, 0.62], anchor});
-        }
-    }
-    if (nowI >= 0 && nowI % EVERY && fmtValue) {
+    // accent label riding the now marker, above the veil
+    if (nowI >= 0 && fmtValue) {
         const ax = X(nowI);
         const anchor = ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
         const lx = anchor === 'start' ? Math.max(4, ax - 6)
