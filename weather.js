@@ -106,23 +106,28 @@ export function fmtTime(iso) {
 }
 
 /**
- * Hourly-array indices covering one day for the chart (always ~24 points).
- * Today starts at the CURRENT hour and rolls into tomorrow so the line never
- * dies mid-evening; other days run midnight to midnight. Comparison is on
- * ISO strings (zero-padded) — no Date parsing, no timezone traps.
+ * Hourly-array indices covering ~24 points for the chart. Today starts at
+ * the CURRENT hour and runs a full 24h ROLLING WINDOW into tomorrow (like
+ * the mockup's slice(16, 40)) — a mere "rest of today" slice would leave a
+ * 6-point flat line in the evening. Other days run midnight to midnight.
+ * Comparison is on ISO strings (zero-padded) — no Date parsing, no tz traps.
  */
 export function daySlice(hourly, daily, dayIndex, nowIso) {
+    if (dayIndex === 0 && nowIso) {
+        const hour = nowIso.slice(0, 13);                     // 'YYYY-MM-DDTHH'
+        const start = hourly.time.findIndex(t => t.slice(0, 13) === hour);
+        if (start >= 0) {
+            const idx = [];
+            for (let i = start; i < Math.min(start + 24, hourly.time.length); i++)
+                idx.push(i);
+            return idx;
+        }
+    }
     const key = daily[dayIndex]?.date ?? '';
-    let idx = [];
+    const idx = [];
     for (let i = 0; i < hourly.time.length; i++)
         if (hourly.time[i].startsWith(key))
             idx.push(i);
-    if (dayIndex === 0 && nowIso) {
-        const hour = nowIso.slice(0, 13);                 // 'YYYY-MM-DDTHH'
-        const start = idx.findIndex(i => hourly.time[i].slice(0, 13) === hour);
-        if (start > 0)
-            idx = idx.slice(start);
-    }
     return idx.slice(0, 24);
 }
 

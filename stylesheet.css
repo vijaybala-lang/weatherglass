@@ -16,8 +16,10 @@
  */
 
 /* Own the popup chrome: the theme's .popup-menu-content padding would shrink
- * the 330px card and leave a gap around the full-bleed sky. */
+ * the 330px card and leave a gap around the full-bleed sky. The compound
+ * selector outranks the theme rule; extension.js also zeroes these inline. */
 .aw-menu,
+.aw-menu.popup-menu-content,
 .aw-menu .popup-menu-content {
     padding: 0;
 }
@@ -25,7 +27,9 @@
 .aw-content {
     width: 330px;
     min-height: 430px;
-    padding: 12px 14px 8px 14px;
+    /* no horizontal padding: the chart spans the full card and bleeds its
+     * fill to the edges (mockup behaviour); rows pad themselves instead */
+    padding: 12px 0 8px 0;
     spacing: 6px;
     border-radius: 18px;
 }
@@ -36,6 +40,8 @@
 
 .aw-header {
     spacing: 10px;
+    padding-left: 14px;
+    padding-right: 14px;
 }
 
 .aw-temp-col {
@@ -69,6 +75,8 @@
 
 .aw-details {
     spacing: 4px;
+    padding-left: 14px;
+    padding-right: 14px;
 }
 
 .aw-details-line {
@@ -102,6 +110,8 @@
 
 .aw-tabs {
     spacing: 4px;
+    padding-left: 14px;
+    padding-right: 14px;
 }
 
 .aw-tab {
@@ -122,6 +132,8 @@
 
 .aw-days {
     spacing: 3px;
+    padding-left: 14px;
+    padding-right: 14px;
 }
 
 .aw-day {
@@ -158,6 +170,8 @@
 
 .aw-footer-row {
     spacing: 6px;
+    padding-left: 14px;
+    padding-right: 14px;
 }
 
 .aw-footer {

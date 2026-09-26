@@ -9,7 +9,11 @@ LOG=/tmp/opencode/nested.log
 SCHEMA=org.gnome.shell.extensions.animated-weather
 
 rm -rf "$H"; mkdir -p "$H/.local/share/gnome-shell"
-ln -s ~/.local/share/gnome-shell/extensions "$H/.local/share/gnome-shell/extensions"
+# real dir: our extension is symlinked in, the menu-opening test copied in
+mkdir -p "$H/.local/share/gnome-shell/extensions"
+ln -s ~/.local/share/gnome-shell/extensions/animated-weather@vbala.dev \
+      "$H/.local/share/gnome-shell/extensions/animated-weather@vbala.dev"
+cp -r "$PROJ/tools/menutest@vbala.dev" "$H/.local/share/gnome-shell/extensions/"
 mkdir -p "$H/.local/share/glib-2.0/schemas"
 cp "$PROJ/schemas/"*.xml "$H/.local/share/glib-2.0/schemas/"
 glib-compile-schemas "$H/.local/share/glib-2.0/schemas"
@@ -19,7 +23,7 @@ unset WAYLAND_DISPLAY DISPLAY
 export G_MESSAGES_DEBUG=all
 
 timeout 120 dbus-run-session -- bash -c "
-  gsettings set org.gnome.shell enabled-extensions '[\"animated-weather@vbala.dev\"]'
+  gsettings set org.gnome.shell enabled-extensions '[\"animated-weather@vbala.dev\", \"menutest@vbala.dev\"]'
   gsettings set $SCHEMA units 'imperial'
   gsettings set $SCHEMA auto-location false
   gsettings set $SCHEMA location-latitude 47.6062
@@ -44,8 +48,14 @@ timeout 120 dbus-run-session -- bash -c "
     sleep 16
     echo 'preview-scene after preview window (want empty string):'
     gsettings get $SCHEMA preview-scene
+    echo '=== scenario 5: popup open/close paint (crash regression) ==='
+    sleep 4
+    kill -0 \$GPID 2>/dev/null || { echo 'FAIL: shell died during menu toggles'; exit 1; }
     kill \$GPID; exit 0
   done
   kill \$GPID
 " >"$LOG" 2>&1
 echo "exit: $?"
+echo "--- menutest lines ---"
+grep "menutest" "$LOG" | tail -3
+grep -q "menutest: DONE" "$LOG" && echo "popup paint: PASS" || echo "popup paint: FAIL (menutest never finished)"

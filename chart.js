@@ -98,7 +98,11 @@ export function paintChart(cr, opts) {
     cr.lineTo(X(0), h - BOT + 10);
     cr.closePath();
     cr.setSource(grad);
-    cr.fillPreserve();                       // the stroked line rides along
+    cr.fill();
+    // stroke ONLY the curve (re-trace): fillPreserve here would outline the
+    // whole closed area polygon — the "box around the line" bug
+    cr.newPath();
+    tracePath(cr, pts);
     cr.setSourceRGBA(acR, acG, acB, 1);
     cr.setLineWidth(LINE_W);
     cr.setLineCap(Cairo.LineCap.ROUND);

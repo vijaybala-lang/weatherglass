@@ -1,0 +1,7 @@
+{
+  "uuid": "menutest@vbala.dev",
+  "name": "Menu Opener (test only)",
+  "description": "Repeatedly opens and closes the Animated Weather popup to smoke-test its painting path. Never ship this.",
+  "shell-version": ["50"],
+  "url": ""
+}

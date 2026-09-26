@@ -74,6 +74,15 @@ class WeatherIndicator extends PanelMenu.Button {
         this.menu.actor.add_style_class_name('aw-menu');
         this._section = section;
 
+        // The theme's .popup-menu-content padding (~12px) would shrink the
+        // 330px card and frame the full-bleed sky in popup grey. Inline styles
+        // outrank class CSS whatever the wrapper chain looks like.
+        for (let a = this._panel.actor; a; a = a.get_parent()) {
+            a.set_style('padding: 0px; margin: 0px; border-width: 0px;');
+            if (a === this.menu.actor)
+                break;
+        }
+
         this._panel.setPlaceName(this._placeName());
 
         // ── signals ───────────────────────────────────────────────────────
@@ -366,7 +375,7 @@ export default class AnimatedWeatherExtension extends Extension {
         // build stamp: journalctl --user -o cat | grep "Animated Weather v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
-        console.log('Animated Weather v5.1 (compact 330x430 card: sky backdrop, hourly chart, day tiles, dark/light themes)');
+        console.log('Animated Weather v5.2 (24h rolling chart, repaint-safety vs GNOME 50 sync-repaint abort)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }

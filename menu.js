@@ -8,7 +8,6 @@
  * paints a scrim over the sky in light mode.
  */
 
-import Cairo from 'gi://cairo';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
@@ -86,21 +85,20 @@ class SkyArea extends St.DrawingArea {
         this._start();
     }
 
+    /* GNOME 50's St.DrawingArea emits repaint SYNCHRONOUSLY from allocate
+     * and style-changed. Querying allocation/theme inside repaint re-enters
+     * that machinery, frees the mapped Cogl buffer underfoot and aborts the
+     * shell (observed live: cogl_buffer_dispose MAPPED assert → null cairo
+     * context → SIGABRT). So: touch get_surface_size() + get_context() and
+     * NOTHING else — the surface size is already logical px and the context
+     * arrives device-scaled and pre-cleared. */
     vfunc_repaint() {
-        const [sw, sh] = this.get_surface_size();          // device px
-        if (sw <= 0 || sh <= 0)
-            return;
-        const alloc = this.get_allocation_box();           // logical px
-        const lw = alloc.get_width(), lh = alloc.get_height();
-        if (lw <= 0 || lh <= 0)
+        const [w, h] = this.get_surface_size();
+        if (w <= 0 || h <= 0)
             return;
         const cr = this.get_context();
-        cr.setOperator(Cairo.Operator.CLEAR);
-        cr.paint();
-        cr.setOperator(Cairo.Operator.OVER);
-        cr.scale(sw / lw, sh / lh);
         const o = this._panel._skyOpts;
-        paintSky(cr, {w: lw, h: lh, time: this._time,
+        paintSky(cr, {w, h, time: this._time,
                       scene: o.scene, night: o.night, scrim: o.scrim,
                       sky: o.sky, radius: o.radius ?? 0});
         cr.$dispose();
@@ -136,24 +134,19 @@ class ChartArea extends St.DrawingArea {
         this._panel = panel;
     }
 
+    /* Same repaint-safety contract as SkyArea: surface size only, no
+     * allocation or theme queries (see the comment up there). */
     vfunc_repaint() {
-        const [sw, sh] = this.get_surface_size();
-        if (sw <= 0 || sh <= 0)
-            return;
-        const alloc = this.get_allocation_box();
-        const lw = alloc.get_width(), lh = alloc.get_height();
-        if (lw <= 0 || lh <= 0)
+        const [w, h] = this.get_surface_size();
+        if (w <= 0 || h <= 0)
             return;
         const p = this._panel, m = METRICS[p._metric];
-        // keep hour labels ~60px apart: wide cards every 3h, narrow ~every 4-5h
-        const spacing = (lw - 4) / Math.max(1, p._shown.length - 1);
+        // full 330px wide: .aw-content has no horizontal padding (rows pad
+        // themselves), so the area fill bleeds to the card edges naturally
+        const spacing = (w - 4) / Math.max(1, p._shown.length - 1);
         const cr = this.get_context();
-        cr.setOperator(Cairo.Operator.CLEAR);
-        cr.paint();
-        cr.setOperator(Cairo.Operator.OVER);
-        cr.scale(sw / lw, sh / lh);
         paintChart(cr, {
-            w: lw, h: lh,
+            w, h,
             values: p._shown,
             fmtValue: p._fmtValue ?? (() => ''),
             fmtHour: p._fmtHour ?? (() => ''),
@@ -161,7 +154,7 @@ class ChartArea extends St.DrawingArea {
             ink: p._theme().ink,
             nowFrac: p._day === 0 ? 0 : null,
             labelEvery: Math.max(2, Math.round(60 / spacing)),
-            fontSize: lw < 480 ? 7.5 : 8.5,
+            fontSize: w < 480 ? 7.5 : 8.5,
         });
         cr.$dispose();
     }
@@ -299,11 +292,15 @@ export class ForecastPanel {
             tabs.add_child(btn);
             this._tabBtns[key] = btn;
         }
+        // the initial metric (temperature) starts active — _selectMetric only
+        // fires on *changes*, so light its underline up front
+        this._tabBtns[this._metric].add_style_class_name('aw-tab-active');
+        this._tabBtns[this._metric].add_style_class_name(METRICS[this._metric].underline);
         main.add_child(tabs);
 
-        // chart — full bleed to the card edges (negative side margins)
+        // chart — full card width (.aw-content has no horizontal padding,
+        // the padded rows above/below make their own 14px insets)
         this._chart = new ChartArea(this);
-        this._chart.margin_left = this._chart.margin_right = -14;
         main.add_child(this._chart);
 
         // day tiles (rebuilt on every render)
