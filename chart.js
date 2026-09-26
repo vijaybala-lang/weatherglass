@@ -81,6 +81,16 @@ function tracePath(cr, pts) {
  */
 /* ── pill helpers (grouped condition mode) ──────────────────────────────── */
 
+/* Footprint compensation: the sun's rays fill the 24-unit grid, cloud-only
+ * scenes occupy barely 60 % of it — at one shared scale the cloud pills look
+ * half-empty next to the sun. Scale small-footprint scenes up so every pill
+ * (and strip icon) reads as an equally sized glyph. Moon stays capped so
+ * its stars stay inside a minimum-size pill. */
+const FOOT = {
+    moon: 1.5, cloud: 1.35, fog: 1.25, rain: 1.2, drizzle: 1.2,
+    sleet: 1.2, snow: 1.2, partly: 1.15, hail: 1.1, storm: 1.1,
+};
+
 function pillPath(cr, x0, y0, x1, y1, r) {
     cr.newPath();
     const cy = (y0 + y1) / 2;
@@ -188,11 +198,12 @@ export function paintChart(cr, opts) {
         if (opts.pills) {
             // grouped: consecutive same-condition hours tile the axis as one
             // pill per run. Widths start as the exact time slice (edges at the
-            // boundary hours' midpoints); runs narrower than MINW (the max
-            // icon footprint at strip scale) borrow width from longer
-            // neighbours, so pills stay consistent AND can never overlap.
+            // boundary hours' midpoints); runs narrower than MINW borrow width
+            // from longer neighbours, so pills stay consistent AND can never
+            // overlap. MINW/MINH = the largest scene glyph (sun incl. rays,
+            // 15 px) + padding, so no pill is ever smaller than any icon.
             // Tint = the metric accent, semi-transparent (Apple-style wash).
-            const PH = 9, INSET = 1.5, SS = 0.62, MINW = 17;
+            const PH = 9.5, INSET = 1.5, SS = 0.62, MINW = 19;
             const runs = [];
             let a = 0;
             while (a < n) {
@@ -227,13 +238,20 @@ export function paintChart(cr, opts) {
                 cr.setLineWidth(1);
                 cr.stroke();
                 cr.restore();
-                paint1(r.scene, (x0 + x1) / 2, r.night, SS);
+                // glyph clipped to the pill body so boosted scenes (moon
+                // glow/stars) never leak over the pill's rounded edge
+                cr.save();
+                pillPath(cr, x0, STRIP_Y - PH, x1, STRIP_Y + PH,
+                         Math.min(PH, (x1 - x0) / 2));
+                cr.clip();
+                paint1(r.scene, (x0 + x1) / 2, r.night, SS * (FOOT[r.scene] ?? 1));
+                cr.restore();
             }
         } else {
             const every = Math.max(2, Math.ceil(30 / span));
             for (let i = 0; i < n; i += every) {
                 const cx = Math.min(Math.max(X(i), 10 + PADX), w - 10 - PADX);
-                paint1(strip[i], cx, nights[i], STRIP_S);
+                paint1(strip[i], cx, nights[i], STRIP_S * (FOOT[strip[i]] ?? 1));
             }
         }
     }
