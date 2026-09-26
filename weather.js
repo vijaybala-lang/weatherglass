@@ -109,14 +109,20 @@ export function fmtTime(iso) {
  * Hourly-array indices covering ~24 points for the chart. Today starts at
  * the CURRENT hour and runs a full 24h ROLLING WINDOW into tomorrow (like
  * the mockup's slice(16, 40)) — a mere "rest of today" slice would leave a
- * 6-point flat line in the evening. Other days run midnight to midnight.
+ * 6-point flat line in the evening. Today's window backfills 2 h before now
+ * (clamped at midnight, whose hourly data the API always returns) so the
+ * "now" marker isn't glued to the chart's left edge. Other days run
+ * midnight to midnight.
  * Comparison is on ISO strings (zero-padded) — no Date parsing, no tz traps.
  */
+const NOW_BACKFILL = 2;
+
 export function daySlice(hourly, daily, dayIndex, nowIso) {
     if (dayIndex === 0 && nowIso) {
         const hour = nowIso.slice(0, 13);                     // 'YYYY-MM-DDTHH'
-        const start = hourly.time.findIndex(t => t.slice(0, 13) === hour);
-        if (start >= 0) {
+        const at = hourly.time.findIndex(t => t.slice(0, 13) === hour);
+        if (at >= 0) {
+            const start = Math.max(0, at - NOW_BACKFILL);
             const idx = [];
             for (let i = start; i < Math.min(start + 24, hourly.time.length); i++)
                 idx.push(i);
@@ -129,6 +135,16 @@ export function daySlice(hourly, daily, dayIndex, nowIso) {
         if (hourly.time[i].startsWith(key))
             idx.push(i);
     return idx.slice(0, 24);
+}
+
+/** Where the current hour sits inside a daySlice as a 0..1 fraction of the
+ *  chart's x axis (matches chart.js X(i) = i/(n-1)); null if outside. */
+export function nowFracIn(hourly, idx, nowIso) {
+    if (!nowIso || !idx || idx.length < 2)
+        return null;
+    const hour = nowIso.slice(0, 13);
+    const at = idx.indexOf(hourly.time.findIndex(t => t.slice(0, 13) === hour));
+    return at < 0 ? null : at / (idx.length - 1);
 }
 
 /* ── HTTP ────────────────────────────────────────────────────────────────── */

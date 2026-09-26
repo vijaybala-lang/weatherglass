@@ -61,7 +61,7 @@ function tracePath(cr, pts) {
  *   fmtValue(i, v):  string   value label text
  *   fmtHour(i):      string   x label ('3 PM'); '' hides
  *   accent:          [r, g, b] 0..1
- *   nowFrac:         0..1 | null — dashed marker + accent first label
+ *   nowFrac:         0..1 | null — dashed marker + accent label on that point
  *   labelEvery:      label stride (default 3; narrow cards pass a bigger one)
  *   fontSize:        label font size in pt (default 8.5)
  * }
@@ -123,22 +123,35 @@ export function paintChart(cr, opts) {
         cr.restore();
     }
 
-    // value + hour labels
+    // value + hour labels. The accent label marks "now": with the 2 h
+    // backfill that point usually falls off the 3-hour label stride, so
+    // nearby grid value labels make way and now gets its own accent draw.
+    const nowI = nowFrac === null ? -1 : Math.round(nowFrac * (n - 1));
     for (let i = 0; i < n; i += EVERY) {
         const ax = X(i);
         const anchor = ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
         const lx = anchor === 'start' ? Math.max(4, ax - 6)
                  : anchor === 'end'   ? Math.min(w - 4, ax + 6) : ax;
-        const isNow = i === 0 && nowFrac !== null && nowFrac < 0.1;
-        drawText(cr, fmtValue ? fmtValue(i, values[i]) : String(values[i]),
-                 lx, Y(values[i]) - (isNow ? 22 : 12) + 1,
-                 {size: FS, bold: true,
-                  rgba: isNow ? [acR, acG, acB, 1] : [...INK, 0.62], anchor});
+        const isNow = i === nowI;
+        const crowded = nowI >= 0 && !isNow && Math.abs(i - nowI) < 2;
+        if (!crowded)
+            drawText(cr, fmtValue ? fmtValue(i, values[i]) : String(values[i]),
+                     lx, Y(values[i]) - (isNow ? 22 : 12) + 1,
+                     {size: FS, bold: true,
+                      rgba: isNow ? [acR, acG, acB, 1] : [...INK, 0.62], anchor});
         if (fmtHour) {
             const t = fmtHour(i);
             if (t)
                 drawText(cr, t, lx, h - 8, {size: FS, rgba: [...INK, 0.62], anchor});
         }
+    }
+    if (nowI >= 0 && nowI % EVERY && fmtValue) {
+        const ax = X(nowI);
+        const anchor = ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
+        const lx = anchor === 'start' ? Math.max(4, ax - 6)
+                 : anchor === 'end'   ? Math.min(w - 4, ax + 6) : ax;
+        drawText(cr, fmtValue(nowI, values[nowI]), lx, Y(values[nowI]) - 22 + 1,
+                 {size: FS, bold: true, rgba: [acR, acG, acB, 1], anchor});
     }
 }
 

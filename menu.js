@@ -21,7 +21,7 @@ import St from 'gi://St';
 import {WeatherIcon} from './animation.js';
 import {paintSky, createSky} from './sky.js';
 import {paintChart, ease, lerp} from './chart.js';
-import {sceneFor, fmtTemp, fmtWind, dayName, daySlice} from './weather.js';
+import {sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn} from './weather.js';
 
 const FRAME_MS = 50;         // sky: 20 fps is plenty
 const STATIC_TIME = 1.1;     // frame that makes static mini icons look lively
@@ -145,7 +145,7 @@ class ChartArea extends St.DrawingArea {
             fmtHour: p._fmtHour ?? (() => ''),
             accent: m.accent,
             ink: p._theme().ink,
-            nowFrac: p._day === 0 ? 0 : null,
+            nowFrac: p._day === 0 ? (p._nowFrac ?? 0) : null,
             fontSize: w < 480 ? 8 : 8.5,
         });
         cr.$dispose();
@@ -176,6 +176,7 @@ export class ForecastPanel {
         // radius 18 matches the shell's polished-popup corner radius
         this._skyOpts = {scene: 'loading', night: false, scrim: THEME.dark.scrim,
                          sky: this._sky, radius: 18};
+        this._nowFrac = null;
 
         // St.Widget with BinLayout = overlay: sky fills, content rides on top
         this.actor = new St.Widget({layout_manager: new Clutter.BinLayout()});
@@ -449,6 +450,8 @@ export class ForecastPanel {
                 : (i, v) => fmtWind(v, units);
         const times = s.hourly ? idx.map(i => s.hourly.time[i]) : [];
         this._fmtHour = i => hourLabel(times[i] ?? 'T00');
+        // today's window starts 2 h early: the now marker sits that far in
+        this._nowFrac = this._day === 0 ? nowFracIn(s.hourly, idx, s.currentIso) : null;
         return idx.map(i => s.hourly[field][i] ?? 0);
     }
 
