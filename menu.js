@@ -274,11 +274,13 @@ export class ForecastPanel {
         const main = column('aw-main');
         this._main = main;
 
-        // header (mockup narrow breakpoint): huge temp + °F | °C text toggle,
-        // then city / clock+actions pushed right. No big icon, no details —
-        // the mock hides both at this width; the chart earns the space.
+        // header (mockup narrow breakpoint): huge temp + °F | °C text toggle
+        // with the current condition text under it, then city / clock+actions
+        // pushed right. No big icon — the chart earns the space.
         const header = row('aw-header');
 
+        const leftCol = new St.BoxLayout({vertical: true, style_class: 'aw-temp-col',
+                                          y_align: Clutter.ActorAlign.START});
         const tempWrap = row('aw-temp-line');
         this._tempLbl = label('', 'aw-current-temp');
         tempWrap.add_child(this._tempLbl);
@@ -292,7 +294,15 @@ export class ForecastPanel {
         unitBox.add_child(label('|', 'aw-unit-bar'));
         unitBox.add_child(this._unitBtns.metric);
         tempWrap.add_child(unitBox);
-        header.add_child(tempWrap);
+        leftCol.add_child(tempWrap);
+
+        // "Partly Cloudy" under the numeral, Apple-style; the unit toggle
+        // stays on the temp's line so the desc row never nudges it
+        this._descLbl = label('', 'aw-desc');
+        this._descLbl.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        this._descLbl.x_align = Clutter.ActorAlign.START;
+        leftCol.add_child(this._descLbl);
+        header.add_child(leftCol);
 
         header.add_child(spacer());
 
@@ -305,7 +315,7 @@ export class ForecastPanel {
         this._cityLbl.x_align = Clutter.ActorAlign.END;   // flush right edge
         right.add_child(this._cityLbl);
 
-        // mock keeps the clock alone at this width (no condition line);
+        // the clock keeps its own line (condition text lives under the temp);
         // refresh/settings get their own row under the clock — inline they
         // collided with the time text and the moon behind it
         const infoRow = row('aw-info-row');
@@ -480,6 +490,7 @@ export class ForecastPanel {
         const {scene, desc} = state.effective ?? sceneFor(current.code, current.isDay);
         const windy = !!state.windy;
         this._desc = desc;
+        this._descLbl.set_text(desc);
 
         this._tempLbl.set_text(fmtTemp(current.temp, units));
         for (const [u, btn] of Object.entries(this._unitBtns)) {

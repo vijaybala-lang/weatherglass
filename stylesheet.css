@@ -45,7 +45,9 @@
 
 .aw-header {
     spacing: 10px;
-    padding: 2px 14px 0 14px;
+    /* bottom pad + .aw-desc margin = the breathing room between the
+     * condition text and the Precipitation/Wind tabs */
+    padding: 2px 14px 6px 14px;
 }
 
 .aw-temp-line {
@@ -55,6 +57,13 @@
 .aw-current-temp {
     font-size: 3em;               /* the mock's oversized thin numeral */
     font-weight: 200;
+}
+
+/* condition text under the big temp (Apple-style): sits close to the
+ * numeral, keeps real air before the metric tabs */
+.aw-desc {
+    font-size: 0.85em;
+    margin: 2px 0 4px 0;
 }
 
 .aw-unit-toggle {
@@ -209,6 +218,7 @@
 }
 
 .aw-dark .aw-clockline,
+.aw-dark .aw-desc,
 .aw-dark .aw-unit-off,
 .aw-dark .aw-unit-bar,
 .aw-dark .aw-placeholder-text {
@@ -284,6 +294,7 @@
 }
 
 .aw-light .aw-clockline,
+.aw-light .aw-desc,
 .aw-light .aw-unit-off,
 .aw-light .aw-unit-bar,
 .aw-light .aw-placeholder-text {

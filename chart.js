@@ -28,8 +28,9 @@ function call(obj, camel, snake, ...args) {
     return fn.call(obj, ...args);
 }
 
-function drawText(cr, text, x, y, {size = 10, bold = false, rgba = [1, 1, 1, 1],
-                                   anchor = 'middle'} = {}) {
+/** [w, h] pixel extents of a label in the chart font (same font set-up as
+ *  drawText, so icon placement can centre on printed text, not data points). */
+function textPx(cr, text, size, bold) {
     const layout = PangoCairo.create_layout(cr);
     const desc = Pango.FontDescription.new();
     desc.set_family('Cantarell');
@@ -39,7 +40,12 @@ function drawText(cr, text, x, y, {size = 10, bold = false, rgba = [1, 1, 1, 1],
     call(layout, 'setFontDescription', 'set_font_description', desc);
     call(layout, 'setText', 'set_text', text, -1);
     const px = call(layout, 'getPixelSize', 'get_pixel_size');
-    const [pw, ph] = Array.isArray(px) ? px : [px.width, px.height];
+    return Array.isArray(px) ? [...px, layout] : [px.width, px.height, layout];
+}
+
+function drawText(cr, text, x, y, {size = 10, bold = false, rgba = [1, 1, 1, 1],
+                                   anchor = 'middle'} = {}) {
+    const [pw, ph, layout] = textPx(cr, text, size, bold);
     const tx = anchor === 'start' ? x : anchor === 'end' ? x - pw : x - pw / 2;
     cr.setSourceRGBA(...rgba);
     cr.moveTo(tx, y - ph);
@@ -306,9 +312,28 @@ export function paintChart(cr, opts) {
             }
             cr.restore();
         } else {
-            const every = Math.max(2, Math.ceil(30 / span));
-            for (let i = 0; i < n; i += every) {
-                const cx = Math.min(Math.max(X(i), 10 + PADX), w - 10 - PADX);
+            // Icons only: ride the exact printed-label rhythm — same stride
+            // (multiples of EVERY), same gutter offset, same edge anchors —
+            // so every icon sits centred over its hour/value text column.
+            // At the card edges the labels flow inward and the icon follows
+            // the TEXT centre, not the data point.
+            const step = EVERY * Math.max(1, Math.ceil(30 / span / EVERY));
+            for (let i = off0; i < n; i += step) {
+                const ax = X(i);
+                if (ax > w - GUT)          // same skip as the label loop
+                    continue;
+                const anchor = ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
+                const lx = anchor === 'start' ? Math.max(GUT, ax - 6)
+                         : anchor === 'end'   ? Math.min(w - GUT, ax + 6) : ax;
+                let tw = textPx(cr, fmtValue ? fmtValue(i, values[i])
+                                             : String(values[i]), FS, true)[0];
+                if (fmtHour) {
+                    const t = fmtHour(i);
+                    if (t)
+                        tw = Math.max(tw, textPx(cr, t, FS, false)[0]);
+                }
+                const cx = anchor === 'start' ? lx + tw / 2
+                         : anchor === 'end'   ? lx - tw / 2 : lx;
                 paint1(strip[i], cx, nights[i], STRIP_S * (FOOT[strip[i]] ?? 1));
             }
         }
