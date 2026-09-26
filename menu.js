@@ -28,6 +28,13 @@ const FRAME_MS = 50;         // sky: 20 fps is plenty
 const STATIC_TIME = 1.1;     // frame that makes static mini icons look lively
 const MORPH_MS = 420, MORPH_TICK = 25;
 
+/* hourly condition strip: pill words (icon-only if a scene has no word) */
+const COND_WORD = {
+    sun: 'Clear', moon: 'Clear night', partly: 'Partly cloudy',
+    cloud: 'Cloudy', fog: 'Fog', rain: 'Rain', sleet: 'Sleet',
+    snow: 'Snow', hail: 'Hail', storm: 'Storm',
+};
+
 const METRICS = {
     temp:   {label: 'Temperature',   accent: [0.96, 0.65, 0.14], underline: 'aw-tab-temp'},
     precip: {label: 'Precipitation', accent: [0.30, 0.64, 1.00], underline: 'aw-tab-precip'},
@@ -157,8 +164,11 @@ class ChartArea extends St.DrawingArea {
             accent,
             ink: p._theme().ink,
             nowFrac: p._day === 0 ? (p._nowFrac ?? 0) : null,
-            scenes: p._conditions ? p._strip?.scenes ?? null : null,
-            nights: p._conditions ? p._strip?.nights ?? null : null,
+            scenes: p._conditions !== 'off' ? p._strip?.scenes ?? null : null,
+            nights: p._conditions !== 'off' ? p._strip?.nights ?? null : null,
+            pills: p._conditions === 'pills',
+            dark: p._dark,
+            condLabel: s => COND_WORD[s] ?? null,
             fontSize: w < 480 ? 8 : 8.5,
         });
         cr.$dispose();
@@ -191,7 +201,7 @@ export class ForecastPanel {
                          sky: this._sky, radius: 18};
         this._nowFrac = null;
         this._style = 'animated';                 // animated | solid | accent
-        this._conditions = true;                  // hourly icon strip on the chart
+        this._conditions = 'icons';               // chart strip: off | icons | pills
         this._strip = null;                       // {scenes[], nights[]} for the chart
         this._accent = [0.21, 0.52, 0.89];        // GNOME blue fallback
 
@@ -384,9 +394,9 @@ export class ForecastPanel {
         this._chart.queue_repaint();
     }
 
-    /** hourly condition-icon strip along the chart top */
-    setConditions(on) {
-        this._conditions = !!on;
+    /** chart condition strip: 'off' | 'icons' | 'pills' */
+    setConditions(mode) {
+        this._conditions = ['off', 'icons', 'pills'].includes(mode) ? mode : 'icons';
         this._chart.queue_repaint();
     }
 
@@ -564,6 +574,7 @@ export class ForecastPanel {
         const {daily, units} = this._state;
         this._daysGrid.destroy_all_children();
         this._dayBtns = [];
+        this._tileIcons = [];
         const n = Math.min(daily.length, 8);
         for (let r = 0; r < n; r += 4) {
             const rowTiles = row('aw-days');
@@ -581,7 +592,9 @@ export class ForecastPanel {
                                             style_class: 'aw-day-name',
                                             x_align: Clutter.ActorAlign.CENTER}));
                 const icon = new WeatherIcon({size: 26, animate: false,
-                                              time: STATIC_TIME + i * 0.2});
+                                              time: STATIC_TIME + i * 0.2,
+                                              dark: this._dark});
+                this._tileIcons.push(icon);
                 icon.setScene(scene, {intensity: d.precipProb / 25, windKmh: d.windMax});
                 col.add_child(icon);
                 // hi + lo share one line (mock .hl); hierarchy by weight,
@@ -622,6 +635,11 @@ export class ForecastPanel {
         this._content.remove_style_class_name(THEME.light.cls);
         this._content.add_style_class_name(this._theme().cls);
         this._syncScrim();
+        // day-tile + placeholder icons paint their own weather scenes; tell
+        // them the new background so pale glyphs (moon/snow/fog) stay visible
+        for (const icon of this._tileIcons ?? [])
+            icon.setDark(this._dark);
+        this._placeholderIcon?.setDark(this._dark);
         this._skyArea.queue_repaint();
         this._chart.queue_repaint();
     }

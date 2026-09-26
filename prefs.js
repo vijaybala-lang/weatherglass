@@ -224,12 +224,19 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         styleRow.connect('notify::selected', () =>
             settings.set_string('menu-style', STYLES[styleRow.get_selected()] ?? 'animated'));
         bgGroup.add(styleRow);
-        const hourlyRow = new Adw.SwitchRow({
-            title: 'Show hourly conditions',
-            subtitle: 'Small sun / rain / cloud icons along the top of the chart',
+        const COND = ['off', 'icons', 'pills'];
+        const condRow = new Adw.ComboRow({
+            title: 'Hourly conditions',
+            subtitle: 'Off, loose icons, or grouped pills along the chart top',
+            model: new Gtk.StringList({
+                strings: ['Off', 'Icons', 'Grouped pills'],
+            }),
         });
-        settings.bind('show-hourly', hourlyRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-        bgGroup.add(hourlyRow);
+        const ci = COND.indexOf(settings.get_string('condition-strip'));
+        condRow.set_selected(ci < 0 ? 1 : ci);
+        condRow.connect('notify::selected', () =>
+            settings.set_string('condition-strip', COND[condRow.get_selected()] ?? 'icons'));
+        bgGroup.add(condRow);
         page.add(bgGroup);
 
         const dataGroup = new Adw.PreferencesGroup({title: 'Data source'});

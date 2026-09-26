@@ -79,6 +79,23 @@ function tracePath(cr, pts) {
  *   fontSize:        label font size in pt (default 8.5)
  * }
  */
+/* ── pill helpers (grouped condition mode) ──────────────────────────────── */
+
+function pillPath(cr, x0, y0, x1, y1, r) {
+    cr.newPath();
+    const cy = (y0 + y1) / 2;
+    cr.arc(x1 - r, cy, r, -Math.PI / 2, Math.PI / 2);
+    cr.arc(x0 + r, cy, r, Math.PI / 2, 1.5 * Math.PI);
+    cr.closePath();
+}
+
+function pillLayout(cr, text, size) {
+    const layout = PangoCairo.create_layout(cr);
+    layout.set_font_description(Pango.FontDescription.from_string(`Sans Bold ${size}pt`));
+    call(layout, 'setText', 'set_text', text, -1);
+    return layout;
+}
+
 export function paintChart(cr, opts) {
     const {w, h, values, fmtValue, fmtHour, accent, nowFrac = null} = opts;
     const n = values.length;
@@ -155,25 +172,78 @@ export function paintChart(cr, opts) {
         }
     }
 
-    // condition icons along the top — the same flat vocabulary as the panel
-    // icon (painter.js), posed statically; stride keeps >=30 px spacing so
-    // icons read at card width, and edge icons nudge inward off the plot
+    // condition strip along the top — the same flat vocabulary as the panel
+    // icon (painter.js), posed statically. Two modes:
+    //   'icons': one icon per stride slot (>=30 px apart), edge ones nudge in
+    //   'pills': consecutive same-condition hours merge into one rounded pill
+    //            spanning that run, the icon (+ short condition word) centred
+    // dark=true paints for the dark sky; light cards pass dark:false so pale
+    // glyphs (moon/snow/fog) use their darker twins (painter.js INK_*).
     if (strip) {
         const span = (w - PADX * 2) / Math.max(1, n - 1);
-        const every = Math.max(2, Math.ceil(30 / span));
         const nights = Array.isArray(opts.nights) ? opts.nights : [];
-        for (let i = 0; i < n; i += every) {
-            const cx = Math.min(Math.max(X(i), 10 + PADX), w - 10 - PADX);
+        const dark = opts.dark !== false;
+        const paint1 = (scene, cx, night, scale) => {
             cr.save();
-            cr.translate(cx - 12 * STRIP_S, STRIP_Y - 12 * STRIP_S);
-            cr.scale(STRIP_S, STRIP_S);
-            paintWeather(cr, {
-                scene: strip[i] ?? 'cloud',
-                time: 4.1,                          // fixed pose: no clock churn
-                night: !!nights[i],
-                intensity: STRIP_INT[strip[i]] ?? 0,
-            });
+            cr.translate(cx - 12 * scale, STRIP_Y - 12 * scale);
+            cr.scale(scale, scale);
+            paintWeather(cr, {scene: scene ?? 'cloud', time: 4.1, night: !!night,
+                              dark, intensity: STRIP_INT[scene] ?? 0});
             cr.restore();
+        };
+
+        if (opts.pills) {
+            const SS = 0.72, GAP = 3.5, PH = 9, FS2 = opts.condSize ?? 8;
+            const fill = dark ? [1, 1, 1] : [...INK];
+            let a = 0;
+            while (a < n) {
+                const key = `${strip[a]}|${nights[a] ? 1 : 0}`;
+                let b = a;
+                while (b + 1 < n && `${strip[b + 1]}|${nights[b + 1] ? 1 : 0}` === key)
+                    b++;
+                const word = opts.condLabel ? opts.condLabel(strip[a], nights[a]) : null;
+                const iconW = 24 * SS;
+                let lw = 0, lh = 0;
+                let layout = null;
+                if (word) {
+                    layout = pillLayout(cr, word, FS2);
+                    [lw, lh] = layout.get_pixel_size();
+                }
+                const contentW = iconW + (word ? GAP + lw : 0);
+                const cx0 = (X(a) + X(b)) / 2;
+                const halfSpan = (X(b) - X(a)) / 2 + span * 0.42;
+                const pillW = Math.min(w - 4, Math.max(halfSpan * 2, contentW + 12));
+                let x0 = cx0 - pillW / 2;
+                x0 = Math.max(2, Math.min(x0, w - 2 - pillW));
+                const cx = x0 + pillW / 2;
+                // pill body
+                cr.save();
+                cr.setSourceRGBA(fill[0], fill[1], fill[2], dark ? 0.13 : 0.10);
+                pillPath(cr, x0, STRIP_Y - PH, x0 + pillW, STRIP_Y + PH,
+                         Math.min(PH, pillW / 2));
+                cr.fillPreserve();
+                cr.setSourceRGBA(fill[0], fill[1], fill[2], dark ? 0.26 : 0.22);
+                cr.setLineWidth(1);
+                cr.stroke();
+                cr.restore();
+                // centred content: icon (+ word)
+                const groupW = contentW;
+                let ix = cx - groupW / 2;
+                paint1(strip[a], ix + iconW / 2, nights[a], SS);
+                ix += iconW;
+                if (layout) {
+                    cr.setSourceRGBA(...(dark ? [1, 1, 1, 0.92] : [...INK, 0.9]));
+                    cr.moveTo(ix + GAP, STRIP_Y - lh / 2);
+                    (PangoCairo.showLayout ?? PangoCairo.show_layout)(cr, layout);
+                }
+                a = b + 1;
+            }
+        } else {
+            const every = Math.max(2, Math.ceil(30 / span));
+            for (let i = 0; i < n; i += every) {
+                const cx = Math.min(Math.max(X(i), 10 + PADX), w - 10 - PADX);
+                paint1(strip[i], cx, nights[i], STRIP_S);
+            }
         }
     }
 

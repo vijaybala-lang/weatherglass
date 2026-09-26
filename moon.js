@@ -158,8 +158,17 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
     litPath(cr, r, phase);
 
     if (style === 'icon') {
-        cr.setSourceRGBA(0.95, 0.95, 0.99, 1);   // warm off-white, never clinical
-        cr.fill();
+        if (opts.outline) {           // pale disc needs an edge on light cards
+            const ol = opts.outline;
+            cr.setSourceRGBA(0.95, 0.95, 0.99, 1);
+            cr.fillPreserve();
+            cr.setSourceRGBA(ol[0], ol[1], ol[2], ol[3]);
+            cr.setLineWidth(0.5);
+            cr.stroke();
+        } else {
+            cr.setSourceRGBA(0.95, 0.95, 0.99, 1);   // warm off-white, never clinical
+            cr.fill();
+        }
         cr.restore();
         cr.restore();
         return;

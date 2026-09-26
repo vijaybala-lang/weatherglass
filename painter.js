@@ -79,10 +79,26 @@ const CLOUD_LIGHT = [[0.76, 0.82, 0.87], [0.60, 0.68, 0.75]];
 const CLOUD_RAIN  = [[0.56, 0.64, 0.71], [0.38, 0.47, 0.55]];
 const CLOUD_DARK  = [[0.42, 0.48, 0.56], [0.25, 0.30, 0.38]];
 
+/* Light-card palette: the dark-panel designs lean on pale ink (moon,
+ * flakes, fog banks, water glints) which vanishes on a white card — e.g.
+ * the chart strip in 'accent' light mode. paintWeather sets _light once
+ * per frame (single-threaded, synchronous) and the pale elements below
+ * swap to their darker twins. Scenes/callers stay theme-agnostic. */
+let _light = false;
+const INK_WATER  = () => _light ? [0.16, 0.52, 0.82] : [0.31, 0.76, 0.96];
+const INK_FLAKE  = () => _light ? [0.45, 0.56, 0.72] : [0.92, 0.96, 1.00];
+const INK_STONE  = () => _light ? [0.55, 0.64, 0.76] : [0.91, 0.94, 0.97];
+const INK_STREAK = () => _light ? [0.24, 0.50, 0.78] : [0.50, 0.83, 1.00];
+const INK_FOG    = () => _light ? [0.44, 0.52, 0.62] : [0.72, 0.76, 0.80];
+const INK_STAR   = () => _light ? [0.55, 0.62, 0.74] : [0.95, 0.97, 1.00];
+const INK_SPIN   = () => _light ? [0.28, 0.33, 0.40] : [0.85, 0.88, 0.92];
+const INK_MOON_EDGE = () => _light ? [0.24, 0.30, 0.40, 0.85] : null;
+
 /** Flowing dash "wind streak" across the full width of the scene. */
-function streak(cr, y, lw, alpha, dashOn, dashOff, offset, color = [0.50, 0.83, 1.0]) {
+function streak(cr, y, lw, alpha, dashOn, dashOff, offset, color = null) {
+    const c = color ?? INK_STREAK();
     cr.save();
-    cr.setSourceRGBA(color[0], color[1], color[2], alpha);
+    cr.setSourceRGBA(c[0], c[1], c[2], alpha);
     cr.setLineWidth(lw);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setDash([dashOn, dashOff], offset);
@@ -110,7 +126,8 @@ function rainDrops(cr, p, t, count, slant, alpha) {
     const dt = p.lastT === null ? 0 : Math.min(0.06, t - p.lastT);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineWidth(1.0);
-    cr.setSourceRGBA(0.31, 0.76, 0.96, alpha);
+    const c = INK_WATER();
+    cr.setSourceRGBA(c[0], c[1], c[2], alpha);
     for (let i = 0; i < count; i++) {
         const d = p.drops[i];
         d.y += d.sp * dt;
@@ -140,7 +157,8 @@ function snowFlakes(cr, p, t, count) {
         cr.save();
         cr.translate(x, f.y);
         cr.rotate(rot);
-        cr.setSourceRGBA(0.92, 0.96, 1.0, 0.95);
+        const c = INK_FLAKE();
+        cr.setSourceRGBA(c[0], c[1], c[2], 0.95);
         for (let k = 0; k < 6; k++) {
             const a = (k / 6) * TAU;
             line(cr, 0, 0, Math.cos(a) * f.r, Math.sin(a) * f.r);
@@ -167,7 +185,8 @@ function hailStones(cr, p, t, count) {
         if (h.bounces > 2 || Math.abs(h.vy) < 0.6 && h.bounces > 0 ||
             h.x < -1 || h.x > 25)
             Object.assign(h, newHailStone());
-        cr.setSourceRGBA(0.91, 0.94, 0.97, 0.95);
+        const sc = INK_STONE();
+        cr.setSourceRGBA(sc[0], sc[1], sc[2], 0.95);
         circle(cr, h.x, h.y, h.r);
         cr.fill();
         cr.setSourceRGBA(1, 1, 1, 0.55);  // glint
@@ -223,13 +242,15 @@ function moonBody(cr, cx, cy, r, t, p, phase) {
     cr.paint();
 
     // tonight's REAL phase (moon.js) — flat lit shape, transparent shadow:
-    // the one rendering that reads at 16px on the panel
-    paintMoon(cr, cx, cy, r, ph, 'icon');
+    // the one rendering that reads at 16px on the panel; on light cards a
+    // thin edge keeps the pale disc visible
+    paintMoon(cr, cx, cy, r, ph, 'icon', {outline: INK_MOON_EDGE()});
 
     // twinkling stars
+    const sc = INK_STAR();
     for (const s of p.stars) {
         const a = 0.35 + 0.6 * Math.abs(Math.sin(t * 1.3 + s.ph));
-        cr.setSourceRGBA(0.95, 0.97, 1.0, a);
+        cr.setSourceRGBA(sc[0], sc[1], sc[2], a);
         circle(cr, s.x, s.y, 0.55);
         cr.fill();
     }
@@ -275,8 +296,9 @@ function sceneFog(cr, ctx) {
     const {t} = ctx;
     cloud(cr, 12 + Math.sin(t * 0.5) * 0.5, 8, 0.7, CLOUD_LIGHT[0], CLOUD_LIGHT[1], 0.8);
     for (let i = 0; i < 3; i++) {
+        const fc = INK_FOG();
         streak(cr, 14.5 + i * 3.2, 1.7, 0.40 - i * 0.06, 7, 3.5,
-               -(t * (2.4 + i)) % 10.5, [0.72, 0.76, 0.80]);
+               -(t * (2.4 + i)) % 10.5, fc);
     }
 }
 
@@ -415,7 +437,8 @@ function sceneLoading(cr, ctx) {
     cr.newPath();
     const a = t * 4;
     cr.arc(12, 12, 6, a, a + Math.PI * 1.1);
-    cr.setSourceRGBA(0.85, 0.88, 0.92, 0.95);
+    const c = INK_SPIN();
+    cr.setSourceRGBA(c[0], c[1], c[2], 0.95);
     cr.stroke();
     cr.restore();
 }
@@ -440,6 +463,7 @@ const SCENES = {
  */
 export function paintWeather(cr, opts) {
     const p = opts.particles || createParticles();
+    _light = opts.dark === false;          // one palette decision per frame
     const ctx = {
         t: opts.time || 0,
         p,

@@ -60,6 +60,17 @@ timeout 120 dbus-run-session -- bash -c "
     sleep 2
     gnome-extensions enable menutest@vbala.dev
     sleep 12
+    echo '=== scenario 4b2: condition strip pills/off (grouped icons, light bg) ==='
+    gsettings set $SCHEMA condition-strip 'pills'
+    sleep 3
+    gnome-extensions disable menutest@vbala.dev
+    sleep 2
+    gnome-extensions enable menutest@vbala.dev
+    sleep 10
+    gsettings set $SCHEMA condition-strip 'off'
+    sleep 2
+    gsettings set $SCHEMA condition-strip 'icons'
+    sleep 2
     gsettings set $SCHEMA menu-style 'animated'
     sleep 2
     echo '=== scenario 4c: provider switch → MET Norway (live api.met.no) ==='

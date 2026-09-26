@@ -20,7 +20,7 @@ const FRAME_MS = 50;   // 20 fps is plenty and cheap on the compositor
 
 export const WeatherIcon = GObject.registerClass(
 class WeatherIcon extends St.DrawingArea {
-    _init({size = 22, animate = true, time = null} = {}) {
+    _init({size = 22, animate = true, time = null, dark = true} = {}) {
         super._init({
             style_class: 'aw-icon',
             reactive: false,
@@ -34,6 +34,7 @@ class WeatherIcon extends St.DrawingArea {
         this._animate = animate;
         this._time = time ?? Math.random() * 3;   // de-sync animated icons
         this._particles = createParticles();
+        this._dark = dark;
         this._opts = {scene: 'loading', windy: false, night: false,
                       intensity: 0, windKmh: 0, phase: null};
 
@@ -46,8 +47,17 @@ class WeatherIcon extends St.DrawingArea {
     }
 
     setScene(scene, {windy = false, night = false, intensity = 0, windKmh = 0,
-                     phase = null} = {}) {
+                     phase = null, dark} = {}) {
         Object.assign(this._opts, {scene, windy, night, intensity, windKmh, phase});
+        if (dark !== undefined)
+            this._dark = dark;
+        this.queue_repaint();
+    }
+
+    setDark(dark) {
+        if (dark === this._dark)
+            return;
+        this._dark = dark;
         this.queue_repaint();
     }
 
@@ -74,6 +84,7 @@ class WeatherIcon extends St.DrawingArea {
         cr.scale(width / GRID, width / GRID);
         paintWeather(cr, {
             ...this._opts,
+            dark: this._dark,
             time: this._time,
             particles: this._particles,
         });

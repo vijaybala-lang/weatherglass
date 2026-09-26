@@ -18,6 +18,13 @@ const isDayHour = t => {
     return h >= 6 && h < 21;
 };
 
+/* mirrors menu.js COND_WORD for the grouped-pill demo */
+const COND_WORD = {
+    sun: 'Clear', moon: 'Clear night', partly: 'Partly cloudy',
+    cloud: 'Cloudy', fog: 'Fog', rain: 'Rain', sleet: 'Sleet',
+    snow: 'Snow', hail: 'Hail', storm: 'Storm',
+};
+
 const CARD = {w: 330, h: 430}, CHART = {y: 107, h: 165};
 
 /* real San Jose hourly temps from the mockup snapshot */
@@ -35,17 +42,17 @@ const fmtHour = iso => {
 };
 
 const CASES = [
-    {scene: 'fog',   night: false, values: DATA.hourly.temperature_2m.slice(16, 40), accent: [0.96, 0.65, 0.14], nowFrac: 2 / 23},
+    {scene: 'fog',   night: false, values: DATA.hourly.temperature_2m.slice(16, 40), accent: [0.96, 0.65, 0.14], nowFrac: 2 / 23, strip: 'pills'},
     {scene: 'clear', night: false, values: DATA.hourly.wind_speed_10m.slice(16, 40), accent: [0.24, 0.81, 0.56]},
     {scene: 'storm', night: true,  values: DATA.hourly.precipitation_probability.slice(16, 40).map((v, i) => v + i * 2), accent: [0.30, 0.64, 1.0]},
     {scene: 'rain',  night: false, values: DATA.hourly.temperature_2m.slice(40, 64), accent: [0.96, 0.65, 0.14]},
     {scene: 'snow',  night: false, values: DATA.hourly.temperature_2m.slice(64, 88), accent: [0.96, 0.65, 0.14]},
-    {scene: 'moon',  night: true,  values: DATA.hourly.wind_speed_10m.slice(64, 88), accent: [0.24, 0.81, 0.56], nowFrac: 2 / 23, strip: true},
+    {scene: 'moon',  night: true,  values: DATA.hourly.wind_speed_10m.slice(64, 88), accent: [0.24, 0.81, 0.56], nowFrac: 2 / 23, strip: 'icons'},
     {scene: 'partly', night: true, values: DATA.hourly.wind_speed_10m.slice(40, 64), accent: [0.24, 0.81, 0.56], nowFrac: 2 / 23},
     // menu-style demos: 'accent' mode = theme popup bg (grey stand-in)
     // with the charts unified in the OS accent colour
     {scene: 'accent', night: true, plain: true, bgAccent: [0.19, 0.19, 0.19], accent: [0.21, 0.52, 0.89], values: DATA.hourly.temperature_2m.slice(16, 40)},
-    {scene: 'accent-light', night: false, plain: true, bgAccent: [0.98, 0.98, 0.98], accent: [0.835, 0.38, 0.60], values: DATA.hourly.temperature_2m.slice(16, 40)},
+    {scene: 'accent-light', night: false, plain: true, bgAccent: [0.98, 0.98, 0.98], accent: [0.835, 0.38, 0.60], values: DATA.hourly.temperature_2m.slice(16, 40), strip: 'icons'},
 ];
 
 const outDir = GLib.build_filenamev([GLib.get_current_dir(), 'tools', 'out', 'cards']);
@@ -81,6 +88,9 @@ for (const [i, c] of CASES.entries()) {
         fmtHour: idx => fmtHour(DATA.hourly.time[16 + idx] ?? 'T00'),
         accent: c.accent, nowFrac: c.nowFrac ?? null,
         scenes, nights,
+        pills: c.strip === 'pills',
+        dark: c.plain ? false : true,   // plain cards sit on a light backdrop
+        condLabel: s => (COND_WORD[s] ?? null),
         // real menu passes its theme ink; plain light card needs dark ink too
         ink: c.plain && !c.night ? [0.10, 0.13, 0.19] : undefined,
         fontSize: 8,
