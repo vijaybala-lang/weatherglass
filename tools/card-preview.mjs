@@ -83,6 +83,8 @@ for (const [i, c] of CASES.entries()) {
         scenes, nights,
         pills: c.strip === 'pills',
         dark: c.plain ? false : true,   // plain cards sit on a light backdrop
+        pillGlass: !c.plain,
+        stripShadow: !c.plain,
         // real menu passes its theme ink; plain light card needs dark ink too
         ink: c.plain && !c.night ? [0.10, 0.13, 0.19] : undefined,
         fontSize: 8,

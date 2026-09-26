@@ -161,6 +161,10 @@ class ChartArea extends St.DrawingArea {
             nights: p._conditions !== 'off' ? p._strip?.nights ?? null : null,
             pills: p._conditions === 'pills',
             dark: p._dark,
+            // over the sky (animated/solid): tile-hover glass pills + embossed
+            // glyphs; accent style keeps the accent tint on its calm backdrop
+            pillGlass: p._style !== 'accent',
+            stripShadow: p._style !== 'accent',
             fontSize: w < 480 ? 8 : 8.5,
         });
         cr.$dispose();
@@ -376,6 +380,7 @@ export class ForecastPanel {
         else
             this._skyArea._start();
         this._skyArea.queue_repaint();
+        this._chart.queue_repaint();   // pill tint + emboss follow the style
         this._chart.queue_repaint();   // chart accent follows the style
     }
 

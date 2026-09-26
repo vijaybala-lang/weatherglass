@@ -91,6 +91,54 @@ const FOOT = {
     sleet: 1.2, snow: 1.2, partly: 1.15, hail: 1.1, storm: 1.1,
 };
 
+/* Emboss pipeline for strip glyphs over the animated sky: render the scene
+ * once (cached per scene|night) into a small ARGB surface, then composite a
+ * blurred dark silhouette under the crisp glyph — the same visual language
+ * as the card's text-shadow. Blur is box-downsample + bilinear-upsample,
+ * which reads as a soft drop shadow at 19 px. GJS cairo has no variadic
+ * setSource, but SurfacePattern origin follows the CTM, so translate/scale
+ * first, then paint. */
+const ICON_SZ = 48, SH_SZ = 10;
+const _iconCache = new Map();
+const _shadowCache = new Map();
+
+function sceneIconSurface(key, scene, night, dark, intensity) {
+    let s = _iconCache.get(key);
+    if (!s) {
+        s = new Cairo.ImageSurface(Cairo.Format.ARGB32, ICON_SZ, ICON_SZ);
+        const c = new Cairo.Context(s);
+        c.scale(ICON_SZ / 24, ICON_SZ / 24);
+        paintWeather(c, {scene: scene ?? 'cloud', time: 4.1, night: !!night,
+                         dark, intensity: intensity ?? 0});
+        c.$dispose();
+        _iconCache.set(key, s);
+    }
+    return s;
+}
+
+function sceneShadowSurface(key) {
+    let t = _shadowCache.get(key);
+    if (!t) {
+        const icon = _iconCache.get(key);
+        const sil = new Cairo.ImageSurface(Cairo.Format.ARGB32, ICON_SZ, ICON_SZ);
+        const c = new Cairo.Context(sil);
+        c.setSourceRGBA(0.02, 0.03, 0.06, 0.85);
+        c.paint();
+        c.setOperator(Cairo.Operator.DEST_IN);
+        c.setSource(new Cairo.SurfacePattern(icon));
+        c.paint();
+        c.$dispose();
+        t = new Cairo.ImageSurface(Cairo.Format.ARGB32, SH_SZ, SH_SZ);
+        const d = new Cairo.Context(t);
+        d.scale(SH_SZ / ICON_SZ, SH_SZ / ICON_SZ);
+        d.setSource(new Cairo.SurfacePattern(sil));
+        d.paint();
+        d.$dispose();
+        _shadowCache.set(key, t);
+    }
+    return t;
+}
+
 function pillPath(cr, x0, y0, x1, y1, r) {
     cr.newPath();
     const cy = (y0 + y1) / 2;
@@ -182,16 +230,43 @@ export function paintChart(cr, opts) {
     //            spanning exactly their slice of the axis, icon centred
     // dark=true paints for the dark sky; light cards pass dark:false so pale
     // glyphs (moon/snow/fog) use their darker twins (painter.js INK_*).
+    // stripShadow=true embosses glyphs (animated/solid styles: busy sky
+    // behind them); pillGlass=true switches pill fill from the accent tint
+    // to the day-tile hover glass (same design language as the tiles).
     if (strip) {
         const span = (w - PADX * 2) / Math.max(1, n - 1);
         const nights = Array.isArray(opts.nights) ? opts.nights : [];
         const dark = opts.dark !== false;
+        const emboss = !!opts.stripShadow;
         const paint1 = (scene, cx, night, scale) => {
+            if (!emboss) {
+                cr.save();
+                cr.translate(cx - 12 * scale, STRIP_Y - 12 * scale);
+                cr.scale(scale, scale);
+                paintWeather(cr, {scene: scene ?? 'cloud', time: 4.1,
+                                  night: !!night, dark,
+                                  intensity: STRIP_INT[scene] ?? 0});
+                cr.restore();
+                return;
+            }
+            // scene renders dark-palette-correct into the offscreen via the
+            // same dark flag; cache key carries it
+            const px = 24 * scale, blur = px + 3;
+            const key = `${scene}|${night ? 1 : 0}|${dark ? 1 : 0}`;
+            sceneIconSurface(key, scene, night, dark, STRIP_INT[scene] ?? 0);
+            const icon = _iconCache.get(key);
+            const tiny = sceneShadowSurface(key);
             cr.save();
-            cr.translate(cx - 12 * scale, STRIP_Y - 12 * scale);
-            cr.scale(scale, scale);
-            paintWeather(cr, {scene: scene ?? 'cloud', time: 4.1, night: !!night,
-                              dark, intensity: STRIP_INT[scene] ?? 0});
+            cr.translate(cx - blur / 2, STRIP_Y - px / 2 + 1.4 * scale + 0.6);
+            cr.scale(blur / SH_SZ, blur / SH_SZ);
+            cr.setSource(new Cairo.SurfacePattern(tiny));
+            cr.paintWithAlpha(0.55);
+            cr.restore();
+            cr.save();
+            cr.translate(cx - px / 2, STRIP_Y - px / 2);
+            cr.scale(px / ICON_SZ, px / ICON_SZ);
+            cr.setSource(new Cairo.SurfacePattern(icon));
+            cr.paint();
             cr.restore();
         };
 
@@ -202,8 +277,17 @@ export function paintChart(cr, opts) {
             // from longer neighbours, so pills stay consistent AND can never
             // overlap. MINW/MINH = the largest scene glyph (sun incl. rays,
             // 15 px) + padding, so no pill is ever smaller than any icon.
-            // Tint = the metric accent, semi-transparent (Apple-style wash).
+            // Tint: accent wash on plain (accent-style) cards; the day-tile
+            // hover glass, a shade lighter, on animated/solid skies so pills
+            // and tiles speak one design language over the moving sky.
             const PH = 9.5, INSET = 1.5, SS = 0.62, MINW = 19;
+            const glass = !!opts.pillGlass;
+            const fill = glass
+                ? (dark ? [16 / 255, 20 / 255, 28 / 255, 0.22] : [1, 1, 1, 0.36])
+                : [acR, acG, acB, dark ? 0.16 : 0.12];
+            const edge = glass
+                ? (dark ? [1, 1, 1, 0.16] : [16 / 255, 24 / 255, 35 / 255, 0.15])
+                : [acR, acG, acB, dark ? 0.30 : 0.22];
             const runs = [];
             let a = 0;
             while (a < n) {
@@ -230,11 +314,11 @@ export function paintChart(cr, opts) {
                 const x1 = Math.max(x0 + 4, cur + rw - INSET);
                 cur += rw;
                 cr.save();
-                cr.setSourceRGBA(acR, acG, acB, dark ? 0.16 : 0.12);
+                cr.setSourceRGBA(fill[0], fill[1], fill[2], fill[3]);
                 pillPath(cr, x0, STRIP_Y - PH, x1, STRIP_Y + PH,
                          Math.min(PH, (x1 - x0) / 2));
                 cr.fillPreserve();
-                cr.setSourceRGBA(acR, acG, acB, dark ? 0.30 : 0.22);
+                cr.setSourceRGBA(edge[0], edge[1], edge[2], edge[3]);
                 cr.setLineWidth(1);
                 cr.stroke();
                 cr.restore();
