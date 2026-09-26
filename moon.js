@@ -1,4 +1,4 @@
-/* moon.js — the real moon: computed phase + a cratered, off-white face.
+/* moon.js — the real moon: computed phase + a soft, pale photographic face.
  *
  * moonPhase(date) gives the lunar age (0=new, .25=first quarter, .5=full,
  * .75=last quarter) from a known new-moon epoch and the mean synodic month
@@ -7,12 +7,19 @@
  * paintMoon() draws that phase as a single lit region bounded by the limb
  * (a true half-circle) and the terminator (a half-ellipse whose signed
  * x-radius cos(2π·phase) swings it toward the lit side for a crescent and
- * away for a gibbous moon — the classic two-arc construction). Craters/maria
+ * away for a gibbous moon — the classic two-arc construction). The maria
  * are painted only inside the lit region, so the terminator bites into them.
+ *
+ * The sky-style face follows soft illustration references: a pale sphere
+ * lit from the upper left with very low-contrast maria — irregular blobs
+ * unioned into ONE path and filled once, which is what stops the surface
+ * reading as a pile of overlapping circles.
  *
  * Pure cairo + real time: importable from the host for offscreen previews,
  * and side-effect free (the caller supplies the phase it wants).
  */
+
+import Cairo from 'gi://cairo';
 
 const TAU = Math.PI * 2;
 
@@ -42,41 +49,66 @@ export function moonPhase(date = new Date()) {
     return {phase, illum, waxing: phase < 0.5, name};
 }
 
-/* Flat vector-style face, matching the reference art: a plain disc with a
- * few large organic shade regions (built as union paths of overlapping
- * ellipses, one flat fill each so overlaps never double-darken) and oval
- * two-tone craters whose inner shadow reads as a crescent. Light comes
- * from the upper left. All coords are unit-disc [x, y, rx, ry, rot], y down.
- * kind: 0 dark crater · 1 light crater · 2 bright streak · 3 speck */
-const REGION_LIGHT = [
-    [ 0.24, -0.16, 0.52, 0.44, -0.5],
-    [-0.06, -0.44, 0.30, 0.22, -0.3],
-    [ 0.50, -0.36, 0.22, 0.18, -0.6],
+/* ── surface data ───────────────────────────────────────────────────────────
+ * The near side's maria, roughly where photos put them: Imbrium top, the
+ * Procellarum sweep down the west limb, the Serenitatis→Tranquillitatis→
+ * Fecunditatis chain east, Nubium/Humorum low. Each spot becomes a clump of
+ * overlapping circles whose wobble comes from a seeded PRNG, so every frame
+ * draws the exact same organic outline. Coords are unit-disc, y down. */
+const MARIA_SPOTS = [
+    [-0.15, -0.35, 0.30, 11],   // Imbrium
+    [ 0.05, -0.58, 0.12, 88],   // Frigoris
+    [-0.45, -0.05, 0.26, 22],   // Procellarum (north)
+    [-0.36,  0.22, 0.24, 33],   // Procellarum (south)
+    [ 0.20, -0.22, 0.18, 44],   // Serenitatis
+    [ 0.34,  0.04, 0.20, 55],   // Tranquillitatis
+    [ 0.30,  0.30, 0.16, 66],   // Fecunditatis
+    [-0.10,  0.45, 0.16, 77],   // Nubium / Humorum
+    [ 0.05, -0.12, 0.15, 99],   // light bridge linking the seas
+    [ 0.44, -0.30, 0.13, 111],  // east of Serenitatis
+    [ 0.10,  0.58, 0.14, 122],  // south mass
+    [-0.52,  0.42, 0.12, 133],  // south-west
 ];
-const REGION_DARK = [
-    [-0.12,  0.30, 0.56, 0.40, 0.30],
-    [-0.44,  0.00, 0.28, 0.44, 0.25],
-    [ 0.28,  0.50, 0.34, 0.24, 0.1],
+
+/* faint speck craters + one bright ray crater (Tycho, low centre) */
+const SPECKS = [
+    [-0.25, -0.15, 0.030], [0.12, 0.25, 0.028], [-0.05, 0.20, 0.022],
+    [0.42, -0.38, 0.024], [-0.40, 0.40, 0.026], [0.15, -0.45, 0.020],
+    [-0.20, 0.30, 0.024], [0.50, 0.15, 0.020], [0.22, 0.55, 0.022],
 ];
-const CRATERS = [
-    [-0.34, -0.42, 0.15, 0.11, -0.35, 0],
-    [-0.02, -0.02, 0.11, 0.09,  0.15, 0],
-    [ 0.36, -0.40, 0.09, 0.08,  0.45, 0],
-    [ 0.14,  0.14, 0.13, 0.10, -0.25, 0],
-    [-0.18,  0.48, 0.11, 0.08,  0.20, 0],
-    [-0.50,  0.26, 0.08, 0.07,  0.10, 0],
-    [ 0.50,  0.12, 0.07, 0.06,  0.30, 0],
-    [-0.02,  0.66, 0.09, 0.06,  0.05, 0],
-    [ 0.24, -0.58, 0.10, 0.07,  0.35, 1],
-    [-0.30,  0.08, 0.11, 0.09, -0.20, 1],
-    [ 0.42,  0.38, 0.07, 0.06,  0.15, 1],
-    [-0.46, -0.16, 0.045, 0.11, 0.25, 2],   // bright streak craters
-    [-0.40,  0.02, 0.032, 0.09, 0.30, 2],
-    [-0.42, -0.34, 0.030, 0.025, 0.20, 3],
-    [ 0.06,  0.42, 0.035, 0.028, 0.10, 3],
-    [ 0.30,  0.66, 0.030, 0.026, 0.00, 3],
-    [-0.22, -0.10, 0.028, 0.026, 0.00, 3],
-];
+
+/* mulberry32: tiny deterministic PRNG, fixed seed per maria spot */
+function prng(seed) {
+    let a = seed >>> 0;
+    return () => {
+        a |= 0;
+        a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+let mariaCache = null;
+function mariaCircles() {
+    if (!mariaCache) {
+        mariaCache = [];
+        for (const [cx, cy, rad, seed] of MARIA_SPOTS) {
+            const rnd = prng(seed);
+            const n = 8;
+            for (let i = 0; i < n; i++) {
+                const a = (i / n) * TAU + rnd() * 0.8;
+                const d = rad * (0.3 + rnd() * 0.80);
+                mariaCache.push([
+                    cx + Math.cos(a) * d,
+                    cy + Math.sin(a) * d * 0.85,     // slight vertical squash
+                    rad * (0.36 + rnd() * 0.34),
+                ]);
+            }
+        }
+    }
+    return mariaCache;
+}
 
 /* Trace the lit region of a phase into the current path (centre = CTM origin,
  * radius r). Assumes the "right-lit" convention; waning is a mirror-image
@@ -92,51 +124,11 @@ function litPath(cr, r, phase) {
     cr.closePath();
 }
 
-/* Ellipse sub-path with optional rotation: arc() on a scaled CTM. cairo
- * accumulates paths in device space, so the restore() cannot distort it. */
-function ell(cr, x, y, rx, ry, rot = 0) {
-    cr.save();
-    cr.translate(x, y);
-    if (rot)
-        cr.rotate(rot);
-    cr.scale(rx, ry);
-    cr.arc(0, 0, 1, 0, TAU);
-    cr.restore();
-}
-
-/* One shade region: its ellipses traced as subpaths of a single union path,
- * filled once so overlaps never double-darken. */
-function region(cr, r, spots, rgb) {
-    cr.newPath();
-    for (const [x, y, rx, ry, rot] of spots)
-        ell(cr, x * r, y * r, rx * r, ry * r, rot);
-    cr.setSourceRGB(rgb[0], rgb[1], rgb[2]);
-    cr.fill();
-}
-
-/* Two-tone crater: fill the shadow tone, then an identical copy nudged
- * toward the light paints the interior — the uncovered sliver toward the
- * dark limb is the crescent shadow that gives every crater its depth. */
-function crater(cr, r, c, shadow, inner) {
-    const x = c[0] * r, y = c[1] * r, rx = c[2] * r, ry = c[3] * r, rot = c[4];
-    cr.save();
-    cr.newPath();
-    ell(cr, x, y, rx, ry, rot);
-    cr.setSourceRGB(shadow[0], shadow[1], shadow[2]);
-    cr.fillPreserve();
-    cr.clip();
-    cr.newPath();
-    ell(cr, x - rx * 0.35, y - ry * 0.35, rx, ry, rot);
-    cr.setSourceRGB(inner[0], inner[1], inner[2]);
-    cr.fill();
-    cr.restore();
-}
-
 /**
  * paintMoon(cr, cx, cy, r, phase, style, opts)
  *   style 'icon' — flat warm-lit disc, transparent unlit part (crisp at 24px)
- *   style 'sky'  — flat vector face: regions + crescent-shadow craters
- * opts: {glow:0..1} extra glow alpha multiplier for the sky style.
+ *   style 'sky'  — pale soft sphere: gentle shading + low-contrast maria
+ * opts: reserved.
  */
 export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
     const {illum, waxing} = moonPhaseFrom(phase);
@@ -173,38 +165,45 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
         return;
     }
 
-    // ── sky style: flat vector face, clipped to the lit crescent ──
+    // ── sky style: soft pale sphere, clipped to the lit crescent ──
     cr.fillPreserve();
     cr.clip();
 
-    // plain lavender-grey disc — flat like the reference, never bright white
+    // gentle sphere shading: light off the upper-left limb, slightly cooler
+    // and darker toward the far edge — pale grey, never a bright white coin
+    const bg = new Cairo.RadialGradient(-r * 0.3, -r * 0.3, r * 0.15,
+                                        0, 0, r * 1.25);
+    bg.addColorStopRGBA(0, 0.95, 0.95, 0.945, 1);
+    bg.addColorStopRGBA(0.6, 0.875, 0.88, 0.895, 1);
+    bg.addColorStopRGBA(1, 0.715, 0.73, 0.775, 1);
+    cr.setSource(bg);
     cr.newPath();
     cr.arc(0, 0, r, 0, TAU);
-    cr.setSourceRGB(0.80, 0.81, 0.88);
     cr.fill();
 
-    // large organic shade regions, then the craters riding across them
-    region(cr, r, REGION_LIGHT, [0.865, 0.875, 0.93]);
-    region(cr, r, REGION_DARK, [0.665, 0.675, 0.78]);
-
-    for (const c of CRATERS) {
-        const kind = c[5];
-        if (kind === 3) {                              // speck
-            cr.newPath();
-            ell(cr, c[0] * r, c[1] * r, c[2] * r, c[3] * r, c[4]);
-            cr.setSourceRGB(0.58, 0.59, 0.70);
-            cr.fill();
-        } else if (kind === 2) {                       // bright streak
-            cr.newPath();
-            ell(cr, c[0] * r, c[1] * r, c[2] * r, c[3] * r, c[4]);
-            cr.setSourceRGB(0.955, 0.96, 0.99);
-            cr.fill();
-        } else if (kind === 1) {                       // raised light crater
-            crater(cr, r, c, [0.855, 0.865, 0.925], [0.935, 0.94, 0.975]);
-        } else {                                       // dark crater
-            crater(cr, r, c, [0.52, 0.53, 0.66], [0.645, 0.655, 0.765]);
-        }
+    // maria: every clump circle is a subpath of ONE union path, painted with
+    // a single low-alpha pass — overlapping circles therefore merge into
+    // continuous soft shading instead of doubling into darker dots
+    const newSub = cr.newSubPath ?? cr.new_sub_path;
+    cr.newPath();
+    for (const [x, y, rad] of mariaCircles()) {
+        newSub.call(cr);                       // no connecting lines between blobs
+        cr.arc(x * r, y * r, rad * r, 0, TAU);
     }
+    cr.setSourceRGBA(0.60, 0.62, 0.68, 0.20);   // whisper-low contrast
+    cr.fill();
+
+    // a whisper of small craters + Tycho's bright dot low-centre
+    for (const [x, y, rad] of SPECKS) {
+        cr.newPath();
+        cr.arc(x * r, y * r, rad * r, 0, TAU);
+        cr.setSourceRGBA(0.45, 0.47, 0.56, 0.13);
+        cr.fill();
+    }
+    cr.newPath();
+    cr.arc(0.04 * r, 0.60 * r, r * 0.028, 0, TAU);
+    cr.setSourceRGBA(1, 1, 1, 0.35);
+    cr.fill();
 
     cr.restore();      // discards the clip + mirror
     cr.restore();

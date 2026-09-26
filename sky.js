@@ -105,11 +105,41 @@ function rebuild(sky, w, h, scene) {
     sky.fog = mk(f.fog ? 8 : 0, () => ({x: rand(-w, w), y: rand(0.25 * h, 0.85 * h),
                                         len: rand(0.35, 0.9) * w, sp: rand(12, 40),
                                         ht: rand(26, 90), o: rand(0.05, 0.16)}));
-    sky.stars = mk(f.stars ? 70 : 0, () => ({x: rand(0, w), y: rand(0, 0.6 * h),
-                                             r: rand(0.8, 2.2), ph: rand(0, TAU)}));
+    sky.stars = mk(f.stars ? 70 : 0, () => {
+        const tw = rand(0, 1) < 0.22;           // some grow 4-point flares
+        return {x: rand(0, w), y: rand(0, 0.6 * h),
+                r: tw ? rand(3.0, 5.6) : rand(0.8, 2.0), ph: rand(0, TAU),
+                tw, cool: rand(0, 1) < 0.45};
+    });
     sky.clouds = mk((f.clouds ?? 0), () => ({x: rand(0, w), y: rand(0.02 * h, 0.42 * h),
                                              s: rand(1.0, 2.6), sp: rand(6, 26)}));
     sky.w = w; sky.h = h; sky.scene = scene; sky.lastT = null;
+}
+
+/* 4-point star flare: slim crossed diamond + bright core — the reference's
+ * cyan-white twinkle stars. Straight edges read as rays at these sizes. */
+function sparkle(cr, x, y, s, a, cool) {
+    const r = cool ? 0.55 : 1, g = cool ? 0.83 : 1, b = 1;
+    const k = s * 0.15;                        // waist thickness
+    cr.save();
+    cr.translate(x, y);
+    cr.setSourceRGBA(r, g, b, a * 0.85);
+    cr.newPath();
+    cr.moveTo(0, -s);
+    cr.lineTo(k, -k);
+    cr.lineTo(s, 0);
+    cr.lineTo(k, k);
+    cr.lineTo(0, s);
+    cr.lineTo(-k, k);
+    cr.lineTo(-s, 0);
+    cr.lineTo(-k, -k);
+    cr.closePath();
+    cr.fill();
+    cr.newPath();
+    cr.arc(0, 0, Math.max(0.6, s * 0.16), 0, TAU);
+    cr.setSourceRGBA(r, g, b, Math.min(1, a * 1.5));
+    cr.fill();
+    cr.restore();
 }
 
 export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
@@ -175,19 +205,31 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
         cr.fill();
     } else if (f.stars || f.moon) {
         for (const st of sky.stars) {
-            const a = 0.25 + 0.5 * Math.abs(Math.sin(time * 1.3 + st.ph));
-            cr.setSourceRGBA(1, 1, 1, a);
+            const w01 = Math.abs(Math.sin(time * 1.3 + st.ph));
+            const a = 0.25 + 0.5 * w01;
+            if (st.tw) {
+                sparkle(cr, st.x, st.y, st.r * (0.7 + 0.5 * w01), a, st.cool);
+                continue;
+            }
+            if (st.cool)
+                cr.setSourceRGBA(0.72, 0.86, 1.0, a);
+            else
+                cr.setSourceRGBA(1, 1, 1, a);
+            cr.newPath();
             cr.arc(st.x, st.y, st.r, 0, TAU);
             cr.fill();
         }
         if (f.moon) {
             // warm halo scaled by the actual illuminated fraction
             const ph = Number.isFinite(phase) ? phase : moonPhase().phase;
-            const mg = new Cairo.RadialGradient(sx, sy, R * 0.5, sx, sy, R * 2.2);
-            mg.addColorStopRGBA(0, 0.82, 0.84, 0.95, 0.10 + 0.26 * illumOf(ph));
-            mg.addColorStopRGBA(1, 0.82, 0.84, 0.95, 0);
+            // wide soft halo: cool blue-white bloom fading deep into the sky
+            const A = 0.08 + 0.22 * illumOf(ph);
+            const mg = new Cairo.RadialGradient(sx, sy, R * 0.6, sx, sy, R * 3.4);
+            mg.addColorStopRGBA(0, 0.80, 0.87, 0.99, A);
+            mg.addColorStopRGBA(0.45, 0.70, 0.80, 0.96, A * 0.38);
+            mg.addColorStopRGBA(1, 0.70, 0.80, 0.96, 0);
             cr.setSource(mg);
-            cr.arc(sx, sy, R * 2.2, 0, TAU);
+            cr.arc(sx, sy, R * 3.4, 0, TAU);
             cr.fill();
             // tonight's real phase, cratered, off-white (moon.js)
             paintMoon(cr, sx, sy, R * 0.85, ph, 'sky');
