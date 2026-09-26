@@ -128,12 +128,13 @@ export function paintChart(cr, opts) {
     const pad = (hi - lo) * 0.35 + 1;
     lo -= pad; hi += pad * (strip ? 1.75 : 1.15);
 
-    // symmetric edge gutter: the first/last points sit inset from the card
-    // (matching the 14px inset the padded rows use), so edge labels, the
-    // condition band and the now-marker all get equal left/right breathing
+    // Data bleeds edge-to-edge (the mockup's behaviour); the LABEL rhythm
+    // is what's inset: the first/last printed hour sits at least GUT px
+    // from the card edge, with unlabeled hours still rendered beyond them.
+    // (Unlabeled hours = real data points before/after the label range.)
     const GUT = opts.gutter ?? 14;
-    const PX0 = PADX + GUT, PX1 = w - PADX - GUT;
-    const X = i => PX0 + i * (PX1 - PX0) / (n - 1);
+    const PX0 = PADX, PX1 = w - PADX;
+    const X = i => PADX + i * (w - PADX * 2) / (n - 1);
     // with the band docked bottom, the line + its value labels lift off the
     // floor so nothing sits in the pill zone; the area fill still flows to
     // its usual depth (behind the translucent band, Apple-style)
@@ -171,16 +172,21 @@ export function paintChart(cr, opts) {
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.stroke();
 
-    // value + hour labels. The "now" point and its immediate neighbours
-    // make way: the accent label gets drawn AFTER the group composite so
-    // it stays crisp (the 2 h backfill usually puts now off the label
-    // stride anyway, hence the crowded() logic).
+    // value + hour labels. Data bleeds off both ends (the edge hours are
+    // still drawn), but the first/last PRINTED label is inset past GUT so
+    // nothing clips: we offset the every-EVERY stride to the first index
+    // whose x clears the gutter, leaving unlabeled hours at both ends. The
+    // "now" point and its neighbours make way (its label is drawn after the
+    // group composite, hence the crowded() logic).
     const nowI = nowFrac === null ? -1 : Math.round(nowFrac * (n - 1));
-    for (let i = 0; i < n; i += EVERY) {
+    const span0 = (w - PADX * 2) / (n - 1);
+    let off0 = Math.ceil((GUT - PADX) / span0);
+    if (off0 < 0) off0 = 0;
+    for (let i = off0; i < n; i += EVERY) {
         const ax = X(i);
         const anchor = ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
-        const lx = anchor === 'start' ? Math.max(4, ax - 6)
-                 : anchor === 'end'   ? Math.min(w - 4, ax + 6) : ax;
+        const lx = anchor === 'start' ? Math.max(GUT, ax - 6)
+                 : anchor === 'end'   ? Math.min(w - GUT, ax + 6) : ax;
         const crowded = nowI >= 0 && Math.abs(i - nowI) < 2;
         if (!crowded)
             drawText(cr, fmtValue ? fmtValue(i, values[i]) : String(values[i]),
@@ -340,12 +346,14 @@ export function paintChart(cr, opts) {
         cr.restore();
     }
 
-    // accent label riding the now marker, above the veil
+    // accent label riding the now marker, above the veil. When now is near
+    // an edge (early morning / late night) the label flows inward past GUT
+    // so it never clips while the dashed marker stays on the data point.
     if (nowI >= 0 && fmtValue) {
         const ax = X(nowI);
         const anchor = ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
-        const lx = anchor === 'start' ? Math.max(4, ax - 6)
-                 : anchor === 'end'   ? Math.min(w - 4, ax + 6) : ax;
+        const lx = anchor === 'start' ? Math.max(GUT, ax - 6)
+                 : anchor === 'end'   ? Math.min(w - GUT, ax + 6) : ax;
         drawText(cr, fmtValue(nowI, values[nowI]), lx, Y(values[nowI]) - 22 + 1,
                  {size: FS, bold: true,
                   rgba: [...(opts.nowLabel ?? [acR, acG, acB]), 1], anchor});
