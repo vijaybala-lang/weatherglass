@@ -2,6 +2,7 @@
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
@@ -51,6 +52,21 @@ class WeatherIndicator extends PanelMenu.Button {
         this._panel = new ForecastPanel({animate: this._settings.get_boolean('animate')});
         this._panel.onRefresh(() => this._fetch(true));
         this._panel.onSettings(() => this._ext.openPreferences());
+        this._panel.onUnits(() => this._toggleUnits());
+
+        // OS dark-mode tracking: color-scheme wins, legacy bool is the fallback
+        this._dark = true;
+        try {
+            this._iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
+            this._dark = this._isDark();
+            this._darkId = this._iface.connect('changed', (s, key) => {
+                if (key === 'color-scheme' || key === 'gtk-application-prefer-dark-theme')
+                    this._panel.setDark(this._isDark());
+            });
+        } catch {
+            this._iface = null;   // exotic distro without the interface schema
+        }
+        this._panel.setDark(this._dark);
 
         const section = new PopupMenu.PopupMenuSection();
         section.actor.add_child(this._panel.actor);
@@ -83,6 +99,27 @@ class WeatherIndicator extends PanelMenu.Button {
 
     _units() {
         return this._settings.get_string('units');
+    }
+
+    /** Flip metric/imperial — the settings-change handler does the refetch. */
+    _toggleUnits() {
+        const u = this._settings.get_string('units');
+        this._settings.set_string('units', u === 'imperial' ? 'metric' : 'imperial');
+    }
+
+    /** Mirror GNOME's own dark-mode rule: color-scheme preference wins,
+     *  falling back to the legacy prefer-dark-theme boolean. */
+    _isDark() {
+        try {
+            const scheme = this._iface.get_string('color-scheme');
+            if (scheme === 'prefer-dark' || scheme === 'force-dark')
+                return true;
+            if (scheme === 'prefer-light' || scheme === 'force-light')
+                return false;
+        } catch {
+            // older schemas lack color-scheme; fall through to the boolean
+        }
+        return this._iface.get_boolean('gtk-application-prefer-dark-theme');
     }
 
     /* ── fetching ───────────────────────────────────────────────────────── */
@@ -199,10 +236,13 @@ class WeatherIndicator extends PanelMenu.Button {
         this._panel.render({
             current,
             daily,
+            hourly: data.hourly,
+            currentIso: current.timeIso,
             units,
             windy,
             effective,
             windKmh: current.wind,          // canonical km/h
+            dark: this._dark,
             updated: GLib.DateTime.new_now_local(),
         });
     }
@@ -296,6 +336,8 @@ class WeatherIndicator extends PanelMenu.Button {
         this._panel = new ForecastPanel({animate});
         this._panel.onRefresh(() => this._fetch(true));
         this._panel.onSettings(() => this._ext.openPreferences());
+        this._panel.onUnits(() => this._toggleUnits());
+        this._panel.setDark(this._dark);
         this._panel.setPlaceName(this._placeName());
         this._section.actor.add_child(this._panel.actor);
     }
@@ -311,6 +353,8 @@ class WeatherIndicator extends PanelMenu.Button {
             GLib.source_remove(this._previewId);
         if (this._settingsId)
             this._settings.disconnect(this._settingsId);
+        if (this._darkId && this._iface)
+            this._iface.disconnect(this._darkId);
         if (this._openId)
             this.menu.disconnect(this._openId);
         super.destroy();
@@ -322,7 +366,7 @@ export default class AnimatedWeatherExtension extends Extension {
         // build stamp: journalctl --user -o cat | grep "Animated Weather v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
-        console.log('Animated Weather v4 (hail+sleet scenes, physics-based fog/storm, previews)');
+        console.log('Animated Weather v5 (apple-style card: sky backdrop, hourly chart, day tiles, dark/light themes)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }

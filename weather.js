@@ -105,6 +105,27 @@ export function fmtTime(iso) {
     return iso && iso.includes('T') ? iso.slice(11, 16) : (iso ?? '');
 }
 
+/**
+ * Hourly-array indices covering one day for the chart (always ~24 points).
+ * Today starts at the CURRENT hour and rolls into tomorrow so the line never
+ * dies mid-evening; other days run midnight to midnight. Comparison is on
+ * ISO strings (zero-padded) — no Date parsing, no timezone traps.
+ */
+export function daySlice(hourly, daily, dayIndex, nowIso) {
+    const key = daily[dayIndex]?.date ?? '';
+    let idx = [];
+    for (let i = 0; i < hourly.time.length; i++)
+        if (hourly.time[i].startsWith(key))
+            idx.push(i);
+    if (dayIndex === 0 && nowIso) {
+        const hour = nowIso.slice(0, 13);                 // 'YYYY-MM-DDTHH'
+        const start = idx.findIndex(i => hourly.time[i].slice(0, 13) === hour);
+        if (start > 0)
+            idx = idx.slice(start);
+    }
+    return idx.slice(0, 24);
+}
+
 /* ── HTTP ────────────────────────────────────────────────────────────────── */
 
 function qs(params) {
@@ -164,7 +185,7 @@ export class WeatherClient {
      * callers convert for display.
      * Resolves with the parsed forecast, or rejects with an Error.
      */
-    async fetch({latitude, longitude, auto, days = 7}) {
+    async fetch({latitude, longitude, auto, days = 8}) {
         let lat = latitude;
         let lon = longitude;
         let detectedName = null;
@@ -180,10 +201,14 @@ export class WeatherClient {
             current: [
                 'temperature_2m', 'relative_humidity_2m', 'apparent_temperature',
                 'is_day', 'precipitation', 'weather_code', 'cloud_cover',
-                'wind_speed_10m', 'wind_direction_10m',
+                'wind_speed_10m', 'wind_direction_10m', 'uv_index',
                 // physical proxies: WMO codes almost never report fog or
                 // storms, but these two variables catch them reliably
                 'visibility', 'cape',
+            ].join(','),
+            hourly: [
+                'temperature_2m', 'precipitation_probability',
+                'wind_speed_10m', 'weather_code',
             ].join(','),
             daily: [
                 'weather_code', 'temperature_2m_max', 'temperature_2m_min',
@@ -202,6 +227,7 @@ export class WeatherClient {
 
         const c = raw.current;
         const d = raw.daily;
+        const h = raw.hourly;
         const current = {
             temp: c.temperature_2m,
             feels: c.apparent_temperature,
@@ -211,10 +237,15 @@ export class WeatherClient {
             precip: c.precipitation ?? 0,
             wind: c.wind_speed_10m,          // always km/h
             windDeg: c.wind_direction_10m,
+            uv: c.uv_index ?? null,
             visibility: c.visibility ?? null,   // metres
             cape: c.cape ?? null,               // J/kg convective available energy
             // mm/h always (API called with metric); drives drop/flake density
             intensity: c.precipitation ?? 0,
+            // 'YYYY-MM-DDTHH:30' in the forecast location's own timezone —
+            // compare against hourly.time, never the machine clock, so the
+            // "now" marker is right even if shell TZ and city TZ disagree
+            timeIso: c.time ?? '',
         };
 
         const daily = (d.time ?? []).map((date, i) => ({
@@ -229,7 +260,15 @@ export class WeatherClient {
             windMax: d.wind_speed_10m_max[i] ?? 0,
         }));
 
-        return {current, daily, detectedName, latitude: lat, longitude: lon};
+        const hourly = {
+            time: h?.time ?? [],
+            temp: h?.temperature_2m ?? [],
+            precipProb: h?.precipitation_probability ?? [],
+            wind: h?.wind_speed_10m ?? [],
+            code: h?.weather_code ?? [],
+        };
+
+        return {current, daily, hourly, detectedName, latitude: lat, longitude: lon};
     }
 
     /** City search for the preferences dialog. */
