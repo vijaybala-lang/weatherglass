@@ -128,7 +128,12 @@ export function paintChart(cr, opts) {
     const pad = (hi - lo) * 0.35 + 1;
     lo -= pad; hi += pad * (strip ? 1.75 : 1.15);
 
-    const X = i => PADX + i * (w - PADX * 2) / (n - 1);
+    // symmetric edge gutter: the first/last points sit inset from the card
+    // (matching the 14px inset the padded rows use), so edge labels, the
+    // condition band and the now-marker all get equal left/right breathing
+    const GUT = opts.gutter ?? 14;
+    const PX0 = PADX + GUT, PX1 = w - PADX - GUT;
+    const X = i => PX0 + i * (PX1 - PX0) / (n - 1);
     // with the band docked bottom, the line + its value labels lift off the
     // floor so nothing sits in the pill zone; the area fill still flows to
     // its usual depth (behind the translucent band, Apple-style)
@@ -198,7 +203,7 @@ export function paintChart(cr, opts) {
     // pillGlass=true switches the pill fill from the accent tint to the
     // day-tile hover glass (same design language as the tiles).
     if (strip) {
-        const span = (w - PADX * 2) / Math.max(1, n - 1);
+        const span = (PX1 - PX0) / Math.max(1, n - 1);
         const nights = Array.isArray(opts.nights) ? opts.nights : [];
         const dark = opts.dark !== false;
         // band sits at the chart top, or docked above the hour labels when
@@ -241,8 +246,8 @@ export function paintChart(cr, opts) {
                 let b = a;
                 while (b + 1 < n && `${strip[b + 1]}|${nights[b + 1] ? 1 : 0}` === key)
                     b++;
-                const x0 = a === 0 ? PADX : (X(a - 1) + X(a)) / 2;
-                const x1 = b === n - 1 ? w - PADX : (X(b) + X(b + 1)) / 2;
+                const x0 = a === 0 ? PX0 : (X(a - 1) + X(a)) / 2;
+                const x1 = b === n - 1 ? PX1 : (X(b) + X(b + 1)) / 2;
                 runs.push({scene: strip[a], night: nights[a], w: x1 - x0});
                 a = b + 1;
             }
@@ -252,9 +257,9 @@ export function paintChart(cr, opts) {
             const back = pool > 0 ? Math.min(1, debt / pool) : 0;
             const cellW = runs.map((r, k) =>
                 def[k] > 0 ? r.w + def[k] : r.w - Math.max(0, r.w - MINW) * back);
-            const bandX1 = PADX + cellW.reduce((s, v) => s + v, 0);
+            const bandX1 = PX0 + cellW.reduce((s, v) => s + v, 0);
             const band = () =>
-                pillPath(cr, PADX, stripY - PH, bandX1, stripY + PH, PILL_R);
+                pillPath(cr, PX0, stripY - PH, bandX1, stripY + PH, PILL_R);
 
             cr.save();
             band();
@@ -272,13 +277,13 @@ export function paintChart(cr, opts) {
             band();
             cr.clip();
             cr.setSourceRGBA(edge[0], edge[1], edge[2], Math.min(0.42, edge[3] * 1.9));
-            cr.rectangle(PADX, stripY + PH - BW, bandX1 - PADX, BW);
+            cr.rectangle(PX0, stripY + PH - BW, bandX1 - PX0, BW);
             cr.fill();
 
             // dotted seams at interior cell borders (GJS cairo has no
             // setDash — real dots it is)
             cr.setSourceRGBA(edge[0], edge[1], edge[2], Math.min(0.65, edge[3] * 2.6));
-            let acc = PADX;
+            let acc = PX0;
             for (let k = 0; k < runs.length - 1; k++) {
                 acc += cellW[k];
                 for (let y = stripY - PH + 2.5; y <= stripY + PH - 2.5; y += 3.2) {
@@ -287,7 +292,7 @@ export function paintChart(cr, opts) {
                 }
             }
 
-            acc = PADX;
+            acc = PX0;
             for (const [k, r] of runs.entries()) {
                 paint1(r.scene, acc + cellW[k] / 2, r.night,
                        SS * (FOOT[r.scene] ?? 1));
@@ -305,7 +310,7 @@ export function paintChart(cr, opts) {
 
     cr.popGroupToSource();
     if (hasNow && nowFrac > 0) {
-        const fx = PADX + nowFrac * (w - PADX * 2);
+        const fx = PX0 + nowFrac * (PX1 - PX0);
         cr.save();
         cr.rectangle(0, 0, fx, h);
         cr.clip();
@@ -323,7 +328,7 @@ export function paintChart(cr, opts) {
 
     // now marker (manual dashes — cr.setDash binding is unreliable in GJS)
     if (nowFrac !== null && nowFrac >= 0 && nowFrac <= 1) {
-        const nx = PADX + nowFrac * (w - PADX * 2);
+        const nx = PX0 + nowFrac * (PX1 - PX0);
         cr.save();
         cr.setSourceRGBA(1, 1, 1, 0.35);
         cr.setLineWidth(1);
