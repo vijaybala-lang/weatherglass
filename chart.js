@@ -89,11 +89,20 @@ export function paintChart(cr, opts) {
     const Y = v => TOP + (1 - (v - lo) / (hi - lo)) * (h - TOP - BOT);
     const pts = values.map((v, i) => [X(i), Y(v)]);
 
+    // All grid ink (area fill, curve, value/hour labels) is drawn into an
+    // isolated cairo group and composited back at the end: past the marker
+    // at pastKeep alpha, future at full. This fades ONLY the chart's own
+    // ink — the widget background and the sky behind it stay untouched.
+    // (An earlier DEST_OUT attempt punched a see-through hole in the
+    // composited widget background instead: the "box left of the marker".)
+    const hasNow = nowFrac !== null && nowFrac >= 0 && nowFrac <= 1;
+    cr.save();
+    cr.pushGroup();
+
     // area (gradient) — fill under the curve to just above the hour labels
     const grad = new Cairo.LinearGradient(0, TOP, 0, h - BOT + 10);
     grad.addColorStopRGBA(0, acR, acG, acB, 0.38);
     grad.addColorStopRGBA(1, acR, acG, acB, 0);
-    cr.save();
     cr.newPath();
     tracePath(cr, pts);
     cr.lineTo(X(n - 1), h - BOT + 10);
@@ -109,10 +118,9 @@ export function paintChart(cr, opts) {
     cr.setLineWidth(LINE_W);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.stroke();
-    cr.restore();
 
     // value + hour labels. The "now" point and its immediate neighbours
-    // make way: the accent label gets drawn AFTER the past veil below so
+    // make way: the accent label gets drawn AFTER the group composite so
     // it stays crisp (the 2 h backfill usually puts now off the label
     // stride anyway, hence the crowded() logic).
     const nowI = nowFrac === null ? -1 : Math.round(nowFrac * (n - 1));
@@ -133,21 +141,23 @@ export function paintChart(cr, opts) {
         }
     }
 
-    // past veil: ink left of "now" recedes slightly — hours already lived.
-    // Porter-Duff DEST_OUT multiplies the alpha of everything the chart has
-    // painted so far (line, area fill, grid labels) by pastKeep; the surface
-    // stays transparent elsewhere, so the animated sky beneath is untouched
-    // and there is no seam at the boundary.
-    if (nowFrac !== null && nowFrac > 0 && nowFrac <= 1) {
-        const destOut = Cairo.Operator?.DEST_OUT ?? Cairo.OPERATOR_DEST_OUT;
-        if (destOut !== undefined) {
-            cr.save();
-            cr.setOperator(destOut);
-            cr.rectangle(0, 0, PADX + nowFrac * (w - PADX * 2), h);
-            cr.paintWithAlpha(1 - (opts.pastKeep ?? 0.55));
-            cr.restore();
-        }
+    cr.popGroupToSource();
+    if (hasNow && nowFrac > 0) {
+        const fx = PADX + nowFrac * (w - PADX * 2);
+        cr.save();
+        cr.rectangle(0, 0, fx, h);
+        cr.clip();
+        cr.paintWithAlpha(opts.pastKeep ?? 0.55);   // lived hours recede
+        cr.restore();
+        cr.save();
+        cr.rectangle(fx, 0, w - fx, h);
+        cr.clip();
+        cr.paint();
+        cr.restore();
+    } else {
+        cr.paint();
     }
+    cr.restore();
 
     // now marker (manual dashes — cr.setDash binding is unreliable in GJS)
     if (nowFrac !== null && nowFrac >= 0 && nowFrac <= 1) {
