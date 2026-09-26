@@ -84,10 +84,13 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             settings.set_boolean('auto-location', false);
             settings.set_double('location-latitude', r.latitude);
             settings.set_double('location-longitude', r.longitude);
-            settings.set_string('location-name', locationLabel(r));
+            // the menu header has no room for "city, state, country" —
+            // store the bare city; the results list above still carries
+            // the full label so the choice stays unambiguous
+            settings.set_string('location-name', r.name);
             latEntry.set_text(String(r.latitude));
             lonEntry.set_text(String(r.longitude));
-            nameEntry.set_text(locationLabel(r));
+            nameEntry.set_text(r.name);
             clearResults();
         };
 

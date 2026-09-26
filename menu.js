@@ -16,6 +16,7 @@
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
+import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import {WeatherIcon} from './animation.js';
@@ -254,6 +255,8 @@ export class ForecastPanel {
                                         x_align: Clutter.ActorAlign.END,
                                         y_align: Clutter.ActorAlign.START});
         this._cityLbl = label('Weather', 'aw-city');
+        // long city names must never crowd the temperature side
+        this._cityLbl.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         right.add_child(this._cityLbl);
 
         // mock keeps the clock alone at this width (no condition line);

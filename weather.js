@@ -525,7 +525,7 @@ export class WeatherClient {
         return {
             latitude: lat,
             longitude: lon,
-            name: [raw.city, raw.country].filter(Boolean).join(', '),
+            name: raw.city || raw.country || '',   // city only: menu space
         };
     }
 
