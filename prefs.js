@@ -224,6 +224,12 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         styleRow.connect('notify::selected', () =>
             settings.set_string('menu-style', STYLES[styleRow.get_selected()] ?? 'animated'));
         bgGroup.add(styleRow);
+        const hourlyRow = new Adw.SwitchRow({
+            title: 'Show hourly conditions',
+            subtitle: 'Small sun / rain / cloud icons along the top of the chart',
+        });
+        settings.bind('show-hourly', hourlyRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        bgGroup.add(hourlyRow);
         page.add(bgGroup);
 
         const dataGroup = new Adw.PreferencesGroup({title: 'Data source'});

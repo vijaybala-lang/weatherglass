@@ -336,6 +336,9 @@ class WeatherIndicator extends PanelMenu.Button {
         case 'menu-style':
             this._panel.setStyle(this._settings.get_string('menu-style'));
             break;
+        case 'show-hourly':
+            this._panel.setConditions(this._settings.get_boolean('show-hourly'));
+            break;
         case 'preview-scene':
             this._previewScene();
             break;
@@ -404,6 +407,7 @@ class WeatherIndicator extends PanelMenu.Button {
         this._panel.setDark(this._dark);
         this._panel.setAccent(this._accent);
         this._panel.setStyle(this._settings.get_string('menu-style'));
+        this._panel.setConditions(this._settings.get_boolean('show-hourly'));
     }
 
     /** OS accent colour as [r, g, b] 0..1: Adwaita swatch names or a custom

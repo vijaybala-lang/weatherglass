@@ -203,7 +203,8 @@ function get(url) {
  *     daily:   [{date, code, tmax, tmin, precipProb %, sunrise, sunset,
  *               uv, windMax}],
  *     hourly:  {time: ['YYYY-MM-DDTHH:00' local…], temp: [°C…],
- *               precipProb: [%…], wind: [km/h…], code: [WMO-int…]},
+ *               precipProb: [%…], wind: [km/h…], code: [WMO-int…],
+ *               isDay: [bool…]},
  *     detectedName, latitude, longitude
  *   }
  *
@@ -252,7 +253,7 @@ export class OpenMeteoProvider extends WeatherProvider {
             ].join(','),
             hourly: [
                 'temperature_2m', 'precipitation_probability',
-                'wind_speed_10m', 'weather_code',
+                'wind_speed_10m', 'weather_code', 'is_day',
             ].join(','),
             daily: [
                 'weather_code', 'temperature_2m_max', 'temperature_2m_min',
@@ -313,6 +314,7 @@ export class OpenMeteoProvider extends WeatherProvider {
             precipProb: h?.precipitation_probability ?? [],
             wind: h?.wind_speed_10m ?? [],
             code: h?.weather_code ?? [],
+            isDay: (h?.is_day ?? []).map(v => !!v),
         };
 
         return {current, daily, hourly};
@@ -409,7 +411,7 @@ export class MetNorwayProvider extends WeatherProvider {
 
     parse(raw, {days = 8} = {}) {
         const ts = raw?.properties?.timeseries ?? [];
-        const hourly = {time: [], temp: [], precipProb: [], wind: [], code: []};
+        const hourly = {time: [], temp: [], precipProb: [], wind: [], code: [], isDay: []};
         const byDate = new Map();
 
         for (const t of ts) {
@@ -428,6 +430,7 @@ export class MetNorwayProvider extends WeatherProvider {
             hourly.precipProb.push(prob);
             hourly.wind.push(wind);
             hourly.code.push(agnosToWmo(sym));
+            hourly.isDay.push(isDayFromSymbol(sym, Number(iso.slice(11, 13))));
 
             // daily buckets over local dates; MET has no daily section
             const date = iso.slice(0, 10);

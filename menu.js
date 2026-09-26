@@ -157,6 +157,8 @@ class ChartArea extends St.DrawingArea {
             accent,
             ink: p._theme().ink,
             nowFrac: p._day === 0 ? (p._nowFrac ?? 0) : null,
+            scenes: p._conditions ? p._strip?.scenes ?? null : null,
+            nights: p._conditions ? p._strip?.nights ?? null : null,
             fontSize: w < 480 ? 8 : 8.5,
         });
         cr.$dispose();
@@ -189,6 +191,8 @@ export class ForecastPanel {
                          sky: this._sky, radius: 18};
         this._nowFrac = null;
         this._style = 'animated';                 // animated | solid | accent
+        this._conditions = true;                  // hourly icon strip on the chart
+        this._strip = null;                       // {scenes[], nights[]} for the chart
         this._accent = [0.21, 0.52, 0.89];        // GNOME blue fallback
 
         // St.Widget with BinLayout = overlay: sky fills, content rides on top
@@ -380,6 +384,12 @@ export class ForecastPanel {
         this._chart.queue_repaint();
     }
 
+    /** hourly condition-icon strip along the chart top */
+    setConditions(on) {
+        this._conditions = !!on;
+        this._chart.queue_repaint();
+    }
+
     /** state = {current, daily, hourly, currentIso, units, windy, effective,
      *           windKmh, updated, dark} */
     render(state) {
@@ -487,6 +497,20 @@ export class ForecastPanel {
                 : (i, v) => fmtWind(v, units);
         const times = s.hourly ? idx.map(i => s.hourly.time[i]) : [];
         this._fmtHour = i => hourLabel(times[i] ?? 'T00');
+        // hourly condition-icon strip (the chart only draws it if the panel
+        // setting is on). Day/night comes from the provider's own is_day per
+        // hour when present — real sunset, not a wall-clock guess.
+        this._strip = null;
+        if (s.hourly && idx.length) {
+            const days = times.map((t, k) => s.hourly.isDay?.[idx[k]] ?? (() => {
+                const h = Number(t.slice(11, 13)) || 0;
+                return h >= 6 && h < 21;
+            })());
+            this._strip = {
+                scenes: idx.map((i, k) => sceneFor(s.hourly.code[i], days[k]).scene),
+                nights: days.map(d => !d),
+            };
+        }
         // today's window starts 2 h early: the now marker sits that far in
         this._nowFrac = this._day === 0 ? nowFracIn(s.hourly, idx, s.currentIso) : null;
         return idx.map(i => s.hourly[field][i] ?? 0);

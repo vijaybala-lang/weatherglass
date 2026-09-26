@@ -13,8 +13,13 @@ import Cairo from 'gi://cairo';
 import Pango from 'gi://Pango';
 import PangoCairo from 'gi://PangoCairo';
 
+import {paintWeather} from './painter.js';
+
 const TOP = 38, BOT = 30, PADX = 2;      // mockup's padding values
 const LINE_W = 3, LABEL_EVERY = 3;
+const STRIP_Y = 13, STRIP_S = 0.6;       // condition-icon band: centre y, icon scale
+// a little precip in the static icon poses so rain/snow scenes read right
+const STRIP_INT = {rain: 2, snow: 2, sleet: 3, hail: 4, storm: 5};
 
 /* GJS Pango bindings are snake_case on some releases and camelCase on newer
  * ones — feature-detect once per call rather than betting on one. */
@@ -64,6 +69,12 @@ function tracePath(cr, pts) {
  *   nowFrac:         0..1 | null — dashed marker + accent label on that
  *                    point; everything left of it fades to pastKeep
  *   pastKeep:        alpha kept by past ink (default 0.55)
+ *   scenes:          string[] | null — one painter scene name per value
+ *                    point ('sun', 'rain'…): static condition icons in a
+ *                    band above the line, ~30 px apart, night variants
+ *                    via nights[i]; lives inside the fade group, so the
+ *                    past hours' icons recede with the rest of the ink
+ *   nights:          bool[] matching scenes
  *   labelEvery:      label stride (default 3; narrow cards pass a bigger one)
  *   fontSize:        label font size in pt (default 8.5)
  * }
@@ -79,11 +90,14 @@ export function paintChart(cr, opts) {
     const [acR, acG, acB] = accent;
     const INK = opts.ink ?? [0.96, 0.97, 0.98];   // dark theme: pass dark ink
 
-    // y window with the mockup's asymmetric padding (headroom for labels)
+    // y window with the mockup's asymmetric padding (headroom for labels);
+    // an enabled condition strip asks for noticeably more sky above the line
+    const strip = Array.isArray(opts.scenes) && opts.scenes.length === n
+        ? opts.scenes : null;
     let lo = Math.min(...values), hi = Math.max(...values);
     if (hi - lo < 1e-6) { lo -= 1; hi += 1; }
     const pad = (hi - lo) * 0.35 + 1;
-    lo -= pad; hi += pad * 1.15;
+    lo -= pad; hi += pad * (strip ? 1.75 : 1.15);
 
     const X = i => PADX + i * (w - PADX * 2) / (n - 1);
     const Y = v => TOP + (1 - (v - lo) / (hi - lo)) * (h - TOP - BOT);
@@ -138,6 +152,28 @@ export function paintChart(cr, opts) {
             const t = fmtHour(i);
             if (t)
                 drawText(cr, t, lx, h - 8, {size: FS, rgba: [...INK, 0.62], anchor});
+        }
+    }
+
+    // condition icons along the top — the same flat vocabulary as the panel
+    // icon (painter.js), posed statically; stride keeps >=30 px spacing so
+    // icons read at card width, and edge icons nudge inward off the plot
+    if (strip) {
+        const span = (w - PADX * 2) / Math.max(1, n - 1);
+        const every = Math.max(2, Math.ceil(30 / span));
+        const nights = Array.isArray(opts.nights) ? opts.nights : [];
+        for (let i = 0; i < n; i += every) {
+            const cx = Math.min(Math.max(X(i), 10 + PADX), w - 10 - PADX);
+            cr.save();
+            cr.translate(cx - 12 * STRIP_S, STRIP_Y - 12 * STRIP_S);
+            cr.scale(STRIP_S, STRIP_S);
+            paintWeather(cr, {
+                scene: strip[i] ?? 'cloud',
+                time: 4.1,                          // fixed pose: no clock churn
+                night: !!nights[i],
+                intensity: STRIP_INT[strip[i]] ?? 0,
+            });
+            cr.restore();
         }
     }
 

@@ -69,6 +69,13 @@ locationforecast, CC BY-SA 4.0 attribution (reports precipitation amounts, not
 probabilities, so the precipitation chart is model-derived)</description>
     </key>
 
+    <key name="show-hourly" type="b">
+      <default>true</default>
+      <summary>Hourly condition icons on the chart</summary>
+      <description>Small sun / moon / cloud / rain icons along the top of the
+hourly chart, aligned with the time axis; past hours fade with the curve</description>
+    </key>
+
     <key name="menu-style" type="s">
       <choices>
         <choice value="animated"/>

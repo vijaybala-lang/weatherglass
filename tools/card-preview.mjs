@@ -10,6 +10,13 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import {paintSky, paintPlain, createSky} from '../sky.js';
 import {paintChart} from '../chart.js';
+import {sceneFor} from '../weather.js';
+
+/* same naive local-hour fallback the menu uses when the provider omits is_day */
+const isDayHour = t => {
+    const h = Number((t || '').slice(11, 13)) || 0;
+    return h >= 6 && h < 21;
+};
 
 const CARD = {w: 330, h: 430}, CHART = {y: 107, h: 165};
 
@@ -33,7 +40,7 @@ const CASES = [
     {scene: 'storm', night: true,  values: DATA.hourly.precipitation_probability.slice(16, 40).map((v, i) => v + i * 2), accent: [0.30, 0.64, 1.0]},
     {scene: 'rain',  night: false, values: DATA.hourly.temperature_2m.slice(40, 64), accent: [0.96, 0.65, 0.14]},
     {scene: 'snow',  night: false, values: DATA.hourly.temperature_2m.slice(64, 88), accent: [0.96, 0.65, 0.14]},
-    {scene: 'moon',  night: true,  values: DATA.hourly.wind_speed_10m.slice(64, 88), accent: [0.24, 0.81, 0.56], nowFrac: 2 / 23},
+    {scene: 'moon',  night: true,  values: DATA.hourly.wind_speed_10m.slice(64, 88), accent: [0.24, 0.81, 0.56], nowFrac: 2 / 23, strip: true},
     {scene: 'partly', night: true, values: DATA.hourly.wind_speed_10m.slice(40, 64), accent: [0.24, 0.81, 0.56], nowFrac: 2 / 23},
     // menu-style demos: 'accent' mode = theme popup bg (grey stand-in)
     // with the charts unified in the OS accent colour
@@ -59,11 +66,21 @@ for (const [i, c] of CASES.entries()) {
     // actual menu, so we don't simulate it here)
     cr.save();
     cr.translate(0, CHART.y);
+    // condition strip for the demo cards (same mapping the menu uses)
+    let scenes = null, nights = null;
+    if (c.strip) {
+        const codes = (DATA.hourly.weather_code ?? []).slice(16, 40);
+        const times = (DATA.hourly.time ?? []).slice(16, 40);
+        scenes = codes.map((code, k) =>
+            sceneFor(code, isDayHour(times[k])).scene);
+        nights = times.map(t => !isDayHour(t));
+    }
     paintChart(cr, {
         w: CARD.w, h: CHART.h, values: c.values,
         fmtValue: (idx, v) => c.accent === CASES[1].accent ? `${Math.round(v)} km/h` : fmtTemp(v),
         fmtHour: idx => fmtHour(DATA.hourly.time[16 + idx] ?? 'T00'),
         accent: c.accent, nowFrac: c.nowFrac ?? null,
+        scenes, nights,
         // real menu passes its theme ink; plain light card needs dark ink too
         ink: c.plain && !c.night ? [0.10, 0.13, 0.19] : undefined,
         fontSize: 8,
