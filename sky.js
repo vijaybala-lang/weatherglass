@@ -33,11 +33,13 @@ const PAL = {
     loading:{d: [[0.30, 0.33, 0.38], [0.55, 0.58, 0.63]], n: [[0.09, 0.10, 0.12], [0.20, 0.22, 0.25]]},
 };
 
-/* scene → sky features. clouds: count, drops/flakes/hail/streaks: density */
+/* scene → sky features. clouds: count, drops/flakes/hail/streaks: density.
+ * No ambient streaks on calm skies — moving lines are reserved for the
+ * dedicated windy scene (real wind signal), not daily decoration. */
 const FEATURES = {
-    clear:  {clouds: 1, streaks: 4, sun: 1},
-    sun:    {clouds: 1, streaks: 4, sun: 1},
-    partly: {clouds: 3, streaks: 3, sun: 1, moon: 1},  // night: moon behind the clouds
+    clear:  {clouds: 1, sun: 1},
+    sun:    {clouds: 1, sun: 1},
+    partly: {clouds: 3, sun: 1, moon: 1},  // night: moon behind the clouds
     moon:   {clouds: 1, stars: 1, moon: 1},
     cloud:  {clouds: 5},
     fog:    {clouds: 2, fog: 1},
