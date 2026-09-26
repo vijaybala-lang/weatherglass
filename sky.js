@@ -37,7 +37,7 @@ const PAL = {
 const FEATURES = {
     clear:  {clouds: 1, streaks: 4, sun: 1},
     sun:    {clouds: 1, streaks: 4, sun: 1},
-    partly: {clouds: 3, streaks: 3, sun: 1},
+    partly: {clouds: 3, streaks: 3, sun: 1, moon: 1},  // night: moon behind the clouds
     moon:   {clouds: 1, stars: 1, moon: 1},
     cloud:  {clouds: 5},
     fog:    {clouds: 2, fog: 1},
