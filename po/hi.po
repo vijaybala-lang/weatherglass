@@ -1,0 +1,516 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Weatherglass 5.6\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-27 08:18-0700\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: extension.js:54 prefs.js:590
+msgid "Weatherglass"
+msgstr "Weatherglass"
+
+#: extension.js:146
+msgid "My location"
+msgstr "मेरा स्थान"
+
+#: extension.js:147
+msgid "Custom location"
+msgstr "अपना चुना स्थान"
+
+#: extension.js:191 menu.js:281
+msgid "Fetching weather…"
+msgstr "मौसम लाया जा रहा है…"
+
+#: menu.js:34
+msgid "Temperature"
+msgstr "तापमान"
+
+#: menu.js:35
+msgid "Precipitation"
+msgstr "वर्षा"
+
+#: menu.js:36
+msgid "Wind"
+msgstr "हवा"
+
+#: menu.js:316 menu.js:398 menu.js:402
+msgid "Weather"
+msgstr "मौसम"
+
+#: menu.js:333
+msgid "Refresh now"
+msgstr "अभी ताज़ा करें"
+
+#: menu.js:338
+msgid "Preferences"
+msgstr "प्राथमिकताएँ"
+
+#: menu.js:354
+msgid "Show"
+msgstr "दिखाएँ"
+
+#: menu.js:354
+msgid "chart"
+msgstr "ग्राफ़"
+
+#: menu.js:403
+msgid "Could not load the forecast"
+msgstr "पूर्वानुमान लोड नहीं हो सका"
+
+#: menu.js:538
+msgid "Refresh forecast — updated"
+msgstr "पूर्वानुमान ताज़ा करें — अद्यतन"
+
+#: menu.js:599
+msgid "Now"
+msgstr "अभी"
+
+#: menu.js:708
+msgid "Today"
+msgstr "आज"
+
+#: prefs.js:87
+msgid "Location"
+msgstr "स्थान"
+
+#: prefs.js:92
+msgid "Automatic"
+msgstr "स्वचालित"
+
+#: prefs.js:93
+msgid "Coordinates are detected from your public IP address"
+msgstr "निर्देशांक आपके सार्वजनिक IP पते से पहचाने जाते हैं"
+
+#: prefs.js:96
+msgid "Detect location automatically"
+msgstr "स्थान स्वतः पहचानें"
+
+#: prefs.js:104
+msgid "Search a city"
+msgstr "शहर खोजें"
+
+#: prefs.js:106
+msgid "City name — press Enter to search"
+msgstr "शहर का नाम — खोजने के लिए Enter दबाएँ"
+
+#: prefs.js:111
+msgid "Results"
+msgstr "परिणाम"
+
+#: prefs.js:147
+msgid "No matches"
+msgstr "कोई मेल नहीं"
+
+#: prefs.js:173
+msgid "Manual"
+msgstr "मैनुअल"
+
+#: prefs.js:174
+msgid "Saved when you press Enter in a field"
+msgstr "किसी फ़ील्ड में Enter दबाने पर सहेजा जाता है"
+
+#: prefs.js:177
+msgid "Latitude"
+msgstr "अक्षांश"
+
+#: prefs.js:178
+msgid "Longitude"
+msgstr "रेखांश"
+
+#: prefs.js:179
+msgid "Display name"
+msgstr "प्रदर्शित नाम"
+
+#: prefs.js:221
+msgid "Display"
+msgstr "प्रदर्शन"
+
+#: prefs.js:225
+msgid "Units"
+msgstr "इकाइयाँ"
+
+#: prefs.js:227
+msgid "Measurement system"
+msgstr "मापन प्रणाली"
+
+#: prefs.js:229
+msgid "Imperial (°F, mph)"
+msgstr "इंपीरियल (°F, mph)"
+
+#: prefs.js:229
+msgid "Metric (°C, km/h)"
+msgstr "मेट्रिक (°C, km/h)"
+
+#: prefs.js:238
+msgid "Panel indicator"
+msgstr "पैनल संकेतक"
+
+#: prefs.js:239
+msgid "Show animated icon"
+msgstr "एनिमेटेड आइकन दिखाएँ"
+
+#: prefs.js:240
+msgid "Show temperature"
+msgstr "तापमान दिखाएँ"
+
+#: prefs.js:242
+msgid "Animate the icon"
+msgstr "आइकन एनिमेट करें"
+
+#: prefs.js:243
+msgid "Turn off to save a little battery"
+msgstr "थोड़ी बैटरी बचाने के लिए बंद करें"
+
+#: prefs.js:253
+msgid "Menu background"
+msgstr "मेनू पृष्ठभूमि"
+
+#: prefs.js:255
+msgid "Background style"
+msgstr "पृष्ठभूमि शैली"
+
+#: prefs.js:256
+msgid "How the dropdown fills itself behind the forecast"
+msgstr "पूर्वानुमान के पीछे ड्रॉपडाउन कैसे भरता है"
+
+#: prefs.js:259
+msgid "Animated sky (translucent)"
+msgstr "एनिमेटेड आकाश (अर्धपारदर्शी)"
+
+#: prefs.js:260
+msgid "Solid (sky dimmed under a wash)"
+msgstr "सादा (आकाश हल्के आवरण में)"
+
+#: prefs.js:261
+msgid "Theme background, accent charts"
+msgstr "थीम पृष्ठभूमि, एक्सेंट ग्राफ़"
+
+#: prefs.js:270
+msgid "Text emboss"
+msgstr "टेक्स्ट एम्बॉस"
+
+#: prefs.js:271
+msgid "Soft shadow under card text and icons over the sky"
+msgstr "आकाश पर कार्ड टेक्स्ट और आइकनों के नीचे कोमल छाया"
+
+#: prefs.js:277
+msgid "Weather conditions"
+msgstr "मौसम की स्थिति"
+
+#: prefs.js:278
+msgid "How hourly conditions ride the chart"
+msgstr "प्रति घंटा स्थिति ग्राफ़ पर कैसे दिखती है"
+
+#: prefs.js:280
+msgid "Grouped pills"
+msgstr "समूह पैलियाँ"
+
+#: prefs.js:280
+msgid "Hourly icons"
+msgstr "प्रति घंटा आइकन"
+
+#: prefs.js:280
+msgid "Off"
+msgstr "बंद"
+
+#: prefs.js:290
+msgid "Condition band position"
+msgstr "स्थिति पट्टी की जगह"
+
+#: prefs.js:291
+msgid "Along the chart top, or above the hour labels"
+msgstr "ग्राफ़ के शीर्ष पर, या घंटा लेबलों के ऊपर"
+
+#: prefs.js:293
+msgid "Above hours"
+msgstr "घंटों के ऊपर"
+
+#: prefs.js:293
+msgid "Chart top"
+msgstr "ग्राफ़ के शीर्ष पर"
+
+#: prefs.js:310
+msgid "Data"
+msgstr "डेटा"
+
+#: prefs.js:314
+msgid "Data source"
+msgstr "डेटा स्रोत"
+
+#: prefs.js:316
+msgid "Weather provider"
+msgstr "मौसम प्रदाता"
+
+#: prefs.js:317
+msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
+msgstr "सभी बिना कुंजी · MET Norway डेटा CC BY-SA 4.0 अंतर्गत"
+
+#: prefs.js:320
+msgid "Open-Meteo (default)"
+msgstr "Open-Meteo (पूर्वनिर्धारित)"
+
+#: prefs.js:321
+msgid "MET Norway (api.met.no)"
+msgstr "MET Norway (api.met.no)"
+
+#: prefs.js:322
+msgid "NOAA NWS (US locations only)"
+msgstr "NOAA NWS (केवल अमेरिका के स्थान)"
+
+#: prefs.js:338
+msgid "Forecast model"
+msgstr "पूर्वानुमान मॉडल"
+
+#: prefs.js:339
+msgid ""
+"Open-Meteo only · out to a week models disagree — if the weekend looks off, "
+"try another"
+msgstr ""
+"केंवल Open-Meteo · एक हफ्टे तक मॉडल असहमत रहतै हैं — सप्ताहांत अजब लगै तो दूसरा मॉडल "
+"आज़माएँ"
+
+#: prefs.js:342
+msgid "Best match (Open-Meteo regional pick; US → GFS)"
+msgstr "सर्वोत्तम मिलान (Open-Meteo का क्षेत्रीय चुनाव; अमेरिका → GFS)"
+
+#: prefs.js:343
+msgid "ECMWF IFS (recommended)"
+msgstr "ECMWF IFS (अनुशंसित)"
+
+#: prefs.js:344
+msgid "DWD ICON (shorter range)"
+msgstr "DWD ICON (छोटी अवधि)"
+
+#: prefs.js:345
+msgid "NOAA GFS"
+msgstr "NOAA GFS"
+
+#: prefs.js:361
+msgid "Updates"
+msgstr "अद्यतन"
+
+#: prefs.js:363
+msgid "Refresh interval (minutes)"
+msgstr "ताज़गी अंतराल (मिनट)"
+
+#: prefs.js:372
+msgid "Wind animation threshold (km/h)"
+msgstr "हवा एनिमेशन सीमा (km/h)"
+
+#: prefs.js:373
+msgid "Breezier days swap the icon to the wind animation"
+msgstr "तेज़ हवा वाले दिन आइकन बदलकर हवा एनिमेशन दिखाते हैं"
+
+#: prefs.js:391
+msgid "Preview"
+msgstr "पूर्वावलोकन"
+
+#: prefs.js:438
+msgid "Preview scene"
+msgstr "पूर्वावलोकन दृश्य"
+
+#: prefs.js:439
+msgid "Loops right here for ~12 s — your real panel stays put"
+msgstr "यहीं ~12 सेकंड लूप करता है — आपका असली पैनल वैसा रहता है"
+
+#: prefs.js:471
+msgid "Scene"
+msgstr "दृश्य"
+
+#: prefs.js:546
+msgid "Panel preview"
+msgstr "पैनल पूर्वावलोकन"
+
+#: prefs.js:547
+msgid ""
+"How the panel button looks for this scene — mock temperature, real icon "
+"animation"
+msgstr "इस दृश्य में पैनल बटन कैसै दिसतै है — नकली तापमान, असली आइकन एनिमेशन"
+
+#: prefs.js:553
+msgid "Menu backdrop preview"
+msgstr "मेनू पृष्ठभूमि का पूर्वावलोकन"
+
+#: prefs.js:554
+msgid ""
+"Your menu's current sky, live — pick a condition above to animate it here"
+msgstr "आपकै मेनू क़ा वतमान आक़ाश, लाइव — ऊपर एक स्थिति चुनकर इसै यहाँ एनिमेट करैं"
+
+#: prefs.js:585
+msgid "About"
+msgstr "परिचय"
+
+#: prefs.js:592
+msgid "Version"
+msgstr "संस्करण"
+
+#: prefs.js:596
+msgid "Free and open source"
+msgstr "मुक्त और ओपन सोर्स"
+
+#: prefs.js:597
+msgid "No ads, no accounts, no data collection — the sky should just work"
+msgstr "कोई विज्ञापन नहीं, कोई खाता नहीं, कोई डेटा संग्रह नहीं — आकाश बस चलना चाहिए"
+
+#: prefs.js:602
+msgid "Support the development"
+msgstr "डेवलपमेन्ट कें सह्योग करें"
+
+#: prefs.js:603
+msgid ""
+"Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
+"the pixels falling."
+msgstr ""
+"Weatherglass सद़ा मुक्त है। अगर इससै आपकै डेस्कटॉप अचछा लगतै, तो एक कॉफ़ी पिक्सेल गिरातै "
+"रहैगी।"
+
+#: prefs.js:606
+msgid "Buy me a coffee"
+msgstr "मुझे एक कॉफ़ी खरीदें"
+
+#: weather.js:18
+msgid "Clear sky"
+msgstr "साफ़ आकाश"
+
+#: weather.js:19
+msgid "Mainly clear"
+msgstr "मुख्यतः साफ़"
+
+#: weather.js:20
+msgid "Partly cloudy"
+msgstr "आंशिक बादल"
+
+#: weather.js:21
+msgid "Overcast"
+msgstr "बादल से ढका"
+
+#: weather.js:22 weather.js:72
+msgid "Fog"
+msgstr "कोहरा"
+
+#: weather.js:23
+msgid "Rime fog"
+msgstr "अधिराग"
+
+#: weather.js:24
+msgid "Light drizzle"
+msgstr "हल्की बूंदाबांदी"
+
+#: weather.js:25
+msgid "Drizzle"
+msgstr "बूंदाबांदी"
+
+#: weather.js:26
+msgid "Dense drizzle"
+msgstr "घनी बूंदाबांदी"
+
+#: weather.js:27 weather.js:28
+msgid "Freezing drizzle"
+msgstr "हिमायी बूंदाबांदी"
+
+#: weather.js:29
+msgid "Light rain"
+msgstr "हल्की बारिश"
+
+#: weather.js:30
+msgid "Rain"
+msgstr "बारिश"
+
+#: weather.js:31
+msgid "Heavy rain"
+msgstr "भारी बारिश"
+
+#: weather.js:32 weather.js:33
+msgid "Freezing rain"
+msgstr "हिमायी वर्षा"
+
+#: weather.js:34
+msgid "Light snow"
+msgstr "हल्की बर्फ़"
+
+#: weather.js:35
+msgid "Snow"
+msgstr "बर्फ़"
+
+#: weather.js:36
+msgid "Heavy snow"
+msgstr "भारी बर्फ़"
+
+#: weather.js:37
+msgid "Snow grains"
+msgstr "बर्फ़ के कण"
+
+#: weather.js:38
+msgid "Light showers"
+msgstr "हल्की झमाझम"
+
+#: weather.js:39
+msgid "Showers"
+msgstr "झमाझम"
+
+#: weather.js:40
+msgid "Violent showers"
+msgstr "तीव्र झमाझम"
+
+#: weather.js:41
+msgid "Snow showers"
+msgstr "बर्फ़ की झमाझम"
+
+#: weather.js:42
+msgid "Heavy snow showers"
+msgstr "भारी बर्फ़ की झमाझम"
+
+#: weather.js:43 weather.js:68
+msgid "Thunderstorm"
+msgstr "आँधी-तूफ़ान"
+
+#: weather.js:44 weather.js:45 weather.js:66
+msgid "Thunderstorm, hail"
+msgstr "आँधी-तूफ़ान, ओलावृष्टि"
+
+#: weather.js:49
+msgid "Unknown"
+msgstr "अज्ञात"
+
+#: weather.js:100
+msgid "Mon"
+msgstr "सोम"
+
+#: weather.js:100
+msgid "Sun"
+msgstr "रवि"
+
+#: weather.js:100
+msgid "Tue"
+msgstr "मंगल"
+
+#: weather.js:100
+msgid "Wed"
+msgstr "बुध"
+
+#: weather.js:101
+msgid "Fri"
+msgstr "शुक्र"
+
+#: weather.js:101
+msgid "Sat"
+msgstr "शनि"
+
+#: weather.js:101
+msgid "Thu"
+msgstr "गुरु"
+
+#: weather.js:597
+msgid "NOAA NWS covers US locations only — pick another provider"
+msgstr "NOAA NWS केवल अमेरिका के स्थान कवर करता है — दूसरा प्रदाता चुनें"
+
+#: weather.js:602
+msgid "NOAA NWS returned no forecast for this location"
+msgstr "NOAA NWS ने इस स्थान का पूर्वानुमान नहीं दिया"
+
+#: weather.js:747
+msgid "IP geolocation failed"
+msgstr "IP स्थान पता लगाना विफल"

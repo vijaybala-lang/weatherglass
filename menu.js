@@ -19,6 +19,7 @@ import GObject from 'gi://GObject';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 
+import {_, N_} from './i18n.js';
 import {WeatherIcon} from './animation.js';
 import {paintSky, createSky, sampleSky, bodyOf} from './sky.js';
 import {paintChart, ease, lerp, contrastSafe, lumOf, pickInk, ratio,
@@ -30,9 +31,9 @@ const STATIC_TIME = 1.1;     // frame that makes static mini icons look lively
 const MORPH_MS = 420, MORPH_TICK = 25;
 
 const METRICS = {
-    temp:   {label: 'Temperature',   accent: [0.96, 0.65, 0.14]},
-    precip: {label: 'Precipitation', accent: [0.30, 0.64, 1.00]},
-    wind:   {label: 'Wind',          accent: [0.24, 0.81, 0.56]},
+    temp:   {label: N_('Temperature'),   accent: [0.96, 0.65, 0.14]},
+    precip: {label: N_('Precipitation'), accent: [0.30, 0.64, 1.00]},
+    wind:   {label: N_('Wind'),          accent: [0.24, 0.81, 0.56]},
 };
 
 /* Theme = label ink + a scrim painted over the sky. Dark keeps the sky as
@@ -277,7 +278,7 @@ export class ForecastPanel {
         });
         this._placeholderIcon = new WeatherIcon({size: 34, animate: this._animate});
         this._placeholderIcon.setScene('loading');
-        this._placeholderText = label('Fetching weather…', 'aw-placeholder-text');
+        this._placeholderText = label(_('Fetching weather…'), 'aw-placeholder-text');
         this._placeholderBox.add_child(this._placeholderIcon);
         this._placeholderBox.add_child(this._placeholderText);
         return this._placeholderBox;
@@ -312,7 +313,7 @@ export class ForecastPanel {
         const right = new St.BoxLayout({vertical: true, style_class: 'aw-city-col',
                                         x_align: Clutter.ActorAlign.END,
                                         y_align: Clutter.ActorAlign.START});
-        this._cityLbl = label('Weather', 'aw-city');
+        this._cityLbl = label(_('Weather'), 'aw-city');
         // long city names must never crowd the temperature side
         this._cityLbl.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._cityLbl.x_align = Clutter.ActorAlign.END;   // flush right edge
@@ -329,12 +330,12 @@ export class ForecastPanel {
         right.add_child(infoRow);
         const btnRow = row('aw-btn-row');
         btnRow.x_align = Clutter.ActorAlign.END;
-        this._refreshBtn = this._iconButton('view-refresh-symbolic', 'Refresh now',
+        this._refreshBtn = this._iconButton('view-refresh-symbolic', _('Refresh now'),
                                             () => this._onRefresh?.());
         btnRow.add_child(this._refreshBtn);
         // emblem-system draws its gear inset (optically smaller than the
         // refresh circle at the same icon_size) — nudge it up one notch
-        btnRow.add_child(this._iconButton('emblem-system-symbolic', 'Preferences',
+        btnRow.add_child(this._iconButton('emblem-system-symbolic', _('Preferences'),
                                           () => this._onSettings?.(), 18));
         right.add_child(btnRow);
         header.add_child(right);
@@ -348,9 +349,9 @@ export class ForecastPanel {
             const btn = new St.Button({
                 style_class: 'aw-tab',
                 can_focus: true,
-                child: label(m.label, 'aw-tab-label'),
+                child: label(_(m.label), 'aw-tab-label'),
             });
-            btn.set_accessible_name(`Show ${m.label.toLowerCase()} chart`);
+            btn.set_accessible_name(`${_('Show')} ${_(m.label.toLowerCase())} ${_('chart')}`);
             btn.connect('clicked', () => this._selectMetric(key));
             tabs.add_child(btn);
             this._tabBtns[key] = btn;
@@ -394,12 +395,12 @@ export class ForecastPanel {
     onSky(cb)      { this._onSky = cb; }
 
     setPlaceName(name) {
-        this._cityLbl.set_text(name || 'Weather');
+        this._cityLbl.set_text(name || _('Weather'));
     }
 
     setError(message) {
-        this._cityLbl.set_text('Weather');
-        this.showPlaceholder(message || 'Could not load the forecast');
+        this._cityLbl.set_text(_('Weather'));
+        this.showPlaceholder(message || _('Could not load the forecast'));
     }
 
     showPlaceholder(text) {
@@ -534,7 +535,7 @@ export class ForecastPanel {
         // accessible name instead of visible clutter
         if (state.updated)
             this._refreshBtn.set_accessible_name(
-                `Refresh forecast — updated ${state.updated.format('%H:%M')}`);
+                `${_('Refresh forecast — updated')} ${state.updated.format('%H:%M')}`);
 
         this._buildDayTiles();
         if (this._day >= daily.length)
@@ -595,7 +596,7 @@ export class ForecastPanel {
             return;
         if (this._day === 0) {
             this._tempLbl.set_text(fmtTemp(s.current.temp, s.units));
-            this._descLbl.set_text(`Now: ${this._desc}`);
+            this._descLbl.set_text(`${_('Now')}: ${this._desc}`);
         } else {
             const d = s.daily[Math.min(this._day, s.daily.length - 1)];
             this._tempLbl.set_text(fmtTemp(d.tmax, s.units));
@@ -704,7 +705,7 @@ export class ForecastPanel {
                 });
                 const col = new St.BoxLayout({vertical: true, style_class: 'aw-day-col',
                                               x_align: FILL});
-                col.add_child(new St.Label({text: i === 0 ? 'Today' : dayName(d.date),
+                col.add_child(new St.Label({text: i === 0 ? _('Today') : dayName(d.date),
                                             style_class: 'aw-day-name',
                                             x_align: Clutter.ActorAlign.CENTER}));
                 const icon = new WeatherIcon({size: 26, animate: false,

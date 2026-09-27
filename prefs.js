@@ -13,6 +13,8 @@ import {paintWeather} from './painter.js';
 import {createSky, paintSky} from './sky.js';
 import {drawText} from './chart.js';
 
+import {initI18n, _, N_} from './i18n.js';
+
 const UNITS = ['metric', 'imperial'];
 const STYLES = ['animated', 'solid', 'accent'];
 
@@ -65,6 +67,8 @@ const ResultRow = GObject.registerClass(class ResultRow extends Adw.ActionRow {
 
 export default class AnimatedWeatherPrefs extends ExtensionPreferences {
     fillPreferencesWindow(window) {
+        // prefs runs in its own process — bind the domain before building UI
+        initI18n(this.uuid, this.dir.get_path());
         const settings = this.getSettings();
         const client = new WeatherClient();
         window.set_default_size(560, 640);
@@ -80,16 +84,16 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
     _locationPage(settings, client) {
         const page = new Adw.PreferencesPage({
-            title: 'Location',
+            title: _('Location'),
             icon_name: 'find-location-symbolic',
         });
 
         const autoGroup = new Adw.PreferencesGroup({
-            title: 'Automatic',
-            description: 'Coordinates are detected from your public IP address',
+            title: _('Automatic'),
+            description: _('Coordinates are detected from your public IP address'),
         });
         const autoRow = new Adw.SwitchRow({
-            title: 'Detect location automatically',
+            title: _('Detect location automatically'),
         });
         settings.bind('auto-location', autoRow, 'active',
                       Gio.SettingsBindFlags.DEFAULT);
@@ -97,14 +101,14 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         page.add(autoGroup);
 
         // ── search ────────────────────────────────────────────────────────
-        const searchGroup = new Adw.PreferencesGroup({title: 'Search a city'});
+        const searchGroup = new Adw.PreferencesGroup({title: _('Search a city')});
         const searchEntry = new Adw.EntryRow({
-            title: 'City name — press Enter to search',
+            title: _('City name — press Enter to search'),
         });
         searchGroup.add(searchEntry);
 
         const resultsGroup = new Adw.PreferencesGroup({
-            title: 'Results',
+            title: _('Results'),
             visible: false,
         });
 
@@ -140,7 +144,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                 clearResults();
                 if (results.length === 0) {
                     const none = new Adw.ActionRow({
-                        title: 'No matches',
+                        title: _('No matches'),
                         sensitive: false,
                     });
                     resultRows.push(none);
@@ -166,13 +170,13 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
         // ── manual coordinates ────────────────────────────────────────────
         const manualGroup = new Adw.PreferencesGroup({
-            title: 'Manual',
-            description: 'Saved when you press Enter in a field',
+            title: _('Manual'),
+            description: _('Saved when you press Enter in a field'),
         });
 
-        const latEntry = new Adw.EntryRow({title: 'Latitude'});
-        const lonEntry = new Adw.EntryRow({title: 'Longitude'});
-        const nameEntry = new Adw.EntryRow({title: 'Display name'});
+        const latEntry = new Adw.EntryRow({title: _('Latitude')});
+        const lonEntry = new Adw.EntryRow({title: _('Longitude')});
+        const nameEntry = new Adw.EntryRow({title: _('Display name')});
 
         latEntry.set_text(settings.get_double('location-latitude').toFixed(4));
         lonEntry.set_text(settings.get_double('location-longitude').toFixed(4));
@@ -214,15 +218,15 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
     _displayPage(settings) {
         const page = new Adw.PreferencesPage({
-            title: 'Display',
+            title: _('Display'),
             icon_name: 'applications-graphics-symbolic',
         });
 
-        const unitsGroup = new Adw.PreferencesGroup({title: 'Units'});
+        const unitsGroup = new Adw.PreferencesGroup({title: _('Units')});
         const unitsRow = new Adw.ComboRow({
-            title: 'Measurement system',
+            title: _('Measurement system'),
             model: new Gtk.StringList({
-                strings: ['Metric (°C, km/h)', 'Imperial (°F, mph)'],
+                strings: [_('Metric (°C, km/h)'), _('Imperial (°F, mph)')],
             }),
         });
         unitsRow.set_selected(UNITS.indexOf(settings.get_string('units')));
@@ -231,12 +235,12 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         unitsGroup.add(unitsRow);
         page.add(unitsGroup);
 
-        const lookGroup = new Adw.PreferencesGroup({title: 'Panel indicator'});
-        const iconRow = new Adw.SwitchRow({title: 'Show animated icon'});
-        const tempRow = new Adw.SwitchRow({title: 'Show temperature'});
+        const lookGroup = new Adw.PreferencesGroup({title: _('Panel indicator')});
+        const iconRow = new Adw.SwitchRow({title: _('Show animated icon')});
+        const tempRow = new Adw.SwitchRow({title: _('Show temperature')});
         const animRow = new Adw.SwitchRow({
-            title: 'Animate the icon',
-            subtitle: 'Turn off to save a little battery',
+            title: _('Animate the icon'),
+            subtitle: _('Turn off to save a little battery'),
         });
         settings.bind('show-icon', iconRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         settings.bind('show-temperature', tempRow, 'active', Gio.SettingsBindFlags.DEFAULT);
@@ -246,15 +250,15 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         lookGroup.add(animRow);
         page.add(lookGroup);
 
-        const bgGroup = new Adw.PreferencesGroup({title: 'Menu background'});
+        const bgGroup = new Adw.PreferencesGroup({title: _('Menu background')});
         const styleRow = new Adw.ComboRow({
-            title: 'Background style',
-            subtitle: 'How the dropdown fills itself behind the forecast',
+            title: _('Background style'),
+            subtitle: _('How the dropdown fills itself behind the forecast'),
             model: new Gtk.StringList({
                 strings: [
-                    'Animated sky (translucent)',
-                    'Solid (sky dimmed under a wash)',
-                    'Theme background, accent charts',
+                    _('Animated sky (translucent)'),
+                    _('Solid (sky dimmed under a wash)'),
+                    _('Theme background, accent charts'),
                 ],
             }),
         });
@@ -263,17 +267,17 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             settings.set_string('menu-style', STYLES[styleRow.get_selected()] ?? 'animated'));
         bgGroup.add(styleRow);
         const embossRow = new Adw.SwitchRow({
-            title: 'Text emboss',
-            subtitle: 'Soft shadow under card text and icons over the sky',
+            title: _('Text emboss'),
+            subtitle: _('Soft shadow under card text and icons over the sky'),
         });
         settings.bind('text-emboss', embossRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         bgGroup.add(embossRow);
         const COND = ['off', 'icons', 'pills'];
         const condRow = new Adw.ComboRow({
-            title: 'Weather conditions',
-            subtitle: 'How hourly conditions ride the chart',
+            title: _('Weather conditions'),
+            subtitle: _('How hourly conditions ride the chart'),
             model: new Gtk.StringList({
-                strings: ['Off', 'Hourly icons', 'Grouped pills'],
+                strings: [_('Off'), _('Hourly icons'), _('Grouped pills')],
             }),
         });
         const ci = COND.indexOf(settings.get_string('condition-strip'));
@@ -283,10 +287,10 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         bgGroup.add(condRow);
         const POS = ['top', 'bottom'];
         const posRow = new Adw.ComboRow({
-            title: 'Condition band position',
-            subtitle: 'Along the chart top, or above the hour labels',
+            title: _('Condition band position'),
+            subtitle: _('Along the chart top, or above the hour labels'),
             model: new Gtk.StringList({
-                strings: ['Chart top', 'Above hours'],
+                strings: [_('Chart top'), _('Above hours')],
             }),
         });
         const pi = POS.indexOf(settings.get_string('condition-pos'));
@@ -303,19 +307,19 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
     _dataPage(settings) {
         const page = new Adw.PreferencesPage({
-            title: 'Data',
+            title: _('Data'),
             icon_name: 'network-wireless-symbolic',
         });
 
-        const dataGroup = new Adw.PreferencesGroup({title: 'Data source'});
+        const dataGroup = new Adw.PreferencesGroup({title: _('Data source')});
         const provRow = new Adw.ComboRow({
-            title: 'Weather provider',
-            subtitle: 'All keyless · MET Norway data licensed CC BY-SA 4.0',
+            title: _('Weather provider'),
+            subtitle: _('All keyless · MET Norway data licensed CC BY-SA 4.0'),
             model: new Gtk.StringList({
                 strings: [
-                    'Open-Meteo (default)',
-                    'MET Norway (api.met.no)',
-                    'NOAA NWS (US locations only)',
+                    _('Open-Meteo (default)'),
+                    _('MET Norway (api.met.no)'),
+                    _('NOAA NWS (US locations only)'),
                 ],
             }),
         });
@@ -331,14 +335,14 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         // once promised 86°F where ECMWF promised 69°F — the GFS notorious-
         // ly over-forecasts coastal heat). Default: ECMWF IFS.
         const modelRow = new Adw.ComboRow({
-            title: 'Forecast model',
-            subtitle: 'Open-Meteo only · out to a week models disagree — if the weekend looks off, try another',
+            title: _('Forecast model'),
+            subtitle: _('Open-Meteo only · out to a week models disagree — if the weekend looks off, try another'),
             model: new Gtk.StringList({
                 strings: [
-                    'Best match (Open-Meteo regional pick; US → GFS)',
-                    'ECMWF IFS (recommended)',
-                    'DWD ICON (shorter range)',
-                    'NOAA GFS',
+                    _('Best match (Open-Meteo regional pick; US → GFS)'),
+                    _('ECMWF IFS (recommended)'),
+                    _('DWD ICON (shorter range)'),
+                    _('NOAA GFS'),
                 ],
             }),
         });
@@ -354,9 +358,9 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         dataGroup.add(modelRow);
         page.add(dataGroup);
 
-        const updGroup = new Adw.PreferencesGroup({title: 'Updates'});
+        const updGroup = new Adw.PreferencesGroup({title: _('Updates')});
         const refreshRow = new Adw.SpinRow({
-            title: 'Refresh interval (minutes)',
+            title: _('Refresh interval (minutes)'),
             adjustment: new Gtk.Adjustment({
                 lower: 5, upper: 120, step_increment: 5, value: 15,
             }),
@@ -365,8 +369,8 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                       Gio.SettingsBindFlags.DEFAULT);
 
         const windyRow = new Adw.SpinRow({
-            title: 'Wind animation threshold (km/h)',
-            subtitle: 'Breezier days swap the icon to the wind animation',
+            title: _('Wind animation threshold (km/h)'),
+            subtitle: _('Breezier days swap the icon to the wind animation'),
             adjustment: new Gtk.Adjustment({
                 lower: 0, upper: 120, step_increment: 5, value: 30,
             }),
@@ -384,7 +388,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
     _previewPage(settings) {
         const page = new Adw.PreferencesPage({
-            title: 'Preview',
+            title: _('Preview'),
             icon_name: 'media-playback-start-symbolic',
         });
         const sm = Adw.StyleManager.get_default();
@@ -431,9 +435,9 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
         // ── scene dropdown: one row replaces the old 11-row list ─────────
         const sceneRow = new Adw.ComboRow({
-            title: 'Preview scene',
-            subtitle: 'Loops right here for ~12 s — your real panel stays put',
-            model: new Gtk.StringList({strings: LEGEND.map(([, l]) => l)}),
+            title: _('Preview scene'),
+            subtitle: _('Loops right here for ~12 s — your real panel stays put'),
+            model: new Gtk.StringList({strings: LEGEND.map(([, l]) => _(l))}),
         });
         // the picked scene's glyph, painted by the real menu painter —
         // rides in the row and animates with the preview
@@ -464,7 +468,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         });
         sceneRow.set_selected(2);   // neutral opener: 'partly cloudy'
         armed = true;
-        const sceneGroup = new Adw.PreferencesGroup({title: 'Scene'});
+        const sceneGroup = new Adw.PreferencesGroup({title: _('Scene')});
         sceneGroup.add(sceneRow);
         page.add(sceneGroup);
 
@@ -539,17 +543,15 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         });
 
         const panelGroup = new Adw.PreferencesGroup({
-            title: 'Panel preview',
-            description: 'How the panel button looks for this scene — mock ' +
-                         'temperature, real icon animation',
+            title: _('Panel preview'),
+            description: _('How the panel button looks for this scene — mock temperature, real icon animation'),
         });
         panelGroup.add(barArea);
         page.add(panelGroup);
 
         const skyGroup = new Adw.PreferencesGroup({
-            title: 'Menu backdrop preview',
-            description: 'Your menu\'s current sky, live — pick a condition ' +
-                         'above to animate it here',
+            title: _('Menu backdrop preview'),
+            description: _('Your menu\'s current sky, live — pick a condition above to animate it here'),
         });
         skyGroup.add(skyArea);
         page.add(skyGroup);
@@ -580,30 +582,28 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
     _aboutPage() {
         const page = new Adw.PreferencesPage({
-            title: 'About',
+            title: _('About'),
             icon_name: 'help-about-symbolic',
         });
 
         const md = this.metadata;
-        const infoGroup = new Adw.PreferencesGroup({title: 'Weatherglass'});
+        const infoGroup = new Adw.PreferencesGroup({title: _('Weatherglass')});
         infoGroup.add(new Adw.ActionRow({
-            title: 'Version',
+            title: _('Version'),
             subtitle: String(md?.version ?? 'dev'),
         }));
         infoGroup.add(new Adw.ActionRow({
-            title: 'Free and open source',
-            subtitle: 'No ads, no accounts, no data collection — the sky ' +
-                      'should just work',
+            title: _('Free and open source'),
+            subtitle: _('No ads, no accounts, no data collection — the sky should just work'),
         }));
         page.add(infoGroup);
 
         const loveGroup = new Adw.PreferencesGroup({
-            title: 'Support the development',
-            description: 'Weatherglass is free forever. If it makes your ' +
-                         'desktop nicer, a coffee keeps the pixels falling.',
+            title: _('Support the development'),
+            description: _('Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps the pixels falling.'),
         });
         const coffeeRow = new Adw.ActionRow({
-            title: 'Buy me a coffee',
+            title: _('Buy me a coffee'),
             subtitle: COFFEE_URL,
             activatable: true,
         });

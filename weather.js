@@ -2,6 +2,7 @@
 
 import GLib from 'gi://GLib';
 import Soup from 'gi://Soup';
+import {_, N_} from './i18n.js';
 
 const API = 'https://api.open-meteo.com/v1/forecast';
 const GEO = 'https://geocoding-api.open-meteo.com/v1/search';
@@ -14,39 +15,39 @@ const NWS = 'https://api.weather.gov';
 /* ── WMO 4677 weather codes → description + animation scene ─────────────── */
 
 export const WMO = {
-    0:  {desc: 'Clear sky',        day: 'sun',    night: 'moon'},
-    1:  {desc: 'Mainly clear',     day: 'sun',    night: 'moon'},
-    2:  {desc: 'Partly cloudy',    day: 'partly', night: 'partly'},
-    3:  {desc: 'Overcast',         day: 'cloud',  night: 'cloud'},
-    45: {desc: 'Fog',              day: 'fog',    night: 'fog'},
-    48: {desc: 'Rime fog',         day: 'fog',    night: 'fog'},
-    51: {desc: 'Light drizzle',    day: 'rain',   night: 'rain'},
-    53: {desc: 'Drizzle',          day: 'rain',   night: 'rain'},
-    55: {desc: 'Dense drizzle',    day: 'rain',   night: 'rain'},
-    56: {desc: 'Freezing drizzle', day: 'sleet',  night: 'sleet'},
-    57: {desc: 'Freezing drizzle', day: 'sleet',  night: 'sleet'},
-    61: {desc: 'Light rain',       day: 'rain',   night: 'rain'},
-    63: {desc: 'Rain',             day: 'rain',   night: 'rain'},
-    65: {desc: 'Heavy rain',       day: 'rain',   night: 'rain'},
-    66: {desc: 'Freezing rain',    day: 'sleet',  night: 'sleet'},
-    67: {desc: 'Freezing rain',    day: 'sleet',  night: 'sleet'},
-    71: {desc: 'Light snow',       day: 'snow',   night: 'snow'},
-    73: {desc: 'Snow',             day: 'snow',   night: 'snow'},
-    75: {desc: 'Heavy snow',       day: 'snow',   night: 'snow'},
-    77: {desc: 'Snow grains',      day: 'snow',   night: 'snow'},
-    80: {desc: 'Light showers',    day: 'rain',   night: 'rain'},
-    81: {desc: 'Showers',          day: 'rain',   night: 'rain'},
-    82: {desc: 'Violent showers',  day: 'rain',   night: 'rain'},
-    85: {desc: 'Snow showers',     day: 'snow',   night: 'snow'},
-    86: {desc: 'Heavy snow showers', day: 'snow', night: 'snow'},
-    95: {desc: 'Thunderstorm',     day: 'storm',  night: 'storm'},
-    96: {desc: 'Thunderstorm, hail', day: 'hail', night: 'hail'},
-    99: {desc: 'Thunderstorm, hail', day: 'hail', night: 'hail'},
+    0:  {desc: N_('Clear sky'),        day: 'sun',    night: 'moon'},
+    1:  {desc: N_('Mainly clear'),     day: 'sun',    night: 'moon'},
+    2:  {desc: N_('Partly cloudy'),    day: 'partly', night: 'partly'},
+    3:  {desc: N_('Overcast'),         day: 'cloud',  night: 'cloud'},
+    45: {desc: N_('Fog'),              day: 'fog',    night: 'fog'},
+    48: {desc: N_('Rime fog'),         day: 'fog',    night: 'fog'},
+    51: {desc: N_('Light drizzle'),    day: 'rain',   night: 'rain'},
+    53: {desc: N_('Drizzle'),          day: 'rain',   night: 'rain'},
+    55: {desc: N_('Dense drizzle'),    day: 'rain',   night: 'rain'},
+    56: {desc: N_('Freezing drizzle'), day: 'sleet',  night: 'sleet'},
+    57: {desc: N_('Freezing drizzle'), day: 'sleet',  night: 'sleet'},
+    61: {desc: N_('Light rain'),       day: 'rain',   night: 'rain'},
+    63: {desc: N_('Rain'),             day: 'rain',   night: 'rain'},
+    65: {desc: N_('Heavy rain'),       day: 'rain',   night: 'rain'},
+    66: {desc: N_('Freezing rain'),    day: 'sleet',  night: 'sleet'},
+    67: {desc: N_('Freezing rain'),    day: 'sleet',  night: 'sleet'},
+    71: {desc: N_('Light snow'),       day: 'snow',   night: 'snow'},
+    73: {desc: N_('Snow'),             day: 'snow',   night: 'snow'},
+    75: {desc: N_('Heavy snow'),       day: 'snow',   night: 'snow'},
+    77: {desc: N_('Snow grains'),      day: 'snow',   night: 'snow'},
+    80: {desc: N_('Light showers'),    day: 'rain',   night: 'rain'},
+    81: {desc: N_('Showers'),          day: 'rain',   night: 'rain'},
+    82: {desc: N_('Violent showers'),  day: 'rain',   night: 'rain'},
+    85: {desc: N_('Snow showers'),     day: 'snow',   night: 'snow'},
+    86: {desc: N_('Heavy snow showers'), day: 'snow', night: 'snow'},
+    95: {desc: N_('Thunderstorm'),     day: 'storm',  night: 'storm'},
+    96: {desc: N_('Thunderstorm, hail'), day: 'hail', night: 'hail'},
+    99: {desc: N_('Thunderstorm, hail'), day: 'hail', night: 'hail'},
 };
 
 export function sceneFor(code, isDay = true) {
-    const w = WMO[code] ?? {desc: 'Unknown', day: 'cloud', night: 'cloud'};
-    return {scene: isDay ? w.day : w.night, desc: w.desc};
+    const w = WMO[code] ?? {desc: N_('Unknown'), day: 'cloud', night: 'cloud'};
+    return {scene: isDay ? w.day : w.night, desc: _(w.desc)};
 }
 
 /**
@@ -62,13 +63,13 @@ export function deriveScene(current) {
     const {code, visibility, cape, isDay} = current;
     const liquid = code >= 51 && code <= 82;   // drizzle … showers
     if (code === 96 || code === 99 || (cape >= 2500 && liquid))
-        return {scene: 'hail', desc: 'Thunderstorm, hail'};
+        return {scene: 'hail', desc: _('Thunderstorm, hail')};
     if (code === 95 || (cape >= 1200 && liquid))
-        return {scene: 'storm', desc: 'Thunderstorm'};
+        return {scene: 'storm', desc: _('Thunderstorm')};
     if (code === 45 || code === 48)
         return sceneFor(code, isDay);
     if (visibility !== null && visibility < 1000 && !liquid)
-        return {scene: 'fog', desc: 'Fog'};
+        return {scene: 'fog', desc: _('Fog')};
     return sceneFor(code, isDay);
 }
 
@@ -96,12 +97,15 @@ export function fmtWind(kmh, units) {
     return `${Math.round(kmh)} km/h`;
 }
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS = [N_('Sun'), N_('Mon'), N_('Tue'), N_('Wed'),
+              N_('Thu'), N_('Fri'), N_('Sat')];
 
-/** 'YYYY-MM-DD' → 'Mon' (UTC parse keeps it locale/zone independent). */
+/** 'YYYY-MM-DD' → short weekday, localized (UTC parse keeps the date
+ *  itself zone-independent; the msgids are the three-letter English
+ *  abbreviations, translated to the locale's usual short weekday). */
 export function dayName(iso) {
     const [y, m, d] = iso.split('-').map(Number);
-    return DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+    return _(DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]);
 }
 
 /** '2026-09-25T06:08' → '06:08', or 'HH:MM' as-is. */
@@ -590,12 +594,12 @@ export class NoaaNwsProvider extends WeatherProvider {
         } catch (e) {
             // NWS answers 400/404 for coordinates outside its grid (US + waters)
             throw new Error(/HTTP 4\d\d/.test(e.message)
-                ? 'NOAA NWS covers US locations only — pick another provider'
+                ? _('NOAA NWS covers US locations only — pick another provider')
                 : e.message);
         }
         const p = pts?.properties ?? {};
         if (!p.forecastHourly || !p.forecast)
-            throw new Error('NOAA NWS returned no forecast for this location');
+            throw new Error(_('NOAA NWS returned no forecast for this location'));
 
         const [hourly, daily] = await Promise.all([
             get(p.forecastHourly), get(p.forecast)]);
@@ -740,7 +744,7 @@ export class WeatherClient {
         const raw = await get(IPINFO);
         const [lat, lon] = (raw.loc ?? '').split(',').map(Number);
         if (!Number.isFinite(lat) || !Number.isFinite(lon))
-            throw new Error('IP geolocation failed');
+            throw new Error(_('IP geolocation failed'));
         return {
             latitude: lat,
             longitude: lon,

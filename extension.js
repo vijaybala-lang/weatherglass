@@ -14,6 +14,7 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import {WeatherIcon} from './animation.js';
 import {ForecastPanel} from './menu.js';
+import {initI18n, _} from './i18n.js';
 import {WeatherClient, sceneFor, deriveScene, fmtTemp} from './weather.js';
 import {moonPhase} from './moon.js';
 
@@ -50,7 +51,7 @@ const PANEL_ICON_SIZE = 20;
 const WeatherIndicator = GObject.registerClass(
 class WeatherIndicator extends PanelMenu.Button {
     _init(extension) {
-        super._init(0.0, 'Weatherglass', false);
+        super._init(0.0, _('Weatherglass'), false);
 
         this._ext = extension;
         this._settings = extension.getSettings();
@@ -142,8 +143,8 @@ class WeatherIndicator extends PanelMenu.Button {
 
     _placeName() {
         if (this._settings.get_boolean('auto-location'))
-            return 'My location';
-        return this._settings.get_string('location-name') || 'Custom location';
+            return _('My location');
+        return this._settings.get_string('location-name') || _('Custom location');
     }
 
     _units() {
@@ -187,7 +188,7 @@ class WeatherIndicator extends PanelMenu.Button {
 
         this._icon.setScene('loading');
         if (!this._data)
-            this._panel.showPlaceholder('Fetching weather…');
+            this._panel.showPlaceholder(_('Fetching weather…'));
 
         try {
             const auto = this._settings.get_boolean('auto-location');
@@ -463,6 +464,9 @@ class WeatherIndicator extends PanelMenu.Button {
 
 export default class AnimatedWeatherExtension extends Extension {
     enable() {
+        // catalogs first: the menu constructor builds labels immediately,
+        // and gettext() only finds them once the domain is bound
+        initI18n(this.uuid, this.dir.get_path());
         // build stamp: journalctl --user -o cat | grep "Weatherglass v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
