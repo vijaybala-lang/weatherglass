@@ -375,9 +375,15 @@ export function paintChart(cr, opts) {
         nowPlace = { txt, lx, y, a };
         used.push(boxOf(x0, tw, th, y));
     }
-    if (strip)                            // and the condition band's row
-        used.push([0, w, (opts.stripBottom ? h - 34 : STRIP_Y) - 13,
-                   (opts.stripBottom ? h - 34 : STRIP_Y) + 13]);
+    if (strip) {                          // and the condition band's row —
+        const bandY = opts.stripBottom ? h - 34 : STRIP_Y;
+        // the band's DOWN margin shrinks to the hour text's height: a
+        // 'large' label row would otherwise collide with the fixed band
+        // and every hour label gets dropped (observed live in the menu)
+        const hourH = textPx(cr, '0', TS, false, HW)[1];
+        used.push([0, w, bandY - 13,
+                   Math.min(bandY + 13, h - 7 - hourH)]);
+    }
     for (let i = off0; fmtValue && i < n; i += EVERY) {
         const ax = X(i);
         const a = anchorOf(ax), lx = lxOf(ax, a);
