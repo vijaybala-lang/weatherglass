@@ -58,8 +58,14 @@ while read -r lang; do
 done < po/LINGUAS
 [[ $missing == 0 ]] || fail 'locale catalogs missing'
 
-echo "==> zipping"
-(cd dist && zip -qr "$UUID.zip" "$UUID")
+echo "==> zipping (flat: extension.js at the archive root — EGO's validator
+##     rejects a uuid-folder layout with 'Missing extension.js')"
+(cd "dist/$UUID" && zip -qr "../$UUID.zip" metadata.json extension.js prefs.js \
+   menu.js chart.js sky.js painter.js weather.js moon.js animation.js i18n.js \
+   stylesheet.css README.md LICENSE schemas locale)
+# the validator greps for a root-level extension.js — assert it's really flat
+unzip -l "dist/$UUID.zip" | awk '$4 == "extension.js"' | grep -q . \
+    || fail 'zip has extension.js at a nested path — EGO rejects that'
 FILES=$(unzip -l "dist/$UUID.zip" | tail -1 | awk '{print $2}')
 echo "done: dist/$UUID.zip  ($(du -h "dist/$UUID.zip" | cut -f1), $FILES files)"
 
