@@ -178,6 +178,33 @@ export function paintChart(cr, opts) {
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.stroke();
 
+    // The curve's TOP edge at any x: labels float above the line, so we
+    // sample the same Catmull-Rom → cubic segments tracePath draws —
+    // clearance matches the visible stroke, not a straight-line guess.
+    const curve = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[Math.max(0, i - 1)], p1 = pts[i],
+              p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+        const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6,
+              c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+        for (let k = 0; k <= 8; k++) {
+            const t = k / 8, u = 1 - t;
+            curve.push([
+                u * u * u * p1[0] + 3 * u * u * t * c1x
+                    + 3 * u * t * t * c2x + t * t * t * p2[0],
+                u * u * u * p1[1] + 3 * u * u * t * c1y
+                    + 3 * u * t * t * c2y + t * t * t * p2[1],
+            ]);
+        }
+    }
+    const curveMin = (xa, xb) => {
+        let m = Infinity;
+        for (const [sx, sy] of curve)
+            if (sx >= xa - 1 && sx <= xb + 1 && sy < m)
+                m = sy;
+        return m;
+    };
+
     // value + hour labels. Data bleeds off both ends (the edge hours are
     // still drawn), but the first/last PRINTED label is inset past GUT so
     // nothing clips: we offset the every-EVERY stride to the first index
@@ -204,34 +231,48 @@ export function paintChart(cr, opts) {
     };
     const hits = (b, list) =>
         list.some(o => b[0] < o[1] && o[0] < b[1] && b[2] < o[3] && o[2] < b[3]);
+    const boxOf = (x0, tw, th, y) => [x0 - 1.5, x0 + tw + 1.5, y - th - 1, y + 1];
     const used = [];
+    // A value label's home: measure once, cap its baseline at the curve's
+    // top edge under its own span (labels read ABOVE the line even where
+    // the curve climbs steeply through them), then walk the collision slots.
+    const placeLabel = (txt, lx, y0, a) => {
+        const [tw, th] = textPx(cr, txt, FS, true);
+        const x0 = a === 'start' ? lx : a === 'end' ? lx - tw : lx - tw / 2;
+        const floor = curveMin(x0, x0 + tw) - LINE_W / 2 - 2;
+        for (const yy of [Math.min(y0, floor), y0 - 15, y0 + 15]) {
+            const yc = Math.min(yy, floor);
+            const b = boxOf(x0, tw, th, yc);
+            if (b[2] < 2 || hits(b, used))
+                continue;
+            used.push(b);
+            return { b, lx, y: yc, a, txt };
+        }
+        return null;
+    };
+    let nowPlace = null;
     if (nowI >= 0 && fmtValue) {          // reserve the accent label's slot
         const ax = X(nowI);
-        const a = anchorOf(ax);
-        used.push(boxAt(fmtValue(nowI, values[nowI]), lxOf(ax, a),
-                        Y(values[nowI]) - 12 + 1, a, true));
+        const a = anchorOf(ax), lx = lxOf(ax, a);
+        const txt = fmtValue(nowI, values[nowI]);
+        const [tw, th] = textPx(cr, txt, FS, true);
+        const x0 = a === 'start' ? lx : a === 'end' ? lx - tw : lx - tw / 2;
+        const y = Math.min(Y(values[nowI]) - 22 + 1,
+                           curveMin(x0, x0 + tw) - LINE_W / 2 - 2);
+        nowPlace = { txt, lx, y, a };
+        used.push(boxOf(x0, tw, th, y));
     }
     if (strip)                            // and the condition band's row
         used.push([0, w, (opts.stripBottom ? h - 34 : STRIP_Y) - 13,
                    (opts.stripBottom ? h - 34 : STRIP_Y) + 13]);
     for (let i = off0; fmtValue && i < n; i += EVERY) {
-        const txt = fmtValue(i, values[i]);
         const ax = X(i);
         const a = anchorOf(ax), lx = lxOf(ax, a);
-        const y0 = Y(values[i]) - 12 + 1;
-        let placed = null;
-        for (const yy of [y0, y0 - 15, y0 + 15]) {
-            const b = boxAt(txt, lx, yy, a, true);
-            if (b[2] < 2 || hits(b, used))
-                continue;
-            placed = [b, yy];
-            break;
-        }
-        if (placed) {
-            used.push(placed[0]);
-            drawText(cr, txt, lx, placed[1],
+        const placed = placeLabel(fmtValue(i, values[i]), lx,
+                                  Y(values[i]) - 12 + 1, a);
+        if (placed)
+            drawText(cr, placed.txt, lx, placed.y,
                      {size: FS, bold: true, rgba: [...INK, 0.62], anchor: a});
-        }
     }
     // hour labels stay flat on their baseline — a clash drops the label
     // instead of staggering the row
@@ -453,18 +494,14 @@ export function paintChart(cr, opts) {
         cr.restore();
     }
 
-    // accent label riding the now marker, above the veil. When now is near
-    // an edge (early morning / late night) the label flows inward past GUT
-    // so it never clips while the dashed marker stays on the data point.
-    if (nowI >= 0 && fmtValue) {
-        const ax = X(nowI);
-        const anchor = ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
-        const lx = anchor === 'start' ? Math.max(GUT, ax - 6)
-                 : anchor === 'end'   ? Math.min(w - GUT, ax + 6) : ax;
-        drawText(cr, fmtValue(nowI, values[nowI]), lx, Y(values[nowI]) - 22 + 1,
+    // accent label riding the now marker, above the veil — drawn at the
+    // exact slot reserved in the label pass (curve-cleared baseline, inward
+    // flow near the edges) so nothing ever lands under it
+    if (nowPlace)
+        drawText(cr, nowPlace.txt, nowPlace.lx, nowPlace.y,
                  {size: FS, bold: true,
-                  rgba: [...(opts.nowLabel ?? [acR, acG, acB]), 1], anchor});
-    }
+                  rgba: [...(opts.nowLabel ?? [acR, acG, acB]), 1],
+                  anchor: nowPlace.a});
 }
 
 /* ── morphing helper (shared by the menu) ──────────────────────────────── */
