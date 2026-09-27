@@ -1,514 +1,522 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the Weatherglass package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-27 08:31-0700\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #: extension.js:54 prefs.js:590
 msgid "Weatherglass"
-msgstr ""
+msgstr "Weatherglass"
 
 #: extension.js:146
 msgid "My location"
-msgstr ""
+msgstr "La mia posizione"
 
 #: extension.js:147
 msgid "Custom location"
-msgstr ""
+msgstr "Posizione personalizzata"
 
 #: extension.js:191 menu.js:281
 msgid "Fetching weather…"
-msgstr ""
+msgstr "Recupero meteo…"
 
 #: menu.js:34
 msgid "Temperature"
-msgstr ""
+msgstr "Temperatura"
 
 #: menu.js:35
 msgid "Precipitation"
-msgstr ""
+msgstr "Precipitazioni"
 
 #: menu.js:36
 msgid "Wind"
-msgstr ""
+msgstr "Vento"
 
 #: menu.js:316 menu.js:398 menu.js:402
 msgid "Weather"
-msgstr ""
+msgstr "Meteo"
 
 #: menu.js:333
 msgid "Refresh now"
-msgstr ""
+msgstr "Aggiorna adesso"
 
 #: menu.js:338
 msgid "Preferences"
-msgstr ""
+msgstr "Preferenze"
 
 #: menu.js:354
 msgid "Show"
-msgstr ""
+msgstr "Mostra"
 
 #: menu.js:354
 msgid "chart"
-msgstr ""
+msgstr "grafico"
 
 #: menu.js:403
 msgid "Could not load the forecast"
-msgstr ""
+msgstr "Impossibile caricare le previsioni"
 
 #: menu.js:538
 msgid "Refresh forecast — updated"
-msgstr ""
+msgstr "Aggiorna previsioni — aggiornate alle"
 
 #: menu.js:599
 msgid "Now"
-msgstr ""
+msgstr "Adesso"
 
 #: menu.js:708
 msgid "Today"
-msgstr ""
+msgstr "Oggi"
 
 #: prefs.js:87
 msgid "Location"
-msgstr ""
+msgstr "Posizione"
 
 #: prefs.js:92
 msgid "Automatic"
-msgstr ""
+msgstr "Automatica"
 
 #: prefs.js:93
 msgid "Coordinates are detected from your public IP address"
-msgstr ""
+msgstr "Le coordinate vengono rilevate dal tuo indirizzo IP pubblico"
 
 #: prefs.js:96
 msgid "Detect location automatically"
-msgstr ""
+msgstr "Rileva posizione automaticamente"
 
 #: prefs.js:104
 msgid "Search a city"
-msgstr ""
+msgstr "Cerca una città"
 
 #: prefs.js:106
 msgid "City name — press Enter to search"
-msgstr ""
+msgstr "Nome città — premi Invio per cercare"
 
 #: prefs.js:111
 msgid "Results"
-msgstr ""
+msgstr "Risultati"
 
 #: prefs.js:147
 msgid "No matches"
-msgstr ""
+msgstr "Nessun risultato"
 
 #: prefs.js:173
 msgid "Manual"
-msgstr ""
+msgstr "Manuale"
 
 #: prefs.js:174
 msgid "Saved when you press Enter in a field"
-msgstr ""
+msgstr "Salvato quando premi Invio in un campo"
 
 #: prefs.js:177
 msgid "Latitude"
-msgstr ""
+msgstr "Latitudine"
 
 #: prefs.js:178
 msgid "Longitude"
-msgstr ""
+msgstr "Longitudine"
 
 #: prefs.js:179
 msgid "Display name"
-msgstr ""
+msgstr "Nome visualizzato"
 
 #: prefs.js:221
 msgid "Display"
-msgstr ""
+msgstr "Aspetto"
 
 #: prefs.js:225
 msgid "Units"
-msgstr ""
+msgstr "Unità"
 
 #: prefs.js:227
 msgid "Measurement system"
-msgstr ""
+msgstr "Sistema di misura"
 
 #: prefs.js:229
 msgid "Imperial (°F, mph)"
-msgstr ""
+msgstr "Imperiale (°F, mph)"
 
 #: prefs.js:229
 msgid "Metric (°C, km/h)"
-msgstr ""
+msgstr "Metrico (°C, km/h)"
 
 #: prefs.js:238
 msgid "Panel indicator"
-msgstr ""
+msgstr "Indicatore del pannello"
 
 #: prefs.js:239
 msgid "Show animated icon"
-msgstr ""
+msgstr "Mostra icona animata"
 
 #: prefs.js:240
 msgid "Show temperature"
-msgstr ""
+msgstr "Mostra temperatura"
 
 #: prefs.js:242
 msgid "Animate the icon"
-msgstr ""
+msgstr "Anima l'icona"
 
 #: prefs.js:243
 msgid "Turn off to save a little battery"
-msgstr ""
+msgstr "Disattiva per risparmiare un po' di batteria"
 
 #: prefs.js:253
 msgid "Menu background"
-msgstr ""
+msgstr "Sfondo del menu"
 
 #: prefs.js:255
 msgid "Background style"
-msgstr ""
+msgstr "Stile dello sfondo"
 
 #: prefs.js:256
 msgid "How the dropdown fills itself behind the forecast"
-msgstr ""
+msgstr "Come il menu a tendina si riempie dietro le previsioni"
 
 #: prefs.js:259
 msgid "Animated sky (translucent)"
-msgstr ""
+msgstr "Cielo animato (traslucido)"
 
 #: prefs.js:260
 msgid "Solid (sky dimmed under a wash)"
-msgstr ""
+msgstr "Tinta unita (cielo attenuato da una velatura)"
 
 #: prefs.js:261
 msgid "Theme background, accent charts"
-msgstr ""
+msgstr "Sfondo del tema, grafici in colore d'accento"
 
 #: prefs.js:270
 msgid "Text emboss"
-msgstr ""
+msgstr "Rilievo del testo"
 
 #: prefs.js:271
 msgid "Soft shadow under card text and icons over the sky"
-msgstr ""
+msgstr "Ombra morbida sotto il testo e le icone della scheda sopra il cielo"
 
 #: prefs.js:277
 msgid "Weather conditions"
-msgstr ""
+msgstr "Condizioni meteo"
 
 #: prefs.js:278
 msgid "How hourly conditions ride the chart"
-msgstr ""
+msgstr "Come le condizioni orarie corrono sul grafico"
 
 #: prefs.js:280
 msgid "Grouped pills"
-msgstr ""
+msgstr "Pillole raggruppate"
 
 #: prefs.js:280
 msgid "Hourly icons"
-msgstr ""
+msgstr "Icone orarie"
 
 #: prefs.js:280
 msgid "Off"
-msgstr ""
+msgstr "Spento"
 
 #: prefs.js:290
 msgid "Condition band position"
-msgstr ""
+msgstr "Posizione della fascia condizioni"
 
 #: prefs.js:291
 msgid "Along the chart top, or above the hour labels"
-msgstr ""
+msgstr "Lungo la parte alta del grafico, o sopra le etichette orarie"
 
 #: prefs.js:293
 msgid "Above hours"
-msgstr ""
+msgstr "Sopra le ore"
 
 #: prefs.js:293
 msgid "Chart top"
-msgstr ""
+msgstr "Alto del grafico"
 
 #: prefs.js:310
 msgid "Data"
-msgstr ""
+msgstr "Dati"
 
 #: prefs.js:314
 msgid "Data source"
-msgstr ""
+msgstr "Fonte dei dati"
 
 #: prefs.js:316
 msgid "Weather provider"
-msgstr ""
+msgstr "Fornitore meteo"
 
 #: prefs.js:317
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
-msgstr ""
+msgstr "Tutti senza chiave · dati MET Norway con licenza CC BY-SA 4.0"
 
 #: prefs.js:320
 msgid "Open-Meteo (default)"
-msgstr ""
+msgstr "Open-Meteo (predefinito)"
 
 #: prefs.js:321
 msgid "MET Norway (api.met.no)"
-msgstr ""
+msgstr "MET Norway (api.met.no)"
 
 #: prefs.js:322
 msgid "NOAA NWS (US locations only)"
-msgstr ""
+msgstr "NOAA NWS (solo località negli USA)"
 
 #: prefs.js:338
 msgid "Forecast model"
-msgstr ""
+msgstr "Modello di previsione"
 
 #: prefs.js:339
-msgid "Open-Meteo only · out to a week models disagree — if the weekend looks off, try another"
+msgid ""
+"Open-Meteo only · out to a week models disagree — if the weekend looks off, "
+"try another"
 msgstr ""
+"Solo Open-Meteo · oltre una settimana i modelli divergono — se il fine "
+"settimana sembra strano, provane un altro"
 
 #: prefs.js:342
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
-msgstr ""
+msgstr "Migliore corrispondenza (scelta regionale di Open-Meteo; USA → GFS)"
 
 #: prefs.js:343
 msgid "ECMWF IFS (recommended)"
-msgstr ""
+msgstr "ECMWF IFS (consigliato)"
 
 #: prefs.js:344
 msgid "DWD ICON (shorter range)"
-msgstr ""
+msgstr "DWD ICON (orizzonte più breve)"
 
 #: prefs.js:345
 msgid "NOAA GFS"
-msgstr ""
+msgstr "NOAA GFS"
 
 #: prefs.js:361
 msgid "Updates"
-msgstr ""
+msgstr "Aggiornamenti"
 
 #: prefs.js:363
 msgid "Refresh interval (minutes)"
-msgstr ""
+msgstr "Intervallo di aggiornamento (minuti)"
 
 #: prefs.js:372
 msgid "Wind animation threshold (km/h)"
-msgstr ""
+msgstr "Soglia animazione vento (km/h)"
 
 #: prefs.js:373
 msgid "Breezier days swap the icon to the wind animation"
-msgstr ""
+msgstr "Nei giorni più ventosi l'icona passa all'animazione del vento"
 
 #: prefs.js:391
 msgid "Preview"
-msgstr ""
+msgstr "Anteprima"
 
 #: prefs.js:438
 msgid "Preview scene"
-msgstr ""
+msgstr "Scena di anteprima"
 
 #: prefs.js:439
 msgid "Loops right here for ~12 s — your real panel stays put"
-msgstr ""
+msgstr "Scorri qui per ~12 s — il tuo pannello vero resta com'è"
 
 #: prefs.js:471
 msgid "Scene"
-msgstr ""
+msgstr "Scena"
 
 #: prefs.js:546
 msgid "Panel preview"
-msgstr ""
+msgstr "Anteprima del pannello"
 
 #: prefs.js:547
-msgid "How the panel button looks for this scene — mock temperature, real icon animation"
+msgid ""
+"How the panel button looks for this scene — mock temperature, real icon "
+"animation"
 msgstr ""
+"Come appare il pulsante del pannello per questa scena — temperatura finta, "
+"animazione icona vera"
 
 #: prefs.js:553
 msgid "Menu backdrop preview"
-msgstr ""
+msgstr "Anteprima dello sfondo del menu"
 
 #: prefs.js:554
-msgid "Your menu's current sky, live — pick a condition above to animate it here"
+msgid ""
+"Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
+"Il cielo attuale del tuo menu, in diretta — scegli una condizione sopra per "
+"animarlo qui"
 
 #: prefs.js:585
 msgid "About"
-msgstr ""
+msgstr "Informazioni"
 
 #: prefs.js:592
 msgid "Version"
-msgstr ""
+msgstr "Versione"
 
 #: prefs.js:596
 msgid "Free and open source"
-msgstr ""
+msgstr "Gratuito e open source"
 
 #: prefs.js:597
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr ""
+"Nessuna pubblicità, nessun account, nessuna raccolta dati — il cielo deve "
+"semplicemente funzionare"
 
 #: prefs.js:602
 msgid "Support the development"
-msgstr ""
+msgstr "Sostieni lo sviluppo"
 
 #: prefs.js:603
-msgid "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps the pixels falling."
+msgid ""
+"Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
+"the pixels falling."
 msgstr ""
+"Weatherglass è gratuito per sempre. Se rende il tuo desktop più bello, un "
+"caffè mantiene i pixel in caduta."
 
 #: prefs.js:606
 msgid "Buy me a coffee"
-msgstr ""
+msgstr "Offrimi un caffè"
 
 #: weather.js:18
 msgid "Clear sky"
-msgstr ""
+msgstr "Sereno"
 
 #: weather.js:19
 msgid "Mainly clear"
-msgstr ""
+msgstr "Prevalentemente sereno"
 
 #: weather.js:20
 msgid "Partly cloudy"
-msgstr ""
+msgstr "Parzialmente nuvoloso"
 
 #: weather.js:21
 msgid "Overcast"
-msgstr ""
+msgstr "Coperto"
 
 #: weather.js:22 weather.js:72
 msgid "Fog"
-msgstr ""
+msgstr "Nebbia"
 
 #: weather.js:23
 msgid "Rime fog"
-msgstr ""
+msgstr "Nebbia con brina"
 
 #: weather.js:24
 msgid "Light drizzle"
-msgstr ""
+msgstr "Pioviggine leggera"
 
 #: weather.js:25
 msgid "Drizzle"
-msgstr ""
+msgstr "Pioviggine"
 
 #: weather.js:26
 msgid "Dense drizzle"
-msgstr ""
+msgstr "Pioviggine densa"
 
 #: weather.js:27 weather.js:28
 msgid "Freezing drizzle"
-msgstr ""
+msgstr "Pioviggine congelantesi"
 
 #: weather.js:29
 msgid "Light rain"
-msgstr ""
+msgstr "Pioggia leggera"
 
 #: weather.js:30
 msgid "Rain"
-msgstr ""
+msgstr "Pioggia"
 
 #: weather.js:31
 msgid "Heavy rain"
-msgstr ""
+msgstr "Pioggia forte"
 
 #: weather.js:32 weather.js:33
 msgid "Freezing rain"
-msgstr ""
+msgstr "Pioggia congelantesi"
 
 #: weather.js:34
 msgid "Light snow"
-msgstr ""
+msgstr "Neve debole"
 
 #: weather.js:35
 msgid "Snow"
-msgstr ""
+msgstr "Neve"
 
 #: weather.js:36
 msgid "Heavy snow"
-msgstr ""
+msgstr "Neve forte"
 
 #: weather.js:37
 msgid "Snow grains"
-msgstr ""
+msgstr "Granelli di neve"
 
 #: weather.js:38
 msgid "Light showers"
-msgstr ""
+msgstr "Rovesci leggeri"
 
 #: weather.js:39
 msgid "Showers"
-msgstr ""
+msgstr "Rovesci"
 
 #: weather.js:40
 msgid "Violent showers"
-msgstr ""
+msgstr "Rovesci violenti"
 
 #: weather.js:41
 msgid "Snow showers"
-msgstr ""
+msgstr "Rovesci di neve"
 
 #: weather.js:42
 msgid "Heavy snow showers"
-msgstr ""
+msgstr "Rovesci di neve forti"
 
 #: weather.js:43 weather.js:68
 msgid "Thunderstorm"
-msgstr ""
+msgstr "Temporale"
 
 #: weather.js:44 weather.js:45 weather.js:66
 msgid "Thunderstorm, hail"
-msgstr ""
+msgstr "Temporale, grandine"
 
 #: weather.js:49
 msgid "Unknown"
-msgstr ""
+msgstr "Sconosciuto"
 
 #: weather.js:100
 msgid "Mon"
-msgstr ""
+msgstr "Lun"
 
 #: weather.js:100
 msgid "Sun"
-msgstr ""
+msgstr "Dom"
 
 #: weather.js:100
 msgid "Tue"
-msgstr ""
+msgstr "Mar"
 
 #: weather.js:100
 msgid "Wed"
-msgstr ""
+msgstr "Mer"
 
 #: weather.js:101
 msgid "Fri"
-msgstr ""
+msgstr "Ven"
 
 #: weather.js:101
 msgid "Sat"
-msgstr ""
+msgstr "Sab"
 
 #: weather.js:101
 msgid "Thu"
-msgstr ""
+msgstr "Gio"
 
 #: weather.js:597
 msgid "NOAA NWS covers US locations only — pick another provider"
-msgstr ""
+msgstr "NOAA NWS copre solo località negli USA — scegli un altro fornitore"
 
 #: weather.js:602
 msgid "NOAA NWS returned no forecast for this location"
-msgstr ""
+msgstr "NOAA NWS non ha restituito previsioni per questa località"
 
 #: weather.js:747
 msgid "IP geolocation failed"
-msgstr ""
+msgstr "Geolocalizzazione IP fallita"

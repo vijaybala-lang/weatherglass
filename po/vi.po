@@ -1,514 +1,522 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the Weatherglass package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-27 08:31-0700\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"Language: vi\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #: extension.js:54 prefs.js:590
 msgid "Weatherglass"
-msgstr ""
+msgstr "Weatherglass"
 
 #: extension.js:146
 msgid "My location"
-msgstr ""
+msgstr "Vị trí của tôi"
 
 #: extension.js:147
 msgid "Custom location"
-msgstr ""
+msgstr "Vị trí tự chọn"
 
 #: extension.js:191 menu.js:281
 msgid "Fetching weather…"
-msgstr ""
+msgstr "Đang tải thời tiết…"
 
 #: menu.js:34
 msgid "Temperature"
-msgstr ""
+msgstr "Nhiệt độ"
 
 #: menu.js:35
 msgid "Precipitation"
-msgstr ""
+msgstr "Lượng mưa"
 
 #: menu.js:36
 msgid "Wind"
-msgstr ""
+msgstr "Gió"
 
 #: menu.js:316 menu.js:398 menu.js:402
 msgid "Weather"
-msgstr ""
+msgstr "Thời tiết"
 
 #: menu.js:333
 msgid "Refresh now"
-msgstr ""
+msgstr "Làm mới ngay"
 
 #: menu.js:338
 msgid "Preferences"
-msgstr ""
+msgstr "Tùy chọn"
 
 #: menu.js:354
 msgid "Show"
-msgstr ""
+msgstr "Xem"
 
 #: menu.js:354
 msgid "chart"
-msgstr ""
+msgstr "biểu đồ"
 
 #: menu.js:403
 msgid "Could not load the forecast"
-msgstr ""
+msgstr "Không tải được dự báo"
 
 #: menu.js:538
 msgid "Refresh forecast — updated"
-msgstr ""
+msgstr "Làm mới dự báo — cập nhật"
 
 #: menu.js:599
 msgid "Now"
-msgstr ""
+msgstr "Bây giờ"
 
 #: menu.js:708
 msgid "Today"
-msgstr ""
+msgstr "Hôm nay"
 
 #: prefs.js:87
 msgid "Location"
-msgstr ""
+msgstr "Vị trí"
 
 #: prefs.js:92
 msgid "Automatic"
-msgstr ""
+msgstr "Tự động"
 
 #: prefs.js:93
 msgid "Coordinates are detected from your public IP address"
-msgstr ""
+msgstr "Tọa độ được xác định từ địa chỉ IP công khai của bạn"
 
 #: prefs.js:96
 msgid "Detect location automatically"
-msgstr ""
+msgstr "Tự động xác định vị trí"
 
 #: prefs.js:104
 msgid "Search a city"
-msgstr ""
+msgstr "Tìm thành phố"
 
 #: prefs.js:106
 msgid "City name — press Enter to search"
-msgstr ""
+msgstr "Tên thành phố — nhấn Enter để tìm"
 
 #: prefs.js:111
 msgid "Results"
-msgstr ""
+msgstr "Kết quả"
 
 #: prefs.js:147
 msgid "No matches"
-msgstr ""
+msgstr "Không có kết quả"
 
 #: prefs.js:173
 msgid "Manual"
-msgstr ""
+msgstr "Thủ công"
 
 #: prefs.js:174
 msgid "Saved when you press Enter in a field"
-msgstr ""
+msgstr "Được lưu khi bạn nhấn Enter trong một trường"
 
 #: prefs.js:177
 msgid "Latitude"
-msgstr ""
+msgstr "Vĩ độ"
 
 #: prefs.js:178
 msgid "Longitude"
-msgstr ""
+msgstr "Kinh độ"
 
 #: prefs.js:179
 msgid "Display name"
-msgstr ""
+msgstr "Tên hiển thị"
 
 #: prefs.js:221
 msgid "Display"
-msgstr ""
+msgstr "Hiển thị"
 
 #: prefs.js:225
 msgid "Units"
-msgstr ""
+msgstr "Đơn vị"
 
 #: prefs.js:227
 msgid "Measurement system"
-msgstr ""
+msgstr "Hệ đo lường"
 
 #: prefs.js:229
 msgid "Imperial (°F, mph)"
-msgstr ""
+msgstr "Hệ Anh (°F, mph)"
 
 #: prefs.js:229
 msgid "Metric (°C, km/h)"
-msgstr ""
+msgstr "Hệ mét (°C, km/h)"
 
 #: prefs.js:238
 msgid "Panel indicator"
-msgstr ""
+msgstr "Chỉ báo trên bảng"
 
 #: prefs.js:239
 msgid "Show animated icon"
-msgstr ""
+msgstr "Hiển thị biểu tượng động"
 
 #: prefs.js:240
 msgid "Show temperature"
-msgstr ""
+msgstr "Hiển thị nhiệt độ"
 
 #: prefs.js:242
 msgid "Animate the icon"
-msgstr ""
+msgstr "Làm biểu tượng chuyển động"
 
 #: prefs.js:243
 msgid "Turn off to save a little battery"
-msgstr ""
+msgstr "Tắt để tiết kiệm chút pin"
 
 #: prefs.js:253
 msgid "Menu background"
-msgstr ""
+msgstr "Nền menu"
 
 #: prefs.js:255
 msgid "Background style"
-msgstr ""
+msgstr "Kiểu nền"
 
 #: prefs.js:256
 msgid "How the dropdown fills itself behind the forecast"
-msgstr ""
+msgstr "Cách danh sách thả phủ nền phía sau dự báo"
 
 #: prefs.js:259
 msgid "Animated sky (translucent)"
-msgstr ""
+msgstr "Bầu trời động (trong mờ)"
 
 #: prefs.js:260
 msgid "Solid (sky dimmed under a wash)"
-msgstr ""
+msgstr "Màu đặc (bầu trời chìm dưới lớp phủ)"
 
 #: prefs.js:261
 msgid "Theme background, accent charts"
-msgstr ""
+msgstr "Nền chủ đề, biểu đồ màu nhấn"
 
 #: prefs.js:270
 msgid "Text emboss"
-msgstr ""
+msgstr "Chữ nổi"
 
 #: prefs.js:271
 msgid "Soft shadow under card text and icons over the sky"
-msgstr ""
+msgstr "Bóng mờ dịu dưới chữ và biểu tượng của thẻ trên nền trời"
 
 #: prefs.js:277
 msgid "Weather conditions"
-msgstr ""
+msgstr "Điều kiện thời tiết"
 
 #: prefs.js:278
 msgid "How hourly conditions ride the chart"
-msgstr ""
+msgstr "Cách điều kiện theo giờ chạy trên biểu đồ"
 
 #: prefs.js:280
 msgid "Grouped pills"
-msgstr ""
+msgstr "Nhãn nhóm"
 
 #: prefs.js:280
 msgid "Hourly icons"
-msgstr ""
+msgstr "Biểu tượng theo giờ"
 
 #: prefs.js:280
 msgid "Off"
-msgstr ""
+msgstr "Tắt"
 
 #: prefs.js:290
 msgid "Condition band position"
-msgstr ""
+msgstr "Vị trí dải điều kiện"
 
 #: prefs.js:291
 msgid "Along the chart top, or above the hour labels"
-msgstr ""
+msgstr "Dọc đỉnh biểu đồ, hoặc phía trên nhãn giờ"
 
 #: prefs.js:293
 msgid "Above hours"
-msgstr ""
+msgstr "Trên nhãn giờ"
 
 #: prefs.js:293
 msgid "Chart top"
-msgstr ""
+msgstr "Đỉnh biểu đồ"
 
 #: prefs.js:310
 msgid "Data"
-msgstr ""
+msgstr "Dữ liệu"
 
 #: prefs.js:314
 msgid "Data source"
-msgstr ""
+msgstr "Nguồn dữ liệu"
 
 #: prefs.js:316
 msgid "Weather provider"
-msgstr ""
+msgstr "Nhà cung cấp thời tiết"
 
 #: prefs.js:317
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
-msgstr ""
+msgstr "Đều không cần khóa · dữ liệu MET Norway theo giấy phép CC BY-SA 4.0"
 
 #: prefs.js:320
 msgid "Open-Meteo (default)"
-msgstr ""
+msgstr "Open-Meteo (mặc định)"
 
 #: prefs.js:321
 msgid "MET Norway (api.met.no)"
-msgstr ""
+msgstr "MET Na Uy (api.met.no)"
 
 #: prefs.js:322
 msgid "NOAA NWS (US locations only)"
-msgstr ""
+msgstr "NOAA NWS (chỉ vị trí ở Mỹ)"
 
 #: prefs.js:338
 msgid "Forecast model"
-msgstr ""
+msgstr "Mô hình dự báo"
 
 #: prefs.js:339
-msgid "Open-Meteo only · out to a week models disagree — if the weekend looks off, try another"
+msgid ""
+"Open-Meteo only · out to a week models disagree — if the weekend looks off, "
+"try another"
 msgstr ""
+"Chỉ Open-Meteo · xa một tuần các mô hình bất đồng — nếu cuối tuần trông kỳ "
+"lạ, thử mô hình khác"
 
 #: prefs.js:342
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
-msgstr ""
+msgstr "Khớp nhất (Open-Meteo chọn theo vùng; Mỹ → GFS)"
 
 #: prefs.js:343
 msgid "ECMWF IFS (recommended)"
-msgstr ""
+msgstr "ECMWF IFS (được khuyên dùng)"
 
 #: prefs.js:344
 msgid "DWD ICON (shorter range)"
-msgstr ""
+msgstr "DWD ICON (dự báo ngắn hơn)"
 
 #: prefs.js:345
 msgid "NOAA GFS"
-msgstr ""
+msgstr "NOAA GFS"
 
 #: prefs.js:361
 msgid "Updates"
-msgstr ""
+msgstr "Cập nhật"
 
 #: prefs.js:363
 msgid "Refresh interval (minutes)"
-msgstr ""
+msgstr "Khoảng cách làm mới (phút)"
 
 #: prefs.js:372
 msgid "Wind animation threshold (km/h)"
-msgstr ""
+msgstr "Ngưỡng hiệu ứng gió (km/h)"
 
 #: prefs.js:373
 msgid "Breezier days swap the icon to the wind animation"
-msgstr ""
+msgstr "Ngày nhiều gió đổi biểu tượng sang hiệu ứng gió"
 
 #: prefs.js:391
 msgid "Preview"
-msgstr ""
+msgstr "Xem trước"
 
 #: prefs.js:438
 msgid "Preview scene"
-msgstr ""
+msgstr "Cảnh xem trước"
 
 #: prefs.js:439
 msgid "Loops right here for ~12 s — your real panel stays put"
-msgstr ""
+msgstr "Lặp lại ở đây ~12 giây — bảng thật của bạn không đổi"
 
 #: prefs.js:471
 msgid "Scene"
-msgstr ""
+msgstr "Cảnh"
 
 #: prefs.js:546
 msgid "Panel preview"
-msgstr ""
+msgstr "Xem trước bảng"
 
 #: prefs.js:547
-msgid "How the panel button looks for this scene — mock temperature, real icon animation"
+msgid ""
+"How the panel button looks for this scene — mock temperature, real icon "
+"animation"
 msgstr ""
+"Nút bảng trông thế nào với cảnh này — nhiệt độ mô phỏng, hiệu ứng biểu tượng "
+"thật"
 
 #: prefs.js:553
 msgid "Menu backdrop preview"
-msgstr ""
+msgstr "Xem trước nền menu"
 
 #: prefs.js:554
-msgid "Your menu's current sky, live — pick a condition above to animate it here"
+msgid ""
+"Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
+"Bầu trời hiện tại trong menu của bạn, trực tiếp — chọn một điều kiện phía "
+"trên để xem động ở đây"
 
 #: prefs.js:585
 msgid "About"
-msgstr ""
+msgstr "Giới thiệu"
 
 #: prefs.js:592
 msgid "Version"
-msgstr ""
+msgstr "Phiên bản"
 
 #: prefs.js:596
 msgid "Free and open source"
-msgstr ""
+msgstr "Miễn phí và mã nguồn mở"
 
 #: prefs.js:597
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr ""
+"Không quảng cáo, không tài khoản, không thu thập dữ liệu — bầu trời chỉ nên "
+"vận hành"
 
 #: prefs.js:602
 msgid "Support the development"
-msgstr ""
+msgstr "Hỗ trợ phát triển"
 
 #: prefs.js:603
-msgid "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps the pixels falling."
+msgid ""
+"Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
+"the pixels falling."
 msgstr ""
+"Weatherglass miễn phí mãi mãi. Nếu nó làm màn hình của bạn đẹp hơn, một ly "
+"cà phê sẽ giữ cho các điểm ảnh tiếp tục rơi."
 
 #: prefs.js:606
 msgid "Buy me a coffee"
-msgstr ""
+msgstr "Mua cho tôi ly cà phê"
 
 #: weather.js:18
 msgid "Clear sky"
-msgstr ""
+msgstr "Trời quang"
 
 #: weather.js:19
 msgid "Mainly clear"
-msgstr ""
+msgstr "Chủ yếu quang đãng"
 
 #: weather.js:20
 msgid "Partly cloudy"
-msgstr ""
+msgstr "Có mây từng phần"
 
 #: weather.js:21
 msgid "Overcast"
-msgstr ""
+msgstr "Nhiều mây"
 
 #: weather.js:22 weather.js:72
 msgid "Fog"
-msgstr ""
+msgstr "Sương mù"
 
 #: weather.js:23
 msgid "Rime fog"
-msgstr ""
+msgstr "Sương mù đóng băng"
 
 #: weather.js:24
 msgid "Light drizzle"
-msgstr ""
+msgstr "Mưa phùn nhẹ"
 
 #: weather.js:25
 msgid "Drizzle"
-msgstr ""
+msgstr "Mưa phùn"
 
 #: weather.js:26
 msgid "Dense drizzle"
-msgstr ""
+msgstr "Mưa phùn dày"
 
 #: weather.js:27 weather.js:28
 msgid "Freezing drizzle"
-msgstr ""
+msgstr "Mưa phùn đóng băng"
 
 #: weather.js:29
 msgid "Light rain"
-msgstr ""
+msgstr "Mưa nhẹ"
 
 #: weather.js:30
 msgid "Rain"
-msgstr ""
+msgstr "Mưa"
 
 #: weather.js:31
 msgid "Heavy rain"
-msgstr ""
+msgstr "Mưa to"
 
 #: weather.js:32 weather.js:33
 msgid "Freezing rain"
-msgstr ""
+msgstr "Mưa đóng băng"
 
 #: weather.js:34
 msgid "Light snow"
-msgstr ""
+msgstr "Tuyết nhẹ"
 
 #: weather.js:35
 msgid "Snow"
-msgstr ""
+msgstr "Tuyết"
 
 #: weather.js:36
 msgid "Heavy snow"
-msgstr ""
+msgstr "Tuyết dày"
 
 #: weather.js:37
 msgid "Snow grains"
-msgstr ""
+msgstr "Hạt tuyết"
 
 #: weather.js:38
 msgid "Light showers"
-msgstr ""
+msgstr "Mưa rào nhẹ"
 
 #: weather.js:39
 msgid "Showers"
-msgstr ""
+msgstr "Mưa rào"
 
 #: weather.js:40
 msgid "Violent showers"
-msgstr ""
+msgstr "Mưa rào dữ dội"
 
 #: weather.js:41
 msgid "Snow showers"
-msgstr ""
+msgstr "Mưa tuyết"
 
 #: weather.js:42
 msgid "Heavy snow showers"
-msgstr ""
+msgstr "Mưa tuyết dày"
 
 #: weather.js:43 weather.js:68
 msgid "Thunderstorm"
-msgstr ""
+msgstr "Dông"
 
 #: weather.js:44 weather.js:45 weather.js:66
 msgid "Thunderstorm, hail"
-msgstr ""
+msgstr "Dông, mưa đá"
 
 #: weather.js:49
 msgid "Unknown"
-msgstr ""
+msgstr "Không rõ"
 
 #: weather.js:100
 msgid "Mon"
-msgstr ""
+msgstr "T2"
 
 #: weather.js:100
 msgid "Sun"
-msgstr ""
+msgstr "CN"
 
 #: weather.js:100
 msgid "Tue"
-msgstr ""
+msgstr "T3"
 
 #: weather.js:100
 msgid "Wed"
-msgstr ""
+msgstr "T4"
 
 #: weather.js:101
 msgid "Fri"
-msgstr ""
+msgstr "T6"
 
 #: weather.js:101
 msgid "Sat"
-msgstr ""
+msgstr "T7"
 
 #: weather.js:101
 msgid "Thu"
-msgstr ""
+msgstr "T5"
 
 #: weather.js:597
 msgid "NOAA NWS covers US locations only — pick another provider"
-msgstr ""
+msgstr "NOAA NWS chỉ phủ các vị trí ở Mỹ — hãy chọn nhà cung cấp khác"
 
 #: weather.js:602
 msgid "NOAA NWS returned no forecast for this location"
-msgstr ""
+msgstr "NOAA NWS không trả dự báo cho vị trí này"
 
 #: weather.js:747
 msgid "IP geolocation failed"
-msgstr ""
+msgstr "Không xác định được vị trí theo IP"

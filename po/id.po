@@ -1,514 +1,522 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the Weatherglass package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-27 08:31-0700\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"Language: id\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #: extension.js:54 prefs.js:590
 msgid "Weatherglass"
-msgstr ""
+msgstr "Weatherglass"
 
 #: extension.js:146
 msgid "My location"
-msgstr ""
+msgstr "Lokasi saya"
 
 #: extension.js:147
 msgid "Custom location"
-msgstr ""
+msgstr "Lokasi kustom"
 
 #: extension.js:191 menu.js:281
 msgid "Fetching weather…"
-msgstr ""
+msgstr "Mengambil cuaca…"
 
 #: menu.js:34
 msgid "Temperature"
-msgstr ""
+msgstr "Suhu"
 
 #: menu.js:35
 msgid "Precipitation"
-msgstr ""
+msgstr "Presipitasi"
 
 #: menu.js:36
 msgid "Wind"
-msgstr ""
+msgstr "Angin"
 
 #: menu.js:316 menu.js:398 menu.js:402
 msgid "Weather"
-msgstr ""
+msgstr "Cuaca"
 
 #: menu.js:333
 msgid "Refresh now"
-msgstr ""
+msgstr "Muat ulang sekarang"
 
 #: menu.js:338
 msgid "Preferences"
-msgstr ""
+msgstr "Preferensi"
 
 #: menu.js:354
 msgid "Show"
-msgstr ""
+msgstr "Tampilkan"
 
 #: menu.js:354
 msgid "chart"
-msgstr ""
+msgstr "grafik"
 
 #: menu.js:403
 msgid "Could not load the forecast"
-msgstr ""
+msgstr "Prakiraan gagal dimuat"
 
 #: menu.js:538
 msgid "Refresh forecast — updated"
-msgstr ""
+msgstr "Muat ulang prakiraan — diperbarui"
 
 #: menu.js:599
 msgid "Now"
-msgstr ""
+msgstr "Sekarang"
 
 #: menu.js:708
 msgid "Today"
-msgstr ""
+msgstr "Hari ini"
 
 #: prefs.js:87
 msgid "Location"
-msgstr ""
+msgstr "Lokasi"
 
 #: prefs.js:92
 msgid "Automatic"
-msgstr ""
+msgstr "Otomatis"
 
 #: prefs.js:93
 msgid "Coordinates are detected from your public IP address"
-msgstr ""
+msgstr "Koordinat dideteksi dari alamat IP publik Anda"
 
 #: prefs.js:96
 msgid "Detect location automatically"
-msgstr ""
+msgstr "Deteksi lokasi secara otomatis"
 
 #: prefs.js:104
 msgid "Search a city"
-msgstr ""
+msgstr "Cari kota"
 
 #: prefs.js:106
 msgid "City name — press Enter to search"
-msgstr ""
+msgstr "Nama kota — tekan Enter untuk mencari"
 
 #: prefs.js:111
 msgid "Results"
-msgstr ""
+msgstr "Hasil"
 
 #: prefs.js:147
 msgid "No matches"
-msgstr ""
+msgstr "Tidak ada yang cocok"
 
 #: prefs.js:173
 msgid "Manual"
-msgstr ""
+msgstr "Manual"
 
 #: prefs.js:174
 msgid "Saved when you press Enter in a field"
-msgstr ""
+msgstr "Tersimpan saat Anda menekan Enter di suatu kolom"
 
 #: prefs.js:177
 msgid "Latitude"
-msgstr ""
+msgstr "Lintang"
 
 #: prefs.js:178
 msgid "Longitude"
-msgstr ""
+msgstr "Bujur"
 
 #: prefs.js:179
 msgid "Display name"
-msgstr ""
+msgstr "Nama tampilan"
 
 #: prefs.js:221
 msgid "Display"
-msgstr ""
+msgstr "Tampilan"
 
 #: prefs.js:225
 msgid "Units"
-msgstr ""
+msgstr "Satuan"
 
 #: prefs.js:227
 msgid "Measurement system"
-msgstr ""
+msgstr "Sistem pengukuran"
 
 #: prefs.js:229
 msgid "Imperial (°F, mph)"
-msgstr ""
+msgstr "Imperial (°F, mph)"
 
 #: prefs.js:229
 msgid "Metric (°C, km/h)"
-msgstr ""
+msgstr "Metrik (°C, km/h)"
 
 #: prefs.js:238
 msgid "Panel indicator"
-msgstr ""
+msgstr "Indikator panel"
 
 #: prefs.js:239
 msgid "Show animated icon"
-msgstr ""
+msgstr "Tampilkan ikon beranimasi"
 
 #: prefs.js:240
 msgid "Show temperature"
-msgstr ""
+msgstr "Tampilkan suhu"
 
 #: prefs.js:242
 msgid "Animate the icon"
-msgstr ""
+msgstr "Animasikan ikon"
 
 #: prefs.js:243
 msgid "Turn off to save a little battery"
-msgstr ""
+msgstr "Matikan untuk menghemat sedikit baterai"
 
 #: prefs.js:253
 msgid "Menu background"
-msgstr ""
+msgstr "Latar menu"
 
 #: prefs.js:255
 msgid "Background style"
-msgstr ""
+msgstr "Gaya latar"
 
 #: prefs.js:256
 msgid "How the dropdown fills itself behind the forecast"
-msgstr ""
+msgstr "Bagaimana dropdown mengisi dirinya di belakang prakiraan"
 
 #: prefs.js:259
 msgid "Animated sky (translucent)"
-msgstr ""
+msgstr "Langit beranimasi (transenden)"
 
 #: prefs.js:260
 msgid "Solid (sky dimmed under a wash)"
-msgstr ""
+msgstr "Solid (langit diredam di bawah sapuan)"
 
 #: prefs.js:261
 msgid "Theme background, accent charts"
-msgstr ""
+msgstr "Latar tema, grafik aksen"
 
 #: prefs.js:270
 msgid "Text emboss"
-msgstr ""
+msgstr "Tekstil teks"
 
 #: prefs.js:271
 msgid "Soft shadow under card text and icons over the sky"
-msgstr ""
+msgstr "Bayangan lembut di bawah teks dan ikon kartu di atas langit"
 
 #: prefs.js:277
 msgid "Weather conditions"
-msgstr ""
+msgstr "Kondisi cuaca"
 
 #: prefs.js:278
 msgid "How hourly conditions ride the chart"
-msgstr ""
+msgstr "Bagaimana kondisi per jam melintasi grafik"
 
 #: prefs.js:280
 msgid "Grouped pills"
-msgstr ""
+msgstr "Pil berkelompok"
 
 #: prefs.js:280
 msgid "Hourly icons"
-msgstr ""
+msgstr "Ikon per jam"
 
 #: prefs.js:280
 msgid "Off"
-msgstr ""
+msgstr "Nonaktif"
 
 #: prefs.js:290
 msgid "Condition band position"
-msgstr ""
+msgstr "Posisi pita kondisi"
 
 #: prefs.js:291
 msgid "Along the chart top, or above the hour labels"
-msgstr ""
+msgstr "Di sepanjang bagian atas grafik, atau di atas label jam"
 
 #: prefs.js:293
 msgid "Above hours"
-msgstr ""
+msgstr "Di atas jam"
 
 #: prefs.js:293
 msgid "Chart top"
-msgstr ""
+msgstr "Atas grafik"
 
 #: prefs.js:310
 msgid "Data"
-msgstr ""
+msgstr "Data"
 
 #: prefs.js:314
 msgid "Data source"
-msgstr ""
+msgstr "Sumber data"
 
 #: prefs.js:316
 msgid "Weather provider"
-msgstr ""
+msgstr "Penyedia cuaca"
 
 #: prefs.js:317
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
-msgstr ""
+msgstr "Semua tanpa kunci · data MET Norway berlisensi CC BY-SA 4.0"
 
 #: prefs.js:320
 msgid "Open-Meteo (default)"
-msgstr ""
+msgstr "Open-Meteo (bawaan)"
 
 #: prefs.js:321
 msgid "MET Norway (api.met.no)"
-msgstr ""
+msgstr "MET Norwegia (api.met.no)"
 
 #: prefs.js:322
 msgid "NOAA NWS (US locations only)"
-msgstr ""
+msgstr "NOAA NWS (hanya lokasi AS)"
 
 #: prefs.js:338
 msgid "Forecast model"
-msgstr ""
+msgstr "Model prakiraan"
 
 #: prefs.js:339
-msgid "Open-Meteo only · out to a week models disagree — if the weekend looks off, try another"
+msgid ""
+"Open-Meteo only · out to a week models disagree — if the weekend looks off, "
+"try another"
 msgstr ""
+"Hanya Open-Meteo · hingga seminggu ke depan model berbeda — akhir pekan "
+"tampak aneh, coba model lain"
 
 #: prefs.js:342
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
-msgstr ""
+msgstr "Cocok terbaik (pilihan regional Open-Meteo; AS → GFS)"
 
 #: prefs.js:343
 msgid "ECMWF IFS (recommended)"
-msgstr ""
+msgstr "ECMWF IFS (disarankan)"
 
 #: prefs.js:344
 msgid "DWD ICON (shorter range)"
-msgstr ""
+msgstr "DWD ICON (jangkauan lebih pendek)"
 
 #: prefs.js:345
 msgid "NOAA GFS"
-msgstr ""
+msgstr "NOAA GFS"
 
 #: prefs.js:361
 msgid "Updates"
-msgstr ""
+msgstr "Pembaruan"
 
 #: prefs.js:363
 msgid "Refresh interval (minutes)"
-msgstr ""
+msgstr "Selang muat ulang (menit)"
 
 #: prefs.js:372
 msgid "Wind animation threshold (km/h)"
-msgstr ""
+msgstr "Ambang animasi angin (km/h)"
 
 #: prefs.js:373
 msgid "Breezier days swap the icon to the wind animation"
-msgstr ""
+msgstr "Hari yang lebih berangin menukar ikon ke animasi angin"
 
 #: prefs.js:391
 msgid "Preview"
-msgstr ""
+msgstr "Pratinjau"
 
 #: prefs.js:438
 msgid "Preview scene"
-msgstr ""
+msgstr "Adegan pratinjau"
 
 #: prefs.js:439
 msgid "Loops right here for ~12 s — your real panel stays put"
-msgstr ""
+msgstr "Berulang di sini selama ~12 d — panel asli Anda tetap seperti adanya"
 
 #: prefs.js:471
 msgid "Scene"
-msgstr ""
+msgstr "Adegan"
 
 #: prefs.js:546
 msgid "Panel preview"
-msgstr ""
+msgstr "Pratinjau panel"
 
 #: prefs.js:547
-msgid "How the panel button looks for this scene — mock temperature, real icon animation"
+msgid ""
+"How the panel button looks for this scene — mock temperature, real icon "
+"animation"
 msgstr ""
+"Bagaimana tombol panel tampak untuk adegan ini — suhu simulasi, animasi ikon "
+"asli"
 
 #: prefs.js:553
 msgid "Menu backdrop preview"
-msgstr ""
+msgstr "Pratinjau latar menu"
 
 #: prefs.js:554
-msgid "Your menu's current sky, live — pick a condition above to animate it here"
+msgid ""
+"Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
+"Langit menu Anda saat ini, langsung — pilih kondisi di atas untuk "
+"menganimasikannya di sini"
 
 #: prefs.js:585
 msgid "About"
-msgstr ""
+msgstr "Tentang"
 
 #: prefs.js:592
 msgid "Version"
-msgstr ""
+msgstr "Versi"
 
 #: prefs.js:596
 msgid "Free and open source"
-msgstr ""
+msgstr "Gratis dan sumber terbuka"
 
 #: prefs.js:597
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr ""
+"Tanpa iklan, tanpa akun, tanpa pengumpulan data — langit seharusnya cukup "
+"bekerja"
 
 #: prefs.js:602
 msgid "Support the development"
-msgstr ""
+msgstr "Dukung pengembangannya"
 
 #: prefs.js:603
-msgid "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps the pixels falling."
+msgid ""
+"Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
+"the pixels falling."
 msgstr ""
+"Weatherglass gratis selamanya. Jika itu membuat desktop Anda lebih enak "
+"dilihat, secangkir kopi membuat piksel tetap berjatuhan."
 
 #: prefs.js:606
 msgid "Buy me a coffee"
-msgstr ""
+msgstr "Traktir saya kopi"
 
 #: weather.js:18
 msgid "Clear sky"
-msgstr ""
+msgstr "Langit cerah"
 
 #: weather.js:19
 msgid "Mainly clear"
-msgstr ""
+msgstr "Sebagian besar cerah"
 
 #: weather.js:20
 msgid "Partly cloudy"
-msgstr ""
+msgstr "Berawan sebagian"
 
 #: weather.js:21
 msgid "Overcast"
-msgstr ""
+msgstr "Mendung"
 
 #: weather.js:22 weather.js:72
 msgid "Fog"
-msgstr ""
+msgstr "Kabut"
 
 #: weather.js:23
 msgid "Rime fog"
-msgstr ""
+msgstr "Kabut embun upas"
 
 #: weather.js:24
 msgid "Light drizzle"
-msgstr ""
+msgstr "Gerimis ringan"
 
 #: weather.js:25
 msgid "Drizzle"
-msgstr ""
+msgstr "Gerimis"
 
 #: weather.js:26
 msgid "Dense drizzle"
-msgstr ""
+msgstr "Gerimis lebat"
 
 #: weather.js:27 weather.js:28
 msgid "Freezing drizzle"
-msgstr ""
+msgstr "Gerimis beku"
 
 #: weather.js:29
 msgid "Light rain"
-msgstr ""
+msgstr "Hujan ringan"
 
 #: weather.js:30
 msgid "Rain"
-msgstr ""
+msgstr "Hujan"
 
 #: weather.js:31
 msgid "Heavy rain"
-msgstr ""
+msgstr "Hujan lebat"
 
 #: weather.js:32 weather.js:33
 msgid "Freezing rain"
-msgstr ""
+msgstr "Hujan beku"
 
 #: weather.js:34
 msgid "Light snow"
-msgstr ""
+msgstr "Salju ringan"
 
 #: weather.js:35
 msgid "Snow"
-msgstr ""
+msgstr "Salju"
 
 #: weather.js:36
 msgid "Heavy snow"
-msgstr ""
+msgstr "Salju lebat"
 
 #: weather.js:37
 msgid "Snow grains"
-msgstr ""
+msgstr "Butiran salju"
 
 #: weather.js:38
 msgid "Light showers"
-msgstr ""
+msgstr "Hujan ringan"
 
 #: weather.js:39
 msgid "Showers"
-msgstr ""
+msgstr "Hujan deras"
 
 #: weather.js:40
 msgid "Violent showers"
-msgstr ""
+msgstr "Hujan deras sekali"
 
 #: weather.js:41
 msgid "Snow showers"
-msgstr ""
+msgstr "Hujan salju"
 
 #: weather.js:42
 msgid "Heavy snow showers"
-msgstr ""
+msgstr "Hujan salju lebat"
 
 #: weather.js:43 weather.js:68
 msgid "Thunderstorm"
-msgstr ""
+msgstr "Badai petir"
 
 #: weather.js:44 weather.js:45 weather.js:66
 msgid "Thunderstorm, hail"
-msgstr ""
+msgstr "Badai petir, hujan es"
 
 #: weather.js:49
 msgid "Unknown"
-msgstr ""
+msgstr "Tidak diketahui"
 
 #: weather.js:100
 msgid "Mon"
-msgstr ""
+msgstr "Sen"
 
 #: weather.js:100
 msgid "Sun"
-msgstr ""
+msgstr "Min"
 
 #: weather.js:100
 msgid "Tue"
-msgstr ""
+msgstr "Sel"
 
 #: weather.js:100
 msgid "Wed"
-msgstr ""
+msgstr "Rab"
 
 #: weather.js:101
 msgid "Fri"
-msgstr ""
+msgstr "Jum"
 
 #: weather.js:101
 msgid "Sat"
-msgstr ""
+msgstr "Sab"
 
 #: weather.js:101
 msgid "Thu"
-msgstr ""
+msgstr "Kam"
 
 #: weather.js:597
 msgid "NOAA NWS covers US locations only — pick another provider"
-msgstr ""
+msgstr "NOAA NWS hanya mencakup lokasi di AS — pilih penyedia lain"
 
 #: weather.js:602
 msgid "NOAA NWS returned no forecast for this location"
-msgstr ""
+msgstr "NOAA NWS tidak mengembalikan prakiraan untuk lokasi ini"
 
 #: weather.js:747
 msgid "IP geolocation failed"
-msgstr ""
+msgstr "Geolokasi IP gagal"

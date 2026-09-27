@@ -1,514 +1,518 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the Weatherglass package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-27 08:31-0700\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #: extension.js:54 prefs.js:590
 msgid "Weatherglass"
-msgstr ""
+msgstr "Weatherglass"
 
 #: extension.js:146
 msgid "My location"
-msgstr ""
+msgstr "현재 위치"
 
 #: extension.js:147
 msgid "Custom location"
-msgstr ""
+msgstr "직접 지정한 위치"
 
 #: extension.js:191 menu.js:281
 msgid "Fetching weather…"
-msgstr ""
+msgstr "날씨 가져오는 중…"
 
 #: menu.js:34
 msgid "Temperature"
-msgstr ""
+msgstr "기온"
 
 #: menu.js:35
 msgid "Precipitation"
-msgstr ""
+msgstr "강수"
 
 #: menu.js:36
 msgid "Wind"
-msgstr ""
+msgstr "바람"
 
 #: menu.js:316 menu.js:398 menu.js:402
 msgid "Weather"
-msgstr ""
+msgstr "날씨"
 
 #: menu.js:333
 msgid "Refresh now"
-msgstr ""
+msgstr "지금 새로고침"
 
 #: menu.js:338
 msgid "Preferences"
-msgstr ""
+msgstr "설정"
 
 #: menu.js:354
 msgid "Show"
-msgstr ""
+msgstr "보기"
 
 #: menu.js:354
 msgid "chart"
-msgstr ""
+msgstr "차트"
 
 #: menu.js:403
 msgid "Could not load the forecast"
-msgstr ""
+msgstr "예보를 불러올 수 없습니다"
 
 #: menu.js:538
 msgid "Refresh forecast — updated"
-msgstr ""
+msgstr "예보 새로고침 — 업데이트:"
 
 #: menu.js:599
 msgid "Now"
-msgstr ""
+msgstr "현재"
 
 #: menu.js:708
 msgid "Today"
-msgstr ""
+msgstr "오늘"
 
 #: prefs.js:87
 msgid "Location"
-msgstr ""
+msgstr "위치"
 
 #: prefs.js:92
 msgid "Automatic"
-msgstr ""
+msgstr "자동"
 
 #: prefs.js:93
 msgid "Coordinates are detected from your public IP address"
-msgstr ""
+msgstr "좌표는 공개 IP 주소로 감지됩니다"
 
 #: prefs.js:96
 msgid "Detect location automatically"
-msgstr ""
+msgstr "위치 자동 감지"
 
 #: prefs.js:104
 msgid "Search a city"
-msgstr ""
+msgstr "도시 검색"
 
 #: prefs.js:106
 msgid "City name — press Enter to search"
-msgstr ""
+msgstr "도시 이름 — Enter을(를) 눌러 검색"
 
 #: prefs.js:111
 msgid "Results"
-msgstr ""
+msgstr "결과"
 
 #: prefs.js:147
 msgid "No matches"
-msgstr ""
+msgstr "일치하는 결과 없음"
 
 #: prefs.js:173
 msgid "Manual"
-msgstr ""
+msgstr "직접 입력"
 
 #: prefs.js:174
 msgid "Saved when you press Enter in a field"
-msgstr ""
+msgstr "칸에서 Enter을(를) 누르면 저장됩니다"
 
 #: prefs.js:177
 msgid "Latitude"
-msgstr ""
+msgstr "위도"
 
 #: prefs.js:178
 msgid "Longitude"
-msgstr ""
+msgstr "경도"
 
 #: prefs.js:179
 msgid "Display name"
-msgstr ""
+msgstr "표시 이름"
 
 #: prefs.js:221
 msgid "Display"
-msgstr ""
+msgstr "화면"
 
 #: prefs.js:225
 msgid "Units"
-msgstr ""
+msgstr "단위"
 
 #: prefs.js:227
 msgid "Measurement system"
-msgstr ""
+msgstr "측정 단위계"
 
 #: prefs.js:229
 msgid "Imperial (°F, mph)"
-msgstr ""
+msgstr "야드파운드법 (°F, mph)"
 
 #: prefs.js:229
 msgid "Metric (°C, km/h)"
-msgstr ""
+msgstr "미터법 (°C, km/h)"
 
 #: prefs.js:238
 msgid "Panel indicator"
-msgstr ""
+msgstr "패널 표시기"
 
 #: prefs.js:239
 msgid "Show animated icon"
-msgstr ""
+msgstr "애니메이션 아이콘 표시"
 
 #: prefs.js:240
 msgid "Show temperature"
-msgstr ""
+msgstr "기온 표시"
 
 #: prefs.js:242
 msgid "Animate the icon"
-msgstr ""
+msgstr "아이콘 애니메이션"
 
 #: prefs.js:243
 msgid "Turn off to save a little battery"
-msgstr ""
+msgstr "끄면 배터리를 조금 아낄 수 있습니다"
 
 #: prefs.js:253
 msgid "Menu background"
-msgstr ""
+msgstr "메뉴 배경"
 
 #: prefs.js:255
 msgid "Background style"
-msgstr ""
+msgstr "배경 스타일"
 
 #: prefs.js:256
 msgid "How the dropdown fills itself behind the forecast"
-msgstr ""
+msgstr "드롭다운이 예보 뒤를 어떻게 채우는지"
 
 #: prefs.js:259
 msgid "Animated sky (translucent)"
-msgstr ""
+msgstr "움직이는 하늘 (반투명)"
 
 #: prefs.js:260
 msgid "Solid (sky dimmed under a wash)"
-msgstr ""
+msgstr "단색 (옅은 막 아래로 어두운 하늘)"
 
 #: prefs.js:261
 msgid "Theme background, accent charts"
-msgstr ""
+msgstr "테마 배경, 강조색 차트"
 
 #: prefs.js:270
 msgid "Text emboss"
-msgstr ""
+msgstr "텍스트 음각"
 
 #: prefs.js:271
 msgid "Soft shadow under card text and icons over the sky"
-msgstr ""
+msgstr "하늘 위 카드 텍스트와 아이콘 아래 부드러운 그림자"
 
 #: prefs.js:277
 msgid "Weather conditions"
-msgstr ""
+msgstr "날씨 상태"
 
 #: prefs.js:278
 msgid "How hourly conditions ride the chart"
-msgstr ""
+msgstr "시간별 상태가 차트에 표시되는 방식"
 
 #: prefs.js:280
 msgid "Grouped pills"
-msgstr ""
+msgstr "묶인 알약형 배지"
 
 #: prefs.js:280
 msgid "Hourly icons"
-msgstr ""
+msgstr "시간별 아이콘"
 
 #: prefs.js:280
 msgid "Off"
-msgstr ""
+msgstr "끄기"
 
 #: prefs.js:290
 msgid "Condition band position"
-msgstr ""
+msgstr "상태 밴드 위치"
 
 #: prefs.js:291
 msgid "Along the chart top, or above the hour labels"
-msgstr ""
+msgstr "차트 위쪽을 따라, 또는 시간 표시 위에"
 
 #: prefs.js:293
 msgid "Above hours"
-msgstr ""
+msgstr "시간 표시 위"
 
 #: prefs.js:293
 msgid "Chart top"
-msgstr ""
+msgstr "차트 위쪽"
 
 #: prefs.js:310
 msgid "Data"
-msgstr ""
+msgstr "데이터"
 
 #: prefs.js:314
 msgid "Data source"
-msgstr ""
+msgstr "데이터 출처"
 
 #: prefs.js:316
 msgid "Weather provider"
-msgstr ""
+msgstr "날씨 제공 업체"
 
 #: prefs.js:317
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
-msgstr ""
+msgstr "모두 키 불필요 · MET Norway 데이터 CC BY-SA 4.0 라이선스"
 
 #: prefs.js:320
 msgid "Open-Meteo (default)"
-msgstr ""
+msgstr "Open-Meteo (기본값)"
 
 #: prefs.js:321
 msgid "MET Norway (api.met.no)"
-msgstr ""
+msgstr "노르웨이 기상청 (api.met.no)"
 
 #: prefs.js:322
 msgid "NOAA NWS (US locations only)"
-msgstr ""
+msgstr "NOAA NWS (미국 지역 한정)"
 
 #: prefs.js:338
 msgid "Forecast model"
-msgstr ""
+msgstr "예보 모델"
 
 #: prefs.js:339
-msgid "Open-Meteo only · out to a week models disagree — if the weekend looks off, try another"
+msgid ""
+"Open-Meteo only · out to a week models disagree — if the weekend looks off, "
+"try another"
 msgstr ""
+"Open-Meteo 전용 · 1주일 이상은 모델마다 다릅니다 — 주말 예보가 이상하면 다른 "
+"모델을 시도하세요"
 
 #: prefs.js:342
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
-msgstr ""
+msgstr "최적 일치 (Open-Meteo 지역 선택; 미국 → GFS)"
 
 #: prefs.js:343
 msgid "ECMWF IFS (recommended)"
-msgstr ""
+msgstr "ECMWF IFS (권장)"
 
 #: prefs.js:344
 msgid "DWD ICON (shorter range)"
-msgstr ""
+msgstr "DWD ICON (예보 기간이 더 짧음)"
 
 #: prefs.js:345
 msgid "NOAA GFS"
-msgstr ""
+msgstr "NOAA GFS"
 
 #: prefs.js:361
 msgid "Updates"
-msgstr ""
+msgstr "업데이트"
 
 #: prefs.js:363
 msgid "Refresh interval (minutes)"
-msgstr ""
+msgstr "새로고침 간격 (분)"
 
 #: prefs.js:372
 msgid "Wind animation threshold (km/h)"
-msgstr ""
+msgstr "바람 애니메이션 기준 (km/h)"
 
 #: prefs.js:373
 msgid "Breezier days swap the icon to the wind animation"
-msgstr ""
+msgstr "바람이 강한 날에는 아이콘이 바람 애니메이션으로 바뀝니다"
 
 #: prefs.js:391
 msgid "Preview"
-msgstr ""
+msgstr "미리보기"
 
 #: prefs.js:438
 msgid "Preview scene"
-msgstr ""
+msgstr "미리보기 장면"
 
 #: prefs.js:439
 msgid "Loops right here for ~12 s — your real panel stays put"
-msgstr ""
+msgstr "여기서 약 12초 동안 반복 — 실제 패널은 그대로입니다"
 
 #: prefs.js:471
 msgid "Scene"
-msgstr ""
+msgstr "장면"
 
 #: prefs.js:546
 msgid "Panel preview"
-msgstr ""
+msgstr "패널 미리보기"
 
 #: prefs.js:547
-msgid "How the panel button looks for this scene — mock temperature, real icon animation"
+msgid ""
+"How the panel button looks for this scene — mock temperature, real icon "
+"animation"
 msgstr ""
+"이 장면에서 패널 버튼이 보이는 방식 — 기온은 모의, 아이콘 애니메이션은 실제"
 
 #: prefs.js:553
 msgid "Menu backdrop preview"
-msgstr ""
+msgstr "메뉴 배경 미리보기"
 
 #: prefs.js:554
-msgid "Your menu's current sky, live — pick a condition above to animate it here"
+msgid ""
+"Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
+"메뉴의 현재 하늘을 실시간으로 — 상단에서 상태를 선택하면 여기서 재생됩니다"
 
 #: prefs.js:585
 msgid "About"
-msgstr ""
+msgstr "정보"
 
 #: prefs.js:592
 msgid "Version"
-msgstr ""
+msgstr "버전"
 
 #: prefs.js:596
 msgid "Free and open source"
-msgstr ""
+msgstr "무료 오픈소스"
 
 #: prefs.js:597
 msgid "No ads, no accounts, no data collection — the sky should just work"
-msgstr ""
+msgstr "광고 없음, 계정 없음, 데이터 수집 없음 — 하늘은 그저 동작하면 됩니다"
 
 #: prefs.js:602
 msgid "Support the development"
-msgstr ""
+msgstr "개발 지원"
 
 #: prefs.js:603
-msgid "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps the pixels falling."
+msgid ""
+"Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
+"the pixels falling."
 msgstr ""
+"Weatherglass는 영원히 무료입니다. 데스크톱이 더 나아졌다면, 커피 한 잔이 픽셀"
+"을 계속 흘려보냅니다."
 
 #: prefs.js:606
 msgid "Buy me a coffee"
-msgstr ""
+msgstr "커피 한 잔 사 주기"
 
 #: weather.js:18
 msgid "Clear sky"
-msgstr ""
+msgstr "맑음"
 
 #: weather.js:19
 msgid "Mainly clear"
-msgstr ""
+msgstr "대체로 맑음"
 
 #: weather.js:20
 msgid "Partly cloudy"
-msgstr ""
+msgstr "구름 조금"
 
 #: weather.js:21
 msgid "Overcast"
-msgstr ""
+msgstr "흐림"
 
 #: weather.js:22 weather.js:72
 msgid "Fog"
-msgstr ""
+msgstr "안개"
 
 #: weather.js:23
 msgid "Rime fog"
-msgstr ""
+msgstr "무지성 안개"
 
 #: weather.js:24
 msgid "Light drizzle"
-msgstr ""
+msgstr "가벼운 가랑비"
 
 #: weather.js:25
 msgid "Drizzle"
-msgstr ""
+msgstr "가랑비"
 
 #: weather.js:26
 msgid "Dense drizzle"
-msgstr ""
+msgstr "짙은 가랑비"
 
 #: weather.js:27 weather.js:28
 msgid "Freezing drizzle"
-msgstr ""
+msgstr "어는 가랑비"
 
 #: weather.js:29
 msgid "Light rain"
-msgstr ""
+msgstr "약한 비"
 
 #: weather.js:30
 msgid "Rain"
-msgstr ""
+msgstr "비"
 
 #: weather.js:31
 msgid "Heavy rain"
-msgstr ""
+msgstr "강한 비"
 
 #: weather.js:32 weather.js:33
 msgid "Freezing rain"
-msgstr ""
+msgstr "어는 비"
 
 #: weather.js:34
 msgid "Light snow"
-msgstr ""
+msgstr "약한 눈"
 
 #: weather.js:35
 msgid "Snow"
-msgstr ""
+msgstr "눈"
 
 #: weather.js:36
 msgid "Heavy snow"
-msgstr ""
+msgstr "강한 눈"
 
 #: weather.js:37
 msgid "Snow grains"
-msgstr ""
+msgstr "가루눈"
 
 #: weather.js:38
 msgid "Light showers"
-msgstr ""
+msgstr "약한 소나기"
 
 #: weather.js:39
 msgid "Showers"
-msgstr ""
+msgstr "소나기"
 
 #: weather.js:40
 msgid "Violent showers"
-msgstr ""
+msgstr "거친 소나기"
 
 #: weather.js:41
 msgid "Snow showers"
-msgstr ""
+msgstr "소나기 눈"
 
 #: weather.js:42
 msgid "Heavy snow showers"
-msgstr ""
+msgstr "강한 소나기 눈"
 
 #: weather.js:43 weather.js:68
 msgid "Thunderstorm"
-msgstr ""
+msgstr "뇌우"
 
 #: weather.js:44 weather.js:45 weather.js:66
 msgid "Thunderstorm, hail"
-msgstr ""
+msgstr "뇌우, 우박"
 
 #: weather.js:49
 msgid "Unknown"
-msgstr ""
+msgstr "알 수 없음"
 
 #: weather.js:100
 msgid "Mon"
-msgstr ""
+msgstr "월"
 
 #: weather.js:100
 msgid "Sun"
-msgstr ""
+msgstr "일"
 
 #: weather.js:100
 msgid "Tue"
-msgstr ""
+msgstr "화"
 
 #: weather.js:100
 msgid "Wed"
-msgstr ""
+msgstr "수"
 
 #: weather.js:101
 msgid "Fri"
-msgstr ""
+msgstr "금"
 
 #: weather.js:101
 msgid "Sat"
-msgstr ""
+msgstr "토"
 
 #: weather.js:101
 msgid "Thu"
-msgstr ""
+msgstr "목"
 
 #: weather.js:597
 msgid "NOAA NWS covers US locations only — pick another provider"
-msgstr ""
+msgstr "NOAA NWS는 미국 지역만 지원했습니다 — 다른 제공 업체를 선택하세요"
 
 #: weather.js:602
 msgid "NOAA NWS returned no forecast for this location"
-msgstr ""
+msgstr "NOAA NWS가 이 위치에 대한 예보를 반환하지 않았습니다"
 
 #: weather.js:747
 msgid "IP geolocation failed"
-msgstr ""
+msgstr "IP 위치 확인 실패"

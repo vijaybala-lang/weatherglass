@@ -9,6 +9,7 @@
 # English at runtime, never crash.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+export LC_ALL=C.UTF-8   # msgmerge chokes on UTF-8 msgids under a C locale
 
 POT=po/animated-weather@vbala.dev.pot
 
