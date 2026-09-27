@@ -20,8 +20,9 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import {WeatherIcon} from './animation.js';
-import {paintSky, createSky, sampleSky} from './sky.js';
-import {paintChart, ease, lerp, contrastSafe, lumOf, pickInk} from './chart.js';
+import {paintSky, createSky, sampleSky, bodyOf} from './sky.js';
+import {paintChart, ease, lerp, contrastSafe, lumOf, pickInk, ratio,
+        INK_DARK, INK_LIGHT} from './chart.js';
 import {sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn} from './weather.js';
 
 const FRAME_MS = 50;         // sky: 20 fps is plenty
@@ -58,6 +59,16 @@ const inkCss = (ink, a = 1) => {
         ? `color: rgba(${c(ink[0])}, ${c(ink[1])}, ${c(ink[2])}, ${a});`
         : `color: rgb(${c(ink[0])}, ${c(ink[1])}, ${c(ink[2])});`;
 };
+
+/* Readability halo: when no single ink clears 3:1 across its whole box
+ * (labels straddling the moon's edge have NO colour that beats both
+ * backgrounds), the chosen ink gets a hard opposite-colour edge from a
+ * soft glow + tight drop — beating either solid pick, without ever
+ * splitting one row of text into two colours. */
+const haloCss = res => !res.emboss ? ''
+    : res.ink === INK_DARK
+        ? ' text-shadow: 0 0 3px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.55);'
+        : ' text-shadow: 0 0 3px rgba(0,0,12,0.9), 0 0 8px rgba(0,0,12,0.6), 0 1px 2px rgba(0,0,12,0.85);';
 
 function label(text, cls) {
     return new St.Label({text, style_class: cls, y_align: Clutter.ActorAlign.CENTER});
@@ -448,17 +459,33 @@ export class ForecastPanel {
      * the active scrim composited over it. Contrast reference for accent-
      * colored text (the "now" label). */
     /** Composited backdrop (sky + scrim, or the flat accent card) at height
-     *  fraction f — what's actually painted behind content at that y. */
-    _bgAt(f) {
+     *  fraction f — what's actually painted behind content at that y. With
+     *  a point {f, x} the SUN/MOON DISC counts too: the gradient alone
+     *  calls a night sky dark, but white city text riding across a full
+     *  moon is unreadable — the disc is part of what's under the pixels. */
+    _bgAt(f, pt) {
         if (this._style === 'accent')
             return this._dark ? [0.185, 0.185, 0.19] : [0.96, 0.96, 0.97];
         const c = sampleSky(this._skyOpts.scene, this._skyOpts.night, f);
         const t = this._theme();
         const scrim = this._style === 'solid' ? t.scrimSolid : t.scrim;
-        if (!scrim)
-            return c;
-        const a = scrim[3];
-        return c.map((v, i) => v * (1 - a) + scrim[i] * a);
+        const bg = scrim
+            ? c.map((v, i) => v * (1 - scrim[3]) + scrim[i] * scrim[3])
+            : c;
+        if (pt) {
+            const [cw, ch] = this._content.get_size();
+            const body = bodyOf(this._skyOpts.scene, this._skyOpts.night,
+                                cw || 330, ch || 430);
+            if (body) {
+                const d = Math.hypot(pt.x * (cw || 330) - body.x,
+                                     pt.f * (ch || 430) - body.y);
+                const cov = d <= body.r ? body.max
+                    : Math.max(0, body.max * (1 - (d - body.r) / body.soft));
+                if (cov > 0.02)
+                    return bg.map((v, i) => v + (body.col[i] - v) * cov);
+            }
+        }
+        return bg;
     }
 
     _bgUnderChart() {
@@ -740,63 +767,111 @@ export class ForecastPanel {
         }
     }
 
-    /** One-pass smart ink for every free-standing label/button in the card:
-     *  big temp, condition line, city, clock, ghost icons, metric tabs.
-     *  Each actor samples the composited backdrop at its own center; the
-     *  active tab answers to sky + pill glass like the selected tile.
+    /** One-pass smart ink for every free-standing label/button in the card,
+     *  JUDGED PER VISUAL GROUP: whole-box sampling (text spans wide, and its
+     *  right half may ride over the moon), one consensus ink per group (a tab
+     *  row half dark is a broken-looking control), plus a surgical halo when
+     *  no single colour can win the group (a label straddling the moon's edge
+     *  has no colour that beats both backgrounds — a white-ink-with-dark-
+     *  shadow beats either solid pick). The active pill tab and the day tiles
+     *  judge for themselves: they sit on their own background, so ink that
+     *  matches it reads as deliberate, not broken.
      *  Runs from the chart repaint (menu is visible, transforms valid). */
     _applyTextInk() {
         const plain = this._style === 'accent' || !this._state;
-        const targets = [this._tempLbl, this._descLbl, this._cityLbl,
-                         this._clockLbl];
-        for (const a of targets) {
-            if (!a)
-                continue;
-            const css = plain ? '' : inkCss(pickInk(this._bgAt(this._fOf(a))));
-            if (a._awInk !== css) {
+        const set = (a, css) => {
+            if (a && a._awInk !== css) {
                 a._awInk = css;
                 a.set_style(css);
             }
+        };
+        if (plain) {
+            for (const a of [this._tempLbl, this._descLbl, this._cityLbl,
+                             this._clockLbl])
+                set(a, '');
+            for (const ic of this._ghostIcons ?? [])
+                set(ic, '');
+            for (const btn of Object.values(this._tabBtns ?? {}))
+                set(btn, '');
+            return;
         }
-        // ghost icons: color + a shadow that matches the ink direction
-        for (const ic of this._ghostIcons ?? []) {
-            let full = plain ? '' : inkCss(pickInk(this._bgAt(this._fOf(ic))));
-            if (full)
-                full += full.includes('16, 24, 35')
-                    ? ' icon-shadow: 0 1px 3px rgba(255,255,255,0.7);'
-                    : ' icon-shadow: 0 1px 4px rgba(0,0,10,0.7);';
-            if (ic._awInk !== full) {
-                ic._awInk = full;
-                ic.set_style(full);
-            }
-        }
-        // metric tabs: per-button ink; the active pill samples sky + glass
+        const inkGroup = actors => {
+            const res = this._groupInk(
+                [].concat(...(actors ?? []).map(a => this._bgsOf(a))));
+            const css = inkCss(res.ink) + haloCss(res);
+            for (const a of actors ?? [])
+                set(a, css);
+        };
+        inkGroup([this._tempLbl, this._descLbl]);   // left column pair
+        inkGroup([this._cityLbl, this._clockLbl]);  // right stack pair
+        // ghost buttons: one pair-ink; the direction-matched icon shadow IS
+        // the halo when they ride the moon
+        const g = this._groupInk(
+            [].concat(...(this._ghostIcons ?? []).map(ic => this._bgsOf(ic))));
+        const glow = g.ink === INK_DARK
+            ? ' icon-shadow: 0 1px 3px rgba(255,255,255,0.7);'
+            : ' icon-shadow: 0 1px 4px rgba(0,0,10,0.7);';
+        for (const ic of this._ghostIcons ?? [])
+            set(ic, inkCss(g.ink) + glow);
+        // metric tabs: inactive share one ink (they share the sky); the
+        // active pill answers to its own glass, like the selected tile
+        const row = [];
         for (const [key, btn] of Object.entries(this._tabBtns ?? {})) {
-            let css = '';
-            if (!plain) {
-                let bg = this._bgAt(this._fOf(btn));
-                if (key === this._metric)
-                    bg = compGlass(bg, this._dark);
-                css = inkCss(pickInk(bg));
-            }
-            if (btn._awInk !== css) {
-                btn._awInk = css;
-                btn.set_style(css);
-            }
+            const list = this._bgsOf(btn);
+            if (key === this._metric) {
+                const res = this._groupInk(
+                    list.map(bg => compGlass(bg, this._dark)));
+                set(btn, inkCss(res.ink) + haloCss(res));
+            } else
+                row.push(...list);
+        }
+        if (row.length) {
+            const res = this._groupInk(row);
+            const css = inkCss(res.ink) + haloCss(res);
+            for (const [key, btn] of Object.entries(this._tabBtns ?? {}))
+                if (key !== this._metric)
+                    set(btn, css);
         }
     }
 
-    /** Actor-center y mapped to the card's sky-gradient fraction [0..1]. */
-    _fOf(actor) {
+    /** Referee over a SET of backdrop samples: pickInk's margin rule, but on
+     *  the worst truth each ink faces anywhere in the group; flags `emboss`
+     *  when the winner still can't clear WCAG's 3:1 graphics floor at some
+     *  sample — the halo's cue. */
+    _groupInk(bgs) {
+        if (!bgs.length)
+            return {ink: pickInk(this._bgUnderChart()), emboss: false};
+        const wWorst = Math.min(...bgs.map(bg => ratio(INK_LIGHT, bg)));
+        const dWorst = Math.min(...bgs.map(bg => ratio(INK_DARK, bg)));
+        const ink = dWorst >= wWorst * 1.35 ? INK_DARK : INK_LIGHT;
+        return {ink, emboss: (ink === INK_DARK ? dWorst : wWorst) < 3};
+    }
+
+    /** Backdrop samples across an actor's whole box — centre plus inset
+     *  edge points. A label spans; "San Francisco" with its tail over the
+     *  moon must be judged on every pixel it covers, not its middle. */
+    _bgsOf(actor) {
+        const out = [];
         try {
-            const cardY = this._content.get_transformed_position()[1];
-            const cardH = this._content.get_size()[1] || 1;
-            const [ay] = actor.get_transformed_position();
-            const [, ah] = actor.get_size();
-            return Math.min(1, Math.max(0, (ay + ah / 2 - cardY) / cardH));
+            const [cardX, cardY] = this._content.get_transformed_position();
+            const [cw, ch] = this._content.get_size();
+            const [ax, ay] = actor.get_transformed_position();
+            const [aw, ah] = actor.get_size();
+            if (!cw || !ch || !aw || !ah)
+                return out;
+            for (const [ux, uy] of [[0.5, 0.5], [0.15, 0.5], [0.85, 0.5],
+                                     [0.5, 0.25], [0.5, 0.75]]) {
+                const fc = Math.min(1, Math.max(0,
+                    (ay + ah * uy - cardY) / ch));
+                out.push(this._bgAt(fc, {
+                    f: fc,
+                    x: (ax + aw * ux - cardX) / cw,
+                }));
+            }
         } catch {
-            return 0.5;
+            // stale allocation between relayouts: judge with what we have
         }
+        return out;
     }
 
     /* ── misc ───────────────────────────────────────────────────────────── */

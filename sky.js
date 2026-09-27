@@ -60,6 +60,29 @@ export function sampleSky(scene, night, f = 0.62) {
     return top.map((v, i) => v + (bot[i] - v) * f);
 }
 
+/* The bright body paintSky will draw, as {x, y, r, col, soft} in px —
+ * the menu's ink referee samples the gradient and MUST also see this:
+ * white city text over a full moon (or the sun's core) is unreadable,
+ * and a gradient-only sampler can't know. col approximates the disc's
+ * look: moon.js pale sphere by night, the sun gradient's warm core by
+ * day (kept small + translucent: the rays wash gently, the disc is
+ * the disc). */
+export function bodyOf(scene, night, w, h) {
+    const f = FEATURES[scene] ?? {};
+    const R = 64 * h / 420;
+    if ((f.sun || f.moon) && !night)
+        return {x: w * 0.82, y: h * 0.16, r: R * 0.45, soft: 10,
+                col: [1, 0.8, 0.4], max: 0.75};
+    if (f.moon && night) {
+        const ph = moonPhase().phase;
+        if (illumOf(ph) < 0.12)
+            return null;            // thin crescent: barely a light
+        return {x: w * 0.82, y: h * 0.16, r: R * 0.85, soft: 14,
+                col: [0.93, 0.94, 0.96], max: 1};
+    }
+    return null;
+}
+
 function hexPal(scene, night) {
     const pal = (PAL[scene] ?? PAL.cloud)[night ? 'n' : 'd'];
     return pal;
