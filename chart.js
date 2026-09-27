@@ -429,14 +429,23 @@ export function paintChart(cr, opts) {
         // offsets, then the real icon on top.
         const OUT = Array.isArray(opts.iconOutline) ? opts.iconOutline : null;
         const paint1 = (scene, cx, night, scale, cy = stripY) => {
+            /* The palette follows the SKY the icon rides, not the theme:
+             * white moons and stars blow out across a bright day foot
+             * (1 AM glyphs over a clear-sky noon backdrop). Each icon
+             * samples its own backdrop — genuinely bright (0.55 up)
+             * turns pale glyphs into their dark twins, and the
+             * silhouette ring (built to edge OUT pale glyphs) stands
+             * down, else dark-on-dark reads chunky. Mid-tone skies
+             * (overcast foot ~0.52) keep the approved pale + ring look. */
+            const palDark = bgFn ? lumOf(bgFn(cy)) >= 0.55 : dark;
             const pose = c => {
                 c.translate(cx - 12 * scale, cy - 12 * scale);
                 c.scale(scale, scale);
                 paintWeather(c, {scene: scene ?? 'cloud', time: 4.1,
-                                 night: !!night, dark,
+                                 night: !!night, dark: !palDark,
                                  intensity: STRIP_INT[scene] ?? 0});
             };
-            if (!OUT) {
+            if (!OUT || palDark) {
                 cr.save();
                 pose(cr);
                 cr.restore();
@@ -448,7 +457,7 @@ export function paintChart(cr, opts) {
             c2.translate(r - 12 * scale, r - 12 * scale);
             c2.scale(scale, scale);
             paintWeather(c2, {scene: scene ?? 'cloud', time: 4.1, night: !!night,
-                              dark, intensity: STRIP_INT[scene] ?? 0});
+                              dark: !palDark, intensity: STRIP_INT[scene] ?? 0});
             c2.$dispose();
             const T = new Cairo.ImageSurface(Cairo.Format.ARGB32, d, d);
             const c3 = new Cairo.Context(T);

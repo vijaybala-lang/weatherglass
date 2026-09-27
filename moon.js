@@ -158,15 +158,18 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
     litPath(cr, r, phase);
 
     if (style === 'icon') {
+        // opts.face: light-card palette dims the disc to porcelain —
+        // bare 0.95 white blows out over bright day skies
+        const fc = opts.face ?? [0.95, 0.95, 0.99];
         if (opts.outline) {           // pale disc needs an edge on light cards
             const ol = opts.outline;
-            cr.setSourceRGBA(0.95, 0.95, 0.99, 1);
+            cr.setSourceRGBA(fc[0], fc[1], fc[2], 1);
             cr.fillPreserve();
             cr.setSourceRGBA(ol[0], ol[1], ol[2], ol[3]);
             cr.setLineWidth(0.5);
             cr.stroke();
         } else {
-            cr.setSourceRGBA(0.95, 0.95, 0.99, 1);   // warm off-white, never clinical
+            cr.setSourceRGBA(fc[0], fc[1], fc[2], 1);   // warm off-white
             cr.fill();
         }
         cr.restore();

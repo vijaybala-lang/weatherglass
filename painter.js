@@ -235,16 +235,22 @@ function sunBody(cr, cx, cy, r, t, rayLen) {
 
 function moonBody(cr, cx, cy, r, t, p, phase) {
     const ph = Number.isFinite(phase) ? phase : moonPhase().phase;
-    const glow = new Cairo.RadialGradient(cx, cy, r * 0.5, cx, cy, r * 2.2);
-    glow.addColorStopRGBA(0, 0.86, 0.87, 0.97, 0.30 * (0.25 + 0.75 * illumOf(ph)));
-    glow.addColorStopRGBA(1, 0.86, 0.87, 0.97, 0);
-    cr.setSource(glow);
-    cr.paint();
+    if (!_light) {
+        // halo is a night-sky trick: on bright day skies it's exactly the
+        // "blown-out highlight" — suppressed there, porcelain does the job
+        const glow = new Cairo.RadialGradient(cx, cy, r * 0.5, cx, cy, r * 2.2);
+        glow.addColorStopRGBA(0, 0.86, 0.87, 0.97, 0.30 * (0.25 + 0.75 * illumOf(ph)));
+        glow.addColorStopRGBA(1, 0.86, 0.87, 0.97, 0);
+        cr.setSource(glow);
+        cr.paint();
+    }
 
     // tonight's REAL phase (moon.js) — flat lit shape, transparent shadow:
     // the one rendering that reads at 16px on the panel; on light cards a
-    // thin edge keeps the pale disc visible
-    paintMoon(cr, cx, cy, r, ph, 'icon', {outline: INK_MOON_EDGE()});
+    // dimmed porcelain face + thin edge replace white+glow, which blows out
+    paintMoon(cr, cx, cy, r, ph, 'icon',
+              {outline: INK_MOON_EDGE(),
+               face: _light ? [0.84, 0.86, 0.90] : null});
 
     // twinkling stars
     const sc = INK_STAR();
