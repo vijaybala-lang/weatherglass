@@ -87,17 +87,17 @@ time axis with the icon centred</description>
         <choice value="top"/>
         <choice value="bottom"/>
       </choices>
-      <default>'top'</default>
+      <default>'bottom'</default>
       <summary>Where the condition band rides</summary>
       <description>top = along the chart top; bottom = directly above the
-hour labels, Apple-weather style</description>
+hour labels, Apple-weather style (default)</description>
     </key>
     <key name="text-emboss" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Text and icon emboss shadows</summary>
       <description>Soft shadow (dark theme) or halo (light theme) under card
-text and the ghost buttons — helps ink survive bright skies. Turn off for
-fully flat ink.</description>
+text and the ghost buttons. Off by default: adaptive contrast-aware ink
+makes the shadows unnecessary.</description>
     </key>
     <key name="menu-style" type="s">
       <choices>

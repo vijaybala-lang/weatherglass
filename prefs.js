@@ -67,9 +67,10 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         window.set_default_size(560, 640);
 
         window.add(this._aboutPage());
-        window.add(this._legendPage());
+        window.add(this._legendPage(settings));
         window.add(this._locationPage(settings, client));
         window.add(this._displayPage(settings));
+        window.add(this._dataPage(settings));
     }
 
     /* ── location ───────────────────────────────────────────────────────── */
@@ -266,10 +267,10 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         bgGroup.add(embossRow);
         const COND = ['off', 'icons', 'pills'];
         const condRow = new Adw.ComboRow({
-            title: 'Hourly conditions',
-            subtitle: 'Off, loose icons, or grouped pills along the chart top',
+            title: 'Weather conditions',
+            subtitle: 'How hourly conditions ride the chart',
             model: new Gtk.StringList({
-                strings: ['Off', 'Icons', 'Grouped pills'],
+                strings: ['Off', 'Hourly icons', 'Grouped pills'],
             }),
         });
         const ci = COND.indexOf(settings.get_string('condition-strip'));
@@ -286,11 +287,22 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             }),
         });
         const pi = POS.indexOf(settings.get_string('condition-pos'));
-        posRow.set_selected(pi < 0 ? 0 : pi);
+        posRow.set_selected(pi < 0 ? 1 : pi);
         posRow.connect('notify::selected', () =>
-            settings.set_string('condition-pos', POS[posRow.get_selected()] ?? 'top'));
+            settings.set_string('condition-pos', POS[posRow.get_selected()] ?? 'bottom'));
         bgGroup.add(posRow);
         page.add(bgGroup);
+
+        return page;
+    }
+
+    /* ── data: provider + update rhythm ──────────────────────────────────── */
+
+    _dataPage(settings) {
+        const page = new Adw.PreferencesPage({
+            title: 'Data',
+            icon_name: 'network-wireless-symbolic',
+        });
 
         const dataGroup = new Adw.PreferencesGroup({title: 'Data source'});
         const provRow = new Adw.ComboRow({
@@ -334,30 +346,12 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         updGroup.add(windyRow);
         page.add(updGroup);
 
-        // ── animation previews ────────────────────────────────────────────
-        const previewGroup = new Adw.PreferencesGroup({
-            title: 'Preview animations',
-            description: 'Play an animation on the panel icon for ~12 seconds — ' +
-                         'handy for scenes your sky rarely shows (hail, storm, fog)',
-        });
-        for (const [scene, label] of LEGEND) {
-            const row = new Adw.ActionRow({
-                title: label,
-                activatable: true,
-            });
-            row.add_suffix(new Gtk.Image({icon_name: 'media-playback-start-symbolic'}));
-            row.connect('activated', () =>
-                settings.set_string('preview-scene', scene));
-            previewGroup.add(row);
-        }
-        page.add(previewGroup);
-
         return page;
     }
 
     /* ── legend: the menu's glyphs, live-rendered ───────────────────────── */
 
-    _legendPage() {
+    _legendPage(settings) {
         const page = new Adw.PreferencesPage({
             title: 'Legend',
             icon_name: 'view-list-symbolic',
@@ -392,6 +386,24 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         }
         sm.connect('notify::dark-mode', () => areas.forEach(a => a.queue_draw()));
         page.add(legendGroup);
+
+        // ── animation previews: same list as the legend, actionable ──────
+        const previewGroup = new Adw.PreferencesGroup({
+            title: 'Preview animations',
+            description: 'Play an animation on the panel icon for ~12 seconds — ' +
+                         'handy for scenes your sky rarely shows (hail, storm, fog)',
+        });
+        for (const [scene, label] of LEGEND) {
+            const row = new Adw.ActionRow({
+                title: label,
+                activatable: true,
+            });
+            row.add_suffix(new Gtk.Image({icon_name: 'media-playback-start-symbolic'}));
+            row.connect('activated', () =>
+                settings.set_string('preview-scene', scene));
+            previewGroup.add(row);
+        }
+        page.add(previewGroup);
         return page;
     }
 
