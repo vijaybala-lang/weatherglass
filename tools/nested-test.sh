@@ -11,9 +11,9 @@ SCHEMA=org.gnome.shell.extensions.weatherglass
 rm -rf "$H"; mkdir -p "$H/.local/share/gnome-shell"
 # real dir: our extension is symlinked in, the menu-opening test copied in
 mkdir -p "$H/.local/share/gnome-shell/extensions"
-ln -s ~/.local/share/gnome-shell/extensions/weatherglass@vbala.dev \
-      "$H/.local/share/gnome-shell/extensions/weatherglass@vbala.dev"
-cp -r "$PROJ/tools/menutest@vbala.dev" "$H/.local/share/gnome-shell/extensions/"
+ln -s ~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev \
+      "$H/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev"
+cp -r "$PROJ/tools/menutest@vijaybala.dev" "$H/.local/share/gnome-shell/extensions/"
 mkdir -p "$H/.local/share/glib-2.0/schemas"
 cp "$PROJ/schemas/"*.xml "$H/.local/share/glib-2.0/schemas/"
 glib-compile-schemas "$H/.local/share/glib-2.0/schemas"
@@ -23,7 +23,7 @@ unset WAYLAND_DISPLAY DISPLAY
 export G_MESSAGES_DEBUG=all
 
 timeout 180 dbus-run-session -- bash -c "
-  gsettings set org.gnome.shell enabled-extensions '[\"weatherglass@vbala.dev\", \"menutest@vbala.dev\"]'
+  gsettings set org.gnome.shell enabled-extensions '[\"weatherglass@vijaybala.dev\", \"menutest@vijaybala.dev\"]'
   gsettings set $SCHEMA units 'imperial'
   gsettings set $SCHEMA auto-location false
   gsettings set $SCHEMA location-latitude 47.6062
@@ -41,7 +41,7 @@ timeout 180 dbus-run-session -- bash -c "
     gsettings set $SCHEMA location-name 'San Francisco'
     sleep 10
     echo '=== scenario 3: prefs ==='
-    busctl --user call org.gnome.Shell.Extensions /org/gnome/Shell/Extensions org.gnome.Shell.Extensions OpenExtensionPrefs ssa{sv} weatherglass@vbala.dev '' 0
+    busctl --user call org.gnome.Shell.Extensions /org/gnome/Shell/Extensions org.gnome.Shell.Extensions OpenExtensionPrefs ssa{sv} weatherglass@vijaybala.dev '' 0
     sleep 6
     echo '=== scenario 4: preview-scene round trip (shell must revert key) ==='
     gsettings set $SCHEMA preview-scene 'hail'
@@ -56,25 +56,25 @@ timeout 180 dbus-run-session -- bash -c "
     gsettings set $SCHEMA menu-style 'accent'
     sleep 2
     # re-run the popup toggler so its opens/closes paint the accent bg
-    gnome-extensions disable menutest@vbala.dev
+    gnome-extensions disable menutest@vijaybala.dev
     sleep 2
-    gnome-extensions enable menutest@vbala.dev
+    gnome-extensions enable menutest@vijaybala.dev
     sleep 12
     echo '=== scenario 4b2: condition strip pills/off (grouped icons, light bg) ==='
     gsettings set $SCHEMA condition-strip 'pills'
     sleep 3
-    gnome-extensions disable menutest@vbala.dev
+    gnome-extensions disable menutest@vijaybala.dev
     sleep 2
-    gnome-extensions enable menutest@vbala.dev
+    gnome-extensions enable menutest@vijaybala.dev
     sleep 10
     gsettings set $SCHEMA condition-strip 'off'
     sleep 2
     gsettings set $SCHEMA condition-strip 'icons'
     gsettings set $SCHEMA condition-pos 'bottom'
     sleep 2
-    gnome-extensions disable menutest@vbala.dev
+    gnome-extensions disable menutest@vijaybala.dev
     sleep 2
-    gnome-extensions enable menutest@vbala.dev
+    gnome-extensions enable menutest@vijaybala.dev
     sleep 8
     gsettings set $SCHEMA condition-pos 'top'
     sleep 2
@@ -89,9 +89,9 @@ timeout 180 dbus-run-session -- bash -c "
     sleep 4
     kill -0 \$GPID 2>/dev/null || { echo 'FAIL: shell died during menu toggles'; exit 1; }
     echo '=== scenario 6: disable/enable teardown (disposed-timer regression) ==='
-    gnome-extensions disable weatherglass@vbala.dev
+    gnome-extensions disable weatherglass@vijaybala.dev
     sleep 8
-    gnome-extensions enable weatherglass@vbala.dev
+    gnome-extensions enable weatherglass@vijaybala.dev
     sleep 8
     kill -0 \$GPID 2>/dev/null || { echo 'FAIL: shell died across disable/enable'; exit 1; }
     kill \$GPID; exit 0

@@ -11,7 +11,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 export LC_ALL=C.UTF-8   # msgmerge chokes on UTF-8 msgids under a C locale
 
-POT=po/weatherglass@vbala.dev.pot
+POT=po/weatherglass@vijaybala.dev.pot
 
 xgettext -f po/POTFILES -F --language=JavaScript --from-code=UTF-8 \
     -k_ -kN_:1 --no-wrap \
@@ -23,7 +23,7 @@ while read -r lang; do
     [ -f "po/$lang.po" ] || : > "po/$lang.po"
     msgmerge --quiet --update --backup=none "po/$lang.po" "$POT"
     mkdir -p "locale/$lang/LC_MESSAGES"
-    msgfmt --check-format -o "locale/$lang/LC_MESSAGES/weatherglass@vbala.dev.mo" "po/$lang.po"
+    msgfmt --check-format -o "locale/$lang/LC_MESSAGES/weatherglass@vijaybala.dev.mo" "po/$lang.po"
     printf '%s: ' "$lang"
     msgfmt --statistics -o /dev/null "po/$lang.po" 2>&1 || true
 done < po/LINGUAS

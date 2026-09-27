@@ -21,7 +21,7 @@ export default class MenuTest extends Extension {
         this._waited = 0;
         this._probed = false;
         this._id = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
-            const b = Main.panel.statusArea['weatherglass@vbala.dev'];
+            const b = Main.panel.statusArea['weatherglass@vijaybala.dev'];
             if (!b?.menu) {
                 this._waited++;
                 if (this._waited < PATIENCE)

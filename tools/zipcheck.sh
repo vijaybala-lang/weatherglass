@@ -25,7 +25,7 @@ rm -rf "$H"; mkdir -p "$H/.local/share/gnome-shell/extensions"
 mkdir -p "$H/.local/share/glib-2.0/schemas"
 cp "$PROJ/schemas/"*.xml "$H/.local/share/glib-2.0/schemas/"
 glib-compile-schemas "$H/.local/share/glib-2.0/schemas"
-cp -r "$PROJ/tools/menutest@vbala.dev" "$H/.local/share/gnome-shell/extensions/"
+cp -r "$PROJ/tools/menutest@vijaybala.dev" "$H/.local/share/gnome-shell/extensions/"
 
 export HOME="$H" XDG_DATA_DIRS=/usr/share
 unset WAYLAND_DISPLAY DISPLAY
@@ -36,7 +36,7 @@ timeout 180 dbus-run-session -- bash -c "
   gnome-extensions install '$ZIP' || { echo 'FAIL: zip rejected on install'; exit 1; }
   [[ -f \"\$HOME/.local/share/gnome-shell/extensions/$UUID/extension.js\" ]] \
       || { echo 'FAIL: not extracted under the uuid dir'; exit 1; }
-  gsettings set org.gnome.shell enabled-extensions '[\"$UUID\", \"menutest@vbala.dev\"]'
+  gsettings set org.gnome.shell enabled-extensions '[\"$UUID\", \"menutest@vijaybala.dev\"]'
   gsettings set $SCHEMA units 'imperial'
   gsettings set $SCHEMA auto-location false
   gsettings set $SCHEMA location-latitude 47.6062

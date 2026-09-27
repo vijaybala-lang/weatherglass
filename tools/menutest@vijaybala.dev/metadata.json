@@ -1,5 +1,5 @@
 {
-  "uuid": "menutest@vbala.dev",
+  "uuid": "menutest@vijaybala.dev",
   "name": "Menu Opener (test only)",
   "description": "Repeatedly opens and closes the Animated Weather popup to smoke-test its painting path. Never ship this.",
   "shell-version": ["50"],

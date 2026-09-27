@@ -28,13 +28,13 @@ toggle Weatherglass on and you're done. From a checkout:
 ```
 
 Then tweak it from the panel icon → ⚙ (or
-`gnome-extensions prefs weatherglass@vbala.dev`).
+`gnome-extensions prefs weatherglass@vijaybala.dev`).
 
 ## Uninstall
 
 ```sh
-gnome-extensions disable weatherglass@vbala.dev
-rm -rf ~/.local/share/gnome-shell/extensions/weatherglass@vbala.dev
+gnome-extensions disable weatherglass@vijaybala.dev
+rm -rf ~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev
 ```
 
 ## Layout
