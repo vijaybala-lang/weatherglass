@@ -1,0 +1,519 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Weatherglass 5.6\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-27 09:58-0700\n"
+"Language: ur\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: extension.js:54 prefs.js:590
+msgid "Weatherglass"
+msgstr "Weatherglass"
+
+#: extension.js:146
+msgid "My location"
+msgstr "میرا مقام"
+
+#: extension.js:147
+msgid "Custom location"
+msgstr "اپنا مقام"
+
+#: extension.js:191 menu.js:286
+msgid "Fetching weather…"
+msgstr "موسم کی معلومات لی جا رہی ہیں…"
+
+#: menu.js:34
+msgid "Temperature"
+msgstr "درجہ حرارت"
+
+#: menu.js:35
+msgid "Precipitation"
+msgstr "برسات"
+
+#: menu.js:36
+msgid "Wind"
+msgstr "ہوا"
+
+#: menu.js:321 menu.js:403 menu.js:407
+msgid "Weather"
+msgstr "موسم"
+
+#: menu.js:338
+msgid "Refresh now"
+msgstr "ابھی تازہ کریں"
+
+#: menu.js:343
+msgid "Preferences"
+msgstr "ترجیحات"
+
+#: menu.js:359
+msgid "Show"
+msgstr "دکھائیں"
+
+#: menu.js:359
+msgid "chart"
+msgstr "چارٹ"
+
+#: menu.js:408
+msgid "Could not load the forecast"
+msgstr "پیش گوئی لوڈ نہیں ہو سکی"
+
+#: menu.js:543
+msgid "Refresh forecast — updated"
+msgstr "پیش گوئی تازہ — اپ ڈیٹ ہو گئی"
+
+#: menu.js:604
+msgid "Now"
+msgstr "اب"
+
+#: menu.js:713
+msgid "Today"
+msgstr "آج"
+
+#: prefs.js:87
+msgid "Location"
+msgstr "مقام"
+
+#: prefs.js:92
+msgid "Automatic"
+msgstr "خودکار"
+
+#: prefs.js:93
+msgid "Coordinates are detected from your public IP address"
+msgstr "مختصات آپ کے عوامی IP پتے سے معلوم کیے جاتے ہیں"
+
+#: prefs.js:96
+msgid "Detect location automatically"
+msgstr "مقام خودکار طور پر معلوم کریں"
+
+#: prefs.js:104
+msgid "Search a city"
+msgstr "شہر تلاش کریں"
+
+#: prefs.js:106
+msgid "City name — press Enter to search"
+msgstr "شہر کا نام — تلاش کے لیے Enter دبائیں"
+
+#: prefs.js:111
+msgid "Results"
+msgstr "نتائج"
+
+#: prefs.js:147
+msgid "No matches"
+msgstr "کوئی مطابقت نہیں"
+
+#: prefs.js:173
+msgid "Manual"
+msgstr "دستی"
+
+#: prefs.js:174
+msgid "Saved when you press Enter in a field"
+msgstr "فیلڈ میں Enter دبانے پر محفوظ ہو جاتا ہے"
+
+#: prefs.js:177
+msgid "Latitude"
+msgstr "عرضِ بلد"
+
+#: prefs.js:178
+msgid "Longitude"
+msgstr "طولِ بلد"
+
+#: prefs.js:179
+msgid "Display name"
+msgstr "نمائشی نام"
+
+#: prefs.js:221
+msgid "Display"
+msgstr "نمائش"
+
+#: prefs.js:225
+msgid "Units"
+msgstr "اکائیاں"
+
+#: prefs.js:227
+msgid "Measurement system"
+msgstr "پیمائشی نظام"
+
+#: prefs.js:229
+msgid "Imperial (°F, mph)"
+msgstr "امپیریل (°F، میل/گھنٹہ)"
+
+#: prefs.js:229
+msgid "Metric (°C, km/h)"
+msgstr "میطری (°C، کلومیٹر/گھنٹہ)"
+
+#: prefs.js:238
+msgid "Panel indicator"
+msgstr "پینل کا اشاریہ"
+
+#: prefs.js:239
+msgid "Show animated icon"
+msgstr "متحرک علامت دکھائیں"
+
+#: prefs.js:240
+msgid "Show temperature"
+msgstr "درجہ حرارت دکھائیں"
+
+#: prefs.js:242
+msgid "Animate the icon"
+msgstr "علامت کو متحرک کریں"
+
+#: prefs.js:243
+msgid "Turn off to save a little battery"
+msgstr "تھوڑی بیٹری بچانے کے لیے بند کریں"
+
+#: prefs.js:253
+msgid "Menu background"
+msgstr "فہرست کا پس منظر"
+
+#: prefs.js:255
+msgid "Background style"
+msgstr "پس منظر کا انداز"
+
+#: prefs.js:256
+msgid "How the dropdown fills itself behind the forecast"
+msgstr "ڈراپ ڈاؤن پیش گوئی کے پیچھے کیسے بھرتا ہے"
+
+#: prefs.js:259
+msgid "Animated sky (translucent)"
+msgstr "متحرک آسمان (نیم شفاف)"
+
+#: prefs.js:260
+msgid "Solid (sky dimmed under a wash)"
+msgstr "ٹھوس (آسمان رنگ کی تہہ میں مدھم)"
+
+#: prefs.js:261
+msgid "Theme background, accent charts"
+msgstr "تھیم کا پس منظر، نمایاں رنگ کے چارٹ"
+
+#: prefs.js:270
+msgid "Text emboss"
+msgstr "متن کا ابھار"
+
+#: prefs.js:271
+msgid "Soft shadow under card text and icons over the sky"
+msgstr "آسمان پر کارڈ کے متن اور علامتوں کے نرم سائے"
+
+#: prefs.js:277
+msgid "Weather conditions"
+msgstr "موسمی حالات"
+
+#: prefs.js:278
+msgid "How hourly conditions ride the chart"
+msgstr "گھنٹہ وار حالات چارٹ پر کیسے نظر آتے ہیں"
+
+#: prefs.js:280
+msgid "Grouped pills"
+msgstr "گروپ شدہ پیلز"
+
+#: prefs.js:280
+msgid "Hourly icons"
+msgstr "گھنٹہ وار علامتیں"
+
+#: prefs.js:280
+msgid "Off"
+msgstr "بند"
+
+#: prefs.js:290
+msgid "Condition band position"
+msgstr "حالات کی پٹی کی جگہ"
+
+#: prefs.js:291
+msgid "Along the chart top, or above the hour labels"
+msgstr "چارٹ کے اوپری کنارے پر، یا گھنٹوں کی لیبلوں کے اوپر"
+
+#: prefs.js:293
+msgid "Above hours"
+msgstr "گھنٹوں کے اوپر"
+
+#: prefs.js:293
+msgid "Chart top"
+msgstr "چارٹ کے بالا"
+
+#: prefs.js:310
+msgid "Data"
+msgstr "ڈیٹا"
+
+#: prefs.js:314
+msgid "Data source"
+msgstr "ڈیٹا کا ذریعہ"
+
+#: prefs.js:316
+msgid "Weather provider"
+msgstr "موسم کا فراہم کنندہ"
+
+#: prefs.js:317
+msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
+msgstr "سب بغیر کلید · MET Norway ڈیٹا CC BY-SA 4.0 کے تحت"
+
+#: prefs.js:320
+msgid "Open-Meteo (default)"
+msgstr "Open-Meteo (طے شدہ)"
+
+#: prefs.js:321
+msgid "MET Norway (api.met.no)"
+msgstr "MET Norway (api.met.no)"
+
+#: prefs.js:322
+msgid "NOAA NWS (US locations only)"
+msgstr "NOAA NWS (صرف امریکہ کے مقامات)"
+
+#: prefs.js:338
+msgid "Forecast model"
+msgstr "پیش گوئی کا ماڈل"
+
+#: prefs.js:339
+msgid ""
+"Open-Meteo only · out to a week models disagree — if the weekend looks off, "
+"try another"
+msgstr ""
+"صرف Open-Meteo · ایک ہفتے تک ماڈلز میں اختلاف ہے — اگر ویک اینڈ عجیب لگے تو "
+"دوسرا ماڈل آزمائیں"
+
+#: prefs.js:342
+msgid "Best match (Open-Meteo regional pick; US → GFS)"
+msgstr "بہترین مطابقت (Open-Meteo کا علاقائی انتخاب؛ امریکہ ← GFS)"
+
+#: prefs.js:343
+msgid "ECMWF IFS (recommended)"
+msgstr "ECMWF IFS (تجویز کردہ)"
+
+#: prefs.js:344
+msgid "DWD ICON (shorter range)"
+msgstr "DWD ICON (چھوٹے عرصے تک)"
+
+#: prefs.js:345
+msgid "NOAA GFS"
+msgstr "NOAA GFS"
+
+#: prefs.js:361
+msgid "Updates"
+msgstr "اپ ڈیٹس"
+
+#: prefs.js:363
+msgid "Refresh interval (minutes)"
+msgstr "تازگی کا وقفہ (منٹ)"
+
+#: prefs.js:372
+msgid "Wind animation threshold (km/h)"
+msgstr "ہوا کی اینیمیشن کی حد (کلومیٹر/گھنٹہ)"
+
+#: prefs.js:373
+msgid "Breezier days swap the icon to the wind animation"
+msgstr "زیادہ ہوا والے دنوں میں علامت ہوا کی اینیمیشن میں بدل جاتی ہے"
+
+#: prefs.js:391
+msgid "Preview"
+msgstr "جھلک"
+
+#: prefs.js:438
+msgid "Preview scene"
+msgstr "منظر کی جھلک"
+
+#: prefs.js:439
+msgid "Loops right here for ~12 s — your real panel stays put"
+msgstr "یہاں تقریباً 12 سیکنڈ لوپ ہوتا ہے — آپ کا اصل پینل ویسا ہی رہتا ہے"
+
+#: prefs.js:471
+msgid "Scene"
+msgstr "منظر"
+
+#: prefs.js:546
+msgid "Panel preview"
+msgstr "پینل کی جھلک"
+
+#: prefs.js:547
+msgid ""
+"How the panel button looks for this scene — mock temperature, real icon "
+"animation"
+msgstr ""
+"اس منظر کے لیے پینل بٹن کیسا دکھتا ہے — فرضی درجہ حرارت، علامت کی اصل حرکت"
+
+#: prefs.js:553
+msgid "Menu backdrop preview"
+msgstr "فہرست کے پس منظر کی جھلک"
+
+#: prefs.js:554
+msgid ""
+"Your menu's current sky, live — pick a condition above to animate it here"
+msgstr ""
+"آپ کی فہرست کا موجودہ آسمان، براہ راست — اسے یہاں متحرک کرنے کے لیے اوپر "
+"کوئی حالت چنیں"
+
+#: prefs.js:585
+msgid "About"
+msgstr "تعارف"
+
+#: prefs.js:592
+msgid "Version"
+msgstr "ورژن"
+
+#: prefs.js:596
+msgid "Free and open source"
+msgstr "مفت اور اوپن سورس"
+
+#: prefs.js:597
+msgid "No ads, no accounts, no data collection — the sky should just work"
+msgstr "نہ اشتہارات، نہ اکاؤنٹ، نہ ڈیٹا کی جمع — آسمان کو بس چلنا چاہیے"
+
+#: prefs.js:602
+msgid "Support the development"
+msgstr "ترقی میں تعاون کریں"
+
+#: prefs.js:603
+msgid ""
+"Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
+"the pixels falling."
+msgstr ""
+"Weatherglass ہمیشہ مفت رہے گا۔ اگر یہ آپ کے ڈیسک ٹاپ کو خوبصورت بناتا ہے تو "
+"ایک کافی پکسلز کی بارش جاری رکھے گی۔"
+
+#: prefs.js:606
+msgid "Buy me a coffee"
+msgstr "میرے لیے کافی خریدیں"
+
+#: weather.js:18
+msgid "Clear sky"
+msgstr "کھلا آسمان"
+
+#: weather.js:19
+msgid "Mainly clear"
+msgstr "زیادہ تر کھلا"
+
+#: weather.js:20
+msgid "Partly cloudy"
+msgstr "جزوی ابر آلود"
+
+#: weather.js:21
+msgid "Overcast"
+msgstr "مکمل ابر آلود"
+
+#: weather.js:22 weather.js:72
+msgid "Fog"
+msgstr "دھند"
+
+#: weather.js:23
+msgid "Rime fog"
+msgstr "منجمد دھند"
+
+#: weather.js:24
+msgid "Light drizzle"
+msgstr "ہلکی بوندا باندی"
+
+#: weather.js:25
+msgid "Drizzle"
+msgstr "بوندا باندی"
+
+#: weather.js:26
+msgid "Dense drizzle"
+msgstr "گھنی بوندا باندی"
+
+#: weather.js:27 weather.js:28
+msgid "Freezing drizzle"
+msgstr "منجمد بوندا باندی"
+
+#: weather.js:29
+msgid "Light rain"
+msgstr "ہلکی بارش"
+
+#: weather.js:30
+msgid "Rain"
+msgstr "بارش"
+
+#: weather.js:31
+msgid "Heavy rain"
+msgstr "تیز بارش"
+
+#: weather.js:32 weather.js:33
+msgid "Freezing rain"
+msgstr "منجمد بارش"
+
+#: weather.js:34
+msgid "Light snow"
+msgstr "ہلکی برفباری"
+
+#: weather.js:35
+msgid "Snow"
+msgstr "برفباری"
+
+#: weather.js:36
+msgid "Heavy snow"
+msgstr "تیز برفباری"
+
+#: weather.js:37
+msgid "Snow grains"
+msgstr "برف کے دانے"
+
+#: weather.js:38
+msgid "Light showers"
+msgstr "ہلکی ٹپ ٹپ"
+
+#: weather.js:39
+msgid "Showers"
+msgstr "ٹپ ٹپ"
+
+#: weather.js:40
+msgid "Violent showers"
+msgstr "شدید ٹپ ٹپ"
+
+#: weather.js:41
+msgid "Snow showers"
+msgstr "برف کی ٹپ ٹپ"
+
+#: weather.js:42
+msgid "Heavy snow showers"
+msgstr "تیز برف کی ٹپ ٹپ"
+
+#: weather.js:43 weather.js:68
+msgid "Thunderstorm"
+msgstr "گرج چمک"
+
+#: weather.js:44 weather.js:45 weather.js:66
+msgid "Thunderstorm, hail"
+msgstr "گرج چمک اور اولائیں"
+
+#: weather.js:49
+msgid "Unknown"
+msgstr "نامعلوم"
+
+#: weather.js:100
+msgid "Mon"
+msgstr "پیر"
+
+#: weather.js:100
+msgid "Sun"
+msgstr "اتوار"
+
+#: weather.js:100
+msgid "Tue"
+msgstr "منگل"
+
+#: weather.js:100
+msgid "Wed"
+msgstr "بدھ"
+
+#: weather.js:101
+msgid "Fri"
+msgstr "جمعہ"
+
+#: weather.js:101
+msgid "Sat"
+msgstr "ہفتہ"
+
+#: weather.js:101
+msgid "Thu"
+msgstr "جمعرات"
+
+#: weather.js:597
+msgid "NOAA NWS covers US locations only — pick another provider"
+msgstr "NOAA NWS صرف امریکہ کے مقامات کو ڈھانپتا ہے — دوسرا فراہم کنندہ چنیں"
+
+#: weather.js:602
+msgid "NOAA NWS returned no forecast for this location"
+msgstr "NOAA NWS نے اس مقام کے لیے کوئی پیش گوئی نہیں دی"
+
+#: weather.js:747
+msgid "IP geolocation failed"
+msgstr "IP سے مقام کی نشاندہی ناکام رہی"
