@@ -17,6 +17,36 @@ import {drawText} from './chart.js';
 import {initI18n, _, N_} from './i18n.js';
 
 const UNITS = ['metric', 'imperial'];
+const HOURS = ['auto', '12h', '24h'];
+
+/* 12/24-hour resolution, mirroring extension.js: explicit wins, else GNOME's
+ * clock-format, else the locale's hour12 convention. */
+let iface24 = null;
+const sysClock24 = () => {
+    try {
+        iface24 ??= new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
+        const cf = iface24.get_string('clock-format');
+        return cf ? cf.includes('24') : null;
+    } catch {
+        return null;   // exotic distro or pre-48 GNOME without the key
+    }
+};
+const hour24For = settings => {
+    const mode = settings.get_string('hour-format');
+    if (mode === '24h')
+        return true;
+    if (mode === '12h')
+        return false;
+    const sys = sysClock24();
+    if (sys !== null)
+        return sys;
+    try {
+        return new Intl.DateTimeFormat(undefined, {hour: 'numeric'})
+            .resolvedOptions().hour12 === false;
+    } catch {
+        return false;
+    }
+};
 const STYLES = ['animated', 'solid', 'accent'];
 
 /* Every scene the menu can draw — drives the Preview page's scene
@@ -234,6 +264,17 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         unitsRow.connect('notify::selected', () =>
             settings.set_string('units', UNITS[unitsRow.get_selected()] ?? 'metric'));
         unitsGroup.add(unitsRow);
+        const hoursRow = new Adw.ComboRow({
+            title: _('Hour format'),
+            subtitle: _('Clock style for chart hours and the preview clock'),
+            model: new Gtk.StringList({
+                strings: [_('Automatic (system)'), _('12-hour'), _('24-hour')],
+            }),
+        });
+        hoursRow.set_selected(HOURS.indexOf(settings.get_string('hour-format')));
+        hoursRow.connect('notify::selected', () =>
+            settings.set_string('hour-format', HOURS[hoursRow.get_selected()] ?? 'auto'));
+        unitsGroup.add(hoursRow);
         page.add(unitsGroup);
 
         const lookGroup = new Adw.PreferencesGroup({title: _('Panel indicator')});
@@ -518,8 +559,10 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
             // live clock, GNOME-style: "Sep 27  10:39 AM"
             const now = GLib.DateTime.new_now_local();
-            const clock = now.format('%b %e').replace(/\s+/g, ' ')
-                + '  ' + now.format('%I:%M %p').replace(/^0/, '');
+            const clock = now.format('%b %e').replace(/\s+/g, ' ') + '  ' +
+                (hour24For(settings)
+                    ? now.format('%H:%M')
+                    : now.format('%I:%M %p').replace(/^0/, ''));
             drawText(cr, clock, rtl ? w - 16 : 16, cy + 4,
                      {size: 11, bold: true, rgba: txt,
                       anchor: rtl ? 'end' : 'start'});
@@ -611,6 +654,9 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                 x += it.w;
             });
         });
+
+        // the mock bar's clock follows the format combo without a reopen
+        settings.connect('changed::hour-format', () => barArea.queue_draw());
 
         // ── live dropdown backdrop ───────────────────────────────────────
         const skyArea = new Gtk.DrawingArea();

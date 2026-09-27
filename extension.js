@@ -103,6 +103,8 @@ class WeatherIndicator extends PanelMenu.Button {
                     this._panel.setDark(this._dark);  // _syncPanelLook replays it
                 } else if (key === 'accent-color')
                     this._panel.setAccent(this._accentColor());
+                else if (key === 'clock-format')
+                    this._panel.setHourFormat(this._resolveHour24());
             });
         } catch {
             this._iface = null;   // exotic distro without the interface schema
@@ -352,6 +354,9 @@ class WeatherIndicator extends PanelMenu.Button {
         case 'text-emboss':
             this._panel.setEmboss(this._settings.get_boolean('text-emboss'));
             break;
+        case 'hour-format':
+            this._panel.setHourFormat(this._resolveHour24());
+            break;
         case 'preview-scene':
             this._previewScene();
             break;
@@ -419,10 +424,35 @@ class WeatherIndicator extends PanelMenu.Button {
         this._section.actor.add_child(this._panel.actor);
     }
 
+    /** 'auto' follows GNOME's clock-format (locale hour12 as fallback);
+     *  forcing 12h/24h bypasses both. */
+    _resolveHour24() {
+        const mode = this._settings.get_string('hour-format');
+        if (mode === '24h')
+            return true;
+        if (mode === '12h')
+            return false;
+        if (this._iface) {
+            try {
+                if (this._iface.get_string('clock-format'))
+                    return this._iface.get_string('clock-format').includes('24');
+            } catch {
+                // older GNOME: enum may be missing — fall through
+            }
+        }
+        try {
+            return new Intl.DateTimeFormat(undefined, {hour: 'numeric'})
+                .resolvedOptions().hour12 === false;
+        } catch {
+            return false;
+        }
+    }
+
     /** (re)apply all OS/settings look state a fresh panel needs */
     _syncPanelLook() {
         this._panel.setDark(this._dark);
         this._panel.setAccent(this._accent);
+        this._panel.setHourFormat(this._resolveHour24());
         this._panel.setStyle(this._settings.get_string('menu-style'));
         this._panel.setConditions(this._settings.get_string('condition-strip'));
         this._panel.setCondPos(this._settings.get_string('condition-pos'));

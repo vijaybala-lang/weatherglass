@@ -115,6 +115,18 @@ time axis with the icon centred</description>
       <description>top = along the chart top; bottom = directly above the
 hour labels, Apple-weather style (default)</description>
     </key>
+    <key name="hour-format" type="s">
+      <choices>
+        <choice value="auto"/>
+        <choice value="12h"/>
+        <choice value="24h"/>
+      </choices>
+      <default>'auto'</default>
+      <summary>Clock style for hour labels</summary>
+      <description>auto follows the GNOME clock-format setting, falling back
+to the locale convention; 12h shows 1AM…12PM; 24h shows 0…23. Applies to the
+chart's hour labels, the city clock in the header, and the preview clock.</description>
+    </key>
     <key name="text-emboss" type="b">
       <default>false</default>
       <summary>Text and icon emboss shadows</summary>

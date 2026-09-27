@@ -22,7 +22,7 @@ export HOME="$H" XDG_DATA_DIRS=/usr/share
 unset WAYLAND_DISPLAY DISPLAY
 export G_MESSAGES_DEBUG=all
 
-timeout 120 dbus-run-session -- bash -c "
+timeout 180 dbus-run-session -- bash -c "
   gsettings set org.gnome.shell enabled-extensions '[\"animated-weather@vbala.dev\", \"menutest@vbala.dev\"]'
   gsettings set $SCHEMA units 'imperial'
   gsettings set $SCHEMA auto-location false

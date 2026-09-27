@@ -88,9 +88,11 @@ function spacer() {
     return new St.Widget({x_expand: true, x_align: FILL});
 }
 
-/** '2026-09-25T15:00' → '3PM' for the chart axis. */
-function hourLabel(iso) {
+/** '2026-09-25T15:00' → '3PM' (or '15') for the chart axis. */
+function hourLabel(iso, h24) {
     const h = +iso.slice(11, 13);
+    if (h24)
+        return `${h}`;
     return `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? 'AM' : 'PM'}`;
 }
 
@@ -242,6 +244,7 @@ export class ForecastPanel {
         this._desc = '';
         this._fmtValue = null;
         this._fmtHour = null;
+        this._hour24 = false;          // chart hours + city clock (setter drives)
 
         this._sky = createSky();
         // radius 18 matches the shell's polished-popup corner radius
@@ -451,6 +454,15 @@ export class ForecastPanel {
         this._chart.queue_repaint();
     }
 
+    /** 12-hour AM/PM or 24-hour labels on the chart axis + city clock */
+    setHourFormat(h24) {
+        if (this._hour24 === !!h24)
+            return;
+        this._hour24 = !!h24;
+        this._chart.queue_repaint();
+        this._tickClock();
+    }
+
     /** flat ink: drops the CSS emboss shadows (text + ghost buttons) */
     setEmboss(on) {
         this._emboss = on !== false;
@@ -624,7 +636,7 @@ export class ForecastPanel {
                 ? (i, v) => `${Math.round(v)}%`
                 : (i, v) => fmtWind(v, units);
         const times = s.hourly ? idx.map(i => s.hourly.time[i]) : [];
-        this._fmtHour = i => hourLabel(times[i] ?? 'T00');
+        this._fmtHour = i => hourLabel(times[i] ?? 'T00', this._hour24);
         // hourly condition-icon strip (the chart only draws it if the panel
         // setting is on). Day/night comes from the provider's own is_day per
         // hour when present — real sunset, not a wall-clock guess.
@@ -921,9 +933,9 @@ export class ForecastPanel {
         const ms = this._cityMs +
                    Math.round((GLib.get_monotonic_time() - this._cityBaseUs) / 1000);
         const d = new Date(ms);   // parsed+rendered in machine TZ: cancels out
-        const h12 = d.getHours() % 12 || 12;
-        this._clockLbl.set_text(
-            `${h12}:${String(d.getMinutes()).padStart(2, '0')} ` +
-            `${d.getHours() < 12 ? 'AM' : 'PM'}`);
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        this._clockLbl.set_text(this._hour24
+            ? `${d.getHours()}:${mm}`
+            : `${d.getHours() % 12 || 12}:${mm} ${d.getHours() < 12 ? 'AM' : 'PM'}`);
     }
 }
