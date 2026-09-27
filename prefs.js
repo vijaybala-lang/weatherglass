@@ -11,6 +11,7 @@ import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/ex
 import {WeatherClient} from './weather.js';
 import {paintWeather} from './painter.js';
 import {createSky, paintSky} from './sky.js';
+import {drawText} from './chart.js';
 
 const UNITS = ['metric', 'imperial'];
 const STYLES = ['animated', 'solid', 'accent'];
@@ -351,7 +352,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         return page;
     }
 
-    /* ── preview: pick a scene, watch it on sky + panel icon ─────────────── */
+    /* ── preview: dropdown + fake panel + live sky, all self-contained ──── */
 
     _previewPage(settings) {
         const page = new Adw.PreferencesPage({
@@ -359,72 +360,55 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             icon_name: 'media-playback-start-symbolic',
         });
         const sm = Adw.StyleManager.get_default();
-        const areas = [];
 
-        /* Live dropdown backdrop: the real sky engine at ~30 fps while a
-         * preview runs. The shell resets 'preview-scene' to '' after 12 s,
-         * which stops us right when the panel icon goes back too. */
-        const skyArea = new Gtk.DrawingArea();
-        skyArea.set_size_request(-1, 190);
-        let skyPool = null, timerId = 0, t0 = 0;
-        // idle backdrop = the sky the menu is painting RIGHT NOW
-        let skyScene = settings.get_string('live-scene') || 'partly';
-        let skyNight = settings.get_boolean('live-night');
-        const stopSky = () => {
-            if (timerId) {
-                GLib.source_remove(timerId);
-                timerId = 0;
-            }
+        /* Everything animates together on one clock while a preview runs,
+         * then eases back to the menu's REAL current sky after 12 s — all
+         * inside this window: the actual panel icon is never touched. */
+        let previewScene = null, timerId = 0, stopId = 0, t0 = 0;
+        let skyPool = null;
+        const liveScene = () =>
+            settings.get_string('live-scene') || 'partly';
+        const liveNight = () => settings.get_boolean('live-night');
+        const sceneNow = () => previewScene ?? liveScene();
+        const nightNow = () =>
+            previewScene ? previewScene === 'moon' : liveNight();
+        const tick = () => {
+            skyArea.queue_draw();
+            barArea.queue_draw();
+            glyph.queue_draw();
+            return GLib.SOURCE_CONTINUE;
         };
-        const showSky = scene => {
-            skyScene = scene;
-            skyNight = scene === 'moon';
+        const startPrev = scene => {
+            previewScene = scene;
             t0 = GLib.get_monotonic_time();
             if (!timerId)
-                timerId = GLib.timeout_add(GLib.PRIORITY_LOW, 33,
-                    () => { skyArea.queue_draw(); return GLib.SOURCE_CONTINUE; });
-            skyArea.queue_draw();
-        };
-        skyArea.set_draw_func((a, cr, w, h) => {
-            skyPool ??= createSky();
-            const t = timerId ? (GLib.get_monotonic_time() - t0) / 1e6 : 4.1;
-            paintSky(cr, {
-                w, h, time: t,
-                scene: skyScene,
-                night: skyNight,
-                sky: skyPool,
-                radius: 14,
-                scrim: sm.dark ? null : [1, 1, 1, 0.42],
+                timerId = GLib.timeout_add(GLib.PRIORITY_LOW, 33, tick);
+            if (stopId)
+                GLib.source_remove(stopId);
+            stopId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 12, () => {
+                stopId = 0;
+                previewScene = null;
+                GLib.source_remove(timerId);
+                timerId = 0;
+                tick();
             });
-        });
-        // tab switches / window close must not leave the timeout spinning
-        skyArea.connect('unrealize', stopSky);
-        skyArea.connect('realize', () => {
-            const cur = settings.get_string('preview-scene');
-            if (cur)
-                showSky(cur);
-        });
-        /* Idle follows the menu: clear night shows tonight's real moon,
-         * cloudy night the moon behind clouds, and so on. */
-        const liveSwap = () => {
-            if (timerId)
-                return;                 // a running preview outranks live state
-            skyScene = settings.get_string('live-scene') || 'partly';
-            skyNight = settings.get_boolean('live-night');
-            skyArea.queue_draw();
+            tick();
         };
-        settings.connect('changed::live-scene', liveSwap);
-        settings.connect('changed::live-night', liveSwap);
-        areas.push(skyArea);        // theme flips repaint it too
+        const stopAll = () => {
+            previewScene = null;
+            if (timerId)
+                GLib.source_remove(timerId);
+            timerId = stopId = 0;
+        };
 
-        // one dropdown instead of eleven rows: pick a scene, everything
-        // (glyph, panel icon, sky) answers to the pick — no scrolling
+        // ── scene dropdown: one row replaces the old 11-row list ─────────
         const sceneRow = new Adw.ComboRow({
             title: 'Preview scene',
-            subtitle: 'Plays on the panel icon for ~12 s — the sky animates too',
+            subtitle: 'Loops right here for ~12 s — your real panel stays put',
             model: new Gtk.StringList({strings: LEGEND.map(([, l]) => l)}),
         });
-        // the picked scene's glyph, painted by the real menu painter
+        // the picked scene's glyph, painted by the real menu painter —
+        // rides in the row and animates with the preview
         const glyph = new Gtk.DrawingArea();
         glyph.set_size_request(30, 30);
         glyph.set_valign(Gtk.Align.CENTER);
@@ -433,53 +417,134 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             cr.save();
             const s = Math.min(w, h) / 24;
             cr.scale(s, s);
-            paintWeather(cr, {scene, time: 4.1,
+            paintWeather(cr, {scene,
+                              time: timerId
+                                  ? (GLib.get_monotonic_time() - t0) / 1e6
+                                  : 4.1,
                               dark: sm.dark,
                               night: scene === 'moon',
                               intensity: LEGEND_INT[scene] ?? 0});
             cr.restore();
         });
-        areas.push(glyph);
         sceneRow.add_prefix(glyph);
         let armed = false;          // wiring-time set_selected must not preview
         sceneRow.connect('notify::selected', () => {
             if (!armed)
                 return;
             const [scene] = LEGEND[sceneRow.get_selected()] ?? LEGEND[2];
-            glyph.queue_draw();
-            settings.set_string('preview-scene', scene);
-            showSky(scene);         // same pick twice: set_string stays silent
+            startPrev(scene);
         });
-        settings.connect('changed::preview-scene', () => {
-            const v = settings.get_string('preview-scene');
-            if (v) {
-                const i = LEGEND.findIndex(([s]) => s === v);
-                if (i >= 0 && i !== sceneRow.get_selected())
-                    sceneRow.set_selected(i);   // external picks retarget too
-                if (v !== skyScene)
-                    showSky(v);
-            } else {
-                stopSky();
-                liveSwap();         // back to the menu's actual sky
-            }
-        });
-        const initial = LEGEND.findIndex(([s]) =>
-            s === settings.get_string('preview-scene'));
-        sceneRow.set_selected(initial >= 0 ? initial : 2);   // idle: 'partly'
+        sceneRow.set_selected(2);   // neutral opener: 'partly cloudy'
         armed = true;
-
         const sceneGroup = new Adw.PreferencesGroup({title: 'Scene'});
         sceneGroup.add(sceneRow);
         page.add(sceneGroup);
 
+        /* Fake top bar: a mock of the real panel button — bar strip,
+         * button pill, the same icon widget animation.js drives, and the
+         * temperature suffix only if show-temperature is on. The number
+         * is a prop (scale follows the units key); the icon is the truth. */
+        const barArea = new Gtk.DrawingArea();
+        barArea.set_size_request(-1, 44);
+        barArea.set_draw_func((a, cr, w, h) => {
+            const dark = sm.dark;
+            cr.setSourceRGBA(...(dark ? [0.10, 0.10, 0.12]
+                : [0.91, 0.91, 0.93]));
+            cr.rectangle(0, 0, w, h);
+            cr.fill();
+            const scene = sceneNow();
+            const tempTxt = settings.get_boolean('show-temperature')
+                ? (settings.get_string('units') === 'metric'
+                    ? '20°' : '68°') : '';
+            const showIcon = settings.get_boolean('show-icon');
+            const iW = showIcon ? 24 : 0;
+            const gap = tempTxt && iW ? 6 : 0;
+            const tW = tempTxt ? 30 : 0;
+            const bw = 14 + iW + gap + tW, bh = 28;
+            const bx = (w - bw) / 2, by = (h - bh) / 2, r = 8;
+            cr.setSourceRGBA(...(dark ? [1, 1, 1, 0.12] : [0, 0, 0, 0.10]));
+            cr.newPath();
+            cr.arc(bx + bw - r, by + r, r, -Math.PI / 2, 0);
+            cr.arc(bx + bw - r, by + bh - r, r, 0, Math.PI / 2);
+            cr.arc(bx + r, by + bh - r, r, Math.PI / 2, Math.PI);
+            cr.arc(bx + r, by + r, r, Math.PI, 1.5 * Math.PI);
+            cr.closePath();
+            cr.fill();
+            let x = bx + 7;
+            if (showIcon) {
+                cr.save();
+                cr.translate(x, by + (bh - 24) / 2);
+                cr.scale(1, 1);
+                paintWeather(cr, {
+                    scene,
+                    time: timerId
+                        ? (GLib.get_monotonic_time() - t0) / 1e6 : 4.1,
+                    dark,
+                    night: nightNow(),
+                    windy: ['sun', 'moon', 'partly', 'cloud', 'fog', 'wind']
+                        .includes(scene),
+                    windKmh: 34,
+                    intensity: previewScene ? 7 : (LEGEND_INT[scene] ?? 0),
+                });
+                cr.restore();
+                x += iW + gap;
+            }
+            if (tempTxt)
+                drawText(cr, tempTxt, x + tW / 2, by + bh / 2 + 5,
+                         {size: 11, rgba: [...(dark ? [1, 1, 1] : [0.1, 0.1, 0.12]), 1]});
+        });
+
+        // ── live dropdown backdrop ───────────────────────────────────────
+        const skyArea = new Gtk.DrawingArea();
+        skyArea.set_size_request(-1, 170);
+        skyArea.set_draw_func((a, cr, w, h) => {
+            skyPool ??= createSky();
+            const t = timerId ? (GLib.get_monotonic_time() - t0) / 1e6 : 4.1;
+            paintSky(cr, {
+                w, h, time: t,
+                scene: sceneNow(),
+                night: nightNow(),
+                sky: skyPool,
+                radius: 14,
+                scrim: sm.dark ? null : [1, 1, 1, 0.42],
+            });
+        });
+
+        const panelGroup = new Adw.PreferencesGroup({
+            title: 'Panel preview',
+            description: 'How the panel button looks for this scene — mock ' +
+                         'temperature, real icon animation',
+        });
+        panelGroup.add(barArea);
+        page.add(panelGroup);
+
         const skyGroup = new Adw.PreferencesGroup({
             title: 'Menu backdrop preview',
             description: 'Your menu\'s current sky, live — pick a condition ' +
-                         'above to animate it here and on the panel icon',
+                         'above to animate it here',
         });
         skyGroup.add(skyArea);
         page.add(skyGroup);
-        sm.connect('notify::dark-mode', () => areas.forEach(a => a.queue_draw()));
+
+        // the tab is the preview's stage: hide it, stop the clock; come
+        // back with a preview still running, it picks up again
+        barArea.connect('unrealize', stopAll);
+        barArea.connect('realize', () => {
+            if (previewScene && !timerId)
+                timerId = GLib.timeout_add(GLib.PRIORITY_LOW, 33, tick);
+        });
+        // the menu's real sky changed while idle: reflect it
+        const liveSync = () => {
+            skyArea.queue_draw();
+            barArea.queue_draw();
+        };
+        settings.connect('changed::live-scene', liveSync);
+        settings.connect('changed::live-night', liveSync);
+        sm.connect('notify::dark-mode', () => {
+            skyArea.queue_draw();
+            barArea.queue_draw();
+            glyph.queue_draw();
+        });
         return page;
     }
 

@@ -95,8 +95,8 @@ function textPx(cr, text, size, bold) {
     return Array.isArray(px) ? [...px, layout] : [px.width, px.height, layout];
 }
 
-function drawText(cr, text, x, y, {size = 10, bold = false, rgba = [1, 1, 1, 1],
-                                   anchor = 'middle'} = {}) {
+export function drawText(cr, text, x, y, {size = 10, bold = false, rgba = [1, 1, 1, 1],
+                                          anchor = 'middle'} = {}) {
     const [pw, ph, layout] = textPx(cr, text, size, bold);
     const tx = anchor === 'start' ? x : anchor === 'end' ? x - pw : x - pw / 2;
     cr.setSourceRGBA(...rgba);
