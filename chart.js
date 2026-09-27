@@ -80,13 +80,12 @@ const deepen = base => {
         : mx === base[1] ? 60 * ((base[2] - base[0]) / d + 2)
         : 60 * ((base[0] - base[1]) / d + 4);
     const s = Math.min(1, (mx === 0 ? 0 : d / mx) * 1.3 + 0.12);
-    /* Warm hues swing 18° toward red. Not taste: green dominates
-     * luminance, so the more red an ink is, the BRIGHTER it may stay at
-     * the same contrast ratio — vermilion clears the floor at chili
-     * brightness where pure amber could only reach mud. */
+    /* Warm hues lean a gentle 6° toward red — enough to claw back a
+     * little luminance headroom, nowhere near leaving orange behind.
+     * Brightness comes from the relaxed floor in lineInk instead. */
     const warm = h > 15 && h < 75;
     if (warm)
-        h -= 18;
+        h -= 6;
     const toRgb = v => {
         const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
         return [[c, x, 0], [x, c, 0], [0, c, x],
@@ -101,14 +100,14 @@ export const lineInk = (base, bgs) => {
         return base;
     const worst = c => Math.min(...bgs.map(bg => ratio(c, bg)));
     const {toRgb, warm} = deepen(base);
-    /* WCAG's 3:1 floor stays for the cool inks; warm ink drops to 2.5
-     * — red carries far less luminance per unit brightness, so holding
-     * 3:1 forces amber back into brick. On a 3 px stroke 2.5:1 is
-     * still unmistakable against moving sky, and it's what lets the
-     * temp line look LIT rather than leathery over a bright day. The
-     * gate shares the floor: warm ink clears 2.5 keeps its TRUE base
-     * colour (mid-tone skies no longer dull it at all). */
-    const floor = warm ? 2.5 : 3.05;
+    /* Cool inks (azure, mint) hold WCAG's 3:1 — their blue/green
+     * channels carry real luminance, so they never have to choose.
+     * Warm ink gets a 2.2 floor instead: bright ORANGE over bright blue
+     * sky cannot also be 3:1 (orange darkens to brown, period — three
+     * wants what physics won't give), so identity wins and the floor
+     * relaxes. On a 3 px stroke, 2.2:1 reads clean; mid-tone skies
+     * clear the gate and keep the TRUE base amber untouched. */
+    const floor = warm ? 2.1 : 3.05;
     if (worst(base) >= floor)
         return base;
     let v = Math.max(...base);
