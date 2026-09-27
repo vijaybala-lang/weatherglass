@@ -66,9 +66,10 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         const client = new WeatherClient();
         window.set_default_size(560, 640);
 
+        window.add(this._aboutPage());
+        window.add(this._legendPage());
         window.add(this._locationPage(settings, client));
         window.add(this._displayPage(settings));
-        window.add(this._aboutPage());
     }
 
     /* ── location ───────────────────────────────────────────────────────── */
@@ -354,17 +355,15 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         return page;
     }
 
-    /* ── about: icon legend, credits, coffee ─────────────────────────────── */
+    /* ── legend: the menu's glyphs, live-rendered ───────────────────────── */
 
-    _aboutPage() {
+    _legendPage() {
         const page = new Adw.PreferencesPage({
-            title: 'About',
-            icon_name: 'help-about-symbolic',
+            title: 'Legend',
+            icon_name: 'view-list-symbolic',
         });
-
-        // ── live icon legend: the SAME cairo painter the menu uses, drawn
-        // straight into each row (no PNGs to go stale, palette follows the
-        // window's light/dark state) ──
+        // the SAME cairo painter the menu uses (no PNGs to go stale; the
+        // palette follows the window's light/dark state)
         const legendGroup = new Adw.PreferencesGroup({
             title: 'Condition icons',
             description: 'Every glyph the menu and panel draw — the night ' +
@@ -393,6 +392,16 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         }
         sm.connect('notify::dark-mode', () => areas.forEach(a => a.queue_draw()));
         page.add(legendGroup);
+        return page;
+    }
+
+    /* ── about: what it is, coffee ───────────────────────────────────────── */
+
+    _aboutPage() {
+        const page = new Adw.PreferencesPage({
+            title: 'About',
+            icon_name: 'help-about-symbolic',
+        });
 
         const md = this.metadata;
         const infoGroup = new Adw.PreferencesGroup({title: 'Weatherglass'});

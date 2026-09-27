@@ -21,7 +21,7 @@ import St from 'gi://St';
 
 import {WeatherIcon} from './animation.js';
 import {paintSky, createSky, sampleSky} from './sky.js';
-import {paintChart, ease, lerp} from './chart.js';
+import {paintChart, ease, lerp, contrastSafe, lumOf, pickInk} from './chart.js';
 import {sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn} from './weather.js';
 
 const FRAME_MS = 50;         // sky: 20 fps is plenty
@@ -45,33 +45,19 @@ const THEME = {
 
 const FILL = Clutter.ActorAlign.FILL;
 
-/* WCAG-flavored contrast for accent-colored text over an estimated
- * background: keep the accent while it clears ~3:1, then slide it toward
- * the high-contrast end (dark ink on light skies, white on dark) in fine
- * steps until it reads. Used for the chart's "now" value label. */
-const _lumOf = c => {
-    const f = v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-    return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+/* (contrast referee lives in chart.js: contrastSafe / ratio / pickInk) */
+
+/* theme glass the selected tile / active tab wears over the sky */
+const compGlass = (bg, dark) => {
+    const g = dark ? [16 / 255, 20 / 255, 28 / 255, 0.45] : [1, 1, 1, 0.68];
+    return bg.map((v, k) => v * (1 - g[3]) + g[k] * g[3]);
 };
-const _ratio = (a, b) => {
-    const la = _lumOf(a), lb = _lumOf(b);
-    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+const inkCss = (ink, a = 1) => {
+    const c = v => Math.round(v * 255);
+    return a < 1
+        ? `color: rgba(${c(ink[0])}, ${c(ink[1])}, ${c(ink[2])}, ${a});`
+        : `color: rgb(${c(ink[0])}, ${c(ink[1])}, ${c(ink[2])});`;
 };
-function contrastSafe(accent, bg) {
-    if (_ratio(accent, bg) >= 3.1)
-        return accent;
-    // pick whichever ink wins on contrast (dark is better down to L≈0.18,
-    // white above) — a luminance threshold misclassifies mid-bright skies
-    const darkT = [0.09, 0.11, 0.15], lightT = [1, 1, 1];
-    const target = _ratio(darkT, bg) >= _ratio(lightT, bg) ? darkT : lightT;
-    let best = accent;
-    for (let t = 0.1; t <= 1.001; t += 0.1) {
-        best = accent.map((v, i) => v + (target[i] - v) * t);
-        if (_ratio(best, bg) >= 3.1)
-            return best;
-    }
-    return best;
-}
 
 function label(text, cls) {
     return new St.Label({text, style_class: cls, y_align: Clutter.ActorAlign.CENTER});
@@ -198,12 +184,25 @@ class ChartArea extends St.DrawingArea {
             // it a contrast-safe variant of the accent (no-op when the
             // accent already clears ~3:1 against the composited backdrop)
             nowLabel: contrastSafe(accent, p._bgUnderChart()),
+            // smart text ink: labels sample the composited sky at their OWN
+            // y — hour text over a bright day-sky foot goes dark, night text
+            // stays white. accent style's flat card needs none of this.
+            bgFn: p._style === 'accent' ? null : (yPx => {
+                const top = this.get_transformed_position()[1];
+                const cardY = p._content.get_transformed_position()[1];
+                const cardH = p._content.get_size()[1] || 1;
+                return p._bgAt(Math.min(1, Math.max(0,
+                    (top + yPx - cardY) / cardH)));
+            }),
             // strip icons get a hairline silhouette ring when the backdrop
             // under the chart is mid/bright (overcast days swallow flat icons)
             iconOutline: p._iconOutline(),
             fontSize: w < 480 ? 8 : 8.5,
         });
         cr.$dispose();
+        // the card's free-standing labels (header, tabs) sample the same way
+        // — run here so it happens whenever the menu is actually visible
+        p._applyTextInk();
     }
 });
 
@@ -362,13 +361,15 @@ export class ForecastPanel {
     }
 
     _iconButton(iconName, name, cb, size = 16) {
+        const icon = new St.Icon({icon_name: iconName, icon_size: size,
+                                  y_align: Clutter.ActorAlign.CENTER});
         const btn = new St.Button({
             style_class: 'aw-icon-btn',
             can_focus: true,
             y_align: Clutter.ActorAlign.CENTER,
-            child: new St.Icon({icon_name: iconName, icon_size: size,
-                                y_align: Clutter.ActorAlign.CENTER}),
+            child: icon,
         });
+        (this._ghostIcons ??= []).push(icon);   // _applyTextInk samples these
         btn.set_accessible_name(name);   // no tooltips in GNOME 50; name for AT
         btn.connect('clicked', () => cb());
         return btn;
@@ -468,7 +469,7 @@ export class ForecastPanel {
      *  clouds) gets a dark hairline silhouette. Dark night skies need none:
      *  the painter already gives them bright icon palettes. */
     _iconOutline() {
-        return _lumOf(this._bgUnderChart()) >= 0.38
+        return lumOf(this._bgUnderChart()) >= 0.38
             ? [0.04, 0.05, 0.09, 0.62] : null;
     }
 
@@ -656,6 +657,7 @@ export class ForecastPanel {
         const {daily, units} = this._state;
         this._daysGrid.destroy_all_children();
         this._dayBtns = [];
+        this._dayLoLbls = [];
         this._tileIcons = [];
         const n = Math.min(daily.length, 8);
         for (let r = 0; r < n; r += 4) {
@@ -685,8 +687,10 @@ export class ForecastPanel {
                                              x_align: Clutter.ActorAlign.CENTER});
                 hl.add_child(new St.Label({text: fmtTemp(d.tmax, units),
                                            style_class: 'aw-day-hi'}));
-                hl.add_child(new St.Label({text: fmtTemp(d.tmin, units),
-                                           style_class: 'aw-day-lo'}));
+                const loLbl = new St.Label({text: fmtTemp(d.tmin, units),
+                                            style_class: 'aw-day-lo'});
+                this._dayLoLbls.push(loLbl);   // smart ink dims it slightly
+                hl.add_child(loLbl);
                 col.add_child(hl);
                 btn.set_child(col);
                 btn.connect('clicked', () => this._selectDay(i));
@@ -713,22 +717,80 @@ export class ForecastPanel {
      *  now-label. The selected tile answers to sky + its tinted glass on
      *  top. 'accent' keeps the plain theme ink (inline style cleared). */
     _applyTileInk() {
-        const INK_DARK = [0.063, 0.094, 0.137];   // #101823
-        const INK_LIGHT = [1, 1, 1];
         for (const [i, btn] of (this._dayBtns ?? []).entries()) {
+            const lo = this._dayLoLbls?.[i];
             if (this._style === 'accent' || !this._state) {
                 btn.set_style('');
+                lo?.set_style('');
                 continue;
             }
             let bg = this._bgAt(0.9);              // tiles live at card foot
-            if (i === this._day) {                 // selected: + tile glass
-                const g = this._dark ? [16 / 255, 20 / 255, 28 / 255, 0.45]
-                                     : [1, 1, 1, 0.68];
-                bg = bg.map((v, k) => v * (1 - g[3]) + g[k] * g[3]);
+            if (i === this._day)                   // selected: + tile glass
+                bg = compGlass(bg, this._dark);
+            const ink = pickInk(bg);
+            btn.set_style(inkCss(ink));
+            // lows: same ink, lighter touch (theme CSS handled this before
+            // inline ink took over — .82 mirrors the old .8/.85 pair)
+            lo?.set_style(inkCss(ink, 0.82));
+        }
+    }
+
+    /** One-pass smart ink for every free-standing label/button in the card:
+     *  big temp, condition line, city, clock, ghost icons, metric tabs.
+     *  Each actor samples the composited backdrop at its own center; the
+     *  active tab answers to sky + pill glass like the selected tile.
+     *  Runs from the chart repaint (menu is visible, transforms valid). */
+    _applyTextInk() {
+        const plain = this._style === 'accent' || !this._state;
+        const targets = [this._tempLbl, this._descLbl, this._cityLbl,
+                         this._clockLbl];
+        for (const a of targets) {
+            if (!a)
+                continue;
+            const css = plain ? '' : inkCss(pickInk(this._bgAt(this._fOf(a))));
+            if (a._awInk !== css) {
+                a._awInk = css;
+                a.set_style(css);
             }
-            btn.set_style(
-                _ratio(INK_DARK, bg) >= _ratio(INK_LIGHT, bg)
-                    ? 'color: rgb(16, 24, 35);' : 'color: #ffffff;');
+        }
+        // ghost icons: color + a shadow that matches the ink direction
+        for (const ic of this._ghostIcons ?? []) {
+            let full = plain ? '' : inkCss(pickInk(this._bgAt(this._fOf(ic))));
+            if (full)
+                full += full.includes('16, 24, 35')
+                    ? ' icon-shadow: 0 1px 3px rgba(255,255,255,0.7);'
+                    : ' icon-shadow: 0 1px 4px rgba(0,0,10,0.7);';
+            if (ic._awInk !== full) {
+                ic._awInk = full;
+                ic.set_style(full);
+            }
+        }
+        // metric tabs: per-button ink; the active pill samples sky + glass
+        for (const [key, btn] of Object.entries(this._tabBtns ?? {})) {
+            let css = '';
+            if (!plain) {
+                let bg = this._bgAt(this._fOf(btn));
+                if (key === this._metric)
+                    bg = compGlass(bg, this._dark);
+                css = inkCss(pickInk(bg));
+            }
+            if (btn._awInk !== css) {
+                btn._awInk = css;
+                btn.set_style(css);
+            }
+        }
+    }
+
+    /** Actor-center y mapped to the card's sky-gradient fraction [0..1]. */
+    _fOf(actor) {
+        try {
+            const cardY = this._content.get_transformed_position()[1];
+            const cardH = this._content.get_size()[1] || 1;
+            const [ay] = actor.get_transformed_position();
+            const [, ah] = actor.get_size();
+            return Math.min(1, Math.max(0, (ay + ah / 2 - cardY) / cardH));
+        } catch {
+            return 0.5;
         }
     }
 

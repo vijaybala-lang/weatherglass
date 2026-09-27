@@ -28,6 +28,38 @@ function call(obj, camel, snake, ...args) {
     return fn.call(obj, ...args);
 }
 
+/* ── shared WCAG referee: menu text, tabs, tiles and chart labels all
+ *   pick their ink with these. 'dark wins down to L≈0.18, white above'
+ *   is decided on RATIO, not a luminance threshold (thresholds
+ *   misclassify mid-bright skies). Exported for menu.js. ── */
+export const lumOf = c => {
+    const f = v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+};
+export const ratio = (a, b) => {
+    const la = lumOf(a), lb = lumOf(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+};
+export function contrastSafe(accent, bg) {
+    if (ratio(accent, bg) >= 3.1)
+        return accent;
+    // pick whichever ink wins on contrast (dark is better down to L≈0.18,
+    // white above) — a luminance threshold misclassifies mid-bright skies
+    const darkT = [0.09, 0.11, 0.15], lightT = [1, 1, 1];
+    const target = ratio(darkT, bg) >= ratio(lightT, bg) ? darkT : lightT;
+    let best = accent;
+    for (let t = 0.1; t <= 1.001; t += 0.1) {
+        best = accent.map((v, i) => v + (target[i] - v) * t);
+        if (ratio(best, bg) >= 3.1)
+            return best;
+    }
+    return best;
+}
+export const INK_DARK = [0.063, 0.094, 0.137];    // #101823
+export const INK_LIGHT = [1, 1, 1];
+export const pickInk = bg =>
+    ratio(INK_DARK, bg) >= ratio(INK_LIGHT, bg) ? INK_DARK : INK_LIGHT;
+
 /** [w, h] pixel extents of a label in the chart font (same font set-up as
  *  drawText, so icon placement can centre on printed text, not data points). */
 function textPx(cr, text, size, bold) {
@@ -124,6 +156,11 @@ export function paintChart(cr, opts) {
 
     const [acR, acG, acB] = accent;
     const INK = opts.ink ?? [0.96, 0.97, 0.98];   // dark theme: pass dark ink
+    // optional menu-supplied sampler: chart-local yPx -> composited backdrop
+    // colour. When present every label picks its ink per position, so hour
+    // text over a bright day sky goes dark and night text stays white.
+    const bgFn = typeof opts.bgFn === 'function' ? opts.bgFn : null;
+    const inkAt = yPx => (bgFn ? pickInk(bgFn(yPx)) : INK);
 
     // y window with the mockup's asymmetric padding (headroom for labels);
     // an enabled condition strip asks for noticeably more sky above the line
@@ -272,7 +309,7 @@ export function paintChart(cr, opts) {
                                   Y(values[i]) - 12 + 1, a);
         if (placed)
             drawText(cr, placed.txt, lx, placed.y,
-                     {size: FS, bold: true, rgba: [...INK, 0.62], anchor: a});
+                     {size: FS, bold: true, rgba: [...inkAt(placed.y), 0.62], anchor: a});
     }
     // hour labels stay flat on their baseline — a clash drops the label
     // instead of staggering the row
@@ -285,7 +322,7 @@ export function paintChart(cr, opts) {
         const b = boxAt(t, lx, h - 5, a, false);
         if (!hits(b, used)) {
             used.push(b);
-            drawText(cr, t, lx, h - 5, {size: FS, rgba: [...INK, 0.62], anchor: a});
+            drawText(cr, t, lx, h - 5, {size: FS, rgba: [...inkAt(h - 5), 0.62], anchor: a});
         }
     }
 
@@ -500,11 +537,13 @@ export function paintChart(cr, opts) {
 
     // accent label riding the now marker, above the veil — drawn at the
     // exact slot reserved in the label pass (curve-cleared baseline, inward
-    // flow near the edges) so nothing ever lands under it
+    // flow near the edges) so nothing ever lands under it. With a bgFn the
+    // accent is re-safened against the backdrop at ITS y, not the chart mid.
     if (nowPlace)
         drawText(cr, nowPlace.txt, nowPlace.lx, nowPlace.y,
                  {size: FS, bold: true,
-                  rgba: [...(opts.nowLabel ?? [acR, acG, acB]), 1],
+                  rgba: [...(bgFn ? contrastSafe(accent, bgFn(nowPlace.y))
+                                  : (opts.nowLabel ?? [acR, acG, acB])), 1],
                   anchor: nowPlace.a});
 }
 
