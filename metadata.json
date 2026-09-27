@@ -1,9 +1,9 @@
 {
   "uuid": "animated-weather@vbala.dev",
-  "name": "Animated Weather",
-  "description": "Animated panel weather: live sun, rain, wind and snow animations beside the current temperature. Click for today's forecast and the next 6 days.",
+  "name": "Weatherglass",
+  "description": "A little window onto the sky: live sun, drifting clouds, rain and snow in your panel, plus a forecast card you'll actually want to open — animated menu sky, hourly chart and eight days of tiles.",
   "shell-version": ["50"],
   "settings-schema": "org.gnome.shell.extensions.animated-weather",
-  "url": "",
+  "url": "https://buymeacoffee.com/vbala",
   "version": 1
 }

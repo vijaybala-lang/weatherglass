@@ -50,7 +50,7 @@ const PANEL_ICON_SIZE = 20;
 const WeatherIndicator = GObject.registerClass(
 class WeatherIndicator extends PanelMenu.Button {
     _init(extension) {
-        super._init(0.0, 'Animated Weather', false);
+        super._init(0.0, 'Weatherglass', false);
 
         this._ext = extension;
         this._settings = extension.getSettings();
@@ -200,7 +200,7 @@ class WeatherIndicator extends PanelMenu.Button {
         } catch (e) {
             if (this._dead)
                 return;
-            logError(e, 'Animated Weather');
+            logError(e, 'Weatherglass');
             this._icon.setScene('error');
             if (!this._data) {
                 this._tempLbl.set_text('');
@@ -448,10 +448,10 @@ class WeatherIndicator extends PanelMenu.Button {
 
 export default class AnimatedWeatherExtension extends Extension {
     enable() {
-        // build stamp: journalctl --user -o cat | grep "Animated Weather v"
+        // build stamp: journalctl --user -o cat | grep "Weatherglass v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
-        console.log('Animated Weather v5.6 (provider adapters: Open-Meteo + MET Norway)');
+        console.log('Weatherglass v5.6 (provider adapters: Open-Meteo + MET Norway)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }

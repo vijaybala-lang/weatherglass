@@ -313,6 +313,7 @@ export class ForecastPanel {
         // collided with the time text and the moon behind it
         const infoRow = row('aw-info-row');
         infoRow.x_align = Clutter.ActorAlign.END;
+        this._clockRow = infoRow;         // _syncHeader hides it for future days
         this._clockLbl = label('', 'aw-clockline');
         infoRow.add_child(this._clockLbl);
         right.add_child(infoRow);
@@ -563,6 +564,9 @@ export class ForecastPanel {
             this._descLbl.set_text(
                 `${dayName(d.date)}: ${sceneFor(d.code, true).desc}`);
         }
+        // the city clock describes NOW only — no point showing it while a
+        // future day is selected
+        this._clockRow.visible = this._day === 0;
     }
 
     _chartValues() {

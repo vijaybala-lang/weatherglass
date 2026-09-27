@@ -8,9 +8,41 @@ import GObject from 'gi://GObject';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import {WeatherClient} from './weather.js';
+import {paintWeather} from './painter.js';
 
 const UNITS = ['metric', 'imperial'];
 const STYLES = ['animated', 'solid', 'accent'];
+
+/* Every scene the menu can draw — shared by the Display page's preview
+ * rows and the About page's icon legend. */
+const LEGEND = [
+    ['sun',    'Clear sky'],
+    ['moon',   'Clear night'],
+    ['partly', 'Partly cloudy'],
+    ['cloud',  'Overcast'],
+    ['fog',    'Fog'],
+    ['wind',   'Windy'],
+    ['rain',   'Rain'],
+    ['sleet',  'Sleet / freezing rain'],
+    ['snow',   'Snow'],
+    ['hail',   'Hail'],
+    ['storm',  'Thunderstorm'],
+];
+const LEGEND_INT = {rain: 6, sleet: 5, snow: 4, hail: 5, storm: 7};
+
+const COFFEE_URL = 'https://buymeacoffee.com/vbala';
+
+function openUri(parent, uri) {
+    try {
+        const l = new Gtk.UriLauncher({uri});
+        const p = l.launch(parent, null);
+        p?.catch?.(() => {});            // fire-and-forget; GTK logs failures
+    } catch (e) {
+        try {
+            Gio.AppInfo.launch_default_for_uri(uri, null);
+        } catch (e2) { /* nothing usable to open URLs with */ }
+    }
+}
 
 function locationLabel(r) {
     return [r.name, r.admin, r.country].filter(Boolean).join(', ');
@@ -36,6 +68,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
         window.add(this._locationPage(settings, client));
         window.add(this._displayPage(settings));
+        window.add(this._aboutPage());
     }
 
     /* ── location ───────────────────────────────────────────────────────── */
@@ -118,7 +151,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                 resultsGroup.visible = true;
             }).catch(e => {
                 searchEntry.add_css_class('error');
-                logError(e, 'Animated Weather prefs geocode');
+                logError(e, 'Weatherglass prefs geocode');
             });
         });
         searchEntry.connect('changed', () => searchEntry.remove_css_class('error'));
@@ -306,20 +339,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             description: 'Play an animation on the panel icon for ~12 seconds — ' +
                          'handy for scenes your sky rarely shows (hail, storm, fog)',
         });
-        const SCENE_PREVIEWS = [
-            ['sun',    'Clear sky'],
-            ['moon',   'Clear night'],
-            ['partly', 'Partly cloudy'],
-            ['cloud',  'Overcast'],
-            ['fog',    'Fog'],
-            ['wind',   'Windy'],
-            ['rain',   'Rain'],
-            ['sleet',  'Sleet / freezing rain'],
-            ['snow',   'Snow'],
-            ['hail',   'Hail'],
-            ['storm',  'Thunderstorm'],
-        ];
-        for (const [scene, label] of SCENE_PREVIEWS) {
+        for (const [scene, label] of LEGEND) {
             const row = new Adw.ActionRow({
                 title: label,
                 activatable: true,
@@ -330,6 +350,78 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             previewGroup.add(row);
         }
         page.add(previewGroup);
+
+        return page;
+    }
+
+    /* ── about: icon legend, credits, coffee ─────────────────────────────── */
+
+    _aboutPage() {
+        const page = new Adw.PreferencesPage({
+            title: 'About',
+            icon_name: 'help-about-symbolic',
+        });
+
+        // ── live icon legend: the SAME cairo painter the menu uses, drawn
+        // straight into each row (no PNGs to go stale, palette follows the
+        // window's light/dark state) ──
+        const legendGroup = new Adw.PreferencesGroup({
+            title: 'Condition icons',
+            description: 'Every glyph the menu and panel draw — the night ' +
+                         'moon even shows tonight\'s real phase',
+        });
+        const sm = Adw.StyleManager.get_default();
+        const areas = [];
+        for (const [i, [scene, label]] of LEGEND.entries()) {
+            const row = new Adw.ActionRow({title: label});
+            const da = new Gtk.DrawingArea();
+            da.set_size_request(30, 30);
+            da.set_draw_func((area, cr, w, h) => {
+                cr.save();
+                const s = Math.min(w, h) / 24;
+                cr.scale(s, s);
+                paintWeather(cr, {scene, time: 4.1 + i * 0.2,
+                                  dark: sm.dark,
+                                  night: scene === 'moon',
+                                  intensity: LEGEND_INT[scene] ?? 0});
+                cr.restore();
+            });
+            areas.push(da);
+            row.add_prefix(da);
+            row.set_activatable(false);
+            legendGroup.add(row);
+        }
+        sm.connect('notify::dark-mode', () => areas.forEach(a => a.queue_draw()));
+        page.add(legendGroup);
+
+        const md = this.metadata;
+        const infoGroup = new Adw.PreferencesGroup({title: 'Weatherglass'});
+        infoGroup.add(new Adw.ActionRow({
+            title: 'Version',
+            subtitle: String(md?.version ?? 'dev'),
+        }));
+        infoGroup.add(new Adw.ActionRow({
+            title: 'Free and open source',
+            subtitle: 'No ads, no accounts, no data collection — the sky ' +
+                      'should just work',
+        }));
+        page.add(infoGroup);
+
+        const loveGroup = new Adw.PreferencesGroup({
+            title: 'Support the development',
+            description: 'Weatherglass is free forever. If it makes your ' +
+                         'desktop nicer, a coffee keeps the pixels falling.',
+        });
+        const coffeeRow = new Adw.ActionRow({
+            title: 'Buy me a coffee',
+            subtitle: COFFEE_URL,
+            activatable: true,
+        });
+        coffeeRow.add_suffix(new Gtk.Image({icon_name: 'emblem-symbolic-link'}));
+        coffeeRow.connect('activated', () => openUri(
+            coffeeRow.get_root() ?? null, COFFEE_URL));
+        loveGroup.add(coffeeRow);
+        page.add(loveGroup);
 
         return page;
     }
