@@ -342,7 +342,7 @@ export function paintChart(cr, opts) {
     // clashes is dropping every other hour (seen live as a broken axis).
     if (opts.labelEvery === undefined && fmtHour && n > 8) {
         let widest = 0;
-        for (let i = off0; i < n; i += 2) {
+        for (let i = off0; i < n; i++) {
             const t = fmtHour(i);
             if (t)
                 widest = Math.max(widest, textPx(cr, t, TS, false, HW)[0]);
@@ -350,8 +350,11 @@ export function paintChart(cr, opts) {
                 widest = Math.max(widest,
                     textPx(cr, fmtValue(i, values[i]), TS, false, VW)[0]);
         }
+        // margin: 3 px box padding + ~6 px for the edge-anchor nudge —
+        // wind labels ('7 mph' = 28 px) otherwise squeak past a fit at the
+        // 3-h tick and the referee drops labels once the stagger runs out
         for (const c of [3, 4, 6, 8, 12])
-            if (c >= EVERY && span0 * c >= widest + 5) {
+            if (c >= EVERY && span0 * c >= widest + 9) {
                 EVERY = c;
                 break;
             }
@@ -377,7 +380,7 @@ export function paintChart(cr, opts) {
         const [tw, th] = textPx(cr, txt, TS, false, VW);
         const x0 = a === 'start' ? lx : a === 'end' ? lx - tw : lx - tw / 2;
         const floor = curveMin(x0, x0 + tw) - LINE_W / 2 - 2;
-        for (const yy of [Math.min(y0, floor), y0 - 15, y0 + 15]) {
+        for (const yy of [Math.min(y0, floor), y0 - 15, y0 + 15, y0 - 29]) {
             const yc = Math.min(yy, floor);
             const b = boxOf(x0, tw, th, yc);
             if (b[2] < 2 || hits(b, used))
