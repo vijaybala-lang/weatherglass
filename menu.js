@@ -409,7 +409,8 @@ export class ForecastPanel {
         this._skyArea.queue_repaint();
         this._chart.queue_repaint();   // pill tint follows the style
         this._chart.queue_repaint();   // chart accent follows the style
-    }
+        this._applyTileInk();          // accent style hands the tiles back
+    }                                       // to plain theme ink
 
     /** [r, g, b] in 0..1 — OS accent colour: charts in the 'accent' style. */
     setAccent(rgb) {
@@ -443,16 +444,22 @@ export class ForecastPanel {
      * flat theme bg; animated/solid = sky gradient sampled mid-chart, then
      * the active scrim composited over it. Contrast reference for accent-
      * colored text (the "now" label). */
-    _bgUnderChart() {
+    /** Composited backdrop (sky + scrim, or the flat accent card) at height
+     *  fraction f — what's actually painted behind content at that y. */
+    _bgAt(f) {
         if (this._style === 'accent')
             return this._dark ? [0.185, 0.185, 0.19] : [0.96, 0.96, 0.97];
-        const c = sampleSky(this._skyOpts.scene, this._skyOpts.night, 0.62);
+        const c = sampleSky(this._skyOpts.scene, this._skyOpts.night, f);
         const t = this._theme();
         const scrim = this._style === 'solid' ? t.scrimSolid : t.scrim;
         if (!scrim)
             return c;
         const a = scrim[3];
         return c.map((v, i) => v * (1 - a) + scrim[i] * a);
+    }
+
+    _bgUnderChart() {
+        return this._bgAt(0.62);
     }
 
     /** Ring colour for the chart's condition icons, chosen against the real
@@ -545,7 +552,8 @@ export class ForecastPanel {
         this._syncHeader();
         this._morphTo(this._chartValues());
         this._updateSky();
-        this._chart.queue_repaint();
+        this._applyTileInk();          // day switch moves the glass tile and
+        this._chart.queue_repaint();   // can swap the sampled sky
     }
 
     /** Big temp + condition text follow the selected day tile: Today shows
@@ -696,6 +704,32 @@ export class ForecastPanel {
             else
                 btn.remove_style_class_name('aw-day-sel');
         });
+        this._applyTileInk();
+    }
+
+    /** Sky (animated/solid) styles only: the tiles sit over whatever the
+     *  sky painter is actually drawing there, so each tile picks black or
+     *  white by WCAG ratio against the sampled pixels — same referee as the
+     *  now-label. The selected tile answers to sky + its tinted glass on
+     *  top. 'accent' keeps the plain theme ink (inline style cleared). */
+    _applyTileInk() {
+        const INK_DARK = [0.063, 0.094, 0.137];   // #101823
+        const INK_LIGHT = [1, 1, 1];
+        for (const [i, btn] of (this._dayBtns ?? []).entries()) {
+            if (this._style === 'accent' || !this._state) {
+                btn.set_style('');
+                continue;
+            }
+            let bg = this._bgAt(0.9);              // tiles live at card foot
+            if (i === this._day) {                 // selected: + tile glass
+                const g = this._dark ? [16 / 255, 20 / 255, 28 / 255, 0.45]
+                                     : [1, 1, 1, 0.68];
+                bg = bg.map((v, k) => v * (1 - g[3]) + g[k] * g[3]);
+            }
+            btn.set_style(
+                _ratio(INK_DARK, bg) >= _ratio(INK_LIGHT, bg)
+                    ? 'color: rgb(16, 24, 35);' : 'color: #ffffff;');
+        }
     }
 
     /* ── misc ───────────────────────────────────────────────────────────── */
@@ -714,6 +748,7 @@ export class ForecastPanel {
         for (const icon of this._tileIcons ?? [])
             icon.setDark(this._dark);
         this._placeholderIcon?.setDark(this._dark);
+        this._applyTileInk();          // selected-tile glass differs per theme
         this._skyArea.queue_repaint();
         this._chart.queue_repaint();
     }
