@@ -130,11 +130,14 @@ function textPx(cr, text, size, bold, weight = 0) {
 
 export function drawText(cr, text, x, y, {size = 10, bold = false, weight = 0,
                                           rgba = [1, 1, 1, 1],
-                                          anchor = 'middle'} = {}) {
+                                          anchor = 'middle',
+                                          vcenter = null} = {}) {
     const [pw, ph, layout] = textPx(cr, text, size, bold, weight);
     const tx = anchor === 'start' ? x : anchor === 'end' ? x - pw : x - pw / 2;
     cr.setSourceRGBA(...rgba);
-    cr.moveTo(tx, y - ph);
+    // y is the baseline; vcenter instead centres the line box on cy — the
+    // panel-mock bar hangs its words on the same middle as the glyphs
+    cr.moveTo(tx, vcenter === null ? y - ph : vcenter - ph / 2);
     (PangoCairo.showLayout ?? PangoCairo.show_layout)(cr, layout);
 }
 

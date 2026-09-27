@@ -576,8 +576,8 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                 (hour24For(settings)
                     ? now.format('%H:%M')
                     : now.format('%I:%M %p').replace(/^0/, ''));
-            drawText(cr, clock, rtl ? w - 16 : 16, cy + 4,
-                     {size: 11, bold: true, rgba: txt,
+            drawText(cr, clock, rtl ? w - 16 : 16, cy,
+                     {size: 11, bold: true, rgba: txt, vcenter: cy,
                       anchor: rtl ? 'end' : 'start'});
 
             // status cluster, logical order: our indicator, then system trio
@@ -606,13 +606,14 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                 }});
             if (tempTxt)
                 items.push({w: 34, draw: x =>
-                    drawText(cr, tempTxt, x + 17, cy + 4, {size: 11, rgba: txt})});
+                    drawText(cr, tempTxt, x + 17, cy,
+                             {size: 11, rgba: txt, vcenter: cy})});
             items.push({w: 18, gapBefore: true, draw: x => {      // wifi
                 cr.setSourceRGBA(...txt);
                 cr.newPath();          // drawText left a pen position; arc()
                                        // would stroke a connector from it
                 cr.setLineWidth(1.4);
-                const wx = x + 9, wy = cy + 5;
+                const wx = x + 9, wy = cy + 3;
                 cr.arc(wx, wy, 3.4, Math.PI * 1.25, Math.PI * 1.75);
                 cr.stroke();
                 cr.arc(wx, wy, 6.4, Math.PI * 1.25, Math.PI * 1.75);
@@ -650,8 +651,8 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                 cr.fill();
                 cr.rectangle(bx + 2.4, by + 2.4, (bw - 4.8) * 0.72, bh - 4.8);
                 cr.fill();
-                drawText(cr, '72%', bx + bw + 6, cy + 4,
-                         {size: 11, rgba: txt, anchor: 'start'});
+                drawText(cr, '72%', bx + bw + 6, cy,
+                         {size: 11, rgba: txt, anchor: 'start', vcenter: cy});
             }});
 
             const GAP = 8, BIGGAP = 16;
