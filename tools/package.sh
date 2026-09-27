@@ -62,5 +62,13 @@ echo "==> zipping"
 (cd dist && zip -qr "$UUID.zip" "$UUID")
 FILES=$(unzip -l "dist/$UUID.zip" | tail -1 | awk '{print $2}')
 echo "done: dist/$UUID.zip  ($(du -h "dist/$UUID.zip" | cut -f1), $FILES files)"
+
+if [[ "${1:-}" != "--fast" ]]; then
+    # the zip itself must install + boot, not just the directory tree
+    echo "==> zipcheck (gnome-extensions install + headless boot + paint)"
+    tools/zipcheck.sh
+else
+    echo "==> zipcheck skipped (--fast) — run tools/zipcheck.sh before uploading"
+fi
 echo "upload this at https://extensions.gnome.org/upload/ — the site asks"
 echo "for name/description/screenshots; keep metadata version bumped per upload."
