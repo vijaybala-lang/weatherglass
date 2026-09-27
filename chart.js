@@ -57,8 +57,14 @@ export function contrastSafe(accent, bg) {
 }
 export const INK_DARK = [0.063, 0.094, 0.137];    // #101823
 export const INK_LIGHT = [1, 1, 1];
+/* Black-vs-white over sky tones. WCAG is symmetric but perception is not:
+ * halation smears thin dark glyphs over mid-tone color, so dark ink must
+ * win the ratio by a clear ~35% margin before it beats white. That moves
+ * the flip from L~0.20 to L~0.24+: header text over a mid-blue day sky and
+ * the dark-glass selected tile read white (right), while chart labels
+ * (L~0.33+) and day tiles (L~0.45+) keep their dark ink. */
 export const pickInk = bg =>
-    ratio(INK_DARK, bg) >= ratio(INK_LIGHT, bg) ? INK_DARK : INK_LIGHT;
+    ratio(INK_DARK, bg) >= ratio(INK_LIGHT, bg) * 1.35 ? INK_DARK : INK_LIGHT;
 
 /** [w, h] pixel extents of a label in the chart font (same font set-up as
  *  drawText, so icon placement can centre on printed text, not data points). */
