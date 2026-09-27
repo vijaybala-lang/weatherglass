@@ -3,18 +3,20 @@
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import {WeatherClient} from './weather.js';
 import {paintWeather} from './painter.js';
+import {createSky, paintSky} from './sky.js';
 
 const UNITS = ['metric', 'imperial'];
 const STYLES = ['animated', 'solid', 'accent'];
 
-/* Every scene the menu can draw — shared by the Display page's preview
- * rows and the About page's icon legend. */
+/* Every scene the menu can draw — drives the Legend page's clickable
+ * rows and the live sky preview under them. */
 const LEGEND = [
     ['sun',    'Clear sky'],
     ['moon',   'Clear night'],
@@ -349,7 +351,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         return page;
     }
 
-    /* ── legend: the menu's glyphs, live-rendered ───────────────────────── */
+    /* ── legend: glyphs, live-rendered, clickable ────────────────────────── */
 
     _legendPage(settings) {
         const page = new Adw.PreferencesPage({
@@ -360,15 +362,67 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         // palette follows the window's light/dark state)
         const legendGroup = new Adw.PreferencesGroup({
             title: 'Condition icons',
-            description: 'Every glyph the menu and panel draw — the night ' +
-                         'moon even shows tonight\'s real phase',
+            description: 'Every glyph the menu and panel draw — click one to ' +
+                         'play it on the panel icon and in the sky below',
         });
         const sm = Adw.StyleManager.get_default();
         const areas = [];
+
+        /* Live dropdown backdrop: the real sky engine at ~30 fps while a
+         * preview runs. The shell resets 'preview-scene' to '' after 12 s,
+         * which stops us right when the panel icon goes back too. */
+        const skyArea = new Gtk.DrawingArea();
+        skyArea.set_size_request(-1, 190);
+        let skyPool = null, timerId = 0, t0 = 0;
+        let skyScene = null, skyNight = false;
+        const stopSky = () => {
+            if (timerId) {
+                GLib.source_remove(timerId);
+                timerId = 0;
+            }
+        };
+        const showSky = scene => {
+            skyScene = scene;
+            skyNight = scene === 'moon';
+            t0 = GLib.get_monotonic_time();
+            if (!timerId)
+                timerId = GLib.timeout_add(GLib.PRIORITY_LOW, 33,
+                    () => { skyArea.queue_draw(); return GLib.SOURCE_CONTINUE; });
+            skyArea.queue_draw();
+        };
+        skyArea.set_draw_func((a, cr, w, h) => {
+            skyPool ??= createSky();
+            const t = timerId ? (GLib.get_monotonic_time() - t0) / 1e6 : 4.1;
+            paintSky(cr, {
+                w, h, time: t,
+                scene: skyScene ?? 'partly',
+                night: skyNight,
+                sky: skyPool,
+                radius: 14,
+                scrim: sm.dark ? null : [1, 1, 1, 0.42],
+            });
+        });
+        // tab switches / window close must not leave the timeout spinning
+        skyArea.connect('unrealize', stopSky);
+        skyArea.connect('realize', () => {
+            const cur = settings.get_string('preview-scene');
+            if (cur)
+                showSky(cur);
+        });
+        settings.connect('changed::preview-scene', () => {
+            const v = settings.get_string('preview-scene');
+            if (v)
+                showSky(v);
+            else
+                stopSky();          // back to the still partly frame
+        });
+        areas.push(skyArea);        // theme flips repaint it too
+
         for (const [i, [scene, label]] of LEGEND.entries()) {
-            const row = new Adw.ActionRow({title: label});
+            const row = new Adw.ActionRow({title: label, activatable: true});
             const da = new Gtk.DrawingArea();
             da.set_size_request(30, 30);
+            da.set_valign(Gtk.Align.CENTER);   // line up with the row title
             da.set_draw_func((area, cr, w, h) => {
                 cr.save();
                 const s = Math.min(w, h) / 24;
@@ -381,29 +435,23 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             });
             areas.push(da);
             row.add_prefix(da);
-            row.set_activatable(false);
+            row.add_suffix(new Gtk.Image({icon_name: 'media-playback-start-symbolic'}));
+            row.connect('activated', () => {
+                settings.set_string('preview-scene', scene);
+                showSky(scene);     // set_string may not fire 'changed' on re-click
+            });
             legendGroup.add(row);
         }
         sm.connect('notify::dark-mode', () => areas.forEach(a => a.queue_draw()));
         page.add(legendGroup);
 
-        // ── animation previews: same list as the legend, actionable ──────
-        const previewGroup = new Adw.PreferencesGroup({
-            title: 'Preview animations',
-            description: 'Play an animation on the panel icon for ~12 seconds — ' +
-                         'handy for scenes your sky rarely shows (hail, storm, fog)',
+        const skyGroup = new Adw.PreferencesGroup({
+            title: 'Menu backdrop preview',
+            description: 'The dropdown sky, live — click a condition above to ' +
+                         'animate it here and on the panel icon',
         });
-        for (const [scene, label] of LEGEND) {
-            const row = new Adw.ActionRow({
-                title: label,
-                activatable: true,
-            });
-            row.add_suffix(new Gtk.Image({icon_name: 'media-playback-start-symbolic'}));
-            row.connect('activated', () =>
-                settings.set_string('preview-scene', scene));
-            previewGroup.add(row);
-        }
-        page.add(previewGroup);
+        skyGroup.add(skyArea);
+        page.add(skyGroup);
         return page;
     }
 
