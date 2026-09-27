@@ -178,6 +178,10 @@
 .aw-icon-btn {
     border-radius: 99px;
     padding: 3px;
+    /* fixed pill: a 16 px refresh glyph and an 18 px gear (optically even)
+     * still get identical hover circles */
+    min-width: 24px;
+    min-height: 24px;
     background-color: transparent;
     box-shadow: none;
     border: none;

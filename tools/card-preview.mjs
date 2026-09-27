@@ -111,7 +111,7 @@ for (const [i, c] of CASES.entries()) {
         stripBottom: c.stripPos === 'bottom',
         dark: c.plain ? false : true,   // plain cards sit on a light backdrop
         pillGlass: !c.plain,
-        iconOutline: c.iconOutline ? [0.04, 0.05, 0.09, 0.5] : null,
+        iconOutline: c.iconOutline ? [0.04, 0.05, 0.09, 0.62] : null,
         // real menu passes its theme ink; plain light card needs dark ink too
         ink: c.plain && !c.night ? [0.10, 0.13, 0.19] : undefined,
         // "now" label: contrast-safe variant of the accent over the actual

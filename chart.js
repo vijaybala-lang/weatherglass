@@ -345,9 +345,13 @@ export function paintChart(cr, opts) {
             c3.setSourceSurface(S, 0, 0);
             c3.paint();
             c3.$dispose();
-            for (const [dx, dy] of [[-1, 0], [1, 0], [0, 1], [0, -1],
-                                    [-0.8, -0.8], [0.8, -0.8],
-                                    [-0.8, 0.8], [0.8, 0.8]]) {
+            // denser ring than a lone 4-way stamp: inner + mid offsets fuse
+            // into a solid ~1.5 px contour so pale night-cloud glyphs read
+            // even on a matching overcast wash
+            for (const [dx, dy] of [[-1.25, 0], [1.25, 0], [0, 1.25], [0, -1.25],
+                                    [-0.95, -0.95], [0.95, -0.95],
+                                    [-0.95, 0.95], [0.95, 0.95],
+                                    [-0.55, 0], [0.55, 0], [0, -0.55], [0, 0.55]]) {
                 cr.setSourceSurface(T, cx - r + dx, cy - r + dy);
                 cr.paint();
             }

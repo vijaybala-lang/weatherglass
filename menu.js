@@ -321,15 +321,17 @@ export class ForecastPanel {
         this._refreshBtn = this._iconButton('view-refresh-symbolic', 'Refresh now',
                                             () => this._onRefresh?.());
         btnRow.add_child(this._refreshBtn);
+        // emblem-system draws its gear inset (optically smaller than the
+        // refresh circle at the same icon_size) — nudge it up one notch
         btnRow.add_child(this._iconButton('emblem-system-symbolic', 'Preferences',
-                                          () => this._onSettings?.()));
+                                          () => this._onSettings?.(), 18));
         right.add_child(btnRow);
         header.add_child(right);
         main.add_child(header);
 
-        // metric tabs: flat text with a day-tile-style pill behind the
-        // active one (no underline, no hairline rule under the row)
+        // metric tabs: pill behind the active one, whole row centred
         const tabs = row('aw-tabs');
+        tabs.x_align = Clutter.ActorAlign.CENTER;
         this._tabBtns = {};
         for (const [key, m] of Object.entries(METRICS)) {
             const btn = new St.Button({
@@ -358,12 +360,12 @@ export class ForecastPanel {
         return main;
     }
 
-    _iconButton(iconName, name, cb) {
+    _iconButton(iconName, name, cb, size = 16) {
         const btn = new St.Button({
             style_class: 'aw-icon-btn',
             can_focus: true,
             y_align: Clutter.ActorAlign.CENTER,
-            child: new St.Icon({icon_name: iconName, icon_size: 16,
+            child: new St.Icon({icon_name: iconName, icon_size: size,
                                 y_align: Clutter.ActorAlign.CENTER}),
         });
         btn.set_accessible_name(name);   // no tooltips in GNOME 50; name for AT
@@ -459,7 +461,7 @@ export class ForecastPanel {
      *  the painter already gives them bright icon palettes. */
     _iconOutline() {
         return _lumOf(this._bgUnderChart()) >= 0.38
-            ? [0.04, 0.05, 0.09, 0.5] : null;
+            ? [0.04, 0.05, 0.09, 0.62] : null;
     }
 
     /** state = {current, daily, hourly, currentIso, units, windy, effective,
