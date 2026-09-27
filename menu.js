@@ -548,19 +548,20 @@ export class ForecastPanel {
     }
 
     /** Big temp + condition text follow the selected day tile: Today shows
-     *  the live observation and its condition; a future day shows that day's
-     *  high and its general condition phrase. */
+     *  the live observation ("Now: Sunny"), a future day shows that day's
+     *  high and its general condition phrase ("Sun: Cloudy"). */
     _syncHeader() {
         const s = this._state;
         if (!s)
             return;
         if (this._day === 0) {
             this._tempLbl.set_text(fmtTemp(s.current.temp, s.units));
-            this._descLbl.set_text(this._desc);
+            this._descLbl.set_text(`Now: ${this._desc}`);
         } else {
             const d = s.daily[Math.min(this._day, s.daily.length - 1)];
             this._tempLbl.set_text(fmtTemp(d.tmax, s.units));
-            this._descLbl.set_text(sceneFor(d.code, true).desc);
+            this._descLbl.set_text(
+                `${dayName(d.date)}: ${sceneFor(d.code, true).desc}`);
         }
     }
 
