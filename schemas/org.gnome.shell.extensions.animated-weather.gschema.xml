@@ -60,13 +60,36 @@
       <choices>
         <choice value="open-meteo"/>
         <choice value="met-norway"/>
+        <choice value="noaa-nws"/>
       </choices>
       <default>'open-meteo'</default>
       <summary>Weather data provider</summary>
-      <description>Both providers are keyless and free. open-meteo = Open-Meteo
-global forecast (default); met-norway = Norwegian Meteorological Institute
-locationforecast, CC BY-SA 4.0 attribution (reports precipitation amounts, not
-probabilities, so the precipitation chart is model-derived)</description>
+      <description>All providers are keyless and free. open-meteo = Open-Meteo
+global forecast (default; model selectable via om-model); met-norway =
+Norwegian Meteorological Institute locationforecast, CC BY-SA 4.0
+attribution (reports precipitation amounts, not probabilities, so the
+precipitation chart is model-derived); noaa-nws = US National Weather
+Service (US locations only, official forecasts, station observations
+for current conditions)</description>
+    </key>
+
+    <key name="om-model" type="s">
+      <choices>
+        <choice value="best_match"/>
+        <choice value="ecmwf_ifs025"/>
+        <choice value="icon_seamless"/>
+        <choice value="gfs_seamless"/>
+      </choices>
+      <default>'ecmwf_ifs025'</default>
+      <summary>Open-Meteo forecast model</summary>
+      <description>Which forecast model Open-Meteo routes to.
+best_match = Open-Meteo's regional pick (often the US GFS, which
+frequently over-forecasts coastal heat); ecmwf_ifs025 = ECMWF IFS,
+generally the most accurate global model and what most premium apps
+lean on (default); icon_seamless = German DWD ICON (~7-day range);
+gfs_seamless = US NOAA GFS. Ignored by other providers. Out to a week
+the models genuinely disagree — if the weekend forecast looks off,
+try another model before doubting the provider</description>
     </key>
 
     <key name="condition-strip" type="s">

@@ -54,7 +54,8 @@ class WeatherIndicator extends PanelMenu.Button {
 
         this._ext = extension;
         this._settings = extension.getSettings();
-        this._client = new WeatherClient(this._settings.get_string('provider'));
+        this._client = new WeatherClient(this._settings.get_string('provider'),
+                                         this._settings.get_string('om-model'));
         this._timer = 0;
         this._locTimer = 0;
         this._previewId = 0;
@@ -334,6 +335,10 @@ class WeatherIndicator extends PanelMenu.Button {
             this._client.providerId = this._settings.get_string('provider');
             this._fetch(true);
             break;
+        case 'om-model':
+            this._client.model = this._settings.get_string('om-model');
+            this._fetch(true);
+            break;
         case 'menu-style':
             this._panel.setStyle(this._settings.get_string('menu-style'));
             break;
@@ -461,7 +466,7 @@ export default class AnimatedWeatherExtension extends Extension {
         // build stamp: journalctl --user -o cat | grep "Weatherglass v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
-        console.log('Weatherglass v5.6 (provider adapters: Open-Meteo + MET Norway)');
+        console.log('Weatherglass v5.6 (provider adapters: Open-Meteo + MET Norway + NOAA NWS)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }

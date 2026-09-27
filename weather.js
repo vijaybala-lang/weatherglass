@@ -9,6 +9,7 @@ const IPINFO = 'https://ipinfo.io/json';
 // MET Norway (Norwegian Meteorological Institute), keyless, global;
 // strict about identifying User-Agents (403 otherwise)
 const MET = 'https://api.met.no/weatherapi/locationforecast/2.0/complete';
+const NWS = 'https://api.weather.gov';
 
 /* ── WMO 4677 weather codes → description + animation scene ─────────────── */
 
@@ -239,7 +240,7 @@ export class OpenMeteoProvider extends WeatherProvider {
         super('open-meteo', 'Open-Meteo', ' Forecast by Open-Meteo.com (CC BY 4.0)');
     }
 
-    async forecast({latitude, longitude, days = 8}) {
+    async forecast({latitude, longitude, days = 8, model}) {
         const params = {
             latitude,
             longitude,
@@ -268,6 +269,21 @@ export class OpenMeteoProvider extends WeatherProvider {
             temperature_unit: 'celsius',
             wind_speed_unit: 'kmh',
         };
+        /* best_match is Open-Meteo's regional pick and the API default, so
+         * it needs no param at all — and asking explicitly for a model the
+         * region doesn't offer is an HTTP 400, not a fallback. Anything the
+         * endpoint rejects (typo, retired model) is retried once bare, so a
+         * stale gsettings value degrades to best_match instead of an empty
+         * card. */
+        if (model && model !== 'best_match') {
+            params.models = model;
+            try {
+                return this.parse(await get(`${API}?${qs(params)}`));
+            } catch (e) {
+                delete params.models;
+                return this.parse(await get(`${API}?${qs(params)}`));
+            }
+        }
         const raw = await get(`${API}?${qs(params)}`);
         return this.parse(raw);
     }
@@ -495,9 +511,206 @@ export class MetNorwayProvider extends WeatherProvider {
     }
 }
 
+/* ── NOAA National Weather Service (api.weather.gov, US only, keyless) ───── */
+
+/**
+ * NWS forecasts carry no codes — only English ("Chance Rain And Thunder",
+ * "Mostly Cloudy"). Map to the closest WMO 4677 code, matching the same
+ * family-first logic as agnosToWmo above. Null on empty input so callers
+ * can fall back to sky cover.
+ */
+export function nwsTextToWmo(text) {
+    const t = (text || '').toLowerCase();
+    if (!t)
+        return null;
+    if (t.includes('thunder') || t.includes('storm'))
+        return t.includes('hail') ? 99 : 95;
+    if (t.includes('sleet') || t.includes('freezing rain')
+        || t.includes('freezing drizzle') || t.includes('wintry mix')
+        || (t.includes('snow') && t.includes('rain')))
+        return 67;
+    if (t.includes('fog') || t.includes('mist') || t.includes('haze'))
+        return 45;
+    if (t.includes('snow') || t.includes('blizzard')) {
+        if (t.includes('shower'))
+            return t.includes('heavy') ? 86 : 85;
+        return t.includes('blizzard') || t.includes('heavy') ? 75
+            : t.includes('light') ? 71 : 73;
+    }
+    if (t.includes('drizzle'))
+        return t.includes('heavy') ? 55 : 51;
+    if (t.includes('rain') || t.includes('shower')) {
+        if (t.includes('shower'))
+            return t.includes('heavy') ? 82 : t.includes('light') ? 80 : 81;
+        return t.includes('heavy') ? 65 : t.includes('light') ? 61 : 63;
+    }
+    if (t.includes('overcast') || t.includes('mostly cloudy')
+        || t.includes('scattered') || t.includes('widespread'))
+        return 3;
+    if (t.includes('partly') || t.includes('mostly clear')
+        || t.includes('mostly sunny'))
+        return 2;
+    if (t.includes('cloud'))                    // "cloudy", "increasing clouds"
+        return 3;
+    return 0;                                   // sunny / clear / fair / dry
+}
+
+/** first number in '10 to 15 mph' / 'Calm' / '57' — max when a range */
+function nwsNum(text) {
+    const m = String(text ?? '').match(/-?\d+(?:\.\d+)?/g);
+    return m ? Math.max(...m.map(Number)) : null;
+}
+
+/** wind phrase → km/h ('10 mph', '12 kt', 'Calm' → 0, metric passthrough) */
+function nwsWindKmh(text) {
+    const v = nwsNum(text);
+    if (v === null)
+        return 0;
+    const t = String(text).toLowerCase();
+    if (t.includes('kt') || t.includes('knot')) return v * 1.852;
+    if (t.includes('km')) return v;
+    if (t.includes('m/s')) return v * 3.6;
+    return v * 1.60934;                         // default: mph
+}
+
+const nwsTempC = (v, unit) =>
+    v === null ? null : (String(unit).toUpperCase() === 'F' ? (v - 32) * 5 / 9 : v);
+
+export class NoaaNwsProvider extends WeatherProvider {
+    constructor() {
+        super('noaa-nws', 'NOAA NWS',
+              'Forecast: National Weather Service (US public data)');
+    }
+
+    async forecast({latitude, longitude, days = 8}) {
+        let pts;
+        try {
+            pts = await get(`${NWS}/points/${Number(latitude).toFixed(4)},`
+                          + `${Number(longitude).toFixed(4)}`);
+        } catch (e) {
+            // NWS answers 400/404 for coordinates outside its grid (US + waters)
+            throw new Error(/HTTP 4\d\d/.test(e.message)
+                ? 'NOAA NWS covers US locations only — pick another provider'
+                : e.message);
+        }
+        const p = pts?.properties ?? {};
+        if (!p.forecastHourly || !p.forecast)
+            throw new Error('NOAA NWS returned no forecast for this location');
+
+        const [hourly, daily] = await Promise.all([
+            get(p.forecastHourly), get(p.forecast)]);
+
+        // current conditions ride a station observation, not the forecast:
+        // nearest station's latest ob (best effort — hourly[0] can stand in)
+        let obs = null;
+        try {
+            const sts = await get(p.observationStations);
+            // the list is pre-scored: properties.stationIdentifier + distance
+            const feats = (sts?.features ?? []).map(f => ({
+                id: f?.properties?.stationIdentifier ?? f?.properties?.stationId,
+                dist: f?.properties?.distance?.value ?? Infinity,
+            })).filter(f => f.id);
+            if (feats.length) {
+                const near = feats.reduce((a, b) => (b.dist < a.dist ? b : a));
+                obs = await get(`${NWS}/stations/${near.id}/observations/latest`);
+            }
+        } catch (e) {
+            obs = null;
+        }
+        return this.parse({hourly, daily, obs, days});
+    }
+
+    parse({hourly, daily, obs, days = 8} = {}) {
+        const h = {time: [], temp: [], precipProb: [], wind: [], code: [], isDay: []};
+        // NWS times are already local-with-offset — slice() keeps local naive
+        for (const per of hourly?.properties?.periods ?? []) {
+            // NWS periods: startTime '2026-09-27T07:00:00-07:00', isDaytime
+            const iso = String(per.startTime ?? per.time ?? '').slice(0, 16);
+            if (!iso)
+                continue;
+            h.time.push(`${iso.slice(0, 13)}:00`);
+            h.temp.push(nwsTempC(nwsNum(per.temperature), per.temperatureUnit));
+            h.precipProb.push(per.probabilityOfPrecipitation?.value ?? 0);
+            h.wind.push(nwsWindKmh(per.windSpeed));
+            h.code.push(nwsTextToWmo(per.shortForecast) ?? 3);
+            h.isDay.push(!!(per.isDaytime ?? per.isDayTime));
+        }
+
+        // day/night period pairs → daily rows keyed by the period's start date
+        const byDate = new Map();
+        for (const per of daily?.properties?.periods ?? []) {
+            const date = String(per.startTime ?? per.time ?? '').slice(0, 10);
+            if (!date)
+                continue;
+            let row = byDate.get(date);
+            if (!row)
+                byDate.set(date, row = {date, code: 3, tmax: null, tmin: null,
+                                        precipProb: 0, windMax: 0});
+            const t = nwsTempC(nwsNum(per.temperature), per.temperatureUnit);
+            if (per.isDaytime ?? per.isDayTime) {
+                row.code = nwsTextToWmo(per.shortForecast) ?? row.code;
+                row.tmax = t ?? row.tmax;
+                row.precipProb = Math.max(row.precipProb,
+                                          per.probabilityOfPrecipitation?.value ?? 0);
+                row.windMax = Math.max(row.windMax, nwsWindKmh(per.windSpeed));
+            } else {
+                row.tmin = t ?? row.tmin;       // tonight's low owns tonight's date
+                row.precipProb = Math.max(row.precipProb,
+                                          per.probabilityOfPrecipitation?.value ?? 0);
+            }
+        }
+        const rows = [...byDate.values()].slice(0, days);
+        const day = {
+            current: null,
+            daily: rows.map(r => ({...r, sunrise: null, sunset: null, uv: null})),
+            hourly: h,
+        };
+
+        const op = obs?.properties;
+        // station obs are flaky on humidity/visibility — hourly periods
+        // carry their own relative humidity, use it before giving up
+        const hourRh = hourly?.properties?.periods?.[0]
+            ?.relativeHumidity?.value ?? 0;
+        if (op?.temperature?.value !== undefined && op?.temperature?.value !== null) {
+            const code = nwsTextToWmo(op.textDescription)
+                ?? (op.skyCover?.value >= 87 ? 3 : op.skyCover?.value >= 25 ? 2 : 0);
+            day.current = {
+                temp: op.temperature.value,
+                feels: op.apparentTemperature?.value ?? op.temperature.value,
+                code,
+                isDay: (() => {
+                    const hr = Number(String(op.timestamp ?? '').slice(11, 13));
+                    return hr >= 6 && hr < 21;
+                })(),
+                humidity: op.relativeHumidity?.value ?? hourRh,
+                precip: op.precipitation?.value ?? 0,
+                wind: op.windSpeed?.value ?? 0,           // already km/h
+                windDeg: op.windDirection?.value ?? 0,
+                uv: op.uvIndex ?? null,
+                visibility: op.visibility?.value ?? null,
+                cape: null,                               // NWS ob has no CAPE
+                intensity: op.precipitation?.value ?? 0,
+                timeIso: String(op.timestamp ?? '').slice(0, 16),
+            };
+        } else {
+            // no usable observation: the first forecast hour stands in
+            const i = 0;
+            day.current = {
+                temp: h.temp[i] ?? null, feels: h.temp[i] ?? null,
+                code: h.code[i] ?? 3, isDay: !!h.isDay[i],
+                humidity: hourRh, precip: 0, wind: h.wind[i] ?? 0, windDeg: 0,
+                uv: null, visibility: null, cape: null, intensity: 0,
+                timeIso: h.time[i] ?? '',
+            };
+        }
+        return day;
+    }
+}
+
 const REGISTRY = new Map([
     ['open-meteo', new OpenMeteoProvider()],
     ['met-norway', new MetNorwayProvider()],
+    ['noaa-nws', new NoaaNwsProvider()],
 ]);
 
 /** Unknown ids fall back to the default provider, never crash. */
@@ -511,8 +724,11 @@ export const PROVIDER_LIST = [...REGISTRY.values()].map(p => ({id: p.id, name: p
 /* ── client ──────────────────────────────────────────────────────────────── */
 
 export class WeatherClient {
-    constructor(providerId = 'open-meteo') {
+    constructor(providerId = 'open-meteo', model = null) {
         this.providerId = providerId;
+        // Open-Meteo model hint ('ecmwf_ifs025' etc.); null = best_match.
+        // Harmless for other providers: their forecast() ignores it.
+        this.model = model;
     }
 
     get provider() {
@@ -548,7 +764,8 @@ export class WeatherClient {
             lon = det.longitude;
             detectedName = det.name || null;
         }
-        const data = await this.provider.forecast({latitude: lat, longitude: lon, days});
+        const data = await this.provider.forecast({latitude: lat, longitude: lon,
+                                                   days, model: this.model});
         return {...data, detectedName, latitude: lat, longitude: lon};
     }
 

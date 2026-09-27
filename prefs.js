@@ -310,20 +310,48 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         const dataGroup = new Adw.PreferencesGroup({title: 'Data source'});
         const provRow = new Adw.ComboRow({
             title: 'Weather provider',
-            subtitle: 'MET Norway data licensed CC BY-SA 4.0 · Norwegian Meteorological Institute',
+            subtitle: 'All keyless · MET Norway data licensed CC BY-SA 4.0',
             model: new Gtk.StringList({
                 strings: [
                     'Open-Meteo (default)',
                     'MET Norway (api.met.no)',
+                    'NOAA NWS (US locations only)',
                 ],
             }),
         });
-        const provIds = ['open-meteo', 'met-norway'];
+        const provIds = ['open-meteo', 'met-norway', 'noaa-nws'];
         const sel = provIds.indexOf(settings.get_string('provider'));
         provRow.set_selected(sel < 0 ? 0 : sel);
         provRow.connect('notify::selected', () =>
             settings.set_string('provider', provIds[provRow.get_selected()] ?? 'open-meteo'));
         dataGroup.add(provRow);
+
+        // Open-Meteo routes to different weather models, and the models
+        // genuinely disagree beyond ~5 days (a US GFS run over San Francisco
+        // once promised 86°F where ECMWF promised 69°F — the GFS notorious-
+        // ly over-forecasts coastal heat). Default: ECMWF IFS.
+        const modelRow = new Adw.ComboRow({
+            title: 'Forecast model',
+            subtitle: 'Open-Meteo only · out to a week models disagree — if the weekend looks off, try another',
+            model: new Gtk.StringList({
+                strings: [
+                    'Best match (Open-Meteo regional pick; US → GFS)',
+                    'ECMWF IFS (recommended)',
+                    'DWD ICON (shorter range)',
+                    'NOAA GFS',
+                ],
+            }),
+        });
+        const modelIds = ['best_match', 'ecmwf_ifs025', 'icon_seamless', 'gfs_seamless'];
+        const msel = modelIds.indexOf(settings.get_string('om-model'));
+        modelRow.set_selected(msel < 0 ? 1 : msel);
+        modelRow.connect('notify::selected', () =>
+            settings.set_string('om-model', modelIds[modelRow.get_selected()] ?? 'best_match'));
+        const syncModelRow = () =>
+            modelRow.set_visible(provRow.get_selected() === 0);
+        provRow.connect('notify::selected', syncModelRow);
+        syncModelRow();
+        dataGroup.add(modelRow);
         page.add(dataGroup);
 
         const updGroup = new Adw.PreferencesGroup({title: 'Updates'});
