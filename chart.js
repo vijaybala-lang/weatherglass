@@ -227,7 +227,14 @@ export function paintChart(cr, opts) {
     // (Unlabeled hours = real data points before/after the label range.)
     const GUT = opts.gutter ?? 14;
     const PX0 = PADX, PX1 = w - PADX;
-    const X = i => PADX + i * (w - PADX * 2) / (n - 1);
+    /* RTL (Arabic/Hebrew sessions): time flows right → left. Every x in
+     * this painter rides X() or the sx()/so() edges below, so one mirror
+     * flips curve, labels, strip band, past-fade and now marker together.
+     * Slot order stays chronological in the data — only the canvas maps
+     * it backwards, which is exactly what an RTL reader expects. */
+    const rtl = !!opts.rtl;
+    const sx = f => PADX + (rtl ? 1 - f : f) * (w - PADX * 2);
+    const X = i => sx(i / (n - 1));
     // with the band docked bottom, the line + its value labels lift off the
     // floor so nothing sits in the pill zone; the area fill still flows to
     // its usual depth (behind the translucent band, Apple-style)
@@ -491,9 +498,9 @@ export function paintChart(cr, opts) {
                 let b = a;
                 while (b + 1 < n && `${strip[b + 1]}|${nights[b + 1] ? 1 : 0}` === key)
                     b++;
-                const x0 = a === 0 ? PX0 : (X(a - 1) + X(a)) / 2;
-                const x1 = b === n - 1 ? PX1 : (X(b) + X(b + 1)) / 2;
-                runs.push({scene: strip[a], night: nights[a], w: x1 - x0});
+                const x0 = a === 0 ? sx(0) : (X(a - 1) + X(a)) / 2;
+                const x1 = b === n - 1 ? sx(1) : (X(b) + X(b + 1)) / 2;
+                runs.push({scene: strip[a], night: nights[a], w: Math.abs(x1 - x0)});
                 a = b + 1;
             }
             const def = runs.map(r => Math.max(0, MINW - r.w));
@@ -526,22 +533,23 @@ export function paintChart(cr, opts) {
             cr.fill();
 
             // dotted seams at interior cell borders (GJS cairo has no
-            // setDash — real dots it is)
+            // setDash — real dots it is). RTL walks right → left.
+            const dir = rtl ? -1 : 1;
             cr.setSourceRGBA(edge[0], edge[1], edge[2], Math.min(0.65, edge[3] * 2.6));
-            let acc = PX0;
+            let acc = rtl ? PX1 : PX0;
             for (let k = 0; k < runs.length - 1; k++) {
-                acc += cellW[k];
+                acc += dir * cellW[k];
                 for (let y = stripY - PH + 2.5; y <= stripY + PH - 2.5; y += 3.2) {
                     cr.arc(acc, y, 0.6, 0, Math.PI * 2);
                     cr.fill();
                 }
             }
 
-            acc = PX0;
+            acc = rtl ? PX1 : PX0;
             for (const [k, r] of runs.entries()) {
-                paint1(r.scene, acc + cellW[k] / 2, r.night,
+                paint1(r.scene, acc + dir * cellW[k] / 2, r.night,
                        SS * (FOOT[r.scene] ?? 1));
-                acc += cellW[k];
+                acc += dir * cellW[k];
             }
             cr.restore();
         } else {

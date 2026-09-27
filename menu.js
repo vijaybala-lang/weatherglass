@@ -187,6 +187,11 @@ class ChartArea extends St.DrawingArea {
             nights: p._conditions !== 'off' ? p._strip?.nights ?? null : null,
             pills: p._conditions === 'pills',
             dark: p._dark,
+            // Arabic/Hebrew sessions: the chart mirrors (earliest hour at
+            // the right, now-fade covering the RIGHT half). St widgets
+            // around this canvas already flip via the toolkit; the painted
+            // surface has to be told explicitly.
+            rtl: Clutter.get_default_text_direction() === Clutter.TextDirection.RTL,
             stripBottom: p._condPos === 'bottom',
             // over the sky (animated/solid): pills take the day-tile hover
             // glass; the accent style keeps the accent tint on its calm

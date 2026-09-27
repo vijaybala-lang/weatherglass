@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-27 09:06-0700\n"
-"Language: tr\n"
+"Language: he\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -14,275 +14,275 @@ msgstr "Weatherglass"
 
 #: extension.js:146
 msgid "My location"
-msgstr "Konumum"
+msgstr "המיקום שלי"
 
 #: extension.js:147
 msgid "Custom location"
-msgstr "Özel konum"
+msgstr "מיקום מותאם"
 
 #: extension.js:191 menu.js:286
 msgid "Fetching weather…"
-msgstr "Hava durumu alınıyor…"
+msgstr "מוריד נתוני מזג אוויר…"
 
 #: menu.js:34
 msgid "Temperature"
-msgstr "Sıcaklık"
+msgstr "טמפרטורה"
 
 #: menu.js:35
 msgid "Precipitation"
-msgstr "Yağış"
+msgstr "משקעים"
 
 #: menu.js:36
 msgid "Wind"
-msgstr "Rüzgâr"
+msgstr "רוח"
 
 #: menu.js:321 menu.js:403 menu.js:407
 msgid "Weather"
-msgstr "Hava Durumu"
+msgstr "מזג אוויר"
 
 #: menu.js:338
 msgid "Refresh now"
-msgstr "Şimdi yenile"
+msgstr "רענן עכשיו"
 
 #: menu.js:343
 msgid "Preferences"
-msgstr "Tercihler"
+msgstr "העדפות"
 
 #: menu.js:359
 msgid "Show"
-msgstr "Göster"
+msgstr "תצוגה"
 
 #: menu.js:359
 msgid "chart"
-msgstr "grafiği"
+msgstr "התרשים"
 
 #: menu.js:408
 msgid "Could not load the forecast"
-msgstr "Tahmin yüklenemedi"
+msgstr "לא ניתן לטעון את התחזית"
 
 #: menu.js:543
 msgid "Refresh forecast — updated"
-msgstr "Tahmini yenile — güncelleme"
+msgstr "רענון תחזית — עודכן"
 
 #: menu.js:604
 msgid "Now"
-msgstr "Şimdi"
+msgstr "עכשיו"
 
 #: menu.js:713
 msgid "Today"
-msgstr "Bugün"
+msgstr "היום"
 
 #: prefs.js:87
 msgid "Location"
-msgstr "Konum"
+msgstr "מיקום"
 
 #: prefs.js:92
 msgid "Automatic"
-msgstr "Otomatik"
+msgstr "אוטומטי"
 
 #: prefs.js:93
 msgid "Coordinates are detected from your public IP address"
-msgstr "Koordinatlar genel IP adresinizden algılanır"
+msgstr "הקואורדינטות מזוהות מכתובת ה-IP הציבורית שלך"
 
 #: prefs.js:96
 msgid "Detect location automatically"
-msgstr "Konumu otomatik algıla"
+msgstr "זהה מיקום אוטומטית"
 
 #: prefs.js:104
 msgid "Search a city"
-msgstr "Şehir ara"
+msgstr "חיפוש עיר"
 
 #: prefs.js:106
 msgid "City name — press Enter to search"
-msgstr "Şehir adı — aramak için Enter'a basın"
+msgstr "שם העיר — יש ללחוץ Enter לחיפוש"
 
 #: prefs.js:111
 msgid "Results"
-msgstr "Sonuçlar"
+msgstr "תוצאות"
 
 #: prefs.js:147
 msgid "No matches"
-msgstr "Eşleşme yok"
+msgstr "לא נמצאו התאמות"
 
 #: prefs.js:173
 msgid "Manual"
-msgstr "Elle"
+msgstr "ידני"
 
 #: prefs.js:174
 msgid "Saved when you press Enter in a field"
-msgstr "Bir alanda Enter'a bastığınızda kaydedilir"
+msgstr "נשמר בלחיצת Enter בשדה"
 
 #: prefs.js:177
 msgid "Latitude"
-msgstr "Enlem"
+msgstr "קו רוחב"
 
 #: prefs.js:178
 msgid "Longitude"
-msgstr "Boylam"
+msgstr "קו אורך"
 
 #: prefs.js:179
 msgid "Display name"
-msgstr "Görünen ad"
+msgstr "שם לתצוגה"
 
 #: prefs.js:221
 msgid "Display"
-msgstr "Görünüm"
+msgstr "תצוגה"
 
 #: prefs.js:225
 msgid "Units"
-msgstr "Birimler"
+msgstr "יחידות"
 
 #: prefs.js:227
 msgid "Measurement system"
-msgstr "Ölçü sistemi"
+msgstr "שיטת מדידה"
 
 #: prefs.js:229
 msgid "Imperial (°F, mph)"
-msgstr "İngiliz (°F, mph)"
+msgstr "אימפריאלי (°F, מייל/שעה)"
 
 #: prefs.js:229
 msgid "Metric (°C, km/h)"
-msgstr "Metrik (°C, km/h)"
+msgstr "מטרי (°C, קמ״ש)"
 
 #: prefs.js:238
 msgid "Panel indicator"
-msgstr "Panel göstergesi"
+msgstr "מחוון הפאנל"
 
 #: prefs.js:239
 msgid "Show animated icon"
-msgstr "Hareketli simgeyi göster"
+msgstr "הצג סמון מונפש"
 
 #: prefs.js:240
 msgid "Show temperature"
-msgstr "Sıcaklığı göster"
+msgstr "הצג טמפרטורה"
 
 #: prefs.js:242
 msgid "Animate the icon"
-msgstr "Simeyi hareketlendir"
+msgstr "הנפשת הסמון"
 
 #: prefs.js:243
 msgid "Turn off to save a little battery"
-msgstr "Azıcık pil tasarrufu için kapatın"
+msgstr "כבה כדי לחסוך קצת סוללה"
 
 #: prefs.js:253
 msgid "Menu background"
-msgstr "Menü arka planı"
+msgstr "רקע התפריט"
 
 #: prefs.js:255
 msgid "Background style"
-msgstr "Arka plan biçemi"
+msgstr "סגנון הרקע"
 
 #: prefs.js:256
 msgid "How the dropdown fills itself behind the forecast"
-msgstr "Açılır listenin tahminin arkasını nasıl doldurduğu"
+msgstr "איך התפריט הנפתח מתמלא מאחורי התחזית"
 
 #: prefs.js:259
 msgid "Animated sky (translucent)"
-msgstr "Hareketli gökyüzü (yarı saydam)"
+msgstr "שמיים מונפשים (שקופים למחצה)"
 
 #: prefs.js:260
 msgid "Solid (sky dimmed under a wash)"
-msgstr "Düz (gökyüzü ince bir katman altında soluk)"
+msgstr "מוצק (שמיים מוכהים תחת שכבת צבע)"
 
 #: prefs.js:261
 msgid "Theme background, accent charts"
-msgstr "Tema arka planı, vurgulu grafikler"
+msgstr "רקע הערכת־תמה, גרפים בצבע הדגשה"
 
 #: prefs.js:270
 msgid "Text emboss"
-msgstr "Metin kabartması"
+msgstr "בליטת טקסט"
 
 #: prefs.js:271
 msgid "Soft shadow under card text and icons over the sky"
-msgstr "Gökyüzü üstündeki kart metin ve simgelerinin altında yumuşak gölge"
+msgstr "צל רך מתחת לטקסט הכרטיס ולסמלים מעל השמיים"
 
 #: prefs.js:277
 msgid "Weather conditions"
-msgstr "Hava koşulları"
+msgstr "תנאי מזג אוויר"
 
 #: prefs.js:278
 msgid "How hourly conditions ride the chart"
-msgstr "Saatlik koşulların grafiğe nasıl işlediği"
+msgstr "איך תנאים שעתיים מוצגים על הגרף"
 
 #: prefs.js:280
 msgid "Grouped pills"
-msgstr "Gruplanmış kapsüller"
+msgstr "תגיות מקובצות"
 
 #: prefs.js:280
 msgid "Hourly icons"
-msgstr "Saatlik simgeler"
+msgstr "סמלים שעתיים"
 
 #: prefs.js:280
 msgid "Off"
-msgstr "Kapalı"
+msgstr "כבה"
 
 #: prefs.js:290
 msgid "Condition band position"
-msgstr "Koşul şeridi konumu"
+msgstr "מיקום פס התנאים"
 
 #: prefs.js:291
 msgid "Along the chart top, or above the hour labels"
-msgstr "Grafiğin üst kenarı boyunca ya da saat etiketlerinin üstünde"
+msgstr "לאורך חלקו העליון של הגרף, או מעל תוויות השעות"
 
 #: prefs.js:293
 msgid "Above hours"
-msgstr "Saatlerin üstünde"
+msgstr "מעל השעות"
 
 #: prefs.js:293
 msgid "Chart top"
-msgstr "Grafiğin üstü"
+msgstr "ראש הגרף"
 
 #: prefs.js:310
 msgid "Data"
-msgstr "Veri"
+msgstr "נתונים"
 
 #: prefs.js:314
 msgid "Data source"
-msgstr "Veri kaynağı"
+msgstr "מקור הנתונים"
 
 #: prefs.js:316
 msgid "Weather provider"
-msgstr "Hava durumu sağlayıcısı"
+msgstr "ספק מזג האוויר"
 
 #: prefs.js:317
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
-msgstr "Hepsi anahtarsız · MET Norway verileri CC BY-SA 4.0 lisanslı"
+msgstr "כולם ללא מפתחות · נתוני MET Norway ברישיון CC BY-SA 4.0"
 
 #: prefs.js:320
 msgid "Open-Meteo (default)"
-msgstr "Open-Meteo (varsayılan)"
+msgstr "Open-Meteo (ברירת מחדל)"
 
 #: prefs.js:321
 msgid "MET Norway (api.met.no)"
-msgstr "MET Norveç (api.met.no)"
+msgstr "MET Norway (api.met.no)"
 
 #: prefs.js:322
 msgid "NOAA NWS (US locations only)"
-msgstr "NOAA NWS (yalnızca ABD konumları)"
+msgstr "NOAA NWS (מיקומים בארה״ב בלבד)"
 
 #: prefs.js:338
 msgid "Forecast model"
-msgstr "Tahmin modeli"
+msgstr "מודל התחזית"
 
 #: prefs.js:339
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
 msgstr ""
-"Yalnızca Open-Meteo · bir haftalık sürede modeller anlaşmazılır — hafta sonu "
-"garipse başka modeli deneyin"
+"רק ב-Open-Meteo · עד שבוע קדימה המודלים חלוקים — אם סוף השבוע נראה לא סביר, "
+"נסה מודל אחר"
 
 #: prefs.js:342
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
-msgstr "En iyi eşleşme (Open-Meteo bölgesel seçimi; ABD → GFS)"
+msgstr "התאמה מיטבית (בחירה אזורית של Open-Meteo; ארה״ב ← GFS)"
 
 #: prefs.js:343
 msgid "ECMWF IFS (recommended)"
-msgstr "ECMWF IFS (önerilen)"
+msgstr "ECMWF IFS (מומלץ)"
 
 #: prefs.js:344
 msgid "DWD ICON (shorter range)"
-msgstr "DWD ICON (daha kısa menzil)"
+msgstr "DWD ICON (טווח קצר יותר)"
 
 #: prefs.js:345
 msgid "NOAA GFS"
@@ -290,231 +290,228 @@ msgstr "NOAA GFS"
 
 #: prefs.js:361
 msgid "Updates"
-msgstr "Güncellemeler"
+msgstr "עדכונים"
 
 #: prefs.js:363
 msgid "Refresh interval (minutes)"
-msgstr "Yenileme aralığı (dakika)"
+msgstr "מרווח רענון (דקות)"
 
 #: prefs.js:372
 msgid "Wind animation threshold (km/h)"
-msgstr "Rüzgâr animasyonu eşiği (km/h)"
+msgstr "סף הנפשת הרוח (קמ״ש)"
 
 #: prefs.js:373
 msgid "Breezier days swap the icon to the wind animation"
-msgstr "Rüzgârlı günler simgeyi rüzgâr animasyonuna çevirir"
+msgstr "בימים מוטרפים מתחלף הסמון לאנימציית הרוח"
 
 #: prefs.js:391
 msgid "Preview"
-msgstr "Önizleme"
+msgstr "תצוגה מקדימה"
 
 #: prefs.js:438
 msgid "Preview scene"
-msgstr "Önizleme sahnesi"
+msgstr "סצנת התצוגה המקדימה"
 
 #: prefs.js:439
 msgid "Loops right here for ~12 s — your real panel stays put"
-msgstr "Yaklaşık 12 s burada döner — gerçek paneliniz olduğu gibi kalır"
+msgstr "מחזור כאן לכ־12 שניות — הלוח האמיתי שלך לא זז"
 
 #: prefs.js:471
 msgid "Scene"
-msgstr "Sahne"
+msgstr "סצנה"
 
 #: prefs.js:546
 msgid "Panel preview"
-msgstr "Panel önizlemesi"
+msgstr "תצוגה מקדימה של הלוח"
 
 #: prefs.js:547
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
-msgstr ""
-"Bu sahne için panel düğmesinin görünümü — sahte sıcaklık, gerçek simge "
-"animasyonu"
+msgstr "איך כפתור הלוח נראה בסצנה הזו — טמפרטורה מדומה, הנפשת סמון אמיתית"
 
 #: prefs.js:553
 msgid "Menu backdrop preview"
-msgstr "Menü arka planı önizlemesi"
+msgstr "תצוגה מקדימה של רקע התפריט"
 
 #: prefs.js:554
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
-"Menünüzün şu anki gökyüzü, canlı olarak — yukarıdan bir koşul seçip burada "
-"hareket ettirin"
+"השמיים הנוכחיים של התפריט שלך, בזמן אמת — בחר תנאי למעלה כדי להנפיש אותו כאן"
 
 #: prefs.js:585
 msgid "About"
-msgstr "Hakkında"
+msgstr "אודות"
 
 #: prefs.js:592
 msgid "Version"
-msgstr "Sürüm"
+msgstr "גרסה"
 
 #: prefs.js:596
 msgid "Free and open source"
-msgstr "Ücretsiz ve açık kaynaklı"
+msgstr "חינם בקוד פתוח"
 
 #: prefs.js:597
 msgid "No ads, no accounts, no data collection — the sky should just work"
-msgstr "Reklam yok, hesap yok, veri toplama yok — gökyüzü sadece çalışmalı"
+msgstr "בלי פרסומות, בלי חשבונות, בלי איסוף נתונים — השמיים פשוט צריכים לעבוד"
 
 #: prefs.js:602
 msgid "Support the development"
-msgstr "Geliştirmeyi destekleyin"
+msgstr "תמכו בפיתוח"
 
 #: prefs.js:603
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
 msgstr ""
-"Weatherglass sonsuza dek ücretsiz. Masaüstünüzü güzelleştiriyorsa, bir kahve "
-"pikselleri döndürmeye devam ettirir."
+"Weatherglass יישאר חינם לנצח. אם הוא הופך את שולחן העבודה שלך לנעים יותר, "
+"קפה אחד ממשיך להמטיר פיקסלים."
 
 #: prefs.js:606
 msgid "Buy me a coffee"
-msgstr "Bana bir kahve ısmarla"
+msgstr "קנו לי קפה"
 
 #: weather.js:18
 msgid "Clear sky"
-msgstr "Açık gökyüzü"
+msgstr "שמיים בהירים"
 
 #: weather.js:19
 msgid "Mainly clear"
-msgstr "Çoğunlukla açık"
+msgstr "בעיקר בהיר"
 
 #: weather.js:20
 msgid "Partly cloudy"
-msgstr "Parçalı bulutlu"
+msgstr "חלקית מעונן"
 
 #: weather.js:21
 msgid "Overcast"
-msgstr "Çok bulutlu"
+msgstr "מעונן לחלוטין"
 
 #: weather.js:22 weather.js:72
 msgid "Fog"
-msgstr "Sis"
+msgstr "ערפל"
 
 #: weather.js:23
 msgid "Rime fog"
-msgstr "Kırağı sisi"
+msgstr "ערפל קיפאון"
 
 #: weather.js:24
 msgid "Light drizzle"
-msgstr "Hafif çisenti"
+msgstr "טפטוף קל"
 
 #: weather.js:25
 msgid "Drizzle"
-msgstr "Çisenti"
+msgstr "טפטוף"
 
 #: weather.js:26
 msgid "Dense drizzle"
-msgstr "Yoğun çisenti"
+msgstr "טפטוף סמיך"
 
 #: weather.js:27 weather.js:28
 msgid "Freezing drizzle"
-msgstr "Dondurucu çisenti"
+msgstr "טפטוף קופא"
 
 #: weather.js:29
 msgid "Light rain"
-msgstr "Hafif yağmur"
+msgstr "גשם קל"
 
 #: weather.js:30
 msgid "Rain"
-msgstr "Yağmur"
+msgstr "גשם"
 
 #: weather.js:31
 msgid "Heavy rain"
-msgstr "Sağanak yağmur"
+msgstr "גשם חזק"
 
 #: weather.js:32 weather.js:33
 msgid "Freezing rain"
-msgstr "Dondurucu yağmur"
+msgstr "גשם קופא"
 
 #: weather.js:34
 msgid "Light snow"
-msgstr "Hafif kar"
+msgstr "שלג קל"
 
 #: weather.js:35
 msgid "Snow"
-msgstr "Kar"
+msgstr "שלג"
 
 #: weather.js:36
 msgid "Heavy snow"
-msgstr "Yoğun kar"
+msgstr "שלג כבד"
 
 #: weather.js:37
 msgid "Snow grains"
-msgstr "Kar taneleri"
+msgstr "גרגירי שלג"
 
 #: weather.js:38
 msgid "Light showers"
-msgstr "Hafif sağanak"
+msgstr "מטחים קלים"
 
 #: weather.js:39
 msgid "Showers"
-msgstr "Sağanak"
+msgstr "מטחים"
 
 #: weather.js:40
 msgid "Violent showers"
-msgstr "Şiddetli sağanak"
+msgstr "מטחים עזים"
 
 #: weather.js:41
 msgid "Snow showers"
-msgstr "Kar sağanağı"
+msgstr "מטרי שלג"
 
 #: weather.js:42
 msgid "Heavy snow showers"
-msgstr "Yoğun kar sağanağı"
+msgstr "מטרי שלג כבדים"
 
 #: weather.js:43 weather.js:68
 msgid "Thunderstorm"
-msgstr "Gök gürültülü fırtına"
+msgstr "סופת רעמים"
 
 #: weather.js:44 weather.js:45 weather.js:66
 msgid "Thunderstorm, hail"
-msgstr "Fırtına, dolu"
+msgstr "סופת רעמים וברד"
 
 #: weather.js:49
 msgid "Unknown"
-msgstr "Bilinmiyor"
+msgstr "לא ידוע"
 
 #: weather.js:100
 msgid "Mon"
-msgstr "Pzt"
+msgstr "ב׳"
 
 #: weather.js:100
 msgid "Sun"
-msgstr "Paz"
+msgstr "א׳"
 
 #: weather.js:100
 msgid "Tue"
-msgstr "Sal"
+msgstr "ג׳"
 
 #: weather.js:100
 msgid "Wed"
-msgstr "Çar"
+msgstr "ד׳"
 
 #: weather.js:101
 msgid "Fri"
-msgstr "Cum"
+msgstr "ו׳"
 
 #: weather.js:101
 msgid "Sat"
-msgstr "Cmt"
+msgstr "ש׳"
 
 #: weather.js:101
 msgid "Thu"
-msgstr "Per"
+msgstr "ה׳"
 
 #: weather.js:597
 msgid "NOAA NWS covers US locations only — pick another provider"
-msgstr "NOAA NWS yalnızca ABD konumlarını kapsar — başka bir sağlayıcı seçin"
+msgstr "NOAA NWS מכסה מיקומים בארה״ב בלבד — בחרו ספק אחר"
 
 #: weather.js:602
 msgid "NOAA NWS returned no forecast for this location"
-msgstr "NOAA NWS bu konum için tahmin döndürmedi"
+msgstr "NOAA NWS לא החזיר תחזית למיקום זה"
 
 #: weather.js:747
 msgid "IP geolocation failed"
-msgstr "IP konum belirleme başarısız"
+msgstr "איתור מיקום לפי IP נכשל"

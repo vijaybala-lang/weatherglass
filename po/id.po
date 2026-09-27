@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 08:31-0700\n"
+"POT-Creation-Date: 2026-09-27 09:06-0700\n"
 "Language: id\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -20,7 +20,7 @@ msgstr "Lokasi saya"
 msgid "Custom location"
 msgstr "Lokasi kustom"
 
-#: extension.js:191 menu.js:281
+#: extension.js:191 menu.js:286
 msgid "Fetching weather…"
 msgstr "Mengambil cuaca…"
 
@@ -36,39 +36,39 @@ msgstr "Presipitasi"
 msgid "Wind"
 msgstr "Angin"
 
-#: menu.js:316 menu.js:398 menu.js:402
+#: menu.js:321 menu.js:403 menu.js:407
 msgid "Weather"
 msgstr "Cuaca"
 
-#: menu.js:333
+#: menu.js:338
 msgid "Refresh now"
 msgstr "Muat ulang sekarang"
 
-#: menu.js:338
+#: menu.js:343
 msgid "Preferences"
 msgstr "Preferensi"
 
-#: menu.js:354
+#: menu.js:359
 msgid "Show"
 msgstr "Tampilkan"
 
-#: menu.js:354
+#: menu.js:359
 msgid "chart"
 msgstr "grafik"
 
-#: menu.js:403
+#: menu.js:408
 msgid "Could not load the forecast"
 msgstr "Prakiraan gagal dimuat"
 
-#: menu.js:538
+#: menu.js:543
 msgid "Refresh forecast — updated"
 msgstr "Muat ulang prakiraan — diperbarui"
 
-#: menu.js:599
+#: menu.js:604
 msgid "Now"
 msgstr "Sekarang"
 
-#: menu.js:708
+#: menu.js:713
 msgid "Today"
 msgstr "Hari ini"
 
