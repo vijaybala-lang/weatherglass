@@ -480,8 +480,8 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         barArea.set_size_request(-1, 44);
         barArea.set_draw_func((a, cr, w, h) => {
             const dark = sm.dark;
-            cr.setSourceRGBA(...(dark ? [0.10, 0.10, 0.12]
-                : [0.91, 0.91, 0.93]));
+            cr.setSourceRGBA(...(dark ? [0.10, 0.10, 0.12, 1]
+                : [0.91, 0.91, 0.93, 1]));
             cr.rectangle(0, 0, w, h);
             cr.fill();
             const scene = sceneNow();
