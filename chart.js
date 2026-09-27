@@ -89,30 +89,26 @@ const deepen = base => {
     return toRgb;
 };
 
-/* Curve ink over the animated/solid sky. Warm ink keeps its TRUE
- * colour: a temperature line that isn't the amber of the panel icon
- * isn't the temperature line. Bright orange over a bright sky cannot
- * also be 3:1 — darkening walks straight into brown, no trick escapes
- * it — so when amber drops under 2.6:1 it gains a soft shadow PLATE:
- * three faint, wide, stacked strokes beneath the curve that read as a
- * gentle shadow, never a border, carrying the legibility while the
- * core stays sunny. Cool inks have the luminance headroom blue and
- * green afford them, and keep deepening plainly. Returns
- * {core, veil}. */
+/* Curve ink over the animated/solid sky. Warm ink is identity: the
+ * temperature line is the panel icon's amber on every sky, unaltered.
+ * Bright yellow over a bright sky can't also be 3:1 — darkening walks
+ * into brown, and every workaround tried (rim, plate) reads as an
+ * unwanted outline — so the colour wins and the area gradient carries
+ * the shape's legibility instead. Cool inks have the luminance
+ * headroom blue and green afford them, and keep deepening plainly. */
 export const lineInk = (base, bgs) => {
     if (!bgs.length)
-        return {core: base, veil: false};
+        return base;
     const worst = c => Math.min(...bgs.map(bg => ratio(c, bg)));
-    const warm = base[0] - base[2] > 0.2;
-    if (warm)
-        return {core: base, veil: worst(base) < 2.6};
+    if (base[0] - base[2] > 0.2)          // warm: amber, always
+        return base;
     if (worst(base) >= 3)
-        return {core: base, veil: false};
+        return base;
     const toRgb = deepen(base);
     let v = Math.max(...base);
     while (v > 0.08 && worst(toRgb(v)) < 3.05)
         v *= 0.97;
-    return {core: toRgb(v), veil: false};
+    return toRgb(v);
 };
 
 /** [w, h] pixel extents of a label in the chart font (same font set-up as
@@ -242,13 +238,12 @@ export function paintChart(cr, opts) {
     /* Smart curve ink: a light-blue 2px line milks out over bright
      * overcast cloud (worst case ~1.6:1 in the wild). Sample the real
      * backdrop across the curve's own y-spread; cool inks deepen to a
-     * vivid HSV twin, warm ink stays true and gets a shadow plate. */
+     * vivid HSV twin, warm ink stays true amber on every sky. */
     const curveBgs = [];
     if (bgFn)
         for (let i = 0; i < pts.length; i += Math.max(1, pts.length >> 2))
             curveBgs.push(bgFn(pts[i][1]));
-    const line = lineInk(accent, curveBgs);
-    const [acR, acG, acB] = line.core;
+    const [acR, acG, acB] = lineInk(accent, curveBgs);
 
     // All grid ink (area fill, curve, value/hour labels) is drawn into an
     // isolated cairo group and composited back at the end: past the marker
@@ -275,17 +270,6 @@ export function paintChart(cr, opts) {
     // whole closed area polygon — the "box around the line" bug
     cr.newPath();
     tracePath(cr, pts);
-    if (line.veil) {
-        // soft shadow plate: wide → narrow, each barely-there; stacked
-        // they read as depth under the line, not as an edge around it
-        cr.setLineCap(Cairo.LineCap.ROUND);
-        for (const [lw, a] of [[LINE_W + 8, 0.05], [LINE_W + 5, 0.06],
-                                [LINE_W + 2.5, 0.075]]) {
-            cr.setSourceRGBA(0.03, 0.05, 0.10, a);
-            cr.setLineWidth(lw);
-            cr.strokePreserve();
-        }
-    }
     cr.setSourceRGBA(acR, acG, acB, 1);
     cr.setLineWidth(LINE_W);
     cr.setLineCap(Cairo.LineCap.ROUND);
