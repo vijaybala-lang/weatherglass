@@ -205,7 +205,7 @@ export function paintChart(cr, opts) {
     const n = values.length;
     if (n < 2)
         return;
-    const EVERY = Math.max(1, opts.labelEvery ?? LABEL_EVERY);
+    let EVERY = Math.max(1, opts.labelEvery ?? LABEL_EVERY);
     const FS = opts.fontSize ?? 8.5;
     // "Data text" emphasis: bigger and/or heavier values, hours and the now
     // label. Collision boxes measure with the SAME numbers, so emphasized
@@ -332,6 +332,27 @@ export function paintChart(cr, opts) {
     const span0 = (w - PADX * 2) / (n - 1);
     let off0 = Math.ceil((GUT - PADX) / span0);
     if (off0 < 0) off0 = 0;
+    // text-aware stride: measure the widest label at the current emphasis
+    // and widen the tick until neighbouring boxes fit with breathing room.
+    // 'large' AM/PM labels (~33 px) overrun the ~37 px slots of a 3-h tick,
+    // and the collision referee's only answer for neighbour-vs-neighbour
+    // clashes is dropping every other hour (seen live as a broken axis).
+    if (opts.labelEvery === undefined && fmtHour && n > 8) {
+        let widest = 0;
+        for (let i = off0; i < n; i += 2) {
+            const t = fmtHour(i);
+            if (t)
+                widest = Math.max(widest, textPx(cr, t, TS, false, HW)[0]);
+            if (fmtValue)
+                widest = Math.max(widest,
+                    textPx(cr, fmtValue(i, values[i]), TS, false, VW)[0]);
+        }
+        for (const c of [3, 4, 6, 8, 12])
+            if (c >= EVERY && span0 * c >= widest + 5) {
+                EVERY = c;
+                break;
+            }
+    }
     const anchorOf = ax => ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
     const lxOf = (ax, anchor) =>
         anchor === 'start' ? Math.max(GUT, ax - 6)
