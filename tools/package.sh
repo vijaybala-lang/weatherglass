@@ -31,7 +31,7 @@ echo "==> locales"
 tools/i18n-build.sh >/dev/null
 
 echo "==> assembling dist/$UUID"
-rm -rf "dist/$UUID" "dist/$UUID.zip"
+rm -rf dist
 mkdir -p "dist/$UUID/schemas"
 cp metadata.json extension.js prefs.js menu.js chart.js sky.js painter.js \
    weather.js moon.js animation.js i18n.js stylesheet.css README.md LICENSE \
