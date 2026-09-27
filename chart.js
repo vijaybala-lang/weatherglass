@@ -66,6 +66,20 @@ export const INK_LIGHT = [1, 1, 1];
 export const pickInk = bg =>
     ratio(INK_DARK, bg) >= ratio(INK_LIGHT, bg) * 1.35 ? INK_DARK : INK_LIGHT;
 
+/* Curve ink over the animated/solid sky. The metric colour is identity
+ * (precip blue, temp amber, wind mint) — so instead of trading it away,
+ * offer a channel-wise darkened twin (same ratios = exactly the same
+ * hue) and let the ratio referee swap in the twin only where the base
+ * truly fails: worst case under the curve below 3:1, WCAG's floor for
+ * graphical objects. On the dark night sky the base easily clears it. */
+export const lineInk = (base, bgs) => {
+    if (!bgs.length)
+        return base;
+    const worst = c => Math.min(...bgs.map(bg => ratio(c, bg)));
+    const deep = base.map(v => v * 0.42);
+    return worst(base) < 3 && worst(deep) > worst(base) ? deep : base;
+};
+
 /** [w, h] pixel extents of a label in the chart font (same font set-up as
  *  drawText, so icon placement can centre on printed text, not data points). */
 function textPx(cr, text, size, bold) {
@@ -160,7 +174,6 @@ export function paintChart(cr, opts) {
     const EVERY = Math.max(1, opts.labelEvery ?? LABEL_EVERY);
     const FS = opts.fontSize ?? 8.5;
 
-    const [acR, acG, acB] = accent;
     const INK = opts.ink ?? [0.96, 0.97, 0.98];   // dark theme: pass dark ink
     // optional menu-supplied sampler: chart-local yPx -> composited backdrop
     // colour. When present every label picks its ink per position, so hour
@@ -190,6 +203,16 @@ export function paintChart(cr, opts) {
     const bot = opts.stripBottom && Array.isArray(opts.scenes) ? BOT + 14 : BOT;
     const Y = v => TOP + (1 - (v - lo) / (hi - lo)) * (h - TOP - bot);
     const pts = values.map((v, i) => [X(i), Y(v)]);
+
+    /* Smart curve ink: a light-blue 2px line milks out over bright
+     * overcast cloud (worst case ~1.6:1 in the wild). Sample the real
+     * backdrop across the curve's own y-spread and darken the hue
+     * (hue-preserving) if it can't hold WCAG's 3:1 graphics floor. */
+    const curveBgs = [];
+    if (bgFn)
+        for (let i = 0; i < pts.length; i += Math.max(1, pts.length >> 2))
+            curveBgs.push(bgFn(pts[i][1]));
+    const [acR, acG, acB] = lineInk(accent, curveBgs);
 
     // All grid ink (area fill, curve, value/hour labels) is drawn into an
     // isolated cairo group and composited back at the end: past the marker

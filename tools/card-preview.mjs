@@ -72,6 +72,9 @@ const CASES = [
     // icons-only on a bright day sky + wide wind labels: demos the icon
     // silhouette ring AND the text-aware label staggering
     {scene: 'partly', night: false, values: DATA.hourly.wind_speed_10m.slice(16, 40), accent: [0.24, 0.81, 0.56], nowFrac: 2 / 23, strip: 'icons', wind: true, iconOutline: true},
+    // bright overcast day + tiny percentages: demos the smart curve ink —
+    // lineInk deepens the metric hue in place when it can't hold 3:1
+    {scene: 'cloud', night: false, live: true, pct: true, values: [0, 0, 1, 2, 3, 2, 1, 0, 0, 0, 1, 0, 2, 3, 4, 3, 1, 0, 0, 1, 0, 0, 0, 0], accent: [0.30, 0.64, 1.0], nowFrac: 2 / 23, strip: 'icons', stripPos: 'bottom'},
 ];
 
 const outDir = GLib.build_filenamev([GLib.get_current_dir(), 'tools', 'out', 'cards']);
@@ -103,7 +106,9 @@ for (const [i, c] of CASES.entries()) {
     }
     paintChart(cr, {
         w: CARD.w, h: CHART.h, values: c.values,
-        fmtValue: (idx, v) => (c.accent === CASES[1].accent || c.wind) ? `${Math.round(v)} km/h` : fmtTemp(v),
+        fmtValue: (idx, v) => c.pct ? `${Math.round(v)}%`
+            : (c.accent === CASES[1].accent || c.wind) ? `${Math.round(v)} km/h`
+            : fmtTemp(v),
         fmtHour: idx => fmtHour(DATA.hourly.time[16 + idx] ?? 'T00'),
         accent: c.accent, nowFrac: c.nowFrac ?? null,
         scenes, nights,
@@ -112,6 +117,10 @@ for (const [i, c] of CASES.entries()) {
         dark: c.plain ? false : true,   // plain cards sit on a light backdrop
         pillGlass: !c.plain,
         iconOutline: c.iconOutline ? [0.04, 0.05, 0.09, 0.62] : null,
+        // 'live' cards mirror the menu's real geometry sampler so the
+        // smart curve ink + per-position label referee behave identically
+        bgFn: c.live ? yPx => sampleSky(c.scene, c.night,
+            Math.min(1, Math.max(0, (CHART.y + yPx) / CARD.h))) : null,
         // real menu passes its theme ink; plain light card needs dark ink too
         ink: c.plain && !c.night ? [0.10, 0.13, 0.19] : undefined,
         // "now" label: contrast-safe variant of the accent over the actual
