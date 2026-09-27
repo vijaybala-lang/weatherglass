@@ -3,7 +3,7 @@
  *     gjs -m tools/preview-gif.mjs
  *     ffmpeg -framerate 20 -i tools/out/grid/grid_%03d.png \
  *            -vf "fps=20,split[a][b];[a]palettegen[p];[b][p]paletteuse" \
- *            tools/out/animated-weather.gif
+ *            tools/out/weatherglass.gif
  */
 
 import Cairo from 'gi://cairo';

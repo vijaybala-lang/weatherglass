@@ -1,4 +1,4 @@
-/* animated-weather — GNOME Shell extension entry point. */
+/* weatherglass — GNOME Shell extension entry point. */
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
@@ -504,7 +504,7 @@ export default class AnimatedWeatherExtension extends Extension {
         // build stamp: journalctl --user -o cat | grep "Weatherglass v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
-        console.log('Weatherglass v5.6 (provider adapters: Open-Meteo + MET Norway + NOAA NWS)');
+        console.log('Weatherglass v1.0 (provider adapters: Open-Meteo + MET Norway + NOAA NWS)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }

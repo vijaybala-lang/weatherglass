@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <schema id="org.gnome.shell.extensions.animated-weather"
-          path="/org/gnome/shell/extensions/animated-weather/">
+  <schema id="org.gnome.shell.extensions.weatherglass"
+          path="/org/gnome/shell/extensions/weatherglass/">
 
     <key name="auto-location" type="b">
       <default>true</default>

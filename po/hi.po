@@ -1,14 +1,14 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Weatherglass 5.6\n"
+"Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:24-0700\n"
+"POT-Creation-Date: 2026-09-27 13:11-0700\n"
 "Language: hi\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:735
+#: extension.js:54 prefs.js:736
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -364,46 +364,50 @@ msgstr "यहीं ~12 सेकंड लूप करता है — आ�
 msgid "Scene"
 msgstr "दृश्य"
 
-#: prefs.js:691
+#: prefs.js:692
 msgid "Panel preview"
 msgstr "पैनल पूर्वावलोकन"
 
-#: prefs.js:692
+#: prefs.js:693
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
 msgstr "इस दृश्य में पैनल बटन कैसै दिसतै है — नकली तापमान, असली आइकन एनिमेशन"
 
-#: prefs.js:698
+#: prefs.js:699
 msgid "Menu backdrop preview"
 msgstr "मेनू पृष्ठभूमि का पूर्वावलोकन"
 
-#: prefs.js:699
+#: prefs.js:700
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr "आपकै मेनू क़ा वतमान आक़ाश, लाइव — ऊपर एक स्थिति चुनकर इसै यहाँ एनिमेट करैं"
 
-#: prefs.js:730
+#: prefs.js:731
 msgid "About"
 msgstr "परिचय"
 
-#: prefs.js:737
+#: prefs.js:738
 msgid "Version"
 msgstr "संस्करण"
 
-#: prefs.js:741
+#: prefs.js:742
+msgid "Contact"
+msgstr "संपर्क"
+
+#: prefs.js:746
 msgid "Free and open source"
 msgstr "मुक्त और ओपन सोर्स"
 
-#: prefs.js:742
+#: prefs.js:747
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "कोई विज्ञापन नहीं, कोई खाता नहीं, कोई डेटा संग्रह नहीं — आकाश बस चलना चाहिए"
 
-#: prefs.js:747
+#: prefs.js:752
 msgid "Support the development"
 msgstr "डेवलपमेन्ट कें सह्योग करें"
 
-#: prefs.js:748
+#: prefs.js:753
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -411,7 +415,7 @@ msgstr ""
 "Weatherglass सद़ा मुक्त है। अगर इससै आपकै डेस्कटॉप अचछा लगतै, तो एक कॉफ़ी पिक्सेल गिरातै "
 "रहैगी।"
 
-#: prefs.js:751
+#: prefs.js:756
 msgid "Buy me a coffee"
 msgstr "मुझे एक कॉफ़ी खरीदें"
 

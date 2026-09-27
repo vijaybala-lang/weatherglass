@@ -1,14 +1,14 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Weatherglass 5.6\n"
+"Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:24-0700\n"
+"POT-Creation-Date: 2026-09-27 13:11-0700\n"
 "Language: ta\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:735
+#: extension.js:54 prefs.js:736
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -364,48 +364,52 @@ msgstr "இதில் ~12 வினாடிகள் சுழலும் �
 msgid "Scene"
 msgstr "காட்சி"
 
-#: prefs.js:691
+#: prefs.js:692
 msgid "Panel preview"
 msgstr "பேனல் முன்னோட்டம்"
 
-#: prefs.js:692
+#: prefs.js:693
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
 msgstr "இந்ற க்காட்க்கு பேனல் பட்டன் எவ்வாறு இருக்கும் — போலி வெப்பநிலை, உண்மையான அசைவூட்டம்"
 
-#: prefs.js:698
+#: prefs.js:699
 msgid "Menu backdrop preview"
 msgstr "பட்டி பின்னணி முன்னோட்டம்"
 
-#: prefs.js:699
+#: prefs.js:700
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "உங்களுடைய பட்டியின நடப்பிலுள வான, நேரலை — மேலே ஒந்று நிலையை தேர்வுசெய்து இதில் "
 "அசைவூட்டலாம்"
 
-#: prefs.js:730
+#: prefs.js:731
 msgid "About"
 msgstr "பற்றி"
 
-#: prefs.js:737
+#: prefs.js:738
 msgid "Version"
 msgstr "பதிப்பு"
 
-#: prefs.js:741
+#: prefs.js:742
+msgid "Contact"
+msgstr "தொடர்பு"
+
+#: prefs.js:746
 msgid "Free and open source"
 msgstr "இலவசம் மற்றும் திறந்தமூலம்"
 
-#: prefs.js:742
+#: prefs.js:747
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "விளம்பரம் இல்லை, கணக்குகள் இல்லை, தரவு சேகரிப்பு இல்லை — வான் வேலை செய்ய வேண்டும்"
 
-#: prefs.js:747
+#: prefs.js:752
 msgid "Support the development"
 msgstr "வளர்ச்சிக்கு ஆதரவு"
 
-#: prefs.js:748
+#: prefs.js:753
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -413,7 +417,7 @@ msgstr ""
 "Weatherglass எப்போதும் இலவசம். உமது மைதானம் அழகாகுமெனில், ஒந்று காபி புள்ளிகளை "
 "வடிவிக்கவைக்கும்."
 
-#: prefs.js:751
+#: prefs.js:756
 msgid "Buy me a coffee"
 msgstr "எனக்கு ஒரு காபி வாங்கு"
 

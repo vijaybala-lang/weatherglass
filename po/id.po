@@ -1,14 +1,14 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Weatherglass 5.6\n"
+"Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:24-0700\n"
+"POT-Creation-Date: 2026-09-27 13:11-0700\n"
 "Language: id\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:735
+#: extension.js:54 prefs.js:736
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -364,11 +364,11 @@ msgstr "Berulang di sini selama ~12 d — panel asli Anda tetap seperti adanya"
 msgid "Scene"
 msgstr "Adegan"
 
-#: prefs.js:691
+#: prefs.js:692
 msgid "Panel preview"
 msgstr "Pratinjau panel"
 
-#: prefs.js:692
+#: prefs.js:693
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
@@ -376,40 +376,44 @@ msgstr ""
 "Bagaimana tombol panel tampak untuk adegan ini — suhu simulasi, animasi ikon "
 "asli"
 
-#: prefs.js:698
+#: prefs.js:699
 msgid "Menu backdrop preview"
 msgstr "Pratinjau latar menu"
 
-#: prefs.js:699
+#: prefs.js:700
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "Langit menu Anda saat ini, langsung — pilih kondisi di atas untuk "
 "menganimasikannya di sini"
 
-#: prefs.js:730
+#: prefs.js:731
 msgid "About"
 msgstr "Tentang"
 
-#: prefs.js:737
+#: prefs.js:738
 msgid "Version"
 msgstr "Versi"
 
-#: prefs.js:741
+#: prefs.js:742
+msgid "Contact"
+msgstr "Kontak"
+
+#: prefs.js:746
 msgid "Free and open source"
 msgstr "Gratis dan sumber terbuka"
 
-#: prefs.js:742
+#: prefs.js:747
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr ""
 "Tanpa iklan, tanpa akun, tanpa pengumpulan data — langit seharusnya cukup "
 "bekerja"
 
-#: prefs.js:747
+#: prefs.js:752
 msgid "Support the development"
 msgstr "Dukung pengembangannya"
 
-#: prefs.js:748
+#: prefs.js:753
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -417,7 +421,7 @@ msgstr ""
 "Weatherglass gratis selamanya. Jika itu membuat desktop Anda lebih enak "
 "dilihat, secangkir kopi membuat piksel tetap berjatuhan."
 
-#: prefs.js:751
+#: prefs.js:756
 msgid "Buy me a coffee"
 msgstr "Traktir saya kopi"
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:24-0700\n"
+"POT-Creation-Date: 2026-09-27 13:11-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:735
+#: extension.js:54 prefs.js:736
 msgid "Weatherglass"
 msgstr ""
 
@@ -369,47 +369,51 @@ msgstr ""
 msgid "Scene"
 msgstr ""
 
-#: prefs.js:691
+#: prefs.js:692
 msgid "Panel preview"
 msgstr ""
 
-#: prefs.js:692
+#: prefs.js:693
 msgid "How the panel button looks for this scene — mock temperature, real icon animation"
 msgstr ""
 
-#: prefs.js:698
+#: prefs.js:699
 msgid "Menu backdrop preview"
 msgstr ""
 
-#: prefs.js:699
+#: prefs.js:700
 msgid "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 
-#: prefs.js:730
+#: prefs.js:731
 msgid "About"
 msgstr ""
 
-#: prefs.js:737
+#: prefs.js:738
 msgid "Version"
 msgstr ""
 
-#: prefs.js:741
+#: prefs.js:742
+msgid "Contact"
+msgstr ""
+
+#: prefs.js:746
 msgid "Free and open source"
 msgstr ""
 
-#: prefs.js:742
+#: prefs.js:747
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr ""
 
-#: prefs.js:747
+#: prefs.js:752
 msgid "Support the development"
 msgstr ""
 
-#: prefs.js:748
+#: prefs.js:753
 msgid "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps the pixels falling."
 msgstr ""
 
-#: prefs.js:751
+#: prefs.js:756
 msgid "Buy me a coffee"
 msgstr ""
 

@@ -1,14 +1,14 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Weatherglass 5.6\n"
+"Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:24-0700\n"
+"POT-Creation-Date: 2026-09-27 13:11-0700\n"
 "Language: bn\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:735
+#: extension.js:54 prefs.js:736
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -364,47 +364,51 @@ msgstr "এখানেই ~১২ সেকেন্ড লুপ হয় —
 msgid "Scene"
 msgstr "দৃশ্য"
 
-#: prefs.js:691
+#: prefs.js:692
 msgid "Panel preview"
 msgstr "প্যানেল প্রিভিউ"
 
-#: prefs.js:692
+#: prefs.js:693
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
 msgstr "এই দৃশ্যে প্যানেল বাটন কেমন দেখায় — তাপমাত্রা নমুনা, আইকনের অ্যানিমেশন আসল"
 
-#: prefs.js:698
+#: prefs.js:699
 msgid "Menu backdrop preview"
 msgstr "মেনুর পটভূমির প্রিভিউ"
 
-#: prefs.js:699
+#: prefs.js:700
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "আপনার মেনুর এই মুহূর্তের আকাশ, সরাসরি — উপরে একটি অবস্থা বাছলে এখানে অ্যানিমেট হবে"
 
-#: prefs.js:730
+#: prefs.js:731
 msgid "About"
 msgstr "পরিচিতি"
 
-#: prefs.js:737
+#: prefs.js:738
 msgid "Version"
 msgstr "সংস্করণ"
 
-#: prefs.js:741
+#: prefs.js:742
+msgid "Contact"
+msgstr "যোগাযোগ"
+
+#: prefs.js:746
 msgid "Free and open source"
 msgstr "বিনামূল্যে ও ওপেন সোর্স"
 
-#: prefs.js:742
+#: prefs.js:747
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "বিজ্ঞাপন নেই, অ্যাকাউন্ট নেই, ডেটা সংগ্রহ নেই — আকাশ কেবল চলবে"
 
-#: prefs.js:747
+#: prefs.js:752
 msgid "Support the development"
 msgstr "ডেভেলপমেন্টে সহায়তা করুন"
 
-#: prefs.js:748
+#: prefs.js:753
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -412,7 +416,7 @@ msgstr ""
 "Weatherglass চিরকাল বিনামূল্যে। আপনার ডেস্কটপ সুন্দর লাগলে, এককাপ কফি এই "
 "পিক্সেলগুলোকে বানিয়ে যাবে।"
 
-#: prefs.js:751
+#: prefs.js:756
 msgid "Buy me a coffee"
 msgstr "এককাপ কফি কিনুন"
 

@@ -1,9 +1,8 @@
 {
-  "uuid": "animated-weather@vbala.dev",
+  "uuid": "weatherglass@vbala.dev",
   "name": "Weatherglass",
   "description": "A little window onto the sky: live sun, drifting clouds, rain and snow in your panel, plus a forecast card you'll actually want to open — animated menu sky, hourly chart and eight days of tiles.",
   "shell-version": ["50"],
-  "settings-schema": "org.gnome.shell.extensions.animated-weather",
-  "url": "https://buymeacoffee.com/vbala",
+  "settings-schema": "org.gnome.shell.extensions.weatherglass",
   "version": 1
 }

@@ -6,13 +6,13 @@ set -u
 PROJ="$(cd "$(dirname "$0")/.." && pwd)"   # run from tools/../ -> project root
 H=/tmp/opencode/nested-home
 LOG=/tmp/opencode/nested.log
-SCHEMA=org.gnome.shell.extensions.animated-weather
+SCHEMA=org.gnome.shell.extensions.weatherglass
 
 rm -rf "$H"; mkdir -p "$H/.local/share/gnome-shell"
 # real dir: our extension is symlinked in, the menu-opening test copied in
 mkdir -p "$H/.local/share/gnome-shell/extensions"
-ln -s ~/.local/share/gnome-shell/extensions/animated-weather@vbala.dev \
-      "$H/.local/share/gnome-shell/extensions/animated-weather@vbala.dev"
+ln -s ~/.local/share/gnome-shell/extensions/weatherglass@vbala.dev \
+      "$H/.local/share/gnome-shell/extensions/weatherglass@vbala.dev"
 cp -r "$PROJ/tools/menutest@vbala.dev" "$H/.local/share/gnome-shell/extensions/"
 mkdir -p "$H/.local/share/glib-2.0/schemas"
 cp "$PROJ/schemas/"*.xml "$H/.local/share/glib-2.0/schemas/"
@@ -23,7 +23,7 @@ unset WAYLAND_DISPLAY DISPLAY
 export G_MESSAGES_DEBUG=all
 
 timeout 180 dbus-run-session -- bash -c "
-  gsettings set org.gnome.shell enabled-extensions '[\"animated-weather@vbala.dev\", \"menutest@vbala.dev\"]'
+  gsettings set org.gnome.shell enabled-extensions '[\"weatherglass@vbala.dev\", \"menutest@vbala.dev\"]'
   gsettings set $SCHEMA units 'imperial'
   gsettings set $SCHEMA auto-location false
   gsettings set $SCHEMA location-latitude 47.6062
@@ -41,7 +41,7 @@ timeout 180 dbus-run-session -- bash -c "
     gsettings set $SCHEMA location-name 'San Francisco'
     sleep 10
     echo '=== scenario 3: prefs ==='
-    busctl --user call org.gnome.Shell.Extensions /org/gnome/Shell/Extensions org.gnome.Shell.Extensions OpenExtensionPrefs ssa{sv} animated-weather@vbala.dev '' 0
+    busctl --user call org.gnome.Shell.Extensions /org/gnome/Shell/Extensions org.gnome.Shell.Extensions OpenExtensionPrefs ssa{sv} weatherglass@vbala.dev '' 0
     sleep 6
     echo '=== scenario 4: preview-scene round trip (shell must revert key) ==='
     gsettings set $SCHEMA preview-scene 'hail'
@@ -89,9 +89,9 @@ timeout 180 dbus-run-session -- bash -c "
     sleep 4
     kill -0 \$GPID 2>/dev/null || { echo 'FAIL: shell died during menu toggles'; exit 1; }
     echo '=== scenario 6: disable/enable teardown (disposed-timer regression) ==='
-    gnome-extensions disable animated-weather@vbala.dev
+    gnome-extensions disable weatherglass@vbala.dev
     sleep 8
-    gnome-extensions enable animated-weather@vbala.dev
+    gnome-extensions enable weatherglass@vbala.dev
     sleep 8
     kill -0 \$GPID 2>/dev/null || { echo 'FAIL: shell died across disable/enable'; exit 1; }
     kill \$GPID; exit 0
@@ -104,4 +104,4 @@ grep "menutest" "$LOG" | tail -3
 grep -q "menutest: DONE" "$LOG" && echo "popup paint: PASS" || echo "popup paint: FAIL (menutest never finished)"
 # our disposed-object storm used to fire every clock tick after a disable:
 echo "--- disposed warnings implicating our extension ---"
-grep -A4 "has been already disposed" "$LOG" | grep -c "animated-weather" || true
+grep -A4 "has been already disposed" "$LOG" | grep -c "weatherglass" || true

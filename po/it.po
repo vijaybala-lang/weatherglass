@@ -1,14 +1,14 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Weatherglass 5.6\n"
+"Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:24-0700\n"
+"POT-Creation-Date: 2026-09-27 13:11-0700\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:735
+#: extension.js:54 prefs.js:736
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -364,11 +364,11 @@ msgstr "Scorri qui per ~12 s — il tuo pannello vero resta com'è"
 msgid "Scene"
 msgstr "Scena"
 
-#: prefs.js:691
+#: prefs.js:692
 msgid "Panel preview"
 msgstr "Anteprima del pannello"
 
-#: prefs.js:692
+#: prefs.js:693
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
@@ -376,40 +376,44 @@ msgstr ""
 "Come appare il pulsante del pannello per questa scena — temperatura finta, "
 "animazione icona vera"
 
-#: prefs.js:698
+#: prefs.js:699
 msgid "Menu backdrop preview"
 msgstr "Anteprima dello sfondo del menu"
 
-#: prefs.js:699
+#: prefs.js:700
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "Il cielo attuale del tuo menu, in diretta — scegli una condizione sopra per "
 "animarlo qui"
 
-#: prefs.js:730
+#: prefs.js:731
 msgid "About"
 msgstr "Informazioni"
 
-#: prefs.js:737
+#: prefs.js:738
 msgid "Version"
 msgstr "Versione"
 
-#: prefs.js:741
+#: prefs.js:742
+msgid "Contact"
+msgstr "Contatto"
+
+#: prefs.js:746
 msgid "Free and open source"
 msgstr "Gratuito e open source"
 
-#: prefs.js:742
+#: prefs.js:747
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr ""
 "Nessuna pubblicità, nessun account, nessuna raccolta dati — il cielo deve "
 "semplicemente funzionare"
 
-#: prefs.js:747
+#: prefs.js:752
 msgid "Support the development"
 msgstr "Sostieni lo sviluppo"
 
-#: prefs.js:748
+#: prefs.js:753
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -417,7 +421,7 @@ msgstr ""
 "Weatherglass è gratuito per sempre. Se rende il tuo desktop più bello, un "
 "caffè mantiene i pixel in caduta."
 
-#: prefs.js:751
+#: prefs.js:756
 msgid "Buy me a coffee"
 msgstr "Offrimi un caffè"
 

@@ -1,4 +1,4 @@
-/* menutest — nested-shell test companion. Toggles the animated-weather
+/* menutest — nested-shell test companion. Toggles the weatherglass
  * popup open/closed ten times, 1s apart, from right after boot: opening the
  * popup is exactly the allocate → synchronous repaint path that once aborted
  * the shell, so this extension turns that crash into a red/green test. */
@@ -21,7 +21,7 @@ export default class MenuTest extends Extension {
         this._waited = 0;
         this._probed = false;
         this._id = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
-            const b = Main.panel.statusArea['animated-weather@vbala.dev'];
+            const b = Main.panel.statusArea['weatherglass@vbala.dev'];
             if (!b?.menu) {
                 this._waited++;
                 if (this._waited < PATIENCE)

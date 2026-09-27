@@ -739,6 +739,10 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             subtitle: String(md?.version ?? 'dev'),
         }));
         infoGroup.add(new Adw.ActionRow({
+            title: _('Contact'),
+            subtitle: 'vijaybala-lang@users.noreply.github.com',
+        }));
+        infoGroup.add(new Adw.ActionRow({
             title: _('Free and open source'),
             subtitle: _('No ads, no accounts, no data collection — the sky should just work'),
         }));

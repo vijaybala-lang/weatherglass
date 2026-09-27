@@ -1,14 +1,14 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Weatherglass 5.6\n"
+"Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:24-0700\n"
+"POT-Creation-Date: 2026-09-27 13:11-0700\n"
 "Language: vi\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:735
+#: extension.js:54 prefs.js:736
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -364,11 +364,11 @@ msgstr "Lặp lại ở đây ~12 giây — bảng thật của bạn không đ�
 msgid "Scene"
 msgstr "Cảnh"
 
-#: prefs.js:691
+#: prefs.js:692
 msgid "Panel preview"
 msgstr "Xem trước bảng"
 
-#: prefs.js:692
+#: prefs.js:693
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
@@ -376,40 +376,44 @@ msgstr ""
 "Nút bảng trông thế nào với cảnh này — nhiệt độ mô phỏng, hiệu ứng biểu tượng "
 "thật"
 
-#: prefs.js:698
+#: prefs.js:699
 msgid "Menu backdrop preview"
 msgstr "Xem trước nền menu"
 
-#: prefs.js:699
+#: prefs.js:700
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "Bầu trời hiện tại trong menu của bạn, trực tiếp — chọn một điều kiện phía "
 "trên để xem động ở đây"
 
-#: prefs.js:730
+#: prefs.js:731
 msgid "About"
 msgstr "Giới thiệu"
 
-#: prefs.js:737
+#: prefs.js:738
 msgid "Version"
 msgstr "Phiên bản"
 
-#: prefs.js:741
+#: prefs.js:742
+msgid "Contact"
+msgstr "Liên hệ"
+
+#: prefs.js:746
 msgid "Free and open source"
 msgstr "Miễn phí và mã nguồn mở"
 
-#: prefs.js:742
+#: prefs.js:747
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr ""
 "Không quảng cáo, không tài khoản, không thu thập dữ liệu — bầu trời chỉ nên "
 "vận hành"
 
-#: prefs.js:747
+#: prefs.js:752
 msgid "Support the development"
 msgstr "Hỗ trợ phát triển"
 
-#: prefs.js:748
+#: prefs.js:753
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -417,7 +421,7 @@ msgstr ""
 "Weatherglass miễn phí mãi mãi. Nếu nó làm màn hình của bạn đẹp hơn, một ly "
 "cà phê sẽ giữ cho các điểm ảnh tiếp tục rơi."
 
-#: prefs.js:751
+#: prefs.js:756
 msgid "Buy me a coffee"
 msgstr "Mua cho tôi ly cà phê"
 

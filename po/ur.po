@@ -1,14 +1,14 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Weatherglass 5.6\n"
+"Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:24-0700\n"
+"POT-Creation-Date: 2026-09-27 13:11-0700\n"
 "Language: ur\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:735
+#: extension.js:54 prefs.js:736
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -364,49 +364,53 @@ msgstr "یہاں تقریباً 12 سیکنڈ لوپ ہوتا ہے — آپ کا
 msgid "Scene"
 msgstr "منظر"
 
-#: prefs.js:691
+#: prefs.js:692
 msgid "Panel preview"
 msgstr "پینل کی جھلک"
 
-#: prefs.js:692
+#: prefs.js:693
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
 msgstr ""
 "اس منظر کے لیے پینل بٹن کیسا دکھتا ہے — فرضی درجہ حرارت، علامت کی اصل حرکت"
 
-#: prefs.js:698
+#: prefs.js:699
 msgid "Menu backdrop preview"
 msgstr "فہرست کے پس منظر کی جھلک"
 
-#: prefs.js:699
+#: prefs.js:700
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "آپ کی فہرست کا موجودہ آسمان، براہ راست — اسے یہاں متحرک کرنے کے لیے اوپر "
 "کوئی حالت چنیں"
 
-#: prefs.js:730
+#: prefs.js:731
 msgid "About"
 msgstr "تعارف"
 
-#: prefs.js:737
+#: prefs.js:738
 msgid "Version"
 msgstr "ورژن"
 
-#: prefs.js:741
+#: prefs.js:742
+msgid "Contact"
+msgstr "رابطہ"
+
+#: prefs.js:746
 msgid "Free and open source"
 msgstr "مفت اور اوپن سورس"
 
-#: prefs.js:742
+#: prefs.js:747
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "نہ اشتہارات، نہ اکاؤنٹ، نہ ڈیٹا کی جمع — آسمان کو بس چلنا چاہیے"
 
-#: prefs.js:747
+#: prefs.js:752
 msgid "Support the development"
 msgstr "ترقی میں تعاون کریں"
 
-#: prefs.js:748
+#: prefs.js:753
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -414,7 +418,7 @@ msgstr ""
 "Weatherglass ہمیشہ مفت رہے گا۔ اگر یہ آپ کے ڈیسک ٹاپ کو خوبصورت بناتا ہے تو "
 "ایک کافی پکسلز کی بارش جاری رکھے گی۔"
 
-#: prefs.js:751
+#: prefs.js:756
 msgid "Buy me a coffee"
 msgstr "میرے لیے کافی خریدیں"
 
