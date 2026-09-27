@@ -21,6 +21,18 @@ SCHEMA=$(python3 -c "import json;print(json.load(open('metadata.json'))['setting
     || fail "settings-schema '$SCHEMA' does not match uuid '$UUID' (EGO requires org.gnome.shell.extensions.<first uuid part>)"
 python3 -c "import json,sys; v=json.load(open('metadata.json'))['version']; sys.exit(0 if isinstance(v,int) else 1)" \
     || fail 'metadata version must be an integer for EGO update diffing'
+# the upload validator demands every one of these — check them locally
+python3 - <<'EOF' || exit 1
+import json, sys
+md = json.load(open('metadata.json'))
+missing = [k for k in ('uuid', 'name', 'description', 'shell-version',
+                       'version', 'url') if k not in md]
+if missing:
+    sys.exit(f"package: FAIL: metadata.json missing {missing} (EGO validator requires them)")
+if not md['url'].startswith('https://'):
+    sys.exit('package: FAIL: metadata url must be https')
+EOF
+[[ $? == 0 ]] || exit 1
 
 have zip || fail 'zip not found'
 
