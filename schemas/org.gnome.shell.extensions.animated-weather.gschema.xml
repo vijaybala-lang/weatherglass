@@ -119,6 +119,19 @@ the charts drawn in the OS accent colour</description>
 to empty when the preview ends</description>
     </key>
 
+    <key name="live-scene" type="s">
+      <default>'partly'</default>
+      <summary>The sky the menu is currently painting</summary>
+      <description>Runtime state written by the extension; the preferences
+      legend shows it as the idle backdrop preview</description>
+    </key>
+
+    <key name="live-night" type="b">
+      <default>false</default>
+      <summary>Whether that sky is the night variant</summary>
+      <description>Runtime state written by the extension</description>
+    </key>
+
     <key name="windy-threshold" type="i">
       <range min="0" max="120"/>
       <default>30</default>

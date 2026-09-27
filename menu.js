@@ -211,7 +211,7 @@ class ChartArea extends St.DrawingArea {
 export class ForecastPanel {
     constructor({animate}) {
         this._animate = animate;
-        this._onRefresh = this._onSettings = null;
+        this._onRefresh = this._onSettings = this._onSky = null;
 
         this._day = 0;
         this._metric = 'temp';
@@ -379,6 +379,8 @@ export class ForecastPanel {
 
     onRefresh(cb)  { this._onRefresh = cb; }
     onSettings(cb) { this._onSettings = cb; }
+    /** reports the sky the menu just started painting: (scene, night) */
+    onSky(cb)      { this._onSky = cb; }
 
     setPlaceName(name) {
         this._cityLbl.set_text(name || 'Weather');
@@ -624,6 +626,9 @@ export class ForecastPanel {
         this._skyOpts.scene = scene;
         this._skyOpts.night = night;
         this._skyOpts.phase = Number.isFinite(s.phase) ? s.phase : null;
+        // only today's sky is "live state"; browsing future tiles is transient
+        if (this._day === 0)
+            this._onSky?.(scene, night);
         this._skyArea.queue_repaint();
     }
 

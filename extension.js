@@ -81,6 +81,11 @@ class WeatherIndicator extends PanelMenu.Button {
         this._panel = new ForecastPanel({animate: this._settings.get_boolean('animate')});
         this._panel.onRefresh(() => this._fetch(true));
         this._panel.onSettings(() => this._ext.openPreferences());
+        // remember the live sky so the preferences legend can idle on it
+        this._panel.onSky((scene, night) => {
+            this._settings.set_string('live-scene', scene);
+            this._settings.set_boolean('live-night', night);
+        });
 
         // OS dark-mode + accent tracking: color-scheme wins, legacy bool is
         // the fallback; accent-color feeds the 'accent' menu style
@@ -398,6 +403,11 @@ class WeatherIndicator extends PanelMenu.Button {
         this._panel = new ForecastPanel({animate});
         this._panel.onRefresh(() => this._fetch(true));
         this._panel.onSettings(() => this._ext.openPreferences());
+        // remember the live sky so the preferences legend can idle on it
+        this._panel.onSky((scene, night) => {
+            this._settings.set_string('live-scene', scene);
+            this._settings.set_boolean('live-night', night);
+        });
         this._syncPanelLook();
         this._panel.setPlaceName(this._placeName());
         this._section.actor.add_child(this._panel.actor);

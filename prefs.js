@@ -374,7 +374,9 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         const skyArea = new Gtk.DrawingArea();
         skyArea.set_size_request(-1, 190);
         let skyPool = null, timerId = 0, t0 = 0;
-        let skyScene = null, skyNight = false;
+        // idle backdrop = the sky the menu is painting RIGHT NOW
+        let skyScene = settings.get_string('live-scene') || 'partly';
+        let skyNight = settings.get_boolean('live-night');
         const stopSky = () => {
             if (timerId) {
                 GLib.source_remove(timerId);
@@ -395,7 +397,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             const t = timerId ? (GLib.get_monotonic_time() - t0) / 1e6 : 4.1;
             paintSky(cr, {
                 w, h, time: t,
-                scene: skyScene ?? 'partly',
+                scene: skyScene,
                 night: skyNight,
                 sky: skyPool,
                 radius: 14,
@@ -413,9 +415,22 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             const v = settings.get_string('preview-scene');
             if (v)
                 showSky(v);
-            else
-                stopSky();          // back to the still partly frame
+            else {
+                stopSky();
+                liveSwap();     // back to the menu's actual sky
+            }
         });
+        /* Idle follows the menu: clear night shows tonight's real moon,
+         * cloudy night the moon behind clouds, and so on. */
+        const liveSwap = () => {
+            if (timerId)
+                return;                 // a running preview outranks live state
+            skyScene = settings.get_string('live-scene') || 'partly';
+            skyNight = settings.get_boolean('live-night');
+            skyArea.queue_draw();
+        };
+        settings.connect('changed::live-scene', liveSwap);
+        settings.connect('changed::live-night', liveSwap);
         areas.push(skyArea);        // theme flips repaint it too
 
         for (const [i, [scene, label]] of LEGEND.entries()) {
@@ -447,8 +462,8 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
         const skyGroup = new Adw.PreferencesGroup({
             title: 'Menu backdrop preview',
-            description: 'The dropdown sky, live — click a condition above to ' +
-                         'animate it here and on the panel icon',
+            description: 'The sky your menu paints right now, live — click a ' +
+                         'condition above to animate it here and on the panel icon',
         });
         skyGroup.add(skyArea);
         page.add(skyGroup);
