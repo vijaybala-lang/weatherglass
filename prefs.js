@@ -15,8 +15,8 @@ import {createSky, paintSky} from './sky.js';
 const UNITS = ['metric', 'imperial'];
 const STYLES = ['animated', 'solid', 'accent'];
 
-/* Every scene the menu can draw — drives the Legend page's clickable
- * rows and the live sky preview under them. */
+/* Every scene the menu can draw — drives the Preview page's scene
+ * dropdown and its live sky preview. */
 const LEGEND = [
     ['sun',    'Clear sky'],
     ['moon',   'Clear night'],
@@ -69,7 +69,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         window.set_default_size(560, 640);
 
         window.add(this._aboutPage());
-        window.add(this._legendPage(settings));
+        window.add(this._previewPage(settings));
         window.add(this._locationPage(settings, client));
         window.add(this._displayPage(settings));
         window.add(this._dataPage(settings));
@@ -351,19 +351,12 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         return page;
     }
 
-    /* ── legend: glyphs, live-rendered, clickable ────────────────────────── */
+    /* ── preview: pick a scene, watch it on sky + panel icon ─────────────── */
 
-    _legendPage(settings) {
+    _previewPage(settings) {
         const page = new Adw.PreferencesPage({
-            title: 'Legend',
-            icon_name: 'view-list-symbolic',
-        });
-        // the SAME cairo painter the menu uses (no PNGs to go stale; the
-        // palette follows the window's light/dark state)
-        const legendGroup = new Adw.PreferencesGroup({
-            title: 'Condition icons',
-            description: 'Every glyph the menu and panel draw — click one to ' +
-                         'play it on the panel icon and in the sky below',
+            title: 'Preview',
+            icon_name: 'media-playback-start-symbolic',
         });
         const sm = Adw.StyleManager.get_default();
         const areas = [];
@@ -411,15 +404,6 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             if (cur)
                 showSky(cur);
         });
-        settings.connect('changed::preview-scene', () => {
-            const v = settings.get_string('preview-scene');
-            if (v)
-                showSky(v);
-            else {
-                stopSky();
-                liveSwap();     // back to the menu's actual sky
-            }
-        });
         /* Idle follows the menu: clear night shows tonight's real moon,
          * cloudy night the moon behind clouds, and so on. */
         const liveSwap = () => {
@@ -433,40 +417,69 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         settings.connect('changed::live-night', liveSwap);
         areas.push(skyArea);        // theme flips repaint it too
 
-        for (const [i, [scene, label]] of LEGEND.entries()) {
-            const row = new Adw.ActionRow({title: label, activatable: true});
-            const da = new Gtk.DrawingArea();
-            da.set_size_request(30, 30);
-            da.set_valign(Gtk.Align.CENTER);   // line up with the row title
-            da.set_draw_func((area, cr, w, h) => {
-                cr.save();
-                const s = Math.min(w, h) / 24;
-                cr.scale(s, s);
-                paintWeather(cr, {scene, time: 4.1 + i * 0.2,
-                                  dark: sm.dark,
-                                  night: scene === 'moon',
-                                  intensity: LEGEND_INT[scene] ?? 0});
-                cr.restore();
-            });
-            areas.push(da);
-            row.add_prefix(da);
-            row.add_suffix(new Gtk.Image({icon_name: 'media-playback-start-symbolic'}));
-            row.connect('activated', () => {
-                settings.set_string('preview-scene', scene);
-                showSky(scene);     // set_string may not fire 'changed' on re-click
-            });
-            legendGroup.add(row);
-        }
-        sm.connect('notify::dark-mode', () => areas.forEach(a => a.queue_draw()));
-        page.add(legendGroup);
+        // one dropdown instead of eleven rows: pick a scene, everything
+        // (glyph, panel icon, sky) answers to the pick — no scrolling
+        const sceneRow = new Adw.ComboRow({
+            title: 'Preview scene',
+            subtitle: 'Plays on the panel icon for ~12 s — the sky animates too',
+            model: new Gtk.StringList({strings: LEGEND.map(([, l]) => l)}),
+        });
+        // the picked scene's glyph, painted by the real menu painter
+        const glyph = new Gtk.DrawingArea();
+        glyph.set_size_request(30, 30);
+        glyph.set_valign(Gtk.Align.CENTER);
+        glyph.set_draw_func((a, cr, w, h) => {
+            const [scene] = LEGEND[sceneRow.get_selected()] ?? LEGEND[2];
+            cr.save();
+            const s = Math.min(w, h) / 24;
+            cr.scale(s, s);
+            paintWeather(cr, {scene, time: 4.1,
+                              dark: sm.dark,
+                              night: scene === 'moon',
+                              intensity: LEGEND_INT[scene] ?? 0});
+            cr.restore();
+        });
+        areas.push(glyph);
+        sceneRow.add_prefix(glyph);
+        let armed = false;          // wiring-time set_selected must not preview
+        sceneRow.connect('notify::selected', () => {
+            if (!armed)
+                return;
+            const [scene] = LEGEND[sceneRow.get_selected()] ?? LEGEND[2];
+            glyph.queue_draw();
+            settings.set_string('preview-scene', scene);
+            showSky(scene);         // same pick twice: set_string stays silent
+        });
+        settings.connect('changed::preview-scene', () => {
+            const v = settings.get_string('preview-scene');
+            if (v) {
+                const i = LEGEND.findIndex(([s]) => s === v);
+                if (i >= 0 && i !== sceneRow.get_selected())
+                    sceneRow.set_selected(i);   // external picks retarget too
+                if (v !== skyScene)
+                    showSky(v);
+            } else {
+                stopSky();
+                liveSwap();         // back to the menu's actual sky
+            }
+        });
+        const initial = LEGEND.findIndex(([s]) =>
+            s === settings.get_string('preview-scene'));
+        sceneRow.set_selected(initial >= 0 ? initial : 2);   // idle: 'partly'
+        armed = true;
+
+        const sceneGroup = new Adw.PreferencesGroup({title: 'Scene'});
+        sceneGroup.add(sceneRow);
+        page.add(sceneGroup);
 
         const skyGroup = new Adw.PreferencesGroup({
             title: 'Menu backdrop preview',
-            description: 'The sky your menu paints right now, live — click a ' +
-                         'condition above to animate it here and on the panel icon',
+            description: 'Your menu\'s current sky, live — pick a condition ' +
+                         'above to animate it here and on the panel icon',
         });
         skyGroup.add(skyArea);
         page.add(skyGroup);
+        sm.connect('notify::dark-mode', () => areas.forEach(a => a.queue_draw()));
         return page;
     }
 
