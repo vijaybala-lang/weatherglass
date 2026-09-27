@@ -67,17 +67,41 @@ export const pickInk = bg =>
     ratio(INK_DARK, bg) >= ratio(INK_LIGHT, bg) * 1.35 ? INK_DARK : INK_LIGHT;
 
 /* Curve ink over the animated/solid sky. The metric colour is identity
- * (precip blue, temp amber, wind mint) — so instead of trading it away,
- * offer a channel-wise darkened twin (same ratios = exactly the same
- * hue) and let the ratio referee swap in the twin only where the base
- * truly fails: worst case under the curve below 3:1, WCAG's floor for
- * graphical objects. On the dark night sky the base easily clears it. */
+ * (precip blue, temp amber, wind mint) — so over bright skies we deepen
+ * rather than replace. Multiplying channels darkens but ALSO dulls (olive
+ * amber, steel blue — the eye reads desaturated), so the twin is built in
+ * HSV instead: brightness walks down only as far as it must to hold ~3:1
+ * (WCAG's graphics floor), saturation pushes UP to stay vivid, and warm
+ * hues lean a few degrees toward red — the artist's trick against mud. */
+const deepen = base => {
+    const mx = Math.max(...base), mn = Math.min(...base), d = mx - mn;
+    let h = d === 0 ? 0
+        : mx === base[0] ? (60 * ((base[1] - base[2]) / d) + 360) % 360
+        : mx === base[1] ? 60 * ((base[2] - base[0]) / d + 2)
+        : 60 * ((base[0] - base[1]) / d + 4);
+    const s = Math.min(1, (mx === 0 ? 0 : d / mx) * 1.3 + 0.12);
+    if (h > 15 && h < 75)
+        h -= 9;                        // amber: fruit, not mud
+    const toRgb = v => {
+        const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+        return [[c, x, 0], [x, c, 0], [0, c, x],
+                [0, x, c], [x, 0, c], [c, 0, x]][Math.floor(h / 60) % 6]
+            .map(k => k + m);
+    };
+    return toRgb;
+};
+
 export const lineInk = (base, bgs) => {
     if (!bgs.length)
         return base;
     const worst = c => Math.min(...bgs.map(bg => ratio(c, bg)));
-    const deep = base.map(v => v * 0.42);
-    return worst(base) < 3 && worst(deep) > worst(base) ? deep : base;
+    if (worst(base) >= 3)
+        return base;
+    const toRgb = deepen(base);
+    let v = Math.max(...base);
+    while (v > 0.08 && worst(toRgb(v)) < 3.1)
+        v *= 0.92;
+    return toRgb(v);
 };
 
 /** [w, h] pixel extents of a label in the chart font (same font set-up as
@@ -206,8 +230,8 @@ export function paintChart(cr, opts) {
 
     /* Smart curve ink: a light-blue 2px line milks out over bright
      * overcast cloud (worst case ~1.6:1 in the wild). Sample the real
-     * backdrop across the curve's own y-spread and darken the hue
-     * (hue-preserving) if it can't hold WCAG's 3:1 graphics floor. */
+     * backdrop across the curve's own y-spread and deepen the hue — vivid,
+     * saturation-true — if it can't hold WCAG's 3:1 graphics floor. */
     const curveBgs = [];
     if (bgFn)
         for (let i = 0; i < pts.length; i += Math.max(1, pts.length >> 2))

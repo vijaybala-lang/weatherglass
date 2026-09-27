@@ -75,6 +75,9 @@ const CASES = [
     // bright overcast day + tiny percentages: demos the smart curve ink —
     // lineInk deepens the metric hue in place when it can't hold 3:1
     {scene: 'cloud', night: false, live: true, pct: true, values: [0, 0, 1, 2, 3, 2, 1, 0, 0, 0, 1, 0, 2, 3, 4, 3, 1, 0, 0, 1, 0, 0, 0, 0], accent: [0.30, 0.64, 1.0], nowFrac: 2 / 23, strip: 'icons', stripPos: 'bottom'},
+    // amber temp line over a bright clear day: demos the VIVID deepening
+    // (saturation up, warm hue toward red) vs the old muddy multiply
+    {scene: 'clear', night: false, live: true, values: DATA.hourly.temperature_2m.slice(16, 40), accent: [0.96, 0.65, 0.14], nowFrac: 2 / 23, strip: 'icons', stripPos: 'bottom'},
 ];
 
 const outDir = GLib.build_filenamev([GLib.get_current_dir(), 'tools', 'out', 'cards']);
