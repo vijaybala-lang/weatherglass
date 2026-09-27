@@ -67,21 +67,54 @@ export const pickInk = bg =>
     ratio(INK_DARK, bg) >= ratio(INK_LIGHT, bg) * 1.35 ? INK_DARK : INK_LIGHT;
 
 /* Curve ink over the animated/solid sky. The metric colour is identity
- * (precip blue, temp amber, wind mint), and darkening it to survive
- * bright skies fails perception anyway — brown IS dark orange on a
- * bright surround, no saturation trick escapes it. So when the base
- * can't hold WCAG's 3:1 graphics floor, keep the line at FULL
- * vividness and add a dark hairline rim instead: the rim's edge
- * contrast carries readability against any backdrop while the core
- * keeps its sunny identity. */
+ * (precip blue, temp amber, wind mint) — so over bright skies we deepen
+ * rather than replace. Multiplying channels darkens but ALSO dulls (olive
+ * amber, steel blue — the eye reads desaturated), so the twin is built in
+ * HSV instead: brightness walks down only as far as it must, saturation
+ * pushes UP to stay vivid, and warm hues swing toward red, where the
+ * same contrast ratio is earned at a much brighter value. */
+const deepen = base => {
+    const mx = Math.max(...base), mn = Math.min(...base), d = mx - mn;
+    let h = d === 0 ? 0
+        : mx === base[0] ? (60 * ((base[1] - base[2]) / d) + 360) % 360
+        : mx === base[1] ? 60 * ((base[2] - base[0]) / d + 2)
+        : 60 * ((base[0] - base[1]) / d + 4);
+    const s = Math.min(1, (mx === 0 ? 0 : d / mx) * 1.3 + 0.12);
+    /* Warm hues swing 18° toward red. Not taste: green dominates
+     * luminance, so the more red an ink is, the BRIGHTER it may stay at
+     * the same contrast ratio — vermilion clears the floor at chili
+     * brightness where pure amber could only reach mud. */
+    const warm = h > 15 && h < 75;
+    if (warm)
+        h -= 18;
+    const toRgb = v => {
+        const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+        return [[c, x, 0], [x, c, 0], [0, c, x],
+                [0, x, c], [x, 0, c], [c, 0, x]][Math.floor(h / 60) % 6]
+            .map(k => k + m);
+    };
+    return {toRgb, warm};
+};
+
 export const lineInk = (base, bgs) => {
     if (!bgs.length)
-        return {core: base, rim: null};
+        return base;
     const worst = c => Math.min(...bgs.map(bg => ratio(c, bg)));
-    if (worst(base) >= 3)
-        return {core: base, rim: null};
-    const rim = worst(INK_DARK) >= worst(INK_LIGHT) ? INK_DARK : INK_LIGHT;
-    return {core: base, rim: [...rim, 0.85]};
+    const {toRgb, warm} = deepen(base);
+    /* WCAG's 3:1 floor stays for the cool inks; warm ink drops to 2.5
+     * — red carries far less luminance per unit brightness, so holding
+     * 3:1 forces amber back into brick. On a 3 px stroke 2.5:1 is
+     * still unmistakable against moving sky, and it's what lets the
+     * temp line look LIT rather than leathery over a bright day. The
+     * gate shares the floor: warm ink clears 2.5 keeps its TRUE base
+     * colour (mid-tone skies no longer dull it at all). */
+    const floor = warm ? 2.5 : 3.05;
+    if (worst(base) >= floor)
+        return base;
+    let v = Math.max(...base);
+    while (v > 0.08 && worst(toRgb(v)) < floor)
+        v *= 0.97;
+    return toRgb(v);
 };
 
 /** [w, h] pixel extents of a label in the chart font (same font set-up as
@@ -210,16 +243,13 @@ export function paintChart(cr, opts) {
 
     /* Smart curve ink: a light-blue 2px line milks out over bright
      * overcast cloud (worst case ~1.6:1 in the wild). Sample the real
-     * backdrop across the curve's own y-spread; when the metric colour
-     * can't hold 3:1, it keeps its full saturation and gains a dark
-     * hairline rim — edge contrast, not dulling, does the work. */
+     * backdrop across the curve's own y-spread and deepen the hue — vivid,
+     * saturation-true — if it can't hold WCAG's 3:1 graphics floor. */
     const curveBgs = [];
     if (bgFn)
         for (let i = 0; i < pts.length; i += Math.max(1, pts.length >> 2))
             curveBgs.push(bgFn(pts[i][1]));
-    const line = lineInk(accent, curveBgs);
-    const [acR, acG, acB] = line.core;
-    const rimPad = line.rim ? 0.8 : 0;   // label clearance: rim's outer edge
+    const [acR, acG, acB] = lineInk(accent, curveBgs);
 
     // All grid ink (area fill, curve, value/hour labels) is drawn into an
     // isolated cairo group and composited back at the end: past the marker
@@ -246,13 +276,6 @@ export function paintChart(cr, opts) {
     // whole closed area polygon — the "box around the line" bug
     cr.newPath();
     tracePath(cr, pts);
-    if (line.rim) {
-        // rim first (strokePreserve keeps the path), then the vivid core
-        cr.setSourceRGBA(...line.rim);
-        cr.setLineWidth(LINE_W + 1.6);
-        cr.setLineCap(Cairo.LineCap.ROUND);
-        cr.strokePreserve();
-    }
     cr.setSourceRGBA(acR, acG, acB, 1);
     cr.setLineWidth(LINE_W);
     cr.setLineCap(Cairo.LineCap.ROUND);
@@ -319,7 +342,7 @@ export function paintChart(cr, opts) {
     const placeLabel = (txt, lx, y0, a) => {
         const [tw, th] = textPx(cr, txt, FS, true);
         const x0 = a === 'start' ? lx : a === 'end' ? lx - tw : lx - tw / 2;
-        const floor = curveMin(x0, x0 + tw) - LINE_W / 2 - 2 - rimPad;
+        const floor = curveMin(x0, x0 + tw) - LINE_W / 2 - 2;
         for (const yy of [Math.min(y0, floor), y0 - 15, y0 + 15]) {
             const yc = Math.min(yy, floor);
             const b = boxOf(x0, tw, th, yc);
@@ -338,7 +361,7 @@ export function paintChart(cr, opts) {
         const [tw, th] = textPx(cr, txt, FS, true);
         const x0 = a === 'start' ? lx : a === 'end' ? lx - tw : lx - tw / 2;
         const y = Math.min(Y(values[nowI]) - 22 + 1,
-                           curveMin(x0, x0 + tw) - LINE_W / 2 - 2 - rimPad);
+                           curveMin(x0, x0 + tw) - LINE_W / 2 - 2);
         nowPlace = { txt, lx, y, a };
         used.push(boxOf(x0, tw, th, y));
     }
