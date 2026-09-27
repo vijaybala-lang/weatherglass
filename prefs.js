@@ -5,6 +5,7 @@ import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
+import Cairo from 'gi://cairo';
 
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
@@ -477,53 +478,138 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
          * temperature suffix only if show-temperature is on. The number
          * is a prop (scale follows the units key); the icon is the truth. */
         const barArea = new Gtk.DrawingArea();
-        barArea.set_size_request(-1, 44);
+        barArea.set_size_request(-1, 58);
         barArea.set_draw_func((a, cr, w, h) => {
             const dark = sm.dark;
-            cr.setSourceRGBA(...(dark ? [0.10, 0.10, 0.12, 1]
-                : [0.91, 0.91, 0.93, 1]));
-            cr.rectangle(0, 0, w, h);
+            const BH = 34;                 // real top-bar height
+            /* wallpaper band under the bar, so the translucent bar composites
+             * over a scene exactly like it does on a real desktop */
+            const wp = new Cairo.LinearGradient(0, BH - 4, 0, h + 6);
+            wp.addColorStopRGB(0, 0.40, 0.62, 0.86);
+            wp.addColorStopRGB(1, 0.82, 0.89, 0.95);
+            cr.setSource(wp);
+            cr.rectangle(0, BH - 4, w, h - BH + 4);
             cr.fill();
+            for (const [cxr, cyr, r] of [[w * 0.22, h + 2, 26],
+                                         [w * 0.58, h + 8, 30],
+                                         [w * 0.85, h + 1, 22]]) {
+                const g = new Cairo.RadialGradient(cxr, cyr, 2, cxr, cyr, r);
+                g.addColorStopRGBA(0, 1, 1, 1, 0.65);
+                g.addColorStopRGBA(1, 1, 1, 1, 0);
+                cr.setSource(g);
+                cr.arc(cxr, cyr, r, 0, 2 * Math.PI);
+                cr.fill();
+            }
+
+            const txt = dark ? [1, 1, 1, 1] : [0.13, 0.13, 0.16, 1];
+            /* the bar itself — translucent over the wallpaper, hairline edge */
+            cr.setSourceRGBA(...(dark ? [0.05, 0.06, 0.08, 0.62]
+                : [1, 1, 1, 0.55]));
+            cr.rectangle(0, 0, w, BH);
+            cr.fill();
+            cr.setSourceRGBA(0, 0, 0, 0.22);
+            cr.rectangle(0, BH - 1, w, 1);
+            cr.fill();
+
+            /* RTL sessions: the bar mirrors — clock to the right, status
+             * cluster to the left — same flip the real panel performs */
+            const rtl = Gtk.get_locale_direction() === Gtk.TextDirection.RTL;
+            const cy = BH / 2;
+
+            // live clock, GNOME-style: "Sep 27  10:39 AM"
+            const now = GLib.DateTime.new_now_local();
+            const clock = now.format('%b %e').replace(/\s+/g, ' ')
+                + '  ' + now.format('%I:%M %p').replace(/^0/, '');
+            drawText(cr, clock, rtl ? w - 16 : 16, cy + 4,
+                     {size: 11, bold: true, rgba: txt,
+                      anchor: rtl ? 'end' : 'start'});
+
+            // status cluster, logical order: our indicator, then system trio
             const scene = sceneNow();
             const tempTxt = settings.get_boolean('show-temperature')
                 ? (settings.get_string('units') === 'metric'
                     ? '20°' : '68°') : '';
-            const showIcon = settings.get_boolean('show-icon');
-            const iW = showIcon ? 24 : 0;
-            const gap = tempTxt && iW ? 6 : 0;
-            const tW = tempTxt ? 30 : 0;
-            const bw = 14 + iW + gap + tW, bh = 28;
-            const bx = (w - bw) / 2, by = (h - bh) / 2, r = 8;
-            cr.setSourceRGBA(...(dark ? [1, 1, 1, 0.12] : [0, 0, 0, 0.10]));
-            cr.newPath();
-            cr.arc(bx + bw - r, by + r, r, -Math.PI / 2, 0);
-            cr.arc(bx + bw - r, by + bh - r, r, 0, Math.PI / 2);
-            cr.arc(bx + r, by + bh - r, r, Math.PI / 2, Math.PI);
-            cr.arc(bx + r, by + r, r, Math.PI, 1.5 * Math.PI);
-            cr.closePath();
-            cr.fill();
-            let x = bx + 7;
-            if (showIcon) {
-                cr.save();
-                cr.translate(x, by + (bh - 24) / 2);
-                cr.scale(1, 1);
-                paintWeather(cr, {
-                    scene,
-                    time: timerId
-                        ? (GLib.get_monotonic_time() - t0) / 1e6 : 4.1,
-                    dark,
-                    night: nightNow(),
-                    windy: ['sun', 'moon', 'partly', 'cloud', 'fog', 'wind']
-                        .includes(scene),
-                    windKmh: 34,
-                    intensity: previewScene ? 7 : (LEGEND_INT[scene] ?? 0),
-                });
-                cr.restore();
-                x += iW + gap;
-            }
+            const items = [];
+            if (settings.get_boolean('show-icon'))
+                items.push({w: 24, draw: x => {
+                    cr.save();
+                    cr.translate(x + 2, cy - 10);
+                    cr.scale(20 / 24, 20 / 24);
+                    paintWeather(cr, {
+                        scene,
+                        time: timerId
+                            ? (GLib.get_monotonic_time() - t0) / 1e6 : 4.1,
+                        dark,
+                        night: nightNow(),
+                        windy: ['sun', 'moon', 'partly', 'cloud', 'fog', 'wind']
+                            .includes(scene),
+                        windKmh: 34,
+                        intensity: previewScene ? 7 : (LEGEND_INT[scene] ?? 0),
+                    });
+                    cr.restore();
+                }});
             if (tempTxt)
-                drawText(cr, tempTxt, x + tW / 2, by + bh / 2 + 5,
-                         {size: 11, rgba: [...(dark ? [1, 1, 1] : [0.1, 0.1, 0.12]), 1]});
+                items.push({w: 34, draw: x =>
+                    drawText(cr, tempTxt, x + 17, cy + 4, {size: 11, rgba: txt})});
+            items.push({w: 18, gapBefore: true, draw: x => {      // wifi
+                cr.setSourceRGBA(...txt);
+                cr.newPath();          // drawText left a pen position; arc()
+                                       // would stroke a connector from it
+                cr.setLineWidth(1.4);
+                const wx = x + 9, wy = cy + 5;
+                cr.arc(wx, wy, 3.4, Math.PI * 1.25, Math.PI * 1.75);
+                cr.stroke();
+                cr.arc(wx, wy, 6.4, Math.PI * 1.25, Math.PI * 1.75);
+                cr.stroke();
+                cr.arc(wx, wy - 1, 1.3, 0, 2 * Math.PI);
+                cr.fill();
+            }});
+            items.push({w: 18, draw: x => {                        // speaker
+                cr.setSourceRGBA(...txt);
+                cr.moveTo(x + 2.5, cy - 2.2);
+                cr.lineTo(x + 5.2, cy - 2.2);
+                cr.lineTo(x + 8.8, cy - 5.8);
+                cr.lineTo(x + 8.8, cy + 5.8);
+                cr.lineTo(x + 5.2, cy + 2.2);
+                cr.lineTo(x + 2.5, cy + 2.2);
+                cr.closePath();
+                cr.fill();
+                cr.setLineWidth(1.2);
+                cr.arc(x + 6.8, cy, 4.6, -0.85, 0.85);
+                cr.stroke();
+            }});
+            items.push({w: 52, draw: x => {                        // battery
+                cr.setSourceRGBA(...txt);
+                cr.setLineWidth(1.2);
+                const bw = 19, bh = 10, bx = x, by = cy - bh / 2;
+                const rr = 2.4;
+                cr.newPath();
+                cr.arc(bx + bw - rr, by + rr, rr, -Math.PI / 2, 0);
+                cr.arc(bx + bw - rr, by + bh - rr, rr, 0, Math.PI / 2);
+                cr.arc(bx + rr, by + bh - rr, rr, Math.PI / 2, Math.PI);
+                cr.arc(bx + rr, by + rr, rr, Math.PI, 1.5 * Math.PI);
+                cr.closePath();
+                cr.stroke();
+                cr.rectangle(bx + bw + 1.4, cy - 2, 1.7, 4);
+                cr.fill();
+                cr.rectangle(bx + 2.4, by + 2.4, (bw - 4.8) * 0.72, bh - 4.8);
+                cr.fill();
+                drawText(cr, '72%', bx + bw + 6, cy + 4,
+                         {size: 11, rgba: txt, anchor: 'start'});
+            }});
+
+            const GAP = 8, BIGGAP = 16;
+            const total = items.reduce((s, it, k) =>
+                s + it.w + (k && it.gapBefore ? BIGGAP : k ? GAP : 0), 0);
+            if (rtl)
+                items.reverse();
+            let x = rtl ? 16 : w - 16 - total;
+            items.forEach((it, k) => {
+                if (k)
+                    x += it.gapBefore ? BIGGAP : GAP;
+                it.draw(x);
+                x += it.w;
+            });
         });
 
         // ── live dropdown backdrop ───────────────────────────────────────
