@@ -81,7 +81,6 @@ class WeatherIndicator extends PanelMenu.Button {
         this._panel = new ForecastPanel({animate: this._settings.get_boolean('animate')});
         this._panel.onRefresh(() => this._fetch(true));
         this._panel.onSettings(() => this._ext.openPreferences());
-        this._panel.onUnits(() => this._toggleUnits());
 
         // OS dark-mode + accent tracking: color-scheme wins, legacy bool is
         // the fallback; accent-color feeds the 'accent' menu style
@@ -143,12 +142,6 @@ class WeatherIndicator extends PanelMenu.Button {
 
     _units() {
         return this._settings.get_string('units');
-    }
-
-    /** Flip metric/imperial — the settings-change handler does the refetch. */
-    _toggleUnits() {
-        const u = this._settings.get_string('units');
-        this._settings.set_string('units', u === 'imperial' ? 'metric' : 'imperial');
     }
 
     /** Mirror GNOME's own dark-mode rule: color-scheme preference wins,
@@ -405,7 +398,6 @@ class WeatherIndicator extends PanelMenu.Button {
         this._panel = new ForecastPanel({animate});
         this._panel.onRefresh(() => this._fetch(true));
         this._panel.onSettings(() => this._ext.openPreferences());
-        this._panel.onUnits(() => this._toggleUnits());
         this._syncPanelLook();
         this._panel.setPlaceName(this._placeName());
         this._section.actor.add_child(this._panel.actor);

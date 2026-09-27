@@ -4,8 +4,8 @@
  *
  * This file mirrors the mockup's narrow (≤560px) breakpoint, which is the
  * card's actual size (330×430): no big header icon and no details grid (the
- * chart beats them for space there), flat tabs over a hairline rule, a plain
- * °F | °C text toggle, hi/lo on one line, "Today" labels the first tile.
+ * chart beats them for space there), pill tabs, units live in preferences,
+ * hi/lo on one line, "Today" labels the first tile.
  *
  * All drawing is delegated to the pure-cairo modules sky.js and chart.js;
  * this file is St glue + selection state. Dark and light themes (tracked
@@ -29,9 +29,9 @@ const STATIC_TIME = 1.1;     // frame that makes static mini icons look lively
 const MORPH_MS = 420, MORPH_TICK = 25;
 
 const METRICS = {
-    temp:   {label: 'Temperature',   accent: [0.96, 0.65, 0.14], underline: 'aw-tab-temp'},
-    precip: {label: 'Precipitation', accent: [0.30, 0.64, 1.00], underline: 'aw-tab-precip'},
-    wind:   {label: 'Wind',          accent: [0.24, 0.81, 0.56], underline: 'aw-tab-wind'},
+    temp:   {label: 'Temperature',   accent: [0.96, 0.65, 0.14]},
+    precip: {label: 'Precipitation', accent: [0.30, 0.64, 1.00]},
+    wind:   {label: 'Wind',          accent: [0.24, 0.81, 0.56]},
 };
 
 /* Theme = label ink + a scrim painted over the sky. Dark keeps the sky as
@@ -198,6 +198,9 @@ class ChartArea extends St.DrawingArea {
             // it a contrast-safe variant of the accent (no-op when the
             // accent already clears ~3:1 against the composited backdrop)
             nowLabel: contrastSafe(accent, p._bgUnderChart()),
+            // strip icons get a hairline silhouette ring when the backdrop
+            // under the chart is mid/bright (overcast days swallow flat icons)
+            iconOutline: p._iconOutline(),
             fontSize: w < 480 ? 8 : 8.5,
         });
         cr.$dispose();
@@ -209,7 +212,7 @@ class ChartArea extends St.DrawingArea {
 export class ForecastPanel {
     constructor({animate}) {
         this._animate = animate;
-        this._onRefresh = this._onSettings = this._onUnits = null;
+        this._onRefresh = this._onSettings = null;
 
         this._day = 0;
         this._metric = 'temp';
@@ -284,20 +287,10 @@ export class ForecastPanel {
         const tempWrap = row('aw-temp-line');
         this._tempLbl = label('', 'aw-current-temp');
         tempWrap.add_child(this._tempLbl);
-
-        const unitBox = row('aw-unit-toggle');
-        this._unitBtns = {
-            imperial: this._unitButton('°F', () => this._pickUnit('imperial')),
-            metric:   this._unitButton('°C', () => this._pickUnit('metric')),
-        };
-        unitBox.add_child(this._unitBtns.imperial);
-        unitBox.add_child(label('|', 'aw-unit-bar'));
-        unitBox.add_child(this._unitBtns.metric);
-        tempWrap.add_child(unitBox);
         leftCol.add_child(tempWrap);
 
-        // "Partly Cloudy" under the numeral, Apple-style; the unit toggle
-        // stays on the temp's line so the desc row never nudges it
+        // "Partly Cloudy" under the numeral, Apple-style. The °F/°C choice
+        // lives in preferences only — the header reads better without it
         this._descLbl = label('', 'aw-desc');
         this._descLbl.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._descLbl.x_align = Clutter.ActorAlign.START;
@@ -334,8 +327,8 @@ export class ForecastPanel {
         header.add_child(right);
         main.add_child(header);
 
-        // flat text tabs (mock): dim inactive, ink + 3px accent underline
-        // active — then the mock's glass hairline across the card
+        // metric tabs: flat text with a day-tile-style pill behind the
+        // active one (no underline, no hairline rule under the row)
         const tabs = row('aw-tabs');
         this._tabBtns = {};
         for (const [key, m] of Object.entries(METRICS)) {
@@ -350,11 +343,7 @@ export class ForecastPanel {
             this._tabBtns[key] = btn;
         }
         this._tabBtns[this._metric].add_style_class_name('aw-tab-active');
-        this._tabBtns[this._metric].add_style_class_name(METRICS[this._metric].underline);
         main.add_child(tabs);
-
-        main.add_child(new St.Widget({style_class: 'aw-rule',
-                                      y_align: Clutter.ActorAlign.START}));
 
         // chart — full card width (.aw-content has no horizontal padding,
         // the padded rows above/below make their own 14px insets)
@@ -382,23 +371,10 @@ export class ForecastPanel {
         return btn;
     }
 
-    _unitButton(text, cb) {
-        const btn = new St.Button({
-            style_class: 'aw-unit-btn',
-            can_focus: true,
-            y_align: Clutter.ActorAlign.START,
-            child: label(text, 'aw-unit-label'),
-        });
-        btn.set_accessible_name(`Show temperatures in ${text}`);
-        btn.connect('clicked', cb);
-        return btn;
-    }
-
     /* ── public API (used by extension.js) ──────────────────────────────── */
 
     onRefresh(cb)  { this._onRefresh = cb; }
     onSettings(cb) { this._onSettings = cb; }
-    onUnits(cb)    { this._onUnits = cb; }
 
     setPlaceName(name) {
         this._cityLbl.set_text(name || 'Weather');
@@ -476,6 +452,16 @@ export class ForecastPanel {
         return c.map((v, i) => v * (1 - a) + scrim[i] * a);
     }
 
+    /** Ring colour for the chart's condition icons, chosen against the real
+     *  composited backdrop: anything mid-bright and up (overcast is the
+     *  worst offender — a flat grey-blue that swallows flat grey-blue
+     *  clouds) gets a dark hairline silhouette. Dark night skies need none:
+     *  the painter already gives them bright icon palettes. */
+    _iconOutline() {
+        return _lumOf(this._bgUnderChart()) >= 0.38
+            ? [0.04, 0.05, 0.09, 0.5] : null;
+    }
+
     /** state = {current, daily, hourly, currentIso, units, windy, effective,
      *           windKmh, updated, dark} */
     render(state) {
@@ -485,19 +471,13 @@ export class ForecastPanel {
         this._applyTheme();
         this._showBody(true);
 
-        const {current, daily, units} = state;
+        const {current, daily} = state;
         const today = daily[0];
         const {scene, desc} = state.effective ?? sceneFor(current.code, current.isDay);
         const windy = !!state.windy;
+        // the big temp + condition line are (re)written by _syncHeader at the
+        // end of render, so a selected future day survives refreshes
         this._desc = desc;
-        this._descLbl.set_text(desc);
-
-        this._tempLbl.set_text(fmtTemp(current.temp, units));
-        for (const [u, btn] of Object.entries(this._unitBtns)) {
-            btn.remove_style_class_name('aw-unit-on');
-            btn.remove_style_class_name('aw-unit-off');
-            btn.add_style_class_name(u === units ? 'aw-unit-on' : 'aw-unit-off');
-        }
 
         // city clock ticks from the API timestamp (city timezone, not ours)
         this._cityMs = state.currentIso ? Date.parse(state.currentIso) : 0;
@@ -533,12 +513,6 @@ export class ForecastPanel {
 
     /* ── selection logic ────────────────────────────────────────────────── */
 
-    _pickUnit(units) {
-        if (this._state && this._state.units === units)
-            return;                      // already showing that unit
-        this._onUnits?.();               // extension flips the gsetting
-    }
-
     _selectDay(i) {
         if (i === this._day)
             return;
@@ -552,12 +526,10 @@ export class ForecastPanel {
             return;
         this._metric = key;
         for (const [k, btn] of Object.entries(this._tabBtns)) {
-            btn.remove_style_class_name('aw-tab-active');
-            btn.remove_style_class_name(METRICS[k].underline);
-            if (k === key) {
+            if (k === key)
                 btn.add_style_class_name('aw-tab-active');
-                btn.add_style_class_name(METRICS[key].underline);
-            }
+            else
+                btn.remove_style_class_name('aw-tab-active');
         }
         this._applySelection();
     }
@@ -567,9 +539,27 @@ export class ForecastPanel {
         const s = this._state;
         if (!s)
             return;
+        this._syncHeader();
         this._morphTo(this._chartValues());
         this._updateSky();
         this._chart.queue_repaint();
+    }
+
+    /** Big temp + condition text follow the selected day tile: Today shows
+     *  the live observation and its condition; a future day shows that day's
+     *  high and its general condition phrase. */
+    _syncHeader() {
+        const s = this._state;
+        if (!s)
+            return;
+        if (this._day === 0) {
+            this._tempLbl.set_text(fmtTemp(s.current.temp, s.units));
+            this._descLbl.set_text(this._desc);
+        } else {
+            const d = s.daily[Math.min(this._day, s.daily.length - 1)];
+            this._tempLbl.set_text(fmtTemp(d.tmax, s.units));
+            this._descLbl.set_text(sceneFor(d.code, true).desc);
+        }
     }
 
     _chartValues() {

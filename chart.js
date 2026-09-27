@@ -181,27 +181,70 @@ export function paintChart(cr, opts) {
     // value + hour labels. Data bleeds off both ends (the edge hours are
     // still drawn), but the first/last PRINTED label is inset past GUT so
     // nothing clips: we offset the every-EVERY stride to the first index
-    // whose x clears the gutter, leaving unlabeled hours at both ends. The
-    // "now" point and its neighbours make way (its label is drawn after the
-    // group composite, hence the crowded() logic).
+    // whose x clears the gutter, leaving unlabeled hours at both ends.
+    // Past that, TEXT-AWARE collision handling: every label is measured,
+    // committed boxes are remembered, and a colliding label nudges one line
+    // up, then one line down — dropped only if all three slots clash. Wide
+    // wind labels ("11 mph") used to ride over their neighbours at the 3-h
+    // stride, and the accent "now" label (drawn LAST, so its box gets
+    // reserved up front) used to land right on top of them.
     const nowI = nowFrac === null ? -1 : Math.round(nowFrac * (n - 1));
     const span0 = (w - PADX * 2) / (n - 1);
     let off0 = Math.ceil((GUT - PADX) / span0);
     if (off0 < 0) off0 = 0;
-    for (let i = off0; i < n; i += EVERY) {
+    const anchorOf = ax => ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
+    const lxOf = (ax, anchor) =>
+        anchor === 'start' ? Math.max(GUT, ax - 6)
+        : anchor === 'end' ? Math.min(w - GUT, ax + 6) : ax;
+    const boxAt = (txt, lx, y, anchor, bold) => {
+        const [tw, th] = textPx(cr, txt, FS, bold);
+        const x0 = anchor === 'start' ? lx
+                 : anchor === 'end'   ? lx - tw : lx - tw / 2;
+        return [x0 - 1.5, x0 + tw + 1.5, y - th - 1, y + 1];
+    };
+    const hits = (b, list) =>
+        list.some(o => b[0] < o[1] && o[0] < b[1] && b[2] < o[3] && o[2] < b[3]);
+    const used = [];
+    if (nowI >= 0 && fmtValue) {          // reserve the accent label's slot
+        const ax = X(nowI);
+        const a = anchorOf(ax);
+        used.push(boxAt(fmtValue(nowI, values[nowI]), lxOf(ax, a),
+                        Y(values[nowI]) - 12 + 1, a, true));
+    }
+    if (strip)                            // and the condition band's row
+        used.push([0, w, (opts.stripBottom ? h - 34 : STRIP_Y) - 13,
+                   (opts.stripBottom ? h - 34 : STRIP_Y) + 13]);
+    for (let i = off0; fmtValue && i < n; i += EVERY) {
+        const txt = fmtValue(i, values[i]);
         const ax = X(i);
-        const anchor = ax < 46 ? 'start' : ax > w - 46 ? 'end' : 'middle';
-        const lx = anchor === 'start' ? Math.max(GUT, ax - 6)
-                 : anchor === 'end'   ? Math.min(w - GUT, ax + 6) : ax;
-        const crowded = nowI >= 0 && Math.abs(i - nowI) < 2;
-        if (!crowded)
-            drawText(cr, fmtValue ? fmtValue(i, values[i]) : String(values[i]),
-                     lx, Y(values[i]) - 12 + 1,
-                     {size: FS, bold: true, rgba: [...INK, 0.62], anchor});
-        if (fmtHour) {
-            const t = fmtHour(i);
-            if (t)
-                drawText(cr, t, lx, h - 5, {size: FS, rgba: [...INK, 0.62], anchor});
+        const a = anchorOf(ax), lx = lxOf(ax, a);
+        const y0 = Y(values[i]) - 12 + 1;
+        let placed = null;
+        for (const yy of [y0, y0 - 15, y0 + 15]) {
+            const b = boxAt(txt, lx, yy, a, true);
+            if (b[2] < 2 || hits(b, used))
+                continue;
+            placed = [b, yy];
+            break;
+        }
+        if (placed) {
+            used.push(placed[0]);
+            drawText(cr, txt, lx, placed[1],
+                     {size: FS, bold: true, rgba: [...INK, 0.62], anchor: a});
+        }
+    }
+    // hour labels stay flat on their baseline — a clash drops the label
+    // instead of staggering the row
+    for (let i = off0; fmtHour && i < n; i += EVERY) {
+        const t = fmtHour(i);
+        if (!t)
+            continue;
+        const ax = X(i);
+        const a = anchorOf(ax), lx = lxOf(ax, a);
+        const b = boxAt(t, lx, h - 5, a, false);
+        if (!hits(b, used)) {
+            used.push(b);
+            drawText(cr, t, lx, h - 5, {size: FS, rgba: [...INK, 0.62], anchor: a});
         }
     }
 
@@ -224,12 +267,51 @@ export function paintChart(cr, opts) {
         // 5+ px clear of that, and even the lowest value label (floor
         // h-42) stays off the band top.
         const stripY = opts.stripBottom ? h - 34 : STRIP_Y;
+        // flat icons vanish on mid-tone skies (overcast days especially).
+        // When the panel hands us an iconOutline colour (picked against the
+        // REAL composited backdrop), stamp a 1-px silhouette ring of it
+        // under the icon: render once offscreen, knock the flat colour out
+        // of the icon's own alpha, stamp the silhouette at 8 sub-pixel
+        // offsets, then the real icon on top.
+        const OUT = Array.isArray(opts.iconOutline) ? opts.iconOutline : null;
         const paint1 = (scene, cx, night, scale, cy = stripY) => {
-            cr.save();
-            cr.translate(cx - 12 * scale, cy - 12 * scale);
-            cr.scale(scale, scale);
-            paintWeather(cr, {scene: scene ?? 'cloud', time: 4.1, night: !!night,
+            const pose = c => {
+                c.translate(cx - 12 * scale, cy - 12 * scale);
+                c.scale(scale, scale);
+                paintWeather(c, {scene: scene ?? 'cloud', time: 4.1,
+                                 night: !!night, dark,
+                                 intensity: STRIP_INT[scene] ?? 0});
+            };
+            if (!OUT) {
+                cr.save();
+                pose(cr);
+                cr.restore();
+                return;
+            }
+            const d = Math.ceil(24 * scale) + 4, r = d / 2;
+            const S = new Cairo.ImageSurface(Cairo.Format.ARGB32, d, d);
+            const c2 = new Cairo.Context(S);
+            c2.translate(r - 12 * scale, r - 12 * scale);
+            c2.scale(scale, scale);
+            paintWeather(c2, {scene: scene ?? 'cloud', time: 4.1, night: !!night,
                               dark, intensity: STRIP_INT[scene] ?? 0});
+            c2.$dispose();
+            const T = new Cairo.ImageSurface(Cairo.Format.ARGB32, d, d);
+            const c3 = new Cairo.Context(T);
+            c3.setSourceRGBA(OUT[0], OUT[1], OUT[2], OUT[3]);
+            c3.paint();
+            c3.setOperator(Cairo.Operator.IN);
+            c3.setSourceSurface(S, 0, 0);
+            c3.paint();
+            c3.$dispose();
+            for (const [dx, dy] of [[-1, 0], [1, 0], [0, 1], [0, -1],
+                                    [-0.8, -0.8], [0.8, -0.8],
+                                    [-0.8, 0.8], [0.8, 0.8]]) {
+                cr.setSourceSurface(T, cx - r + dx, cy - r + dy);
+                cr.paint();
+            }
+            cr.save();
+            pose(cr);
             cr.restore();
         };
 
@@ -243,7 +325,7 @@ export function paintChart(cr, opts) {
             // so they stay consistent AND can never overlap. Tint: light
             // neutral gray on plain (accent-style) cards; the day-tile
             // hover glass, a shade lighter, on animated/solid skies.
-            const PH = 10.5, SS = 0.58, MINW = 23, PILL_R = 6, BW = 2.5;
+            const PH = 10.5, SS = 0.58, MINW = 23, PILL_R = 6, BW = 1.9;
             const glass = !!opts.pillGlass;
             const fill = glass
                 ? (dark ? [16 / 255, 20 / 255, 28 / 255, 0.22] : [1, 1, 1, 0.36])

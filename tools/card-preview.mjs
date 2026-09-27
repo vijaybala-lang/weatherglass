@@ -69,6 +69,9 @@ const CASES = [
     // with the charts unified in the OS accent colour
     {scene: 'accent', night: true, plain: true, bgAccent: [0.19, 0.19, 0.19], accent: [0.21, 0.52, 0.89], values: DATA.hourly.temperature_2m.slice(16, 40)},
     {scene: 'accent-light', night: false, plain: true, bgAccent: [0.98, 0.98, 0.98], accent: [0.835, 0.38, 0.60], values: DATA.hourly.temperature_2m.slice(16, 40), strip: 'pills', stripPos: 'bottom'},
+    // icons-only on a bright day sky + wide wind labels: demos the icon
+    // silhouette ring AND the text-aware label staggering
+    {scene: 'partly', night: false, values: DATA.hourly.wind_speed_10m.slice(16, 40), accent: [0.24, 0.81, 0.56], nowFrac: 2 / 23, strip: 'icons', wind: true, iconOutline: true},
 ];
 
 const outDir = GLib.build_filenamev([GLib.get_current_dir(), 'tools', 'out', 'cards']);
@@ -100,7 +103,7 @@ for (const [i, c] of CASES.entries()) {
     }
     paintChart(cr, {
         w: CARD.w, h: CHART.h, values: c.values,
-        fmtValue: (idx, v) => c.accent === CASES[1].accent ? `${Math.round(v)} km/h` : fmtTemp(v),
+        fmtValue: (idx, v) => (c.accent === CASES[1].accent || c.wind) ? `${Math.round(v)} km/h` : fmtTemp(v),
         fmtHour: idx => fmtHour(DATA.hourly.time[16 + idx] ?? 'T00'),
         accent: c.accent, nowFrac: c.nowFrac ?? null,
         scenes, nights,
@@ -108,6 +111,7 @@ for (const [i, c] of CASES.entries()) {
         stripBottom: c.stripPos === 'bottom',
         dark: c.plain ? false : true,   // plain cards sit on a light backdrop
         pillGlass: !c.plain,
+        iconOutline: c.iconOutline ? [0.04, 0.05, 0.09, 0.5] : null,
         // real menu passes its theme ink; plain light card needs dark ink too
         ink: c.plain && !c.night ? [0.10, 0.13, 0.19] : undefined,
         // "now" label: contrast-safe variant of the accent over the actual

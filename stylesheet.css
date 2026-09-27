@@ -66,29 +66,6 @@
     margin: 2px 0 4px 0;
 }
 
-.aw-unit-toggle {
-    spacing: 2px;
-    margin-top: 10px;             /* sits at the numeral's x-height, mock-style */
-}
-
-.aw-unit-btn {
-    border: none;
-    border-radius: 0;
-    background-color: transparent;
-    box-shadow: none;
-    padding: 2px 4px;
-    min-height: 0;
-}
-
-.aw-unit-label {
-    font-size: 0.9em;
-    font-weight: 600;
-}
-
-.aw-unit-bar {
-    font-size: 0.9em;
-}
-
 .aw-city-col {
     spacing: 3px;
 }
@@ -112,22 +89,21 @@
     font-size: 0.85em;
 }
 
-/* ── metric tabs (flat text, mock style) ──────────────────────────────────
- * The 3px transparent border on every tab keeps the active underline from
- * shifting text when it lights up. .aw-rule is the mock's glass hairline. */
+/* ── metric tabs (pill style, like the day tiles) ─────────────────────────
+ * Each tab is a full pill (transparent border keeps size stable); the active
+ * one lights up with the day-tile glass. No underline, no hairline rule. */
 
 .aw-tabs {
-    spacing: 16px;
-    padding: 2px 14px 0 14px;
+    spacing: 8px;
+    padding: 2px 14px 4px 14px;
 }
 
 .aw-tab {
-    border: none;
-    border-radius: 0;
-    border-bottom: 3px solid transparent;
+    border: 1px solid transparent;
+    border-radius: 99px;
     background-color: transparent;
     box-shadow: none;
-    padding: 3px 2px 5px 2px;
+    padding: 3px 10px;
     min-height: 0;
 }
 
@@ -136,10 +112,18 @@
     font-weight: bold;
 }
 
-.aw-rule {
-    min-height: 1px;
-    margin: 2px 14px 0 14px;
-    background-color: rgba(255, 255, 255, 0.14);
+/* dark glass pill behind the active tab — same recipe as .aw-day-sel */
+.aw-dark .aw-tab.aw-tab-active {
+    background-color: rgba(16, 20, 28, 0.45);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+}
+
+/* light glass pill (mirrors the light-mode selected day tile) */
+.aw-light .aw-tab.aw-tab-active {
+    background-color: rgba(255, 255, 255, 0.68);
+    border-color: rgba(16, 24, 35, 0.35);
+    color: #0b1220;
 }
 
 /* ── day tiles: mock narrow grid = two rows of four ─────────────────────── */
@@ -219,8 +203,6 @@
 
 .aw-dark .aw-clockline,
 .aw-dark .aw-desc,
-.aw-dark .aw-unit-off,
-.aw-dark .aw-unit-bar,
 .aw-dark .aw-placeholder-text {
     color: rgba(255, 255, 255, 0.62);
 }
@@ -230,20 +212,12 @@
     color: rgba(255, 255, 255, 0.85);
 }
 
-.aw-dark .aw-unit-on {
-    color: #ffffff;
-}
-
 .aw-dark .aw-tab {
     color: rgba(255, 255, 255, 0.6);
 }
 
 .aw-dark .aw-tab:hover {
     color: rgba(255, 255, 255, 0.85);
-}
-
-.aw-dark .aw-tab-active {
-    color: #ffffff;
 }
 
 .aw-dark .aw-icon-btn {
@@ -280,11 +254,6 @@
     color: #ffffff;
 }
 
-/* active tab underline per metric (colors mirror chart.js accents) */
-.aw-tab-active.aw-tab-temp   { border-bottom-color: #f5a623; }
-.aw-tab-active.aw-tab-precip { border-bottom-color: #4da3ff; }
-.aw-tab-active.aw-tab-wind   { border-bottom-color: #3fd08c; }
-
 /* ── light theme (OS light mode) ────────────────────────────────────────── */
 
 .aw-light {
@@ -295,8 +264,6 @@
 
 .aw-light .aw-clockline,
 .aw-light .aw-desc,
-.aw-light .aw-unit-off,
-.aw-light .aw-unit-bar,
 .aw-light .aw-placeholder-text {
     color: rgba(16, 24, 35, 0.66);
 }
@@ -305,24 +272,12 @@
     color: rgba(16, 24, 35, 0.8);
 }
 
-.aw-light .aw-unit-on {
-    color: #0b1220;
-}
-
-.aw-light .aw-rule {
-    background-color: rgba(16, 24, 35, 0.15);
-}
-
 .aw-light .aw-tab {
     color: rgba(16, 24, 35, 0.55);
 }
 
 .aw-light .aw-tab:hover {
     color: rgba(16, 24, 35, 0.8);
-}
-
-.aw-light .aw-tab-active {
-    color: #0b1220;
 }
 
 .aw-light .aw-icon-btn {
