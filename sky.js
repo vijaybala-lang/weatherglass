@@ -37,10 +37,13 @@ const PAL = {
  * No ambient streaks on calm skies — moving lines are reserved for the
  * dedicated windy scene (real wind signal), not daily decoration. */
 const FEATURES = {
-    clear:  {clouds: 1, sun: 1},
-    sun:    {clouds: 1, sun: 1},
+    // clear means CLEAR: the models distinguish these from 'partly', so
+    // no fair-weather clouds here (one drifting blob used to ride along
+    // and read as a forecast lie against a "Clear sky" label)
+    clear:  {sun: 1},
+    sun:    {sun: 1},
     partly: {clouds: 3, sun: 1, moon: 1},  // night: moon behind the clouds
-    moon:   {clouds: 1, stars: 1, moon: 1},
+    moon:   {stars: 1, moon: 1},
     cloud:  {clouds: 5},
     fog:    {clouds: 2, fog: 1},
     rain:   {clouds: 6, drops: 90},
