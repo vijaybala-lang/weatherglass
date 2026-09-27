@@ -2,13 +2,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:04-0700\n"
+"POT-Creation-Date: 2026-09-27 11:24-0700\n"
 "Language: bn\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:722
+#: extension.js:54 prefs.js:735
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -20,7 +20,7 @@ msgstr "আমার অবস্থান"
 msgid "Custom location"
 msgstr "কাস্টম অবস্থান"
 
-#: extension.js:193 menu.js:289
+#: extension.js:193 menu.js:294
 msgid "Fetching weather…"
 msgstr "আবহাওয়া আনা হচ্ছে…"
 
@@ -36,39 +36,39 @@ msgstr "বৃষ্টিপাত"
 msgid "Wind"
 msgstr "বাতাস"
 
-#: menu.js:324 menu.js:406 menu.js:410
+#: menu.js:329 menu.js:411 menu.js:415
 msgid "Weather"
 msgstr "আবহাওয়া"
 
-#: menu.js:341
+#: menu.js:346
 msgid "Refresh now"
 msgstr "এখনই রিফ্রেশ করুন"
 
-#: menu.js:346
+#: menu.js:351
 msgid "Preferences"
 msgstr "পছন্দসমূহ"
 
-#: menu.js:362
+#: menu.js:367
 msgid "Show"
 msgstr "দেখান"
 
-#: menu.js:362
+#: menu.js:367
 msgid "chart"
 msgstr "চার্ট"
 
-#: menu.js:411
+#: menu.js:416
 msgid "Could not load the forecast"
 msgstr "পূর্বাভাস লোড করা যায়নি"
 
-#: menu.js:555
+#: menu.js:572
 msgid "Refresh forecast — updated"
 msgstr "পূর্বাভাস রিফ্রেশ করুন — হালনাগাদ"
 
-#: menu.js:616
+#: menu.js:633
 msgid "Now"
 msgstr "এখন"
 
-#: menu.js:725
+#: menu.js:742
 msgid "Today"
 msgstr "আজ"
 
@@ -252,39 +252,63 @@ msgstr "ঘণ্টার উপরে"
 msgid "Chart top"
 msgstr "চার্টের উপর"
 
-#: prefs.js:352
+#: prefs.js:345
+msgid "Data text"
+msgstr "ডেটা টেক্সট"
+
+#: prefs.js:346
+msgid "Bolder or larger metric values and chart hours"
+msgstr "মেট্রিক মান ও চার্টের ঘণ্টা বোল্ড বা বড় করুন"
+
+#: prefs.js:348
+msgid "Bold"
+msgstr "বোল্ড"
+
+#: prefs.js:348
+msgid "Bold & large"
+msgstr "বোল্ড ও বড়"
+
+#: prefs.js:348
+msgid "Large"
+msgstr "বড়"
+
+#: prefs.js:348
+msgid "Normal"
+msgstr "স্বাভাবিক"
+
+#: prefs.js:365
 msgid "Data"
 msgstr "ডেটা"
 
-#: prefs.js:356
+#: prefs.js:369
 msgid "Data source"
 msgstr "ডেটার উৎস"
 
-#: prefs.js:358
+#: prefs.js:371
 msgid "Weather provider"
 msgstr "আবহাওয়া সেবাদাতা"
 
-#: prefs.js:359
+#: prefs.js:372
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "সবই কী-মুক্ত · MET Norway-এর ডেটা CC BY-SA 4.0 লাইসেন্সপ্রাপ্ত"
 
-#: prefs.js:362
+#: prefs.js:375
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo (ডিফল্ট)"
 
-#: prefs.js:363
+#: prefs.js:376
 msgid "MET Norway (api.met.no)"
 msgstr "MET Norway (api.met.no)"
 
-#: prefs.js:364
+#: prefs.js:377
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS (শুধু যুক্তরাষ্ট্রের অবস্থান)"
 
-#: prefs.js:380
+#: prefs.js:393
 msgid "Forecast model"
 msgstr "পূর্বাভাস মডেল"
 
-#: prefs.js:381
+#: prefs.js:394
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
@@ -292,95 +316,95 @@ msgstr ""
 "শুধু Open-Meteo · সপ্তাহখানেক দূরে মডেলরা দ্বিমত পোষণ করে — সপ্তাহান্তের পূর্বাভাস "
 "অদ্ভুত লাগলে অন্যটি চেষ্টা করুন"
 
-#: prefs.js:384
+#: prefs.js:397
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "সেরা মিল (Open-Meteo-এর আঞ্চলিক নির্বাচন; যুক্তরাষ্ট্র → GFS)"
 
-#: prefs.js:385
+#: prefs.js:398
 msgid "ECMWF IFS (recommended)"
 msgstr "ECMWF IFS (প্রস্তাবিত)"
 
-#: prefs.js:386
+#: prefs.js:399
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON (সংক্ষিপ্ত পরিসর)"
 
-#: prefs.js:387
+#: prefs.js:400
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:403
+#: prefs.js:416
 msgid "Updates"
 msgstr "হালনাগাদ"
 
-#: prefs.js:405
+#: prefs.js:418
 msgid "Refresh interval (minutes)"
 msgstr "রিফ্রেশের বিরতি (মিনিট)"
 
-#: prefs.js:414
+#: prefs.js:427
 msgid "Wind animation threshold (km/h)"
 msgstr "বাতাস অ্যানিমেশনের সীমা (km/h)"
 
-#: prefs.js:415
+#: prefs.js:428
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "ঝোড়ো দিনে আইকন বদলে বাতাসের অ্যানিমেশন দেখায়"
 
-#: prefs.js:433
+#: prefs.js:446
 msgid "Preview"
 msgstr "প্রিভিউ"
 
-#: prefs.js:480
+#: prefs.js:493
 msgid "Preview scene"
 msgstr "প্রিভিউ দৃশ্য"
 
-#: prefs.js:481
+#: prefs.js:494
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "এখানেই ~১২ সেকেন্ড লুপ হয় — আসল প্যানেল অটুট থাকে"
 
-#: prefs.js:513
+#: prefs.js:526
 msgid "Scene"
 msgstr "দৃশ্য"
 
-#: prefs.js:678
+#: prefs.js:691
 msgid "Panel preview"
 msgstr "প্যানেল প্রিভিউ"
 
-#: prefs.js:679
+#: prefs.js:692
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
 msgstr "এই দৃশ্যে প্যানেল বাটন কেমন দেখায় — তাপমাত্রা নমুনা, আইকনের অ্যানিমেশন আসল"
 
-#: prefs.js:685
+#: prefs.js:698
 msgid "Menu backdrop preview"
 msgstr "মেনুর পটভূমির প্রিভিউ"
 
-#: prefs.js:686
+#: prefs.js:699
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "আপনার মেনুর এই মুহূর্তের আকাশ, সরাসরি — উপরে একটি অবস্থা বাছলে এখানে অ্যানিমেট হবে"
 
-#: prefs.js:717
+#: prefs.js:730
 msgid "About"
 msgstr "পরিচিতি"
 
-#: prefs.js:724
+#: prefs.js:737
 msgid "Version"
 msgstr "সংস্করণ"
 
-#: prefs.js:728
+#: prefs.js:741
 msgid "Free and open source"
 msgstr "বিনামূল্যে ও ওপেন সোর্স"
 
-#: prefs.js:729
+#: prefs.js:742
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "বিজ্ঞাপন নেই, অ্যাকাউন্ট নেই, ডেটা সংগ্রহ নেই — আকাশ কেবল চলবে"
 
-#: prefs.js:734
+#: prefs.js:747
 msgid "Support the development"
 msgstr "ডেভেলপমেন্টে সহায়তা করুন"
 
-#: prefs.js:735
+#: prefs.js:748
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -388,7 +412,7 @@ msgstr ""
 "Weatherglass চিরকাল বিনামূল্যে। আপনার ডেস্কটপ সুন্দর লাগলে, এককাপ কফি এই "
 "পিক্সেলগুলোকে বানিয়ে যাবে।"
 
-#: prefs.js:738
+#: prefs.js:751
 msgid "Buy me a coffee"
 msgstr "এককাপ কফি কিনুন"
 

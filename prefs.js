@@ -340,6 +340,19 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         posRow.connect('notify::selected', () =>
             settings.set_string('condition-pos', POS[posRow.get_selected()] ?? 'bottom'));
         bgGroup.add(posRow);
+        const EMPH = ['normal', 'bold', 'large', 'both'];
+        const emphRow = new Adw.ComboRow({
+            title: _('Data text'),
+            subtitle: _('Bolder or larger metric values and chart hours'),
+            model: new Gtk.StringList({
+                strings: [_('Normal'), _('Bold'), _('Large'), _('Bold & large')],
+            }),
+        });
+        const ei = EMPH.indexOf(settings.get_string('text-emphasis'));
+        emphRow.set_selected(ei < 0 ? 0 : ei);
+        emphRow.connect('notify::selected', () =>
+            settings.set_string('text-emphasis', EMPH[emphRow.get_selected()] ?? 'normal'));
+        bgGroup.add(emphRow);
         page.add(bgGroup);
 
         return page;

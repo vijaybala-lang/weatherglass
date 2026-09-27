@@ -113,12 +113,14 @@ export const lineInk = (base, bgs) => {
 
 /** [w, h] pixel extents of a label in the chart font (same font set-up as
  *  drawText, so icon placement can centre on printed text, not data points). */
-function textPx(cr, text, size, bold) {
+function textPx(cr, text, size, bold, weight = 0) {
     const layout = PangoCairo.create_layout(cr);
     const desc = Pango.FontDescription.new();
     desc.set_family('Cantarell');
     desc.set_size(Math.round(size * Pango.SCALE));
-    if (bold)
+    if (weight)
+        desc.set_weight(weight);
+    else if (bold)
         desc.set_weight(Pango.Weight.MEDIUM);
     call(layout, 'setFontDescription', 'set_font_description', desc);
     call(layout, 'setText', 'set_text', text, -1);
@@ -126,9 +128,10 @@ function textPx(cr, text, size, bold) {
     return Array.isArray(px) ? [...px, layout] : [px.width, px.height, layout];
 }
 
-export function drawText(cr, text, x, y, {size = 10, bold = false, rgba = [1, 1, 1, 1],
+export function drawText(cr, text, x, y, {size = 10, bold = false, weight = 0,
+                                          rgba = [1, 1, 1, 1],
                                           anchor = 'middle'} = {}) {
-    const [pw, ph, layout] = textPx(cr, text, size, bold);
+    const [pw, ph, layout] = textPx(cr, text, size, bold, weight);
     const tx = anchor === 'start' ? x : anchor === 'end' ? x - pw : x - pw / 2;
     cr.setSourceRGBA(...rgba);
     cr.moveTo(tx, y - ph);
@@ -204,6 +207,12 @@ export function paintChart(cr, opts) {
         return;
     const EVERY = Math.max(1, opts.labelEvery ?? LABEL_EVERY);
     const FS = opts.fontSize ?? 8.5;
+    // "Data text" emphasis: bigger and/or heavier values, hours and the now
+    // label. Collision boxes measure with the SAME numbers, so emphasized
+    // text reflows the label row instead of overlapping the curve.
+    const TS = FS * (opts.textScale ?? 1);
+    const VW = opts.textBold ? Pango.Weight.BOLD : Pango.Weight.MEDIUM;
+    const HW = opts.textBold ? Pango.Weight.MEDIUM : Pango.Weight.NORMAL;
 
     const INK = opts.ink ?? [0.96, 0.97, 0.98];   // dark theme: pass dark ink
     // optional menu-supplied sampler: chart-local yPx -> composited backdrop
@@ -327,8 +336,8 @@ export function paintChart(cr, opts) {
     const lxOf = (ax, anchor) =>
         anchor === 'start' ? Math.max(GUT, ax - 6)
         : anchor === 'end' ? Math.min(w - GUT, ax + 6) : ax;
-    const boxAt = (txt, lx, y, anchor, bold) => {
-        const [tw, th] = textPx(cr, txt, FS, bold);
+    const boxAt = (txt, lx, y, anchor) => {
+        const [tw, th] = textPx(cr, txt, TS, false, HW);
         const x0 = anchor === 'start' ? lx
                  : anchor === 'end'   ? lx - tw : lx - tw / 2;
         return [x0 - 1.5, x0 + tw + 1.5, y - th - 1, y + 1];
@@ -341,7 +350,7 @@ export function paintChart(cr, opts) {
     // top edge under its own span (labels read ABOVE the line even where
     // the curve climbs steeply through them), then walk the collision slots.
     const placeLabel = (txt, lx, y0, a) => {
-        const [tw, th] = textPx(cr, txt, FS, true);
+        const [tw, th] = textPx(cr, txt, TS, false, VW);
         const x0 = a === 'start' ? lx : a === 'end' ? lx - tw : lx - tw / 2;
         const floor = curveMin(x0, x0 + tw) - LINE_W / 2 - 2;
         for (const yy of [Math.min(y0, floor), y0 - 15, y0 + 15]) {
@@ -359,7 +368,7 @@ export function paintChart(cr, opts) {
         const ax = X(nowI);
         const a = anchorOf(ax), lx = lxOf(ax, a);
         const txt = fmtValue(nowI, values[nowI]);
-        const [tw, th] = textPx(cr, txt, FS, true);
+        const [tw, th] = textPx(cr, txt, TS, false, VW);
         const x0 = a === 'start' ? lx : a === 'end' ? lx - tw : lx - tw / 2;
         const y = Math.min(Y(values[nowI]) - 22 + 1,
                            curveMin(x0, x0 + tw) - LINE_W / 2 - 2);
@@ -376,7 +385,7 @@ export function paintChart(cr, opts) {
                                   Y(values[i]) - 12 + 1, a);
         if (placed)
             drawText(cr, placed.txt, lx, placed.y,
-                     {size: FS, bold: true, rgba: [...inkAt(placed.y), 0.62], anchor: a});
+                     {size: TS, weight: VW, rgba: [...inkAt(placed.y), 0.62], anchor: a});
     }
     // hour labels stay flat on their baseline — a clash drops the label
     // instead of staggering the row
@@ -386,10 +395,10 @@ export function paintChart(cr, opts) {
             continue;
         const ax = X(i);
         const a = anchorOf(ax), lx = lxOf(ax, a);
-        const b = boxAt(t, lx, h - 5, a, false);
+        const b = boxAt(t, lx, h - 5, a);
         if (!hits(b, used)) {
             used.push(b);
-            drawText(cr, t, lx, h - 5, {size: FS, rgba: [...inkAt(h - 5), 0.62], anchor: a});
+            drawText(cr, t, lx, h - 5, {size: TS, weight: HW, rgba: [...inkAt(h - 5), 0.62], anchor: a});
         }
     }
 
@@ -567,11 +576,11 @@ export function paintChart(cr, opts) {
                 const lx = anchor === 'start' ? Math.max(GUT, ax - 6)
                          : anchor === 'end'   ? Math.min(w - GUT, ax + 6) : ax;
                 let tw = textPx(cr, fmtValue ? fmtValue(i, values[i])
-                                             : String(values[i]), FS, true)[0];
+                                             : String(values[i]), TS, false, VW)[0];
                 if (fmtHour) {
                     const t = fmtHour(i);
                     if (t)
-                        tw = Math.max(tw, textPx(cr, t, FS, false)[0]);
+                        tw = Math.max(tw, textPx(cr, t, TS, false, HW)[0]);
                 }
                 const cx = anchor === 'start' ? lx + tw / 2
                          : anchor === 'end'   ? lx - tw / 2 : lx;
@@ -618,7 +627,7 @@ export function paintChart(cr, opts) {
     // accent is re-safened against the backdrop at ITS y, not the chart mid.
     if (nowPlace)
         drawText(cr, nowPlace.txt, nowPlace.lx, nowPlace.y,
-                 {size: FS, bold: true,
+                 {size: TS, weight: VW,
                   rgba: [...(bgFn ? contrastSafe(accent, bgFn(nowPlace.y))
                                   : (opts.nowLabel ?? [acR, acG, acB])), 1],
                   anchor: nowPlace.a});

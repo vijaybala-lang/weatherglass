@@ -217,6 +217,9 @@ class ChartArea extends St.DrawingArea {
             // under the chart is mid/bright (overcast days swallow flat icons)
             iconOutline: p._iconOutline(),
             fontSize: w < 480 ? 8 : 8.5,
+            // 'Data text' emphasis: values + hours bigger and/or heavier
+            textScale: p._textScale,
+            textBold: p._textBold,
         });
         cr.$dispose();
         // the card's free-standing labels (header, tabs) sample the same way
@@ -245,6 +248,8 @@ export class ForecastPanel {
         this._fmtValue = null;
         this._fmtHour = null;
         this._hour24 = false;          // chart hours + city clock (setter drives)
+        this._textScale = 1;           // 'data-text' emphasis (setter drives)
+        this._textBold = false;
 
         this._sky = createSky();
         // radius 18 matches the shell's polished-popup corner radius
@@ -461,6 +466,18 @@ export class ForecastPanel {
         this._hour24 = !!h24;
         this._chart.queue_repaint();
         this._tickClock();
+    }
+
+    /** 'Data text' emphasis: normal | bold | large | both — the metric
+     *  values, hour labels and the now label on the chart all at once */
+    setTextEmph(mode) {
+        const scale = mode === 'large' || mode === 'both' ? 1.18 : 1;
+        const bold = mode === 'bold' || mode === 'both';
+        if (this._textScale === scale && this._textBold === bold)
+            return;
+        this._textScale = scale;
+        this._textBold = bold;
+        this._chart.queue_repaint();
     }
 
     /** flat ink: drops the CSS emboss shadows (text + ghost buttons) */

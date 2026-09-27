@@ -2,13 +2,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:04-0700\n"
+"POT-Creation-Date: 2026-09-27 11:24-0700\n"
 "Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:722
+#: extension.js:54 prefs.js:735
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -20,7 +20,7 @@ msgstr "현재 위치"
 msgid "Custom location"
 msgstr "직접 지정한 위치"
 
-#: extension.js:193 menu.js:289
+#: extension.js:193 menu.js:294
 msgid "Fetching weather…"
 msgstr "날씨 가져오는 중…"
 
@@ -36,39 +36,39 @@ msgstr "강수"
 msgid "Wind"
 msgstr "바람"
 
-#: menu.js:324 menu.js:406 menu.js:410
+#: menu.js:329 menu.js:411 menu.js:415
 msgid "Weather"
 msgstr "날씨"
 
-#: menu.js:341
+#: menu.js:346
 msgid "Refresh now"
 msgstr "지금 새로고침"
 
-#: menu.js:346
+#: menu.js:351
 msgid "Preferences"
 msgstr "설정"
 
-#: menu.js:362
+#: menu.js:367
 msgid "Show"
 msgstr "보기"
 
-#: menu.js:362
+#: menu.js:367
 msgid "chart"
 msgstr "차트"
 
-#: menu.js:411
+#: menu.js:416
 msgid "Could not load the forecast"
 msgstr "예보를 불러올 수 없습니다"
 
-#: menu.js:555
+#: menu.js:572
 msgid "Refresh forecast — updated"
 msgstr "예보 새로고침 — 업데이트:"
 
-#: menu.js:616
+#: menu.js:633
 msgid "Now"
 msgstr "현재"
 
-#: menu.js:725
+#: menu.js:742
 msgid "Today"
 msgstr "오늘"
 
@@ -252,39 +252,63 @@ msgstr "시간 표시 위"
 msgid "Chart top"
 msgstr "차트 위쪽"
 
-#: prefs.js:352
+#: prefs.js:345
+msgid "Data text"
+msgstr "데이터 텍스트"
+
+#: prefs.js:346
+msgid "Bolder or larger metric values and chart hours"
+msgstr "측정값과 차트 시간을 굵거나 크게 표시"
+
+#: prefs.js:348
+msgid "Bold"
+msgstr "굵게"
+
+#: prefs.js:348
+msgid "Bold & large"
+msgstr "굵고 크게"
+
+#: prefs.js:348
+msgid "Large"
+msgstr "크게"
+
+#: prefs.js:348
+msgid "Normal"
+msgstr "표준"
+
+#: prefs.js:365
 msgid "Data"
 msgstr "데이터"
 
-#: prefs.js:356
+#: prefs.js:369
 msgid "Data source"
 msgstr "데이터 출처"
 
-#: prefs.js:358
+#: prefs.js:371
 msgid "Weather provider"
 msgstr "날씨 제공 업체"
 
-#: prefs.js:359
+#: prefs.js:372
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "모두 키 불필요 · MET Norway 데이터 CC BY-SA 4.0 라이선스"
 
-#: prefs.js:362
+#: prefs.js:375
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo (기본값)"
 
-#: prefs.js:363
+#: prefs.js:376
 msgid "MET Norway (api.met.no)"
 msgstr "노르웨이 기상청 (api.met.no)"
 
-#: prefs.js:364
+#: prefs.js:377
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS (미국 지역 한정)"
 
-#: prefs.js:380
+#: prefs.js:393
 msgid "Forecast model"
 msgstr "예보 모델"
 
-#: prefs.js:381
+#: prefs.js:394
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
@@ -292,96 +316,96 @@ msgstr ""
 "Open-Meteo 전용 · 1주일 이상은 모델마다 다릅니다 — 주말 예보가 이상하면 다른 "
 "모델을 시도하세요"
 
-#: prefs.js:384
+#: prefs.js:397
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "최적 일치 (Open-Meteo 지역 선택; 미국 → GFS)"
 
-#: prefs.js:385
+#: prefs.js:398
 msgid "ECMWF IFS (recommended)"
 msgstr "ECMWF IFS (권장)"
 
-#: prefs.js:386
+#: prefs.js:399
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON (예보 기간이 더 짧음)"
 
-#: prefs.js:387
+#: prefs.js:400
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:403
+#: prefs.js:416
 msgid "Updates"
 msgstr "업데이트"
 
-#: prefs.js:405
+#: prefs.js:418
 msgid "Refresh interval (minutes)"
 msgstr "새로고침 간격 (분)"
 
-#: prefs.js:414
+#: prefs.js:427
 msgid "Wind animation threshold (km/h)"
 msgstr "바람 애니메이션 기준 (km/h)"
 
-#: prefs.js:415
+#: prefs.js:428
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "바람이 강한 날에는 아이콘이 바람 애니메이션으로 바뀝니다"
 
-#: prefs.js:433
+#: prefs.js:446
 msgid "Preview"
 msgstr "미리보기"
 
-#: prefs.js:480
+#: prefs.js:493
 msgid "Preview scene"
 msgstr "미리보기 장면"
 
-#: prefs.js:481
+#: prefs.js:494
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "여기서 약 12초 동안 반복 — 실제 패널은 그대로입니다"
 
-#: prefs.js:513
+#: prefs.js:526
 msgid "Scene"
 msgstr "장면"
 
-#: prefs.js:678
+#: prefs.js:691
 msgid "Panel preview"
 msgstr "패널 미리보기"
 
-#: prefs.js:679
+#: prefs.js:692
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
 msgstr ""
 "이 장면에서 패널 버튼이 보이는 방식 — 기온은 모의, 아이콘 애니메이션은 실제"
 
-#: prefs.js:685
+#: prefs.js:698
 msgid "Menu backdrop preview"
 msgstr "메뉴 배경 미리보기"
 
-#: prefs.js:686
+#: prefs.js:699
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "메뉴의 현재 하늘을 실시간으로 — 상단에서 상태를 선택하면 여기서 재생됩니다"
 
-#: prefs.js:717
+#: prefs.js:730
 msgid "About"
 msgstr "정보"
 
-#: prefs.js:724
+#: prefs.js:737
 msgid "Version"
 msgstr "버전"
 
-#: prefs.js:728
+#: prefs.js:741
 msgid "Free and open source"
 msgstr "무료 오픈소스"
 
-#: prefs.js:729
+#: prefs.js:742
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "광고 없음, 계정 없음, 데이터 수집 없음 — 하늘은 그저 동작하면 됩니다"
 
-#: prefs.js:734
+#: prefs.js:747
 msgid "Support the development"
 msgstr "개발 지원"
 
-#: prefs.js:735
+#: prefs.js:748
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -389,7 +413,7 @@ msgstr ""
 "Weatherglass는 영원히 무료입니다. 데스크톱이 더 나아졌다면, 커피 한 잔이 픽셀"
 "을 계속 흘려보냅니다."
 
-#: prefs.js:738
+#: prefs.js:751
 msgid "Buy me a coffee"
 msgstr "커피 한 잔 사 주기"
 

@@ -2,13 +2,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:04-0700\n"
+"POT-Creation-Date: 2026-09-27 11:24-0700\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:722
+#: extension.js:54 prefs.js:735
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -20,7 +20,7 @@ msgstr "Mi ubicación"
 msgid "Custom location"
 msgstr "Ubicación personalizada"
 
-#: extension.js:193 menu.js:289
+#: extension.js:193 menu.js:294
 msgid "Fetching weather…"
 msgstr "Obteniendo el tiempo…"
 
@@ -36,39 +36,39 @@ msgstr "Precipitación"
 msgid "Wind"
 msgstr "Viento"
 
-#: menu.js:324 menu.js:406 menu.js:410
+#: menu.js:329 menu.js:411 menu.js:415
 msgid "Weather"
 msgstr "Tiempo"
 
-#: menu.js:341
+#: menu.js:346
 msgid "Refresh now"
 msgstr "Actualizar ahora"
 
-#: menu.js:346
+#: menu.js:351
 msgid "Preferences"
 msgstr "Preferencias"
 
-#: menu.js:362
+#: menu.js:367
 msgid "Show"
 msgstr "Mostrar"
 
-#: menu.js:362
+#: menu.js:367
 msgid "chart"
 msgstr "el gráfico de"
 
-#: menu.js:411
+#: menu.js:416
 msgid "Could not load the forecast"
 msgstr "No se pudo cargar la predicción"
 
-#: menu.js:555
+#: menu.js:572
 msgid "Refresh forecast — updated"
 msgstr "Actualizar predicción — actualizada"
 
-#: menu.js:616
+#: menu.js:633
 msgid "Now"
 msgstr "Ahora"
 
-#: menu.js:725
+#: menu.js:742
 msgid "Today"
 msgstr "Hoy"
 
@@ -253,39 +253,63 @@ msgstr "Sobre las horas"
 msgid "Chart top"
 msgstr "Superior del gráfico"
 
-#: prefs.js:352
+#: prefs.js:345
+msgid "Data text"
+msgstr "Texto de datos"
+
+#: prefs.js:346
+msgid "Bolder or larger metric values and chart hours"
+msgstr "Valores y horas del gráfico más gruesos o más grandes"
+
+#: prefs.js:348
+msgid "Bold"
+msgstr "Negrita"
+
+#: prefs.js:348
+msgid "Bold & large"
+msgstr "Negrita y grande"
+
+#: prefs.js:348
+msgid "Large"
+msgstr "Grande"
+
+#: prefs.js:348
+msgid "Normal"
+msgstr "Normal"
+
+#: prefs.js:365
 msgid "Data"
 msgstr "Datos"
 
-#: prefs.js:356
+#: prefs.js:369
 msgid "Data source"
 msgstr "Fuente de datos"
 
-#: prefs.js:358
+#: prefs.js:371
 msgid "Weather provider"
 msgstr "Proveedor meteorológico"
 
-#: prefs.js:359
+#: prefs.js:372
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "Todos sin clave · datos de MET Norway con licencia CC BY-SA 4.0"
 
-#: prefs.js:362
+#: prefs.js:375
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo (predeterminado)"
 
-#: prefs.js:363
+#: prefs.js:376
 msgid "MET Norway (api.met.no)"
 msgstr "MET Norway (api.met.no)"
 
-#: prefs.js:364
+#: prefs.js:377
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS (solo ubicaciones de EE. UU.)"
 
-#: prefs.js:380
+#: prefs.js:393
 msgid "Forecast model"
 msgstr "Modelo de predicción"
 
-#: prefs.js:381
+#: prefs.js:394
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
@@ -293,59 +317,59 @@ msgstr ""
 "Solo Open-Meteo · a una semana los modelos discrepan — si el fin de semana "
 "se ve raro, prueba otro"
 
-#: prefs.js:384
+#: prefs.js:397
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "Mejor coincidencia (elección regional de Open-Meteo; EE. UU. → GFS)"
 
-#: prefs.js:385
+#: prefs.js:398
 msgid "ECMWF IFS (recommended)"
 msgstr "ECMWF IFS (recomendado)"
 
-#: prefs.js:386
+#: prefs.js:399
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON (alcance más corto)"
 
-#: prefs.js:387
+#: prefs.js:400
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:403
+#: prefs.js:416
 msgid "Updates"
 msgstr "Actualizaciones"
 
-#: prefs.js:405
+#: prefs.js:418
 msgid "Refresh interval (minutes)"
 msgstr "Intervalo de actualización (minutos)"
 
-#: prefs.js:414
+#: prefs.js:427
 msgid "Wind animation threshold (km/h)"
 msgstr "Umbral de animación de viento (km/h)"
 
-#: prefs.js:415
+#: prefs.js:428
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "Los días más ventosos cambian el icono a la animación de viento"
 
-#: prefs.js:433
+#: prefs.js:446
 msgid "Preview"
 msgstr "Vista previa"
 
-#: prefs.js:480
+#: prefs.js:493
 msgid "Preview scene"
 msgstr "Escena de vista previa"
 
-#: prefs.js:481
+#: prefs.js:494
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "Se repite aquí durante ~12 s — tu panel real no cambia"
 
-#: prefs.js:513
+#: prefs.js:526
 msgid "Scene"
 msgstr "Escena"
 
-#: prefs.js:678
+#: prefs.js:691
 msgid "Panel preview"
 msgstr "Vista previa del panel"
 
-#: prefs.js:679
+#: prefs.js:692
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
@@ -353,40 +377,40 @@ msgstr ""
 "Cómo se ve el botón del panel con esta escena — temperatura simulada, "
 "animación real del icono"
 
-#: prefs.js:685
+#: prefs.js:698
 msgid "Menu backdrop preview"
 msgstr "Vista previa del fondo del menú"
 
-#: prefs.js:686
+#: prefs.js:699
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "El cielo actual de tu menú, en vivo — elige arriba una condición para "
 "animarlo aquí"
 
-#: prefs.js:717
+#: prefs.js:730
 msgid "About"
 msgstr "Acerca de"
 
-#: prefs.js:724
+#: prefs.js:737
 msgid "Version"
 msgstr "Versión"
 
-#: prefs.js:728
+#: prefs.js:741
 msgid "Free and open source"
 msgstr "Libre y de código abierto"
 
-#: prefs.js:729
+#: prefs.js:742
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr ""
 "Sin anuncios, sin cuentas, sin recopilación de datos — el cielo simplemente "
 "funciona"
 
-#: prefs.js:734
+#: prefs.js:747
 msgid "Support the development"
 msgstr "Apoyar el desarrollo"
 
-#: prefs.js:735
+#: prefs.js:748
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -394,7 +418,7 @@ msgstr ""
 "Weatherglass es gratis para siempre. Si hace tu escritorio más bonito, un "
 "café mantiene los píxeles cayendo."
 
-#: prefs.js:738
+#: prefs.js:751
 msgid "Buy me a coffee"
 msgstr "Cómprame un café"
 

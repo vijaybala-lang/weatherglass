@@ -2,13 +2,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:04-0700\n"
+"POT-Creation-Date: 2026-09-27 11:24-0700\n"
 "Language: fa\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:722
+#: extension.js:54 prefs.js:735
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -20,7 +20,7 @@ msgstr "موقعیت من"
 msgid "Custom location"
 msgstr "موقعیت دلخواه"
 
-#: extension.js:193 menu.js:289
+#: extension.js:193 menu.js:294
 msgid "Fetching weather…"
 msgstr "در حال دریافت وضعیت آب‌وهوا…"
 
@@ -36,39 +36,39 @@ msgstr "بارش"
 msgid "Wind"
 msgstr "باد"
 
-#: menu.js:324 menu.js:406 menu.js:410
+#: menu.js:329 menu.js:411 menu.js:415
 msgid "Weather"
 msgstr "آب‌وهوا"
 
-#: menu.js:341
+#: menu.js:346
 msgid "Refresh now"
 msgstr "هم‌اکنون تازه‌سازی"
 
-#: menu.js:346
+#: menu.js:351
 msgid "Preferences"
 msgstr "ترجیحات"
 
-#: menu.js:362
+#: menu.js:367
 msgid "Show"
 msgstr "نمایش"
 
-#: menu.js:362
+#: menu.js:367
 msgid "chart"
 msgstr "نمودار"
 
-#: menu.js:411
+#: menu.js:416
 msgid "Could not load the forecast"
 msgstr "بارگیری پیش‌بینی ممکن نشد"
 
-#: menu.js:555
+#: menu.js:572
 msgid "Refresh forecast — updated"
 msgstr "تازه‌سازی پیش‌بینی — به‌روز شد"
 
-#: menu.js:616
+#: menu.js:633
 msgid "Now"
 msgstr "اکنون"
 
-#: menu.js:725
+#: menu.js:742
 msgid "Today"
 msgstr "امروز"
 
@@ -252,39 +252,63 @@ msgstr "بالای ساعت‌ها"
 msgid "Chart top"
 msgstr "بالای نمودار"
 
-#: prefs.js:352
+#: prefs.js:345
+msgid "Data text"
+msgstr "متن داده"
+
+#: prefs.js:346
+msgid "Bolder or larger metric values and chart hours"
+msgstr "مقدارها و ساعت‌های نمودار درشت‌تر یا بزرگ‌تر"
+
+#: prefs.js:348
+msgid "Bold"
+msgstr "قطور"
+
+#: prefs.js:348
+msgid "Bold & large"
+msgstr "قطور و بزرگ"
+
+#: prefs.js:348
+msgid "Large"
+msgstr "بزرگ"
+
+#: prefs.js:348
+msgid "Normal"
+msgstr "معمولی"
+
+#: prefs.js:365
 msgid "Data"
 msgstr "داده‌ها"
 
-#: prefs.js:356
+#: prefs.js:369
 msgid "Data source"
 msgstr "منبع داده"
 
-#: prefs.js:358
+#: prefs.js:371
 msgid "Weather provider"
 msgstr "ارائه‌دهنده آب‌وهوا"
 
-#: prefs.js:359
+#: prefs.js:372
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "همه بدون کلید · داده‌های MET Norway با پروانه CC BY-SA 4.0"
 
-#: prefs.js:362
+#: prefs.js:375
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo (پیش‌فرض)"
 
-#: prefs.js:363
+#: prefs.js:376
 msgid "MET Norway (api.met.no)"
 msgstr "MET Norway (api.met.no)"
 
-#: prefs.js:364
+#: prefs.js:377
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS (فقط موقعیت‌های آمریکا)"
 
-#: prefs.js:380
+#: prefs.js:393
 msgid "Forecast model"
 msgstr "مدل پیش‌بینی"
 
-#: prefs.js:381
+#: prefs.js:394
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
@@ -292,96 +316,96 @@ msgstr ""
 "فقط Open-Meteo · تا یک هفته آینده مدل‌ها اختلاف دارند — اگر آخر هفته عجیب به "
 "نظر می‌رسد، مدل دیگری را امتحان کنید"
 
-#: prefs.js:384
+#: prefs.js:397
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "بهترین تطابق (انتخاب منطقه‌ای Open-Meteo؛ آمریکا ← GFS)"
 
-#: prefs.js:385
+#: prefs.js:398
 msgid "ECMWF IFS (recommended)"
 msgstr "ECMWF IFS (توصیه‌شده)"
 
-#: prefs.js:386
+#: prefs.js:399
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON (افق کوتاه‌تر)"
 
-#: prefs.js:387
+#: prefs.js:400
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:403
+#: prefs.js:416
 msgid "Updates"
 msgstr "به‌روزرسانی‌ها"
 
-#: prefs.js:405
+#: prefs.js:418
 msgid "Refresh interval (minutes)"
 msgstr "فاصله تازه‌سازی (دقیقه)"
 
-#: prefs.js:414
+#: prefs.js:427
 msgid "Wind animation threshold (km/h)"
 msgstr "آستانه انیمیشن باد (کیلومتر/ساعت)"
 
-#: prefs.js:415
+#: prefs.js:428
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "در روزهای بادی‌تر، نماد با انیمیشن باد عوض می‌شود"
 
-#: prefs.js:433
+#: prefs.js:446
 msgid "Preview"
 msgstr "پیش‌نمایش"
 
-#: prefs.js:480
+#: prefs.js:493
 msgid "Preview scene"
 msgstr "صحنه پیش‌نمایش"
 
-#: prefs.js:481
+#: prefs.js:494
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "حدود ۱۲ ثانیه همین‌جا تکرار می‌شود — پنل واقعی شما دست‌نخورده می‌ماند"
 
-#: prefs.js:513
+#: prefs.js:526
 msgid "Scene"
 msgstr "صحنه"
 
-#: prefs.js:678
+#: prefs.js:691
 msgid "Panel preview"
 msgstr "پیش‌نمایش پنل"
 
-#: prefs.js:679
+#: prefs.js:692
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
 msgstr ""
 "دکمه پنل برای این صحنه چگونه دیده می‌شود — دمای نمایشی، انیمیشن واقعی نماد"
 
-#: prefs.js:685
+#: prefs.js:698
 msgid "Menu backdrop preview"
 msgstr "پیش‌نمایش پس‌زمینه فهرست"
 
-#: prefs.js:686
+#: prefs.js:699
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "آسمان فعلی فهرست شما، زنده — برای متحرک‌کردنش یک شرایط را از بالا برگزینید"
 
-#: prefs.js:717
+#: prefs.js:730
 msgid "About"
 msgstr "درباره"
 
-#: prefs.js:724
+#: prefs.js:737
 msgid "Version"
 msgstr "نسخه"
 
-#: prefs.js:728
+#: prefs.js:741
 msgid "Free and open source"
 msgstr "آزاد و متن‌باز"
 
-#: prefs.js:729
+#: prefs.js:742
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "بی‌تبلیغ، بی‌حساب، بی‌جمع‌آوری داده — آسمان باید فقط کار کند"
 
-#: prefs.js:734
+#: prefs.js:747
 msgid "Support the development"
 msgstr "از توسعه حمایت کنید"
 
-#: prefs.js:735
+#: prefs.js:748
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -389,7 +413,7 @@ msgstr ""
 "Weatherglass برای همیشه رایگان است. اگر میزکارتان را قشنگ‌تر می‌کند، یک قهوه "
 "پیکسل‌ها را در بارش نگه می‌دارد."
 
-#: prefs.js:738
+#: prefs.js:751
 msgid "Buy me a coffee"
 msgstr "برایم قهوه بخرید"
 

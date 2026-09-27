@@ -2,13 +2,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:04-0700\n"
+"POT-Creation-Date: 2026-09-27 11:24-0700\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:722
+#: extension.js:54 prefs.js:735
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -20,7 +20,7 @@ msgstr "我的位置"
 msgid "Custom location"
 msgstr "自定义位置"
 
-#: extension.js:193 menu.js:289
+#: extension.js:193 menu.js:294
 msgid "Fetching weather…"
 msgstr "正在获取天气…"
 
@@ -36,39 +36,39 @@ msgstr "降水"
 msgid "Wind"
 msgstr "风"
 
-#: menu.js:324 menu.js:406 menu.js:410
+#: menu.js:329 menu.js:411 menu.js:415
 msgid "Weather"
 msgstr "天气"
 
-#: menu.js:341
+#: menu.js:346
 msgid "Refresh now"
 msgstr "立即刷新"
 
-#: menu.js:346
+#: menu.js:351
 msgid "Preferences"
 msgstr "首选项"
 
-#: menu.js:362
+#: menu.js:367
 msgid "Show"
 msgstr "显示"
 
-#: menu.js:362
+#: menu.js:367
 msgid "chart"
 msgstr "图表"
 
-#: menu.js:411
+#: menu.js:416
 msgid "Could not load the forecast"
 msgstr "无法加载预报"
 
-#: menu.js:555
+#: menu.js:572
 msgid "Refresh forecast — updated"
 msgstr "刷新预报 — 更新于"
 
-#: menu.js:616
+#: menu.js:633
 msgid "Now"
 msgstr "现在"
 
-#: menu.js:725
+#: menu.js:742
 msgid "Today"
 msgstr "今天"
 
@@ -252,138 +252,162 @@ msgstr "小时标签上方"
 msgid "Chart top"
 msgstr "图表顶部"
 
-#: prefs.js:352
+#: prefs.js:345
+msgid "Data text"
+msgstr "数据文字"
+
+#: prefs.js:346
+msgid "Bolder or larger metric values and chart hours"
+msgstr "将指标数值和图表小时加粗或放大"
+
+#: prefs.js:348
+msgid "Bold"
+msgstr "粗体"
+
+#: prefs.js:348
+msgid "Bold & large"
+msgstr "粗体大号"
+
+#: prefs.js:348
+msgid "Large"
+msgstr "大号"
+
+#: prefs.js:348
+msgid "Normal"
+msgstr "标准"
+
+#: prefs.js:365
 msgid "Data"
 msgstr "数据"
 
-#: prefs.js:356
+#: prefs.js:369
 msgid "Data source"
 msgstr "数据来源"
 
-#: prefs.js:358
+#: prefs.js:371
 msgid "Weather provider"
 msgstr "天气服务提供商"
 
-#: prefs.js:359
+#: prefs.js:372
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "全部免密钥 · MET Norway 数据采用 CC BY-SA 4.0 授权"
 
-#: prefs.js:362
+#: prefs.js:375
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo（默认）"
 
-#: prefs.js:363
+#: prefs.js:376
 msgid "MET Norway (api.met.no)"
 msgstr "MET Norway (api.met.no)"
 
-#: prefs.js:364
+#: prefs.js:377
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS（仅限美国地区）"
 
-#: prefs.js:380
+#: prefs.js:393
 msgid "Forecast model"
 msgstr "预报模型"
 
-#: prefs.js:381
+#: prefs.js:394
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
 msgstr "仅 Open-Meteo · 预报越远模型越分歧 — 若周末预报反常，可换一个试试"
 
-#: prefs.js:384
+#: prefs.js:397
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "最佳匹配（Open-Meteo 区域选择；美国 → GFS）"
 
-#: prefs.js:385
+#: prefs.js:398
 msgid "ECMWF IFS (recommended)"
 msgstr "ECMWF IFS（推荐）"
 
-#: prefs.js:386
+#: prefs.js:399
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON（预报时效较短）"
 
-#: prefs.js:387
+#: prefs.js:400
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:403
+#: prefs.js:416
 msgid "Updates"
 msgstr "更新"
 
-#: prefs.js:405
+#: prefs.js:418
 msgid "Refresh interval (minutes)"
 msgstr "刷新间隔（分钟）"
 
-#: prefs.js:414
+#: prefs.js:427
 msgid "Wind animation threshold (km/h)"
 msgstr "起风动画阈值 (km/h)"
 
-#: prefs.js:415
+#: prefs.js:428
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "风更大的日子会换成风动画图标"
 
-#: prefs.js:433
+#: prefs.js:446
 msgid "Preview"
 msgstr "预览"
 
-#: prefs.js:480
+#: prefs.js:493
 msgid "Preview scene"
 msgstr "预览场景"
 
-#: prefs.js:481
+#: prefs.js:494
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "在此循环约 12 秒 — 您的真实面板不受影响"
 
-#: prefs.js:513
+#: prefs.js:526
 msgid "Scene"
 msgstr "场景"
 
-#: prefs.js:678
+#: prefs.js:691
 msgid "Panel preview"
 msgstr "面板预览"
 
-#: prefs.js:679
+#: prefs.js:692
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
 msgstr "此场景下面板按钮的样子 — 温度为模拟，图标动画为真实"
 
-#: prefs.js:685
+#: prefs.js:698
 msgid "Menu backdrop preview"
 msgstr "菜单背景预览"
 
-#: prefs.js:686
+#: prefs.js:699
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr "您菜单的当前天空，实时呈现 — 在上方选择状况即可在此播放"
 
-#: prefs.js:717
+#: prefs.js:730
 msgid "About"
 msgstr "关于"
 
-#: prefs.js:724
+#: prefs.js:737
 msgid "Version"
 msgstr "版本"
 
-#: prefs.js:728
+#: prefs.js:741
 msgid "Free and open source"
 msgstr "免费且开源"
 
-#: prefs.js:729
+#: prefs.js:742
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "无广告、无账号、不收集数据 — 一片天空，纯粹好用"
 
-#: prefs.js:734
+#: prefs.js:747
 msgid "Support the development"
 msgstr "支持开发"
 
-#: prefs.js:735
+#: prefs.js:748
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
 msgstr "Weatherglass 永久免费。若它让桌面更美，一杯咖啡能让这些像素继续飘落。"
 
-#: prefs.js:738
+#: prefs.js:751
 msgid "Buy me a coffee"
 msgstr "请我喝杯咖啡"
 

@@ -357,6 +357,9 @@ class WeatherIndicator extends PanelMenu.Button {
         case 'hour-format':
             this._panel.setHourFormat(this._resolveHour24());
             break;
+        case 'text-emphasis':
+            this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
+            break;
         case 'preview-scene':
             this._previewScene();
             break;
@@ -453,6 +456,7 @@ class WeatherIndicator extends PanelMenu.Button {
         this._panel.setDark(this._dark);
         this._panel.setAccent(this._accent);
         this._panel.setHourFormat(this._resolveHour24());
+        this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
         this._panel.setStyle(this._settings.get_string('menu-style'));
         this._panel.setConditions(this._settings.get_string('condition-strip'));
         this._panel.setCondPos(this._settings.get_string('condition-pos'));

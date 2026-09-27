@@ -127,6 +127,20 @@ hour labels, Apple-weather style (default)</description>
 to the locale convention; 12h shows 1AM…12PM; 24h shows 0…23. Applies to the
 chart's hour labels, the city clock in the header, and the preview clock.</description>
     </key>
+    <key name="text-emphasis" type="s">
+      <choices>
+        <choice value="normal"/>
+        <choice value="bold"/>
+        <choice value="large"/>
+        <choice value="both"/>
+      </choices>
+      <default>'normal'</default>
+      <summary>Emphasis for the chart's data text</summary>
+      <description>bold = heavier weight, large = ~18% bigger, both = the
+pair. Applies to the metric value labels (temperature, wind, precipitation),
+the hour labels under the curve and the now label. Normal keeps values in
+semibold and hours in regular weight at the adaptive size.</description>
+    </key>
     <key name="text-emboss" type="b">
       <default>false</default>
       <summary>Text and icon emboss shadows</summary>

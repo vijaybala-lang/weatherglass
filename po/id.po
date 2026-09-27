@@ -2,13 +2,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:04-0700\n"
+"POT-Creation-Date: 2026-09-27 11:24-0700\n"
 "Language: id\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:722
+#: extension.js:54 prefs.js:735
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
@@ -20,7 +20,7 @@ msgstr "Lokasi saya"
 msgid "Custom location"
 msgstr "Lokasi kustom"
 
-#: extension.js:193 menu.js:289
+#: extension.js:193 menu.js:294
 msgid "Fetching weather…"
 msgstr "Mengambil cuaca…"
 
@@ -36,39 +36,39 @@ msgstr "Presipitasi"
 msgid "Wind"
 msgstr "Angin"
 
-#: menu.js:324 menu.js:406 menu.js:410
+#: menu.js:329 menu.js:411 menu.js:415
 msgid "Weather"
 msgstr "Cuaca"
 
-#: menu.js:341
+#: menu.js:346
 msgid "Refresh now"
 msgstr "Muat ulang sekarang"
 
-#: menu.js:346
+#: menu.js:351
 msgid "Preferences"
 msgstr "Preferensi"
 
-#: menu.js:362
+#: menu.js:367
 msgid "Show"
 msgstr "Tampilkan"
 
-#: menu.js:362
+#: menu.js:367
 msgid "chart"
 msgstr "grafik"
 
-#: menu.js:411
+#: menu.js:416
 msgid "Could not load the forecast"
 msgstr "Prakiraan gagal dimuat"
 
-#: menu.js:555
+#: menu.js:572
 msgid "Refresh forecast — updated"
 msgstr "Muat ulang prakiraan — diperbarui"
 
-#: menu.js:616
+#: menu.js:633
 msgid "Now"
 msgstr "Sekarang"
 
-#: menu.js:725
+#: menu.js:742
 msgid "Today"
 msgstr "Hari ini"
 
@@ -252,39 +252,63 @@ msgstr "Di atas jam"
 msgid "Chart top"
 msgstr "Atas grafik"
 
-#: prefs.js:352
+#: prefs.js:345
+msgid "Data text"
+msgstr "Teks data"
+
+#: prefs.js:346
+msgid "Bolder or larger metric values and chart hours"
+msgstr "Jadikan nilai metrik dan jam grafik lebih tebal atau besar"
+
+#: prefs.js:348
+msgid "Bold"
+msgstr "Tebal"
+
+#: prefs.js:348
+msgid "Bold & large"
+msgstr "Tebal dan besar"
+
+#: prefs.js:348
+msgid "Large"
+msgstr "Besar"
+
+#: prefs.js:348
+msgid "Normal"
+msgstr "Biasa"
+
+#: prefs.js:365
 msgid "Data"
 msgstr "Data"
 
-#: prefs.js:356
+#: prefs.js:369
 msgid "Data source"
 msgstr "Sumber data"
 
-#: prefs.js:358
+#: prefs.js:371
 msgid "Weather provider"
 msgstr "Penyedia cuaca"
 
-#: prefs.js:359
+#: prefs.js:372
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "Semua tanpa kunci · data MET Norway berlisensi CC BY-SA 4.0"
 
-#: prefs.js:362
+#: prefs.js:375
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo (bawaan)"
 
-#: prefs.js:363
+#: prefs.js:376
 msgid "MET Norway (api.met.no)"
 msgstr "MET Norwegia (api.met.no)"
 
-#: prefs.js:364
+#: prefs.js:377
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS (hanya lokasi AS)"
 
-#: prefs.js:380
+#: prefs.js:393
 msgid "Forecast model"
 msgstr "Model prakiraan"
 
-#: prefs.js:381
+#: prefs.js:394
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
@@ -292,59 +316,59 @@ msgstr ""
 "Hanya Open-Meteo · hingga seminggu ke depan model berbeda — akhir pekan "
 "tampak aneh, coba model lain"
 
-#: prefs.js:384
+#: prefs.js:397
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "Cocok terbaik (pilihan regional Open-Meteo; AS → GFS)"
 
-#: prefs.js:385
+#: prefs.js:398
 msgid "ECMWF IFS (recommended)"
 msgstr "ECMWF IFS (disarankan)"
 
-#: prefs.js:386
+#: prefs.js:399
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON (jangkauan lebih pendek)"
 
-#: prefs.js:387
+#: prefs.js:400
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:403
+#: prefs.js:416
 msgid "Updates"
 msgstr "Pembaruan"
 
-#: prefs.js:405
+#: prefs.js:418
 msgid "Refresh interval (minutes)"
 msgstr "Selang muat ulang (menit)"
 
-#: prefs.js:414
+#: prefs.js:427
 msgid "Wind animation threshold (km/h)"
 msgstr "Ambang animasi angin (km/h)"
 
-#: prefs.js:415
+#: prefs.js:428
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "Hari yang lebih berangin menukar ikon ke animasi angin"
 
-#: prefs.js:433
+#: prefs.js:446
 msgid "Preview"
 msgstr "Pratinjau"
 
-#: prefs.js:480
+#: prefs.js:493
 msgid "Preview scene"
 msgstr "Adegan pratinjau"
 
-#: prefs.js:481
+#: prefs.js:494
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "Berulang di sini selama ~12 d — panel asli Anda tetap seperti adanya"
 
-#: prefs.js:513
+#: prefs.js:526
 msgid "Scene"
 msgstr "Adegan"
 
-#: prefs.js:678
+#: prefs.js:691
 msgid "Panel preview"
 msgstr "Pratinjau panel"
 
-#: prefs.js:679
+#: prefs.js:692
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
@@ -352,40 +376,40 @@ msgstr ""
 "Bagaimana tombol panel tampak untuk adegan ini — suhu simulasi, animasi ikon "
 "asli"
 
-#: prefs.js:685
+#: prefs.js:698
 msgid "Menu backdrop preview"
 msgstr "Pratinjau latar menu"
 
-#: prefs.js:686
+#: prefs.js:699
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "Langit menu Anda saat ini, langsung — pilih kondisi di atas untuk "
 "menganimasikannya di sini"
 
-#: prefs.js:717
+#: prefs.js:730
 msgid "About"
 msgstr "Tentang"
 
-#: prefs.js:724
+#: prefs.js:737
 msgid "Version"
 msgstr "Versi"
 
-#: prefs.js:728
+#: prefs.js:741
 msgid "Free and open source"
 msgstr "Gratis dan sumber terbuka"
 
-#: prefs.js:729
+#: prefs.js:742
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr ""
 "Tanpa iklan, tanpa akun, tanpa pengumpulan data — langit seharusnya cukup "
 "bekerja"
 
-#: prefs.js:734
+#: prefs.js:747
 msgid "Support the development"
 msgstr "Dukung pengembangannya"
 
-#: prefs.js:735
+#: prefs.js:748
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -393,7 +417,7 @@ msgstr ""
 "Weatherglass gratis selamanya. Jika itu membuat desktop Anda lebih enak "
 "dilihat, secangkir kopi membuat piksel tetap berjatuhan."
 
-#: prefs.js:738
+#: prefs.js:751
 msgid "Buy me a coffee"
 msgstr "Traktir saya kopi"
 
