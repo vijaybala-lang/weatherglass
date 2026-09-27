@@ -36,6 +36,9 @@ timeout 180 dbus-run-session -- bash -c "
   gnome-extensions install '$ZIP' || { echo 'FAIL: zip rejected on install'; exit 1; }
   [[ -f \"\$HOME/.local/share/gnome-shell/extensions/$UUID/extension.js\" ]] \
       || { echo 'FAIL: not extracted under the uuid dir'; exit 1; }
+  # xml-only schemas ship now (EGO-P-006): the installer MUST compile them
+  [[ -f \"\$HOME/.local/share/gnome-shell/extensions/$UUID/schemas/gschemas.compiled\" ]] \
+      || { echo 'FAIL: installer did not compile the shipped schema xml'; exit 1; }
   gsettings set org.gnome.shell enabled-extensions '[\"$UUID\", \"menutest@vijaybala.dev\"]'
   gsettings set $SCHEMA units 'imperial'
   gsettings set $SCHEMA auto-location false

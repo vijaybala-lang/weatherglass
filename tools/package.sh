@@ -48,7 +48,7 @@ mkdir -p "dist/$UUID/schemas"
 cp metadata.json extension.js prefs.js menu.js chart.js sky.js painter.js \
    weather.js moon.js animation.js i18n.js stylesheet.css README.md LICENSE \
    "dist/$UUID/"
-cp "schemas/$SCHEMA.gschema.xml" schemas/gschemas.compiled "dist/$UUID/schemas/"
+cp schemas/"$SCHEMA".gschema.xml "dist/$UUID/schemas/"
 cp -r locale "dist/$UUID/"
 
 echo "==> sanity checks"
@@ -58,7 +58,7 @@ if grep -rn "/home/\|/tmp/\|/usr/share" dist/"$UUID"/*.js \
         | grep -v "gnome-shell"; then
     fail 'absolute paths found in shipped JS'
 fi
-need=(metadata.json extension.js prefs.js schemas/gschemas.compiled LICENSE)
+need=(metadata.json extension.js prefs.js schemas/"$SCHEMA".gschema.xml LICENSE)
 for f in "${need[@]}"; do
     [[ -f "dist/$UUID/$f" ]] || fail "missing $f"
 done
