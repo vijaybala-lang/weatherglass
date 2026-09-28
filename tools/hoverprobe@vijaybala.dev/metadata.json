@@ -1,0 +1,7 @@
+{
+  "uuid": "hoverprobe@vijaybala.dev",
+  "name": "hoverprobe",
+  "description": "dump hover-resolved style nodes",
+  "shell-version": ["50"],
+  "version": 1
+}

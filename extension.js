@@ -507,9 +507,31 @@ export default class AnimatedWeatherExtension extends Extension {
         console.log('Weatherglass v1.0 (provider adapters: Open-Meteo + MET Norway + NOAA NWS)');
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
+        // our aw-* style classes are CSS hooks no theme knows (St 18 drops
+        // the default 'button' styling when style_class is set), so the
+        // card's hover/pressed/focus affordances ship with us — accent-
+        // tinted exactly like the shell's own controls (see stylesheet.css)
+        this._sheet = this.dir.get_child('stylesheet.css');
+        try {
+            St.ThemeContext.get_for_stage(global.stage)
+                .get_theme().load_stylesheet(this._sheet);
+        } catch (e) {
+            // a stale/invalid sheet must never take the extension down
+            logWarning(`Weatherglass: stylesheet not loaded: ${e.message}`);
+            this._sheet = null;
+        }
     }
 
     disable() {
+        if (this._sheet) {
+            try {
+                St.ThemeContext.get_for_stage(global.stage)
+                    .get_theme().unload_stylesheet(this._sheet);
+            } catch (e) {
+                logWarning(`Weatherglass: stylesheet unload: ${e.message}`);
+            }
+            this._sheet = null;
+        }
         this._indicator?.destroy();
         this._indicator = null;
     }

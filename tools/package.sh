@@ -58,7 +58,7 @@ if grep -rn "/home/\|/tmp/\|/usr/share" dist/"$UUID"/*.js \
         | grep -v "gnome-shell"; then
     fail 'absolute paths found in shipped JS'
 fi
-need=(metadata.json extension.js prefs.js schemas/"$SCHEMA".gschema.xml LICENSE)
+need=(metadata.json extension.js prefs.js stylesheet.css schemas/"$SCHEMA".gschema.xml LICENSE)
 for f in "${need[@]}"; do
     [[ -f "dist/$UUID/$f" ]] || fail "missing $f"
 done

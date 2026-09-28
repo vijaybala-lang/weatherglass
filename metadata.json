@@ -5,5 +5,5 @@
   "shell-version": ["50"],
   "settings-schema": "org.gnome.shell.extensions.weatherglass",
   "url": "https://vijaybala.dev",
-  "version": 3
+  "version": 4
 }

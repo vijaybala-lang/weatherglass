@@ -429,6 +429,13 @@ export class ForecastPanel {
     /** Menu background treatment: 'animated' | 'solid' | 'accent'. */
     setStyle(style) {
         this._style = style;
+        // 'accent' (theme-background) style hands interaction/selection
+        // painting to stylesheet.css (the .aw-theme gate): no sky there
+        // means no painted glass pills, so the CSS accent washes must
+        if (style === 'accent')
+            this._content.add_style_class_name('aw-theme');
+        else
+            this._content.remove_style_class_name('aw-theme');
         this._syncScrim();
         if (style === 'accent')
             this._skyArea._stop();     // no sky to tick: park the clock

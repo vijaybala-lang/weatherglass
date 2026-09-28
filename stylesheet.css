@@ -324,3 +324,53 @@
 .aw-content.aw-flat .aw-icon-btn StIcon {
     icon-shadow: none;
 }
+
+/* ── theme (menu-style: theme) interaction states ─────────────────────────
+ * With no sky behind the card there is no sampled ink to contrast against,
+ * so the fixed rgba washes above read poorly on an arbitrary theme surface
+ * (a white tile glass over a white menu is invisible). These rules use the
+ * system's own interaction colour, -st-accent-color, which every GNOME 50
+ * theme tints to the user's accent — so hover/selected/focus land on any
+ * theme, light or dark, without us guessing a background.
+ *
+ * -st-accent-color needs a fallback: themes that predate the token would
+ * drop a declaration outright, so each wash is declared twice — the plain
+ * rgba first, the accent one after for parsers that understand it. */
+
+.aw-theme .aw-tab:hover,
+.aw-theme .aw-day:hover {
+    background-color: rgba(128, 128, 128, 0.18);
+    background-color: st-mix(-st-accent-color, transparent, 14%);
+}
+
+.aw-theme .aw-icon-btn:hover {
+    background-color: rgba(128, 128, 128, 0.22);
+    background-color: st-mix(-st-accent-color, transparent, 18%);
+}
+
+/* press state (St.Button presses paint :active) */
+.aw-theme .aw-tab:active,
+.aw-theme .aw-day:active {
+    background-color: rgba(128, 128, 128, 0.28);
+    background-color: st-mix(-st-accent-color, transparent, 26%);
+}
+
+/* selection: the accent itself, exactly as quick-toggle's :checked does.
+ * (.aw-light .aw-tab.aw-tab-active is 3-deep — match that depth to win) */
+.aw-theme .aw-tab.aw-tab-active {
+    background-color: rgba(50, 128, 220, 0.16);
+    background-color: st-mix(-st-accent-color, transparent, 18%);
+}
+
+.aw-theme .aw-day-sel {
+    background-color: rgba(50, 128, 220, 0.20);
+    background-color: st-mix(-st-accent-color, transparent, 22%);
+}
+
+/* keyboard focus: theme's own ring recipe — accent at 20% */
+.aw-theme .aw-tab:focus,
+.aw-theme .aw-day:focus,
+.aw-theme .aw-icon-btn:focus {
+    box-shadow: inset 0 0 0 2px rgba(50, 128, 220, 0.8);
+    box-shadow: inset 0 0 0 2px st-mix(-st-accent-color, transparent, 80%);
+}
