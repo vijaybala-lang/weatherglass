@@ -1,17 +1,17 @@
-/* moon.js — the real moon: computed phase + a soft, pale photographic face.
+/* moon.js -- the real moon: computed phase + a soft, pale photographic face.
  *
  * moonPhase(date) gives the lunar age (0=new, .25=first quarter, .5=full,
  * .75=last quarter) from a known new-moon epoch and the mean synodic month
- * — accurate to a few hours, plenty to pick the right picture.
+ * -- accurate to a few hours, plenty to pick the right picture.
  *
  * paintMoon() draws that phase as a single lit region bounded by the limb
  * (a true half-circle) and the terminator (a half-ellipse whose signed
- * x-radius cos(2π·phase) swings it toward the lit side for a crescent and
- * away for a gibbous moon — the classic two-arc construction). The maria
+ * x-radius cos(2pi-phase) swings it toward the lit side for a crescent and
+ * away for a gibbous moon -- the classic two-arc construction). The maria
  * are painted only inside the lit region, so the terminator bites into them.
  *
  * The sky-style face follows soft illustration references: a pale sphere
- * lit from the upper left with very low-contrast maria — irregular blobs
+ * lit from the upper left with very low-contrast maria -- irregular blobs
  * unioned into ONE path and filled once, which is what stops the surface
  * reading as a pile of overlapping circles.
  *
@@ -49,9 +49,9 @@ export function moonPhase(date = new Date()) {
     return {phase, illum, waxing: phase < 0.5, name};
 }
 
-/* ── surface data ───────────────────────────────────────────────────────────
+/* -- surface data -----------------------------------------------------------
  * The near side's maria, roughly where photos put them: Imbrium top, the
- * Procellarum sweep down the west limb, the Serenitatis→Tranquillitatis→
+ * Procellarum sweep down the west limb, the Serenitatis->Tranquillitatis->
  * Fecunditatis chain east, Nubium/Humorum low. Each spot becomes a clump of
  * overlapping circles whose wobble comes from a seeded PRNG, so every frame
  * draws the exact same organic outline. Coords are unit-disc, y down. */
@@ -126,8 +126,8 @@ function litPath(cr, r, phase) {
 
 /**
  * paintMoon(cr, cx, cy, r, phase, style, opts)
- *   style 'icon' — flat warm-lit disc, transparent unlit part (crisp at 24px)
- *   style 'sky'  — pale soft sphere: gentle shading + low-contrast maria
+ *   style 'icon' -- flat warm-lit disc, transparent unlit part (crisp at 24px)
+ *   style 'sky'  -- pale soft sphere: gentle shading + low-contrast maria
  * opts: reserved.
  */
 export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
@@ -158,7 +158,7 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
     litPath(cr, r, phase);
 
     if (style === 'icon') {
-        // opts.face: light-card palette dims the disc to porcelain —
+        // opts.face: light-card palette dims the disc to porcelain --
         // bare 0.95 white blows out over bright day skies
         const fc = opts.face ?? [0.95, 0.95, 0.99];
         if (opts.outline) {           // pale disc needs an edge on light cards
@@ -177,12 +177,12 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
         return;
     }
 
-    // ── sky style: soft pale sphere, clipped to the lit crescent ──
+    // -- sky style: soft pale sphere, clipped to the lit crescent --
     cr.fillPreserve();
     cr.clip();
 
     // gentle sphere shading: light off the upper-left limb, slightly cooler
-    // and darker toward the far edge — pale grey, never a bright white coin
+    // and darker toward the far edge -- pale grey, never a bright white coin
     const bg = new Cairo.RadialGradient(-r * 0.3, -r * 0.3, r * 0.15,
                                         0, 0, r * 1.25);
     bg.addColorStopRGBA(0, 0.95, 0.95, 0.945, 1);
@@ -194,7 +194,7 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
     cr.fill();
 
     // maria: every clump circle is a subpath of ONE union path, painted with
-    // a single low-alpha pass — overlapping circles therefore merge into
+    // a single low-alpha pass -- overlapping circles therefore merge into
     // continuous soft shading instead of doubling into darker dots
     const newSub = cr.newSubPath ?? cr.new_sub_path;
     cr.newPath();
@@ -221,7 +221,7 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
     cr.restore();
 }
 
-/* moonPhase() needs a Date; paintMoon only has the 0..1 number — derive the
+/* moonPhase() needs a Date; paintMoon only has the 0..1 number -- derive the
  * two fields it uses without re-reading the clock. */
 function moonPhaseFrom(phase) {
     return {illum: (1 - Math.cos(TAU * phase)) / 2, waxing: phase < 0.5};

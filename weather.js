@@ -1,4 +1,4 @@
-/* weather.js — Open-Meteo client (no API key) + WMO code mapping. */
+/* weather.js -- Open-Meteo client (no API key) + WMO code mapping. */
 
 import GLib from 'gi://GLib';
 import Soup from 'gi://Soup';
@@ -12,7 +12,7 @@ const IPINFO = 'https://ipinfo.io/json';
 const MET = 'https://api.met.no/weatherapi/locationforecast/2.0/complete';
 const NWS = 'https://api.weather.gov';
 
-/* ── WMO 4677 weather codes → description + animation scene ─────────────── */
+/* -- WMO 4677 weather codes -> description + animation scene --------------- */
 
 export const WMO = {
     0:  {desc: N_('Clear sky'),        day: 'sun',    night: 'moon'},
@@ -53,7 +53,7 @@ export function sceneFor(code, isDay = true) {
 /**
  * Pick the animated scene from the WMO code PLUS raw physical variables.
  * Open-Meteo's code derivation almost never emits fog (45/48), thunder (95)
- * or hail (96/99) — measured across live forecasts and reanalysis — so we
+ * or hail (96/99) -- measured across live forecasts and reanalysis -- so we
  * trust the underlying data too:
  *   fog  : visibility < 1 km while it isn't precipitating
  *   storm: CAPE >= 1200 J/kg with liquid precipitation (embedded convection)
@@ -61,7 +61,7 @@ export function sceneFor(code, isDay = true) {
  */
 export function deriveScene(current) {
     const {code, visibility, cape, isDay} = current;
-    const liquid = code >= 51 && code <= 82;   // drizzle … showers
+    const liquid = code >= 51 && code <= 82;   // drizzle ... showers
     if (code === 96 || code === 99 || (cape >= 2500 && liquid))
         return {scene: 'hail', desc: _('Thunderstorm, hail')};
     if (code === 95 || (cape >= 1200 && liquid))
@@ -73,7 +73,7 @@ export function deriveScene(current) {
     return sceneFor(code, isDay);
 }
 
-/* ── formatting helpers ─────────────────────────────────────────────────── */
+/* -- formatting helpers --------------------------------------------------- */
 
 const WIND_DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
                    'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
@@ -100,7 +100,7 @@ export function fmtWind(kmh, units) {
 const DAYS = [N_('Sun'), N_('Mon'), N_('Tue'), N_('Wed'),
               N_('Thu'), N_('Fri'), N_('Sat')];
 
-/** 'YYYY-MM-DD' → short weekday, localized (UTC parse keeps the date
+/** 'YYYY-MM-DD' -> short weekday, localized (UTC parse keeps the date
  *  itself zone-independent; the msgids are the three-letter English
  *  abbreviations, translated to the locale's usual short weekday). */
 export function dayName(iso) {
@@ -108,7 +108,7 @@ export function dayName(iso) {
     return _(DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]);
 }
 
-/** '2026-09-25T06:08' → '06:08', or 'HH:MM' as-is. */
+/** '2026-09-25T06:08' -> '06:08', or 'HH:MM' as-is. */
 export function fmtTime(iso) {
     return iso && iso.includes('T') ? iso.slice(11, 16) : (iso ?? '');
 }
@@ -116,12 +116,12 @@ export function fmtTime(iso) {
 /**
  * Hourly-array indices covering ~24 points for the chart. Today starts at
  * the CURRENT hour and runs a full 24h ROLLING WINDOW into tomorrow (like
- * the mockup's slice(16, 40)) — a mere "rest of today" slice would leave a
+ * the mockup's slice(16, 40)) -- a mere "rest of today" slice would leave a
  * 6-point flat line in the evening. Today's window backfills 2 h before now
  * (clamped at midnight, whose hourly data the API always returns) so the
  * "now" marker isn't glued to the chart's left edge. Other days run
  * midnight to midnight.
- * Comparison is on ISO strings (zero-padded) — no Date parsing, no tz traps.
+ * Comparison is on ISO strings (zero-padded) -- no Date parsing, no tz traps.
  */
 const NOW_BACKFILL = 2;
 
@@ -155,7 +155,7 @@ export function nowFracIn(hourly, idx, nowIso) {
     return at < 0 ? null : at / (idx.length - 1);
 }
 
-/* ── HTTP ────────────────────────────────────────────────────────────────── */
+/* -- HTTP ------------------------------------------------------------------ */
 
 function qs(params) {
     return Object.entries(params)
@@ -195,21 +195,21 @@ function get(url) {
     });
 }
 
-/* ── provider adapters ─────────────────────────────────────────────────────
+/* -- provider adapters -----------------------------------------------------
  *
  * The UI (icon, sky, menu, charts) consumes exactly ONE normalized shape,
  * whichever provider answered:
  *
  *   {
- *     current: {temp °C, feels °C, code WMO-int, isDay, humidity %,
+ *     current: {temp degC, feels degC, code WMO-int, isDay, humidity %,
  *               precip mm/h, wind km/h, windDeg, uv, visibility m|null,
  *               cape J/kg|null, intensity mm/h,
  *               timeIso 'YYYY-MM-DDTHH:mm' in the forecast's own tz},
  *     daily:   [{date, code, tmax, tmin, precipProb %, sunrise, sunset,
  *               uv, windMax}],
- *     hourly:  {time: ['YYYY-MM-DDTHH:00' local…], temp: [°C…],
- *               precipProb: [%…], wind: [km/h…], code: [WMO-int…],
- *               isDay: [bool…]},
+ *     hourly:  {time: ['YYYY-MM-DDTHH:00' local...], temp: [degC...],
+ *               precipProb: [%...], wind: [km/h...], code: [WMO-int...],
+ *               isDay: [bool...]},
  *     detectedName, latitude, longitude
  *   }
  *
@@ -231,13 +231,13 @@ class WeatherProvider {
         throw new Error(`${this.id}: forecast() not implemented`);
     }
 
-    /** raw JSON → normalized {current, daily, hourly} (pure: unit-testable). */
+    /** raw JSON -> normalized {current, daily, hourly} (pure: unit-testable). */
     parse(raw, {days} = {}) {                       // eslint-disable-line no-unused-vars
         throw new Error(`${this.id}: parse() not implemented`);
     }
 }
 
-/* ── Open-Meteo (default) ────────────────────────────────────────────────── */
+/* -- Open-Meteo (default) -------------------------------------------------- */
 
 export class OpenMeteoProvider extends WeatherProvider {
     constructor() {
@@ -274,7 +274,7 @@ export class OpenMeteoProvider extends WeatherProvider {
             wind_speed_unit: 'kmh',
         };
         /* best_match is Open-Meteo's regional pick and the API default, so
-         * it needs no param at all — and asking explicitly for a model the
+         * it needs no param at all -- and asking explicitly for a model the
          * region doesn't offer is an HTTP 400, not a fallback. Anything the
          * endpoint rejects (typo, retired model) is retried once bare, so a
          * stale gsettings value degrades to best_match instead of an empty
@@ -310,7 +310,7 @@ export class OpenMeteoProvider extends WeatherProvider {
             cape: c.cape ?? null,               // J/kg convective available energy
             // mm/h always (API called with metric); drives drop/flake density
             intensity: c.precipitation ?? 0,
-            // 'YYYY-MM-DDTHH:30' in the forecast location's own timezone —
+            // 'YYYY-MM-DDTHH:30' in the forecast location's own timezone --
             // compare against hourly.time, never the machine clock, so the
             // "now" marker is right even if shell TZ and city TZ disagree
             timeIso: c.time ?? '',
@@ -341,10 +341,10 @@ export class OpenMeteoProvider extends WeatherProvider {
     }
 }
 
-/* ── MET Norway (api.met.no locationforecast 2.0, complete mode) ─────────── */
+/* -- MET Norway (api.met.no locationforecast 2.0, complete mode) ----------- */
 
 /**
- * AGNOS symbol_code → closest WMO 4677 code, so every provider lands in
+ * AGNOS symbol_code -> closest WMO 4677 code, so every provider lands in
  * the one scene vocabulary (see WMO table above). MET only tags the clear
  * families with _day/_night; intensity uses light_/moderate_/heavy_ and
  * _showers/_periods modifiers.
@@ -352,7 +352,7 @@ export class OpenMeteoProvider extends WeatherProvider {
 export function agnosToWmo(symbol) {
     const c = (symbol || '').replace(/_(?:day|night|polartwilight)$/, '');
     if (!c)
-        return 3;                                   // unknown → overcast
+        return 3;                                   // unknown -> overcast
     // AGNOS welds intensity INTO the family word (heavyrain, lightsnow,
     // rainshowersandthunder), so match families with includes(), storm
     // modifiers first, and the sleet/mixed families before plain precip
@@ -380,7 +380,7 @@ export function agnosToWmo(symbol) {
 }
 
 /**
- * MET reports precipitation *amounts*, not probabilities — derive a 0-100 %
+ * MET reports precipitation *amounts*, not probabilities -- derive a 0-100 %
  * proxy: any measurable mm starts the curve high (it IS raining in the
  * forecast), saturation ~2 mm/h; dry hours fall back to cloud cover/4.
  */
@@ -393,7 +393,7 @@ export function precipProbFrom(amountMm, cloudPct = 0) {
 
 /** MET times are UTC 'Z'; the whole pipeline speaks the viewer's local
  *  naive ISO, so convert (auto-located users are always in their own tz).
- *  glib ≥ 2.84 renamed new_from_iso8601_string → new_from_iso8601(iso, tz). */
+ *  glib >= 2.84 renamed new_from_iso8601_string -> new_from_iso8601(iso, tz). */
 function localFromUtc(iso) {
     let dt = null;
     try {
@@ -435,7 +435,7 @@ export class MetNorwayProvider extends WeatherProvider {
         const byDate = new Map();
 
         for (const t of ts) {
-            const iso = localFromUtc(t.time);              // '…T21:00'
+            const iso = localFromUtc(t.time);              // '...T21:00'
             const inst = t.data?.instant?.details ?? {};
             const n1 = t.data?.next_1_hours ?? {};
             const sym = n1?.summary?.symbol_code
@@ -504,7 +504,7 @@ export class MetNorwayProvider extends WeatherProvider {
             windDeg: fd.wind_from_direction ?? 0,
             uv: fd.ultraviolet_index_clear_sky ?? null,
             // no visibility/cape fields: fog arrives via symbol_code,
-            // storms too (thunder family) — deriveScene's code path covers it
+            // storms too (thunder family) -- deriveScene's code path covers it
             visibility: null,
             cape: null,
             intensity: n1?.details?.precipitation_amount ?? 0,
@@ -515,10 +515,10 @@ export class MetNorwayProvider extends WeatherProvider {
     }
 }
 
-/* ── NOAA National Weather Service (api.weather.gov, US only, keyless) ───── */
+/* -- NOAA National Weather Service (api.weather.gov, US only, keyless) ----- */
 
 /**
- * NWS forecasts carry no codes — only English ("Chance Rain And Thunder",
+ * NWS forecasts carry no codes -- only English ("Chance Rain And Thunder",
  * "Mostly Cloudy"). Map to the closest WMO 4677 code, matching the same
  * family-first logic as agnosToWmo above. Null on empty input so callers
  * can fall back to sky cover.
@@ -559,13 +559,13 @@ export function nwsTextToWmo(text) {
     return 0;                                   // sunny / clear / fair / dry
 }
 
-/** first number in '10 to 15 mph' / 'Calm' / '57' — max when a range */
+/** first number in '10 to 15 mph' / 'Calm' / '57' -- max when a range */
 function nwsNum(text) {
     const m = String(text ?? '').match(/-?\d+(?:\.\d+)?/g);
     return m ? Math.max(...m.map(Number)) : null;
 }
 
-/** wind phrase → km/h ('10 mph', '12 kt', 'Calm' → 0, metric passthrough) */
+/** wind phrase -> km/h ('10 mph', '12 kt', 'Calm' -> 0, metric passthrough) */
 function nwsWindKmh(text) {
     const v = nwsNum(text);
     if (v === null)
@@ -605,7 +605,7 @@ export class NoaaNwsProvider extends WeatherProvider {
             get(p.forecastHourly), get(p.forecast)]);
 
         // current conditions ride a station observation, not the forecast:
-        // nearest station's latest ob (best effort — hourly[0] can stand in)
+        // nearest station's latest ob (best effort -- hourly[0] can stand in)
         let obs = null;
         try {
             const sts = await get(p.observationStations);
@@ -626,7 +626,7 @@ export class NoaaNwsProvider extends WeatherProvider {
 
     parse({hourly, daily, obs, days = 8} = {}) {
         const h = {time: [], temp: [], precipProb: [], wind: [], code: [], isDay: []};
-        // NWS times are already local-with-offset — slice() keeps local naive
+        // NWS times are already local-with-offset -- slice() keeps local naive
         for (const per of hourly?.properties?.periods ?? []) {
             // NWS periods: startTime '2026-09-27T07:00:00-07:00', isDaytime
             const iso = String(per.startTime ?? per.time ?? '').slice(0, 16);
@@ -640,7 +640,7 @@ export class NoaaNwsProvider extends WeatherProvider {
             h.isDay.push(!!(per.isDaytime ?? per.isDayTime));
         }
 
-        // day/night period pairs → daily rows keyed by the period's start date
+        // day/night period pairs -> daily rows keyed by the period's start date
         const byDate = new Map();
         for (const per of daily?.properties?.periods ?? []) {
             const date = String(per.startTime ?? per.time ?? '').slice(0, 10);
@@ -671,7 +671,7 @@ export class NoaaNwsProvider extends WeatherProvider {
         };
 
         const op = obs?.properties;
-        // station obs are flaky on humidity/visibility — hourly periods
+        // station obs are flaky on humidity/visibility -- hourly periods
         // carry their own relative humidity, use it before giving up
         const hourRh = hourly?.properties?.periods?.[0]
             ?.relativeHumidity?.value ?? 0;
@@ -722,10 +722,10 @@ export function providerFor(id) {
     return REGISTRY.get(id) ?? REGISTRY.get('open-meteo');
 }
 
-/** For the preferences combo: [{id, name}, …] in registration order. */
+/** For the preferences combo: [{id, name}, ...] in registration order. */
 export const PROVIDER_LIST = [...REGISTRY.values()].map(p => ({id: p.id, name: p.name}));
 
-/* ── client ──────────────────────────────────────────────────────────────── */
+/* -- client ---------------------------------------------------------------- */
 
 export class WeatherClient {
     constructor(providerId = 'open-meteo', model = null) {
@@ -754,9 +754,9 @@ export class WeatherClient {
 
     /**
      * Full forecast for the card + animation engine, via the active
-     * provider adapter. auto=true → coordinates come from IP-based
+     * provider adapter. auto=true -> coordinates come from IP-based
      * detection first. Values always come back in canonical metric units
-     * (°C, km/h, mm/h); callers convert for display.
+     * (degC, km/h, mm/h); callers convert for display.
      */
     async fetch({latitude, longitude, auto, days = 8}) {
         let lat = latitude;

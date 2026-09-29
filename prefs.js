@@ -1,4 +1,4 @@
-/* prefs.js — preferences dialog. */
+/* prefs.js -- preferences dialog. */
 
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
@@ -49,7 +49,7 @@ const hour24For = settings => {
 };
 const STYLES = ['animated', 'solid', 'accent'];
 
-/* Every scene the menu can draw — drives the Preview page's scene
+/* Every scene the menu can draw -- drives the Preview page's scene
  * dropdown and its live sky preview. */
 const LEGEND = [
     ['sun',    'Clear sky'],
@@ -88,7 +88,7 @@ function locationLabel(r) {
 const ResultRow = GObject.registerClass(class ResultRow extends Adw.ActionRow {
     _init(title, cb) {
         super._init({title, activatable: true});
-        // GTK4 Gtk.Image has no from_icon_name constructor — use the setter
+        // GTK4 Gtk.Image has no from_icon_name constructor -- use the setter
         const img = new Gtk.Image({pixel_size: 16});
         (img.setFromIconName ?? img.set_from_icon_name).call(img, 'go-next-symbolic');
         this.add_suffix(img);
@@ -98,7 +98,7 @@ const ResultRow = GObject.registerClass(class ResultRow extends Adw.ActionRow {
 
 export default class AnimatedWeatherPrefs extends ExtensionPreferences {
     fillPreferencesWindow(window) {
-        // prefs runs in its own process — bind the domain before building UI
+        // prefs runs in its own process -- bind the domain before building UI
         initI18n(this.uuid, this.dir.get_path());
         const settings = this.getSettings();
         const client = new WeatherClient();
@@ -111,7 +111,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         window.add(this._dataPage(settings));
     }
 
-    /* ── location ───────────────────────────────────────────────────────── */
+    /* -- location --------------------------------------------------------- */
 
     _locationPage(settings, client) {
         const page = new Adw.PreferencesPage({
@@ -131,7 +131,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         autoGroup.add(autoRow);
         page.add(autoGroup);
 
-        // ── search ────────────────────────────────────────────────────────
+        // -- search --------------------------------------------------------
         const searchGroup = new Adw.PreferencesGroup({title: _('Search a city')});
         const searchEntry = new Adw.EntryRow({
             title: _('City name — press Enter to search'),
@@ -157,7 +157,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             settings.set_boolean('auto-location', false);
             settings.set_double('location-latitude', r.latitude);
             settings.set_double('location-longitude', r.longitude);
-            // the menu header has no room for "city, state, country" —
+            // the menu header has no room for "city, state, country" --
             // store the bare city; the results list above still carries
             // the full label so the choice stays unambiguous
             settings.set_string('location-name', r.name);
@@ -199,7 +199,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         page.add(searchGroup);
         page.add(resultsGroup);
 
-        // ── manual coordinates ────────────────────────────────────────────
+        // -- manual coordinates --------------------------------------------
         const manualGroup = new Adw.PreferencesGroup({
             title: _('Manual'),
             description: _('Saved when you press Enter in a field'),
@@ -245,7 +245,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         return page;
     }
 
-    /* ── display & updates ──────────────────────────────────────────────── */
+    /* -- display & updates ------------------------------------------------ */
 
     _displayPage(settings) {
         const page = new Adw.PreferencesPage({
@@ -358,7 +358,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         return page;
     }
 
-    /* ── data: provider + update rhythm ──────────────────────────────────── */
+    /* -- data: provider + update rhythm ------------------------------------ */
 
     _dataPage(settings) {
         const page = new Adw.PreferencesPage({
@@ -387,7 +387,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
         // Open-Meteo routes to different weather models, and the models
         // genuinely disagree beyond ~5 days (a US GFS run over San Francisco
-        // once promised 86°F where ECMWF promised 69°F — the GFS notorious-
+        // once promised 86degF where ECMWF promised 69degF -- the GFS notorious-
         // ly over-forecasts coastal heat). Default: ECMWF IFS.
         const modelRow = new Adw.ComboRow({
             title: _('Forecast model'),
@@ -439,7 +439,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         return page;
     }
 
-    /* ── preview: dropdown + fake panel + live sky, all self-contained ──── */
+    /* -- preview: dropdown + fake panel + live sky, all self-contained ---- */
 
     _previewPage(settings) {
         const page = new Adw.PreferencesPage({
@@ -449,7 +449,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         const sm = Adw.StyleManager.get_default();
 
         /* Everything animates together on one clock while a preview runs,
-         * then eases back to the menu's REAL current sky after 12 s — all
+         * then eases back to the menu's REAL current sky after 12 s -- all
          * inside this window: the actual panel icon is never touched. */
         let previewScene = null, timerId = 0, stopId = 0, t0 = 0;
         let skyPool = null;
@@ -488,13 +488,13 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             timerId = stopId = 0;
         };
 
-        // ── scene dropdown: one row replaces the old 11-row list ─────────
+        // -- scene dropdown: one row replaces the old 11-row list ---------
         const sceneRow = new Adw.ComboRow({
             title: _('Preview scene'),
             subtitle: _('Loops right here for ~12 s — your real panel stays put'),
             model: new Gtk.StringList({strings: LEGEND.map(([, l]) => _(l))}),
         });
-        // the picked scene's glyph, painted by the real menu painter —
+        // the picked scene's glyph, painted by the real menu painter --
         // rides in the row and animates with the preview
         const glyph = new Gtk.DrawingArea();
         glyph.set_size_request(30, 30);
@@ -527,7 +527,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         sceneGroup.add(sceneRow);
         page.add(sceneGroup);
 
-        /* Fake top bar: a mock of the real panel button — bar strip,
+        /* Fake top bar: a mock of the real panel button -- bar strip,
          * button pill, the same icon widget animation.js drives, and the
          * temperature suffix only if show-temperature is on. The number
          * is a prop (scale follows the units key); the icon is the truth. */
@@ -556,7 +556,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             }
 
             const txt = dark ? [1, 1, 1, 1] : [0.13, 0.13, 0.16, 1];
-            /* the bar itself — translucent over the wallpaper, hairline edge */
+            /* the bar itself -- translucent over the wallpaper, hairline edge */
             cr.setSourceRGBA(...(dark ? [0.05, 0.06, 0.08, 0.62]
                 : [1, 1, 1, 0.55]));
             cr.rectangle(0, 0, w, BH);
@@ -565,8 +565,8 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             cr.rectangle(0, BH - 1, w, 1);
             cr.fill();
 
-            /* RTL sessions: the bar mirrors — clock to the right, status
-             * cluster to the left — same flip the real panel performs */
+            /* RTL sessions: the bar mirrors -- clock to the right, status
+             * cluster to the left -- same flip the real panel performs */
             const rtl = Gtk.get_locale_direction() === Gtk.TextDirection.RTL;
             const cy = BH / 2;
 
@@ -672,7 +672,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         // the mock bar's clock follows the format combo without a reopen
         settings.connect('changed::hour-format', () => barArea.queue_draw());
 
-        // ── live dropdown backdrop ───────────────────────────────────────
+        // -- live dropdown backdrop ---------------------------------------
         const skyArea = new Gtk.DrawingArea();
         skyArea.set_size_request(-1, 170);
         skyArea.set_draw_func((a, cr, w, h) => {
@@ -724,7 +724,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         return page;
     }
 
-    /* ── about: what it is, coffee ───────────────────────────────────────── */
+    /* -- about: what it is, coffee ----------------------------------------- */
 
     _aboutPage() {
         const page = new Adw.PreferencesPage({

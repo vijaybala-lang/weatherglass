@@ -1,8 +1,8 @@
-/* chart.js — pure cairo hourly line chart (mirrors the mockup's SVG renderer).
+/* chart.js -- pure cairo hourly line chart (mirrors the mockup's SVG renderer).
  *
  * paintChart(cr, opts) draws: gradient area fill + smooth Catmull-Rom line,
  * value labels every N points (edge-aware anchors), hour labels, and an
- * optional dashed "now" marker. Stateless — morphing between metrics is the
+ * optional dashed "now" marker. Stateless -- morphing between metrics is the
  * caller's job (it interpolates `values` and repaints).
  *
  * Call in logical coordinates: scale the context for HiDPI first
@@ -22,16 +22,16 @@ const STRIP_Y = 13, STRIP_S = 0.6;       // condition-icon band: centre y, icon 
 const STRIP_INT = {rain: 2, snow: 2, sleet: 3, hail: 4, storm: 5};
 
 /* GJS Pango bindings are snake_case on some releases and camelCase on newer
- * ones — feature-detect once per call rather than betting on one. */
+ * ones -- feature-detect once per call rather than betting on one. */
 function call(obj, camel, snake, ...args) {
     const fn = obj[camel] ?? obj[snake];
     return fn.call(obj, ...args);
 }
 
-/* ── shared WCAG referee: menu text, tabs, tiles and chart labels all
- *   pick their ink with these. 'dark wins down to L≈0.18, white above'
+/* -- shared WCAG referee: menu text, tabs, tiles and chart labels all
+ *   pick their ink with these. 'dark wins down to L~0.18, white above'
  *   is decided on RATIO, not a luminance threshold (thresholds
- *   misclassify mid-bright skies). Exported for menu.js. ── */
+ *   misclassify mid-bright skies). Exported for menu.js. -- */
 export const lumOf = c => {
     const f = v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
     return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
@@ -43,8 +43,8 @@ export const ratio = (a, b) => {
 export function contrastSafe(accent, bg) {
     if (ratio(accent, bg) >= 3.1)
         return accent;
-    // pick whichever ink wins on contrast (dark is better down to L≈0.18,
-    // white above) — a luminance threshold misclassifies mid-bright skies
+    // pick whichever ink wins on contrast (dark is better down to L~0.18,
+    // white above) -- a luminance threshold misclassifies mid-bright skies
     const darkT = [0.09, 0.11, 0.15], lightT = [1, 1, 1];
     const target = ratio(darkT, bg) >= ratio(lightT, bg) ? darkT : lightT;
     let best = accent;
@@ -67,11 +67,11 @@ export const pickInk = bg =>
     ratio(INK_DARK, bg) >= ratio(INK_LIGHT, bg) * 1.35 ? INK_DARK : INK_LIGHT;
 
 /* Curve ink over the animated/solid sky. The metric colour is identity
- * (precip blue, temp amber, wind mint) — so over bright skies we deepen
+ * (precip blue, temp amber, wind mint) -- so over bright skies we deepen
  * rather than replace. Multiplying channels darkens but ALSO dulls (olive
- * amber, steel blue — the eye reads desaturated), so the twin is built in
+ * amber, steel blue -- the eye reads desaturated), so the twin is built in
  * HSV instead: brightness walks down only as far as it must, saturation
- * pushes UP to stay vivid — the eye reads a multiplied dark twin as
+ * pushes UP to stay vivid -- the eye reads a multiplied dark twin as
  * desaturated (steel blue), an HSV-darkened one as the same colour. */
 const deepen = base => {
     const mx = Math.max(...base), mn = Math.min(...base), d = mx - mn;
@@ -91,9 +91,9 @@ const deepen = base => {
 
 /* Curve ink over the animated/solid sky. Warm ink is identity: the
  * temperature line is the panel icon's amber on every sky, unaltered.
- * Bright yellow over a bright sky can't also be 3:1 — darkening walks
+ * Bright yellow over a bright sky can't also be 3:1 -- darkening walks
  * into brown, and every workaround tried (rim, plate) reads as an
- * unwanted outline — so the colour wins and the area gradient carries
+ * unwanted outline -- so the colour wins and the area gradient carries
  * the shape's legibility instead. Cool inks have the luminance
  * headroom blue and green afford them, and keep deepening plainly. */
 export const lineInk = (base, bgs) => {
@@ -135,13 +135,13 @@ export function drawText(cr, text, x, y, {size = 10, bold = false, weight = 0,
     const [pw, ph, layout] = textPx(cr, text, size, bold, weight);
     const tx = anchor === 'start' ? x : anchor === 'end' ? x - pw : x - pw / 2;
     cr.setSourceRGBA(...rgba);
-    // y is the baseline; vcenter instead centres the line box on cy — the
+    // y is the baseline; vcenter instead centres the line box on cy -- the
     // panel-mock bar hangs its words on the same middle as the glyphs
     cr.moveTo(tx, vcenter === null ? y - ph : vcenter - ph / 2);
     (PangoCairo.showLayout ?? PangoCairo.show_layout)(cr, layout);
 }
 
-/** Catmull-Rom → cubic Bézier, matching the mockup's smoothPath(). */
+/** Catmull-Rom -> cubic Bezier, matching the mockup's smoothPath(). */
 function tracePath(cr, pts) {
     cr.moveTo(pts[0][0], pts[0][1]);
     for (let i = 0; i < pts.length - 1; i++) {
@@ -161,11 +161,11 @@ function tracePath(cr, pts) {
  *   fmtValue(i, v):  string   value label text
  *   fmtHour(i):      string   x label ('3 PM'); '' hides
  *   accent:          [r, g, b] 0..1
- *   nowFrac:         0..1 | null — dashed marker + accent label on that
+ *   nowFrac:         0..1 | null -- dashed marker + accent label on that
  *                    point; everything left of it fades to pastKeep
  *   pastKeep:        alpha kept by past ink (default 0.55)
- *   scenes:          string[] | null — one painter scene name per value
- *                    point ('sun', 'rain'…): static condition icons in a
+ *   scenes:          string[] | null -- one painter scene name per value
+ *                    point ('sun', 'rain'...): static condition icons in a
  *                    band above the line, ~30 px apart, night variants
  *                    via nights[i]; lives inside the fade group, so the
  *                    past hours' icons recede with the rest of the ink
@@ -174,10 +174,10 @@ function tracePath(cr, pts) {
  *   fontSize:        label font size in pt (default 8.5)
  * }
  */
-/* ── pill helpers (grouped condition mode) ──────────────────────────────── */
+/* -- pill helpers (grouped condition mode) -------------------------------- */
 
 /* Footprint compensation: the sun's rays fill the 24-unit grid, cloud-only
- * scenes occupy barely 60 % of it — at one shared scale the cloud pills look
+ * scenes occupy barely 60 % of it -- at one shared scale the cloud pills look
  * half-empty next to the sun. Scale small-footprint scenes up so every pill
  * (and strip icon) reads as an equally sized glyph. Moon stays capped so
  * its stars stay inside a minimum-size pill. */
@@ -239,10 +239,10 @@ export function paintChart(cr, opts) {
     // (Unlabeled hours = real data points before/after the label range.)
     const GUT = opts.gutter ?? 14;
     const PX0 = PADX, PX1 = w - PADX;
-    /* RTL (Arabic/Hebrew sessions): time flows right → left. Every x in
+    /* RTL (Arabic/Hebrew sessions): time flows right -> left. Every x in
      * this painter rides X() or the sx()/so() edges below, so one mirror
      * flips curve, labels, strip band, past-fade and now marker together.
-     * Slot order stays chronological in the data — only the canvas maps
+     * Slot order stays chronological in the data -- only the canvas maps
      * it backwards, which is exactly what an RTL reader expects. */
     const rtl = !!opts.rtl;
     const sx = f => PADX + (rtl ? 1 - f : f) * (w - PADX * 2);
@@ -267,14 +267,14 @@ export function paintChart(cr, opts) {
     // All grid ink (area fill, curve, value/hour labels) is drawn into an
     // isolated cairo group and composited back at the end: past the marker
     // at pastKeep alpha, future at full. This fades ONLY the chart's own
-    // ink — the widget background and the sky behind it stay untouched.
+    // ink -- the widget background and the sky behind it stay untouched.
     // (An earlier DEST_OUT attempt punched a see-through hole in the
     // composited widget background instead: the "box left of the marker".)
     const hasNow = nowFrac !== null && nowFrac >= 0 && nowFrac <= 1;
     cr.save();
     cr.pushGroup();
 
-    // area (gradient) — fill under the curve to just above the hour labels
+    // area (gradient) -- fill under the curve to just above the hour labels
     const grad = new Cairo.LinearGradient(0, TOP, 0, h - BOT + 10);
     grad.addColorStopRGBA(0, acR, acG, acB, 0.38);
     grad.addColorStopRGBA(1, acR, acG, acB, 0);
@@ -286,7 +286,7 @@ export function paintChart(cr, opts) {
     cr.setSource(grad);
     cr.fill();
     // stroke ONLY the curve (re-trace): fillPreserve here would outline the
-    // whole closed area polygon — the "box around the line" bug
+    // whole closed area polygon -- the "box around the line" bug
     cr.newPath();
     tracePath(cr, pts);
     cr.setSourceRGBA(acR, acG, acB, 1);
@@ -295,7 +295,7 @@ export function paintChart(cr, opts) {
     cr.stroke();
 
     // The curve's TOP edge at any x: labels float above the line, so we
-    // sample the same Catmull-Rom → cubic segments tracePath draws —
+    // sample the same Catmull-Rom -> cubic segments tracePath draws --
     // clearance matches the visible stroke, not a straight-line guess.
     const curve = [];
     for (let i = 0; i < pts.length - 1; i++) {
@@ -327,7 +327,7 @@ export function paintChart(cr, opts) {
     // whose x clears the gutter, leaving unlabeled hours at both ends.
     // Past that, TEXT-AWARE collision handling: every label is measured,
     // committed boxes are remembered, and a colliding label nudges one line
-    // up, then one line down — dropped only if all three slots clash. Wide
+    // up, then one line down -- dropped only if all three slots clash. Wide
     // wind labels ("11 mph") used to ride over their neighbours at the 3-h
     // stride, and the accent "now" label (drawn LAST, so its box gets
     // reserved up front) used to land right on top of them.
@@ -350,7 +350,7 @@ export function paintChart(cr, opts) {
                 widest = Math.max(widest,
                     textPx(cr, fmtValue(i, values[i]), TS, false, VW)[0]);
         }
-        // margin: 3 px box padding + ~6 px for the edge-anchor nudge —
+        // margin: 3 px box padding + ~6 px for the edge-anchor nudge --
         // wind labels ('7 mph' = 28 px) otherwise squeak past a fit at the
         // 3-h tick and the referee drops labels once the stagger runs out
         for (const c of [3, 4, 6, 8, 12])
@@ -402,7 +402,7 @@ export function paintChart(cr, opts) {
         nowPlace = { txt, lx, y, a };
         used.push(boxOf(x0, tw, th, y));
     }
-    if (strip) {                          // and the condition band's row —
+    if (strip) {                          // and the condition band's row --
         const bandY = opts.stripBottom ? h - 34 : STRIP_Y;
         // the band's DOWN margin shrinks to the hour text's height: a
         // 'large' label row would otherwise collide with the fixed band
@@ -420,7 +420,7 @@ export function paintChart(cr, opts) {
             drawText(cr, placed.txt, lx, placed.y,
                      {size: TS, weight: VW, rgba: [...inkAt(placed.y), 0.62], anchor: a});
     }
-    // hour labels stay flat on their baseline — a clash drops the label
+    // hour labels stay flat on their baseline -- a clash drops the label
     // instead of staggering the row
     for (let i = off0; fmtHour && i < n; i += EVERY) {
         const t = fmtHour(i);
@@ -435,7 +435,7 @@ export function paintChart(cr, opts) {
         }
     }
 
-    // condition strip along the top — the same flat vocabulary as the panel
+    // condition strip along the top -- the same flat vocabulary as the panel
     // icon (painter.js), posed statically. Two modes:
     //   'icons': one icon per stride slot (>=30 px apart), edge ones nudge in
     //   'pills': consecutive same-condition hours merge into one rounded pill
@@ -465,7 +465,7 @@ export function paintChart(cr, opts) {
             /* The palette follows the SKY the icon rides, not the theme:
              * white moons and stars blow out across a bright day foot
              * (1 AM glyphs over a clear-sky noon backdrop). Each icon
-             * samples its own backdrop — genuinely bright (0.55 up)
+             * samples its own backdrop -- genuinely bright (0.55 up)
              * turns pale glyphs into their dark twins, and the
              * silhouette ring (built to edge OUT pale glyphs) stands
              * down, else dark-on-dark reads chunky. Mid-tone skies
@@ -520,7 +520,7 @@ export function paintChart(cr, opts) {
             // CELL; cells share edges (no gaps) inside a single rounded
             // band. Dotted vertical seams mark condition changes (never at
             // the band's outer edges) and a heavier bottom rule grounds it
-            // as an axis — doubly so when docked above the hour labels.
+            // as an axis -- doubly so when docked above the hour labels.
             // Cells narrower than MINW borrow width from longer neighbours,
             // so they stay consistent AND can never overlap. Tint: light
             // neutral gray on plain (accent-style) cards; the day-tile
@@ -575,7 +575,7 @@ export function paintChart(cr, opts) {
             cr.fill();
 
             // dotted seams at interior cell borders (GJS cairo has no
-            // setDash — real dots it is). RTL walks right → left.
+            // setDash -- real dots it is). RTL walks right -> left.
             const dir = rtl ? -1 : 1;
             cr.setSourceRGBA(edge[0], edge[1], edge[2], Math.min(0.65, edge[3] * 2.6));
             let acc = rtl ? PX1 : PX0;
@@ -595,8 +595,8 @@ export function paintChart(cr, opts) {
             }
             cr.restore();
         } else {
-            // Icons only: ride the exact printed-label rhythm — same stride
-            // (multiples of EVERY), same gutter offset, same edge anchors —
+            // Icons only: ride the exact printed-label rhythm -- same stride
+            // (multiples of EVERY), same gutter offset, same edge anchors --
             // so every icon sits centred over its hour/value text column.
             // At the card edges the labels flow inward and the icon follows
             // the TEXT centre, not the data point.
@@ -640,7 +640,7 @@ export function paintChart(cr, opts) {
     }
     cr.restore();
 
-    // now marker (manual dashes — cr.setDash binding is unreliable in GJS)
+    // now marker (manual dashes -- cr.setDash binding is unreliable in GJS)
     if (nowFrac !== null && nowFrac >= 0 && nowFrac <= 1) {
         const nx = PX0 + nowFrac * (PX1 - PX0);
         cr.save();
@@ -654,7 +654,7 @@ export function paintChart(cr, opts) {
         cr.restore();
     }
 
-    // accent label riding the now marker, above the veil — drawn at the
+    // accent label riding the now marker, above the veil -- drawn at the
     // exact slot reserved in the label pass (curve-cleared baseline, inward
     // flow near the edges) so nothing ever lands under it. With a bgFn the
     // accent is re-safened against the backdrop at ITS y, not the chart mid.
@@ -666,7 +666,7 @@ export function paintChart(cr, opts) {
                   anchor: nowPlace.a});
 }
 
-/* ── morphing helper (shared by the menu) ──────────────────────────────── */
+/* -- morphing helper (shared by the menu) -------------------------------- */
 
 /** ease-out cubic, 0..1 */
 export function ease(k) {

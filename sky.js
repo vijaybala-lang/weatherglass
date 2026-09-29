@@ -1,4 +1,4 @@
-/* sky.js — pure cairo animated sky backdrop (port of the mockup's engine).
+/* sky.js -- pure cairo animated sky backdrop (port of the mockup's engine).
  *
  * paintSky(cr, opts) fills the whole allocation with a scene gradient plus
  * celestial bodies, drifting clouds, and particles (rain/snow/hail/stars/
@@ -33,8 +33,8 @@ const PAL = {
     loading:{d: [[0.30, 0.33, 0.38], [0.55, 0.58, 0.63]], n: [[0.09, 0.10, 0.12], [0.20, 0.22, 0.25]]},
 };
 
-/* scene → sky features. clouds: count, drops/flakes/hail/streaks: density.
- * No ambient streaks on calm skies — moving lines are reserved for the
+/* scene -> sky features. clouds: count, drops/flakes/hail/streaks: density.
+ * No ambient streaks on calm skies -- moving lines are reserved for the
  * dedicated windy scene (real wind signal), not daily decoration. */
 const FEATURES = {
     // clear means CLEAR: the models distinguish these from 'partly', so
@@ -55,7 +55,7 @@ const FEATURES = {
 };
 
 /** Approximate the composited sky RGB at height fraction f (0 top .. 1
- *  bottom) — lets the menu run real contrast math for accent-colored
+ *  bottom) -- lets the menu run real contrast math for accent-colored
  *  text instead of guessing from the theme flag. Scrim not included:
  *  callers blend that themselves (menu THEME table). */
 export function sampleSky(scene, night, f = 0.62) {
@@ -63,7 +63,7 @@ export function sampleSky(scene, night, f = 0.62) {
     return top.map((v, i) => v + (bot[i] - v) * f);
 }
 
-/* The bright body paintSky will draw, as {x, y, r, col, soft} in px —
+/* The bright body paintSky will draw, as {x, y, r, col, soft} in px --
  * the menu's ink referee samples the gradient and MUST also see this:
  * white city text over a full moon (or the sun's core) is unreadable,
  * and a gradient-only sampler can't know. col approximates the disc's
@@ -153,7 +153,7 @@ function rebuild(sky, w, h, scene) {
     sky.w = w; sky.h = h; sky.scene = scene; sky.lastT = null;
 }
 
-/* 4-point star flare: slim crossed diamond + bright core — the reference's
+/* 4-point star flare: slim crossed diamond + bright core -- the reference's
  * cyan-white twinkle stars. Straight edges read as rays at these sizes. */
 function sparkle(cr, x, y, s, a, cool) {
     const r = cool ? 0.55 : 1, g = cool ? 0.83 : 1, b = 1;
@@ -200,7 +200,7 @@ function roundClip(cr, w, h, radius) {
 }
 
 /**
- * paintPlain(cr, {w, h, accent, dark, radius}) — offscreen preview stand-in
+ * paintPlain(cr, {w, h, accent, dark, radius}) -- offscreen preview stand-in
  * for the 'accent' menu style. That style paints nothing in the live shell
  * (the shell theme's own popup background shows through the transparent
  * surface), so this just renders a supplied theme-colour stand-in with a
@@ -236,14 +236,14 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
     roundClip(cr, w, h, radius);
     cr.clip();
 
-    // ── gradient backdrop ───────────────────────────────────────────────
+    // -- gradient backdrop -----------------------------------------------
     const g = new Cairo.LinearGradient(0, 0, 0, h);
     g.addColorStopRGB(0, ...top);
     g.addColorStopRGB(1, ...bottom);
     cr.setSource(g);
     cr.paint();
 
-    // ── celestial ────────────────────────────────────────────────────────
+    // -- celestial --------------------------------------------------------
     const sx = w * 0.82, sy = h * 0.16, R = 64 * s;
     if ((f.sun || f.moon) && !night) {
         cr.save();
@@ -300,7 +300,7 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
         }
     }
 
-    // ── drifting clouds ──────────────────────────────────────────────────
+    // -- drifting clouds --------------------------------------------------
     if (sky.clouds.length) {
         if (!sky.sprite)
             sky.sprite = makeCloudSprite();
@@ -319,7 +319,7 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
         }
     }
 
-    // ── fog bands ────────────────────────────────────────────────────────
+    // -- fog bands --------------------------------------------------------
     for (const fg of sky.fog) {
         fg.x += fg.sp * dt;
         if (fg.x > w + fg.len)
@@ -333,7 +333,7 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
         cr.fill();
     }
 
-    // ── rain ─────────────────────────────────────────────────────────────
+    // -- rain -------------------------------------------------------------
     const rainCol = scene === 'sleet' ? [0.63, 0.80, 0.93] : [0.73, 0.84, 0.94];
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineWidth(1.4 * s);
@@ -350,7 +350,7 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
         cr.stroke();
     }
 
-    // ── snow ─────────────────────────────────────────────────────────────
+    // -- snow -------------------------------------------------------------
     for (const fl of sky.flakes) {
         fl.y += fl.sp * dt;
         if (fl.y > h + 10) {
@@ -362,7 +362,7 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
         cr.fill();
     }
 
-    // ── hail (gravity + floor bounce, like the icon painter) ────────────
+    // -- hail (gravity + floor bounce, like the icon painter) ------------
     for (const hl of sky.hail) {
         hl.vy += 900 * dt;
         hl.x += hl.vx * dt;
@@ -381,7 +381,7 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
         cr.fill();
     }
 
-    // ── wind streaks ─────────────────────────────────────────────────────
+    // -- wind streaks -----------------------------------------------------
     for (const st of sky.streaks) {
         st.x += st.sp * dt;
         if (st.x > w + st.l) {
@@ -395,7 +395,7 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
         cr.stroke();
     }
 
-    // ── storm flash + bolt ───────────────────────────────────────────────
+    // -- storm flash + bolt -----------------------------------------------
     if (f.bolt) {
         const c = time % 3.1;
         let fl = 0;
@@ -421,7 +421,7 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
         }
     }
 
-    // ── theme scrim: light-mode washes the sky so dark ink stays legible;
+    // -- theme scrim: light-mode washes the sky so dark ink stays legible;
     //    dark mode gets a faint vignette to lift white text off bright sun
     if (scrim) {
         cr.setSourceRGBA(scrim[0], scrim[1], scrim[2], scrim[3]);

@@ -1,4 +1,4 @@
-/* painter.js — pure Cairo weather scene painter.
+/* painter.js -- pure Cairo weather scene painter.
  *
  * Every scene is designed on a 24x24 unit grid. The caller scales the cairo
  * context so (0,0)-(24,24) covers the whole surface, then calls paintWeather()
@@ -14,7 +14,7 @@ export const GRID = 24;
 
 const TAU = Math.PI * 2;
 
-/* ── particle pools ─────────────────────────────────────────────────────── */
+/* -- particle pools ------------------------------------------------------- */
 
 function rand(min, max) {
     return min + Math.random() * (max - min);
@@ -50,7 +50,7 @@ function newHailStone() {
     };
 }
 
-/* ── small drawing helpers ──────────────────────────────────────────────── */
+/* -- small drawing helpers ------------------------------------------------ */
 
 function circle(cr, x, y, r) {
     cr.newSubPath();
@@ -80,7 +80,7 @@ const CLOUD_RAIN  = [[0.56, 0.64, 0.71], [0.38, 0.47, 0.55]];
 const CLOUD_DARK  = [[0.42, 0.48, 0.56], [0.25, 0.30, 0.38]];
 
 /* Light-card palette: the dark-panel designs lean on pale ink (moon,
- * flakes, fog banks, water glints) which vanishes on a white card — e.g.
+ * flakes, fog banks, water glints) which vanishes on a white card -- e.g.
  * the chart strip in 'accent' light mode. paintWeather sets _light once
  * per frame (single-threaded, synchronous) and the pale elements below
  * swap to their darker twins. Scenes/callers stay theme-agnostic. */
@@ -195,7 +195,7 @@ function hailStones(cr, p, t, count) {
     }
 }
 
-/* ── celestial bodies ───────────────────────────────────────────────────── */
+/* -- celestial bodies ----------------------------------------------------- */
 
 function sunBody(cr, cx, cy, r, t, rayLen) {
     // soft pulsing glow
@@ -237,7 +237,7 @@ function moonBody(cr, cx, cy, r, t, p, phase) {
     const ph = Number.isFinite(phase) ? phase : moonPhase().phase;
     if (!_light) {
         // halo is a night-sky trick: on bright day skies it's exactly the
-        // "blown-out highlight" — suppressed there, porcelain does the job
+        // "blown-out highlight" -- suppressed there, porcelain does the job
         const glow = new Cairo.RadialGradient(cx, cy, r * 0.5, cx, cy, r * 2.2);
         glow.addColorStopRGBA(0, 0.86, 0.87, 0.97, 0.30 * (0.25 + 0.75 * illumOf(ph)));
         glow.addColorStopRGBA(1, 0.86, 0.87, 0.97, 0);
@@ -245,7 +245,7 @@ function moonBody(cr, cx, cy, r, t, p, phase) {
         cr.paint();
     }
 
-    // tonight's REAL phase (moon.js) — flat lit shape, transparent shadow:
+    // tonight's REAL phase (moon.js) -- flat lit shape, transparent shadow:
     // the one rendering that reads at 16px on the panel; on light cards a
     // dimmed porcelain face + thin edge replace white+glow, which blows out
     paintMoon(cr, cx, cy, r, ph, 'icon',
@@ -262,7 +262,7 @@ function moonBody(cr, cx, cy, r, t, p, phase) {
     }
 }
 
-/* ── scenes (all draw inside the 24x24 grid) ────────────────────────────── */
+/* -- scenes (all draw inside the 24x24 grid) ------------------------------ */
 
 function sceneSun(cr, ctx) {
     const {t, windy} = ctx;
@@ -414,7 +414,7 @@ function sceneWind(cr, ctx) {
     windStreaks(cr, t, 1.0, 4);
     // one longer high streak for depth
     streak(cr, 3.2 + Math.sin(t) * 0.4, 0.7, 0.35, 3.5, 6, -(t * 5) % 9.5);
-    // two curling gusts sweeping left→right at different depths
+    // two curling gusts sweeping left->right at different depths
     gustCurl(cr, (t * 4.4) % 28 - 2, 8.5 + Math.sin(t * 1.6) * 0.8, 1.5, 0.6);
     gustCurl(cr, ((t * 3.1) % 28) - 2 + 9, 16 + Math.cos(t * 1.2) * 0.8, 1.1, 0.4);
 }
@@ -457,13 +457,13 @@ const SCENES = {
 };
 
 /**
- * Paint one frame. `opts` must already be in grid space — the caller scales
+ * Paint one frame. `opts` must already be in grid space -- the caller scales
  * the context. Fields:
  *   scene      one of SCENES
  *   time       seconds since the icon appeared (animation clock)
  *   particles  pool from createParticles()
- *   windy      bool — add wind streaks to the scene
- *   night      bool — render night variant (partly)
+ *   windy      bool -- add wind streaks to the scene
+ *   night      bool -- render night variant (partly)
  *   intensity  0..10 precipitation mm, drives drop/flake count
  *   windKmh    wind speed in km/h, drives rain slant
  */

@@ -9,9 +9,9 @@
     font-weight: bold;
 }
 
-/* ── dropdown card ────────────────────────────────────────────────────────
+/* -- dropdown card --------------------------------------------------------
  * Mirrors the mockup (mockups/weather-menu.html) at its narrow breakpoint:
- * flat text tabs over a hairline, huge thin temperature, plain °F | °C text
+ * flat text tabs over a hairline, huge thin temperature, plain degF | degC text
  * toggle, transparent day tiles that only glass up when selected, and a
  * chart that bleeds to the card edges. The sky itself is painted by sky.js
  * underneath; this file only styles the St content riding on top.
@@ -41,7 +41,7 @@
     spacing: 4px;
 }
 
-/* ── header ─────────────────────────────────────────────────────────────── */
+/* -- header --------------------------------------------------------------- */
 
 .aw-header {
     spacing: 10px;
@@ -89,7 +89,7 @@
     font-size: 0.85em;
 }
 
-/* ── metric tabs (pill style, like the day tiles) ─────────────────────────
+/* -- metric tabs (pill style, like the day tiles) -------------------------
  * Each tab is a full pill (transparent border keeps size stable); the active
  * one lights up with the day-tile glass. No underline, no hairline rule. */
 
@@ -112,7 +112,7 @@
     font-weight: bold;
 }
 
-/* dark glass pill behind the active tab — same recipe as .aw-day-sel */
+/* dark glass pill behind the active tab -- same recipe as .aw-day-sel */
 .aw-dark .aw-tab.aw-tab-active {
     background-color: rgba(16, 20, 28, 0.45);
     border-color: rgba(255, 255, 255, 0.18);
@@ -126,7 +126,7 @@
     color: #0b1220;
 }
 
-/* ── day tiles: mock narrow grid = two rows of four ─────────────────────── */
+/* -- day tiles: mock narrow grid = two rows of four ----------------------- */
 
 .aw-days-grid {
     spacing: 4px;
@@ -164,7 +164,7 @@
     font-size: 0.8em;
 }
 
-/* hierarchy by weight, never opacity — lows must survive sun-bright skies */
+/* hierarchy by weight, never opacity -- lows must survive sun-bright skies */
 .aw-day-hi {
     font-weight: 600;
 }
@@ -173,7 +173,7 @@
     font-weight: 400;
 }
 
-/* ── ghost icon buttons (refresh / preferences, clock row) ──────────────── */
+/* -- ghost icon buttons (refresh / preferences, clock row) ---------------- */
 
 .aw-icon-btn {
     border-radius: 99px;
@@ -187,7 +187,7 @@
     border: none;
 }
 
-/* ── placeholder (loading / error) ──────────────────────────────────────── */
+/* -- placeholder (loading / error) ---------------------------------------- */
 
 .aw-placeholder {
     spacing: 12px;
@@ -199,7 +199,7 @@
     y_align: center;
 }
 
-/* ── dark theme (OS prefers-dark) ───────────────────────────────────────── */
+/* -- dark theme (OS prefers-dark) ----------------------------------------- */
 
 .aw-dark {
     color: rgba(255, 255, 255, 0.95);
@@ -211,7 +211,7 @@
     color: rgba(255, 255, 255, 0.62);
 }
 
-/* the mock dims lows only to .85 + weight — .62 was unreadable */
+/* the mock dims lows only to .85 + weight -- .62 was unreadable */
 .aw-dark .aw-day-lo {
     color: rgba(255, 255, 255, 0.85);
 }
@@ -241,7 +241,7 @@
 }
 
 /* tiles are transparent until hovered/selected; the glass is DARK-tinted
- * (the mock's rgba(16,20,28,·)) — white ink on white-tinted glass vanishes
+ * (the mock's rgba(16,20,28,-)) -- white ink on white-tinted glass vanishes
  * over bright skies, dark glass is what makes it pop */
 .aw-dark .aw-day {
     background-color: transparent;
@@ -258,7 +258,7 @@
     color: #ffffff;
 }
 
-/* ── light theme (OS light mode) ────────────────────────────────────────── */
+/* -- light theme (OS light mode) ------------------------------------------ */
 
 .aw-light {
     color: #101823;
@@ -288,7 +288,7 @@
     color: rgba(16, 24, 35, 0.75);
 }
 
-/* light theme: dark ink icons get the mirror treatment — white halo */
+/* light theme: dark ink icons get the mirror treatment -- white halo */
 .aw-light .aw-icon-btn StIcon {
     color: rgba(11, 18, 32, 0.95);
     icon-shadow: 0 1px 3px rgba(255, 255, 255, 0.9);
@@ -313,7 +313,7 @@
     color: #0b1220;
 }
 
-/* ── emboss off (preference) ───────────────────────────────────────────────
+/* -- emboss off (preference) -----------------------------------------------
  * Same node as the theme classes, so .aw-content.aw-flat outranks both the
  * base and light text-shadow rules; the icon rule trails the theme blocks
  * and adds a class, winning its tie by order + specificity. */
@@ -325,16 +325,16 @@
     icon-shadow: none;
 }
 
-/* ── theme (menu-style: theme) interaction states ─────────────────────────
+/* -- theme (menu-style: theme) interaction states -------------------------
  * With no sky behind the card there is no sampled ink to contrast against,
  * so the fixed rgba washes above read poorly on an arbitrary theme surface
  * (a white tile glass over a white menu is invisible). These rules use the
  * system's own interaction colour, -st-accent-color, which every GNOME 50
- * theme tints to the user's accent — so hover/selected/focus land on any
+ * theme tints to the user's accent -- so hover/selected/focus land on any
  * theme, light or dark, without us guessing a background.
  *
  * -st-accent-color needs a fallback: themes that predate the token would
- * drop a declaration outright, so each wash is declared twice — the plain
+ * drop a declaration outright, so each wash is declared twice -- the plain
  * rgba first, the accent one after for parsers that understand it. */
 
 .aw-theme .aw-tab:hover,
@@ -356,7 +356,7 @@
 }
 
 /* selection: the accent itself, exactly as quick-toggle's :checked does.
- * (.aw-light .aw-tab.aw-tab-active is 3-deep — match that depth to win) */
+ * (.aw-light .aw-tab.aw-tab-active is 3-deep -- match that depth to win) */
 .aw-theme .aw-tab.aw-tab-active {
     background-color: rgba(50, 128, 220, 0.16);
     background-color: st-mix(-st-accent-color, transparent, 18%);
@@ -367,7 +367,7 @@
     background-color: st-mix(-st-accent-color, transparent, 22%);
 }
 
-/* keyboard focus: theme's own ring recipe — accent at 20% */
+/* keyboard focus: theme's own ring recipe -- accent at 20% */
 .aw-theme .aw-tab:focus,
 .aw-theme .aw-day:focus,
 .aw-theme .aw-icon-btn:focus {

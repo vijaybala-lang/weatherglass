@@ -1,4 +1,4 @@
-/* animation.js — the panel/menu weather icon.
+/* animation.js -- the panel/menu weather icon.
  *
  * An St.DrawingArea driven by paintWeather() (pure cairo, also exercised
  * headlessly by tools/preview.mjs). A GLib source calls queue_repaint()

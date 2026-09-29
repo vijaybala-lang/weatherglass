@@ -1,13 +1,13 @@
-# Weatherglass — animated weather for GNOME Shell
+# Weatherglass -- animated weather for GNOME Shell
 
 A little window onto the sky. A small cairo-animated scene (sun, moon,
-partly, cloud, fog, wind, rain, sleet, snow, hail, storm…) lives next to
+partly, cloud, fog, wind, rain, sleet, snow, hail, storm...) lives next to
 the current temperature in your panel; clicking it opens a forecast card
 with a live animated sky, an hourly chart (temperature, precipitation or
 wind), and eight days of tiles.
 
 - **Data models:** Open-Meteo (global), MET Norway (ECMWF AIFS) and NOAA
-  NWS — pick your favourite forecaster in prefs; no API key for any of them
+  NWS -- pick your favourite forecaster in prefs; no API key for any of them
 - **Location:** automatic (GeoClue or IP-based) or city search / manual
   coordinates
 - **20 languages** including RTL (Arabic, Hebrew, Persian, Urdu); the whole
@@ -27,7 +27,7 @@ toggle Weatherglass on and you're done. From a checkout:
 ./install.sh
 ```
 
-Then tweak it from the panel icon → ⚙ (or
+Then tweak it from the panel icon ->  (or
 `gnome-extensions prefs weatherglass@vijaybala.dev`).
 
 ## Uninstall
@@ -45,7 +45,7 @@ rm -rf ~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev
 | `sky.js` | the animated menu sky (drift, particles, aurora, lightning) |
 | `chart.js` | hourly curve, labels and condition strip |
 | `animation.js` | panel-icon `St.DrawingArea` frame driver |
-| `weather.js` | provider adapters (Open-Meteo / MET Norway / NOAA), WMO → scenes, formatting |
+| `weather.js` | provider adapters (Open-Meteo / MET Norway / NOAA), WMO -> scenes, formatting |
 | `menu.js` | the dropdown card |
 | `extension.js` | panel button, timers, settings glue |
 | `prefs.js` | Adw preferences window |
@@ -57,11 +57,11 @@ rm -rf ~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev
 GNOME Shell 50 caches an extension's ES modules inside the long-lived
 `gnome-shell` process. `gnome-extensions disable/enable` (and even the
 Extensions app's toggle) re-run `enable()` on the **already-imported** module
-objects — they do **not** re-read `weather.js`, `menu.js`, etc. from disk. So
+objects -- they do **not** re-read `weather.js`, `menu.js`, etc. from disk. So
 after editing any file, **log out and back in** (Wayland can't Alt-F2 restart).
 The prefs window is exempt: it runs in a fresh process each time you open it.
 
-The `Weatherglass v…` line in `journalctl --user -o cat` tells you which
+The `Weatherglass v...` line in `journalctl --user -o cat` tells you which
 build the running shell actually loaded.
 
 ## Scenes & how they map to real weather
@@ -69,27 +69,27 @@ build the running shell actually loaded.
 Eleven animated scenes, chosen by the scene picker in `weather.js`. A WMO
 weather code is the primary signal, but a few scenes are *under-reported* by
 the code alone, so we also read the raw physical variables the providers
-return in the same request — no extra calls:
+return in the same request -- no extra calls:
 
 | Scene | Primary WMO code | Also triggered by |
 |---|---|---|
-| sun / moon / partly / cloud | 0–3 | — |
+| sun / moon / partly / cloud | 0-3 | -- |
 | fog | 45, 48 | **visibility < 1 km** when not precipitating (codes often lag) |
-| wind | — (no dedicated code) | wind speed ≥ threshold, clear/overcast sky |
-| rain | 51–65, 80–82 | — |
-| sleet | 56, 57, 66, 67 (freezing rain/drizzle) | — |
-| snow | 71–77, 85, 86 | — |
-| storm | 95 (thunderstorm) | **CAPE ≥ 1200 J/kg** with liquid precip (embedded convection) |
-| hail | 96, 99 | **CAPE ≥ 2500 J/kg** with liquid precip (severe convection) |
+| wind | -- (no dedicated code) | wind speed >= threshold, clear/overcast sky |
+| rain | 51-65, 80-82 | -- |
+| sleet | 56, 57, 66, 67 (freezing rain/drizzle) | -- |
+| snow | 71-77, 85, 86 | -- |
+| storm | 95 (thunderstorm) | **CAPE >= 1200 J/kg** with liquid precip (embedded convection) |
+| hail | 96, 99 | **CAPE >= 2500 J/kg** with liquid precip (severe convection) |
 
 Why the physical overrides? Across ~2,700 forecast hours we sampled, Open-Meteo's
-`weather_code` emitted fog/storm/hail codes only ~1.8% of the time — thunder
-was mostly lumped into plain rain, and freezing rain (56–67) is winter-only.
+`weather_code` emitted fog/storm/hail codes only ~1.8% of the time -- thunder
+was mostly lumped into plain rain, and freezing rain (56-67) is winter-only.
 `visibility` and `cape` catch those events reliably and cost nothing extra, so
 the thunderstorm, hail, and fog animations actually appear at the right times.
 
-Previews: **prefs → Preview** plays any scene on the panel icon for ~12 s
-(via the transient `preview-scene` setting) — useful for scenes your local
+Previews: **prefs -> Preview** plays any scene on the panel icon for ~12 s
+(via the transient `preview-scene` setting) -- useful for scenes your local
 sky rarely shows.
 
 ## Privacy
@@ -108,5 +108,5 @@ Questions, bug reports, translation fixes: **vijaybala-lang@users.noreply.github
 
 ## License
 
-GNU General Public License, version 2 or later (GPL-2.0-or-later) —
+GNU General Public License, version 2 or later (GPL-2.0-or-later) --
 see [LICENSE](LICENSE).
