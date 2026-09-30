@@ -28,10 +28,15 @@ function backdrop(cr, x, y, s) {
     bg.addColorStopRGB(1, 0.07, 0.08, 0.09);
     cr.setSource(bg);
     cr.newPath();
-    cr.arc(x + s - r, y + r, r, Math.PI * 1.5, Math.PI * 2);
-    cr.arc(x + r, y + r, r, 0, Math.PI * 0.5);
-    cr.arc(x + r, y + s - r, r, Math.PI * 0.5, Math.PI);
-    cr.arc(x + s - r, y + s - r, r, Math.PI, Math.PI * 1.5);
+    cr.moveTo(x + r, y);
+    cr.lineTo(x + s - r, y);
+    cr.arc(x + s - r, y + r, r, -Math.PI / 2, 0);
+    cr.lineTo(x + s, y + s - r);
+    cr.arc(x + s - r, y + s - r, r, 0, Math.PI / 2);
+    cr.lineTo(x + r, y + s);
+    cr.arc(x + r, y + s - r, r, Math.PI / 2, Math.PI);
+    cr.lineTo(x, y + r);
+    cr.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5);
     cr.closePath();
     cr.fill();
 }
