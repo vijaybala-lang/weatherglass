@@ -70,6 +70,10 @@ export function sampleSky(scene, night, f = 0.62) {
  * look: moon.js pale sphere by night, the sun gradient's warm core by
  * day (kept small + translucent: the rays wash gently, the disc is
  * the disc). */
+/* Shared ceiling for the moon disc's coverage: bodyOf (ink referee) and
+ * paintSky (painter) both clamp to it -- see comment at its use below. */
+const MOON_COVER = 0.5;
+
 export function bodyOf(scene, night, w, h) {
     const f = FEATURES[scene] ?? {};
     const R = 64 * h / 420;
@@ -80,8 +84,14 @@ export function bodyOf(scene, night, w, h) {
         const ph = moonPhase().phase;
         if (illumOf(ph) < 0.12)
             return null;            // thin crescent: barely a light
+        // 0.5, not 1: the disc sits at the header's right column, and a
+        // full-brightness moon behind "San Francisco" / clock / ghost icons
+        // defeats any clean white ink (7:38 PM screenshot). Half coverage
+        // keeps it a glowing presence -- and white text over the composite
+        // clears 4:1. paintSky caps paintMoon with the SAME ceiling (max
+        // here feeds the ink referee, so painter and judge stay identical).
         return {x: w * 0.82, y: h * 0.16, r: R * 0.85, soft: 14,
-                col: [0.93, 0.94, 0.96], max: 1};
+                col: [0.93, 0.94, 0.96], max: MOON_COVER};
     }
     return null;
 }
@@ -295,8 +305,13 @@ export function paintSky(cr, {w, h, time, scene, night, sky, scrim = null,
             cr.setSource(mg);
             cr.arc(sx, sy, R * 3.4, 0, TAU);
             cr.fill();
-            // tonight's real phase, cratered, off-white (moon.js)
+            // tonight's real phase, cratered, off-white (moon.js), capped:
+            // the disc shares its patch of sky with header text, and the
+            // ink referee assumes exactly this ceiling (bodyOf MOON_COVER)
+            cr.pushGroup();
             paintMoon(cr, sx, sy, R * 0.85, ph, 'sky');
+            cr.popGroupToSource();
+            cr.paintWithAlpha(MOON_COVER);
         }
     }
 
