@@ -18,6 +18,25 @@ wind), and eight days of tiles.
   unmapped), HiDPI aware, adaptive ink for legibility over any sky
 - GNOME Shell **50** (ES modules)
 
+## Gallery
+
+<table>
+<tr>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/01-night-temperature.png" width="260" alt="Night sky with temperature chart"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/04-light-twilight.png" width="260" alt="Light-theme twilight card"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/03-night-wind.png" width="260" alt="Wind chart"></td>
+</tr>
+<tr>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/02-night-precipitation.png" width="260" alt="Precipitation chart"></td>
+<td colspan="2">
+<b>Demo:</b> animated sky, tab morphs and day tiles (5 s, from the
+[release](https://github.com/vijaybala-lang/weatherglass/releases/tag/v5))
+&mdash; and the preferences window:<br>
+<img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/05-preferences.png" width="380" alt="Preferences window">
+</td>
+</tr>
+</table>
+
 ## Install
 
 The easiest way is the Extensions app (or https://extensions.gnome.org):

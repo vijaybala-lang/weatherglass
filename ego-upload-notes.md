@@ -13,9 +13,9 @@ Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 5, ~188K, zipcheck PASS
 
 ## Video
 
-~/Videos/Screencasts/ego/weatherglass-demo-card.mp4  (5.7 s, 124 KB, card-cropped)
-EGO does not host video: host it yourself (e.g. GitHub repo release or any
-file host) and paste the link at the bottom of the description ("Demo:").
+Hosted on the GitHub release (v5): ~/Videos/Screencasts/ego/weatherglass-demo-card.mp4
+Direct link for the EGO description:
+https://github.com/vijaybala-lang/weatherglass/releases/download/v5/weatherglass-demo-card.mp4
 
 ## Description text (for the EGO page)
 
@@ -29,7 +29,7 @@ The menu follows the system light/dark style, adapts its ink to the
 background for readability, and supports metric or imperial units, 12/24
 hour clocks and 20 languages.
 
-Demo: <video link>
+Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v5/weatherglass-demo-card.mp4
 
 ## Reply to reviewer (paste in the review thread)
 
