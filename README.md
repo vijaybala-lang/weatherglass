@@ -1,10 +1,10 @@
 # Weatherglass -- animated weather for GNOME Shell
 
-A little window onto the sky. A small cairo-animated scene (sun, moon,
-partly, cloud, fog, wind, rain, sleet, snow, hail, storm...) lives next to
-the current temperature in your panel; clicking it opens a forecast card
-with a live animated sky, an hourly chart (temperature, precipitation or
-wind), and eight days of tiles.
+A weather dropdown for the GNOME Shell top panel. The panel icon animates
+with the current conditions (sun, moon, clouds, fog, wind, rain, sleet,
+snow, hail, storm...) next to the live temperature; clicking it opens a
+forecast card with an animated sky, an hourly chart (temperature,
+precipitation or wind), and eight days of forecast tiles.
 
 - **Data models:** Open-Meteo (global), MET Norway (ECMWF AIFS) and NOAA
   NWS -- pick your favourite forecaster in prefs; no API key for any of them
