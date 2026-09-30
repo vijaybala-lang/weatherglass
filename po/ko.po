@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 21:47-0700\n"
+"POT-Creation-Date: 2026-09-29 21:55-0700\n"
 "Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -553,14 +553,14 @@ msgstr "토"
 msgid "Thu"
 msgstr "목"
 
-#: weather.js:581
+#: weather.js:583
 msgid "NOAA NWS covers US locations only — pick another provider"
 msgstr "NOAA NWS는 미국 지역만 지원했습니다 — 다른 제공 업체를 선택하세요"
 
-#: weather.js:586
+#: weather.js:588
 msgid "NOAA NWS returned no forecast for this location"
 msgstr "NOAA NWS가 이 위치에 대한 예보를 반환하지 않았습니다"
 
-#: weather.js:728
+#: weather.js:730
 msgid "IP geolocation failed"
 msgstr "IP 위치 확인 실패"

@@ -123,7 +123,8 @@ No forecasts are cached on disk; settings and preferences stay local.
 
 ## Contact
 
-Questions, bug reports, translation fixes: **vijaybala-lang@users.noreply.github.com**
+Questions, bug reports, translation fixes: **open an issue at
+https://github.com/vijaybala-lang/weatherglass/issues**
 
 ## License
 

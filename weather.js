@@ -152,8 +152,10 @@ function get(url) {
         const session = new Soup.Session({
             // MET Norway rejects generic agents (403); include identification
             // and a contact per their usage policies
-            user_agent: 'gnome-shell-weatherglass/1.0 ' +
-                        '(GNOME Shell extension; contact: vijaybala-lang@users.noreply.github.com)',
+            user_agent: 'gnome-shell-weatherglass/5 ' +
+                        '(GNOME Shell extension; ' +
+                        'contact: https://github.com/vijaybala-lang/' +
+                        'weatherglass/issues)',
             timeout: 15,
         });
         const msg = Soup.Message.new('GET', url);
