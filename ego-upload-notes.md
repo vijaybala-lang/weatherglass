@@ -58,5 +58,7 @@ Thanks for the review -- addressed as follows:
 
 ## After approval
 
-- metadata.json: add the "url" field pointing at the EGO page.
+- The metadata "url" points at the GitHub repo per the EGO review
+  guidelines (must be a GitHub/GitLab project URL) -- keep it there even
+  after approval; link the EGO page from the repo README instead.
 - Keep integer version bumps for every future upload (v6 next upload).
