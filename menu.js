@@ -37,11 +37,16 @@ const METRICS = {
 };
 
 /* Theme = label ink + a scrim painted over the sky. Dark keeps the sky as
- * painted (white ink); light washes it pale so dark ink stays legible. */
+ * painted (white ink); light washes it pale so dark ink stays legible.
+ * The light wash is day/night split: white over the pale day sky reads as
+ * sky; flat white over a deep night sky turns milky gray and ghosts out
+ * moon and stars (the washed-out 8:10 PM screenshot). A bluer, denser
+ * twilight scrim keeps the night card a deliberate dusk-pastel instead. */
 const THEME = {
     dark:  {ink: [0.96, 0.97, 0.98], scrim: null,            cls: 'aw-dark',
             scrimSolid: [0.03, 0.045, 0.08, 0.78]},
     light: {ink: [0.10, 0.13, 0.19], scrim: [1, 1, 1, 0.42], cls: 'aw-light',
+            scrimNight: [0.70, 0.78, 1.0, 0.68],
             scrimSolid: [0.97, 0.975, 0.995, 0.80]},
 };
 
@@ -509,8 +514,9 @@ export class ForecastPanel {
         if (this._style === 'accent')
             return this._dark ? [0.185, 0.185, 0.19] : [0.96, 0.96, 0.97];
         const c = sampleSky(this._skyOpts.scene, this._skyOpts.night, f);
-        const t = this._theme();
-        const scrim = this._style === 'solid' ? t.scrimSolid : t.scrim;
+        // _skyOpts.scrim IS the active wash (_syncScrim: theme, style and
+        // day/night) -- reading it here keeps judge and painter identical
+        const scrim = this._skyOpts.scrim;
         const bg = scrim
             ? c.map((v, i) => v * (1 - scrim[3]) + scrim[i] * scrim[3])
             : c;
@@ -693,7 +699,11 @@ export class ForecastPanel {
             night = false;
         }
         this._skyOpts.scene = scene;
-        this._skyOpts.night = night;
+        if (this._skyOpts.night !== night) {
+            this._skyOpts.night = night;
+            // the light wash is night-aware: day->dusk flip changes it
+            this._syncScrim();
+        }
         this._skyOpts.phase = Number.isFinite(s.phase) ? s.phase : null;
         // only today's sky is "live state"; browsing future tiles is transient
         if (this._day === 0)
@@ -937,8 +947,10 @@ export class ForecastPanel {
     /* which wash rides over the background for the current menu style */
     _syncScrim() {
         const t = this._theme();
+        const wash = this._skyOpts.night && t.scrimNight ? t.scrimNight
+                                                        : t.scrim;
         this._skyOpts.scrim = this._style === 'solid' ? t.scrimSolid
-                            : this._style === 'accent' ? null : t.scrim;
+                            : this._style === 'accent' ? null : wash;
     }
 
     _showBody(haveData) {

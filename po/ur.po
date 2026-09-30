@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 13:45-0700\n"
+"POT-Creation-Date: 2026-09-29 20:15-0700\n"
 "Language: ur\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -20,7 +20,7 @@ msgstr "میرا مقام"
 msgid "Custom location"
 msgstr "اپنا مقام"
 
-#: extension.js:193 menu.js:294
+#: extension.js:193 menu.js:299
 msgid "Fetching weather…"
 msgstr "موسم کی معلومات لی جا رہی ہیں…"
 
@@ -36,39 +36,39 @@ msgstr "برسات"
 msgid "Wind"
 msgstr "ہوا"
 
-#: menu.js:329 menu.js:411 menu.js:415
+#: menu.js:334 menu.js:416 menu.js:420
 msgid "Weather"
 msgstr "موسم"
 
-#: menu.js:346
+#: menu.js:351
 msgid "Refresh now"
 msgstr "ابھی تازہ کریں"
 
-#: menu.js:351
+#: menu.js:356
 msgid "Preferences"
 msgstr "ترجیحات"
 
-#: menu.js:367
+#: menu.js:372
 msgid "Show"
 msgstr "دکھائیں"
 
-#: menu.js:367
+#: menu.js:372
 msgid "chart"
 msgstr "چارٹ"
 
-#: menu.js:416
+#: menu.js:421
 msgid "Could not load the forecast"
 msgstr "پیش گوئی لوڈ نہیں ہو سکی"
 
-#: menu.js:579
+#: menu.js:585
 msgid "Refresh forecast — updated"
 msgstr "پیش گوئی تازہ — اپ ڈیٹ ہو گئی"
 
-#: menu.js:640
+#: menu.js:646
 msgid "Now"
 msgstr "اب"
 
-#: menu.js:749
+#: menu.js:759
 msgid "Today"
 msgstr "آج"
 

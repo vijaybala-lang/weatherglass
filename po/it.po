@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 13:45-0700\n"
+"POT-Creation-Date: 2026-09-29 20:15-0700\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -20,7 +20,7 @@ msgstr "La mia posizione"
 msgid "Custom location"
 msgstr "Posizione personalizzata"
 
-#: extension.js:193 menu.js:294
+#: extension.js:193 menu.js:299
 msgid "Fetching weather…"
 msgstr "Recupero meteo…"
 
@@ -36,39 +36,39 @@ msgstr "Precipitazioni"
 msgid "Wind"
 msgstr "Vento"
 
-#: menu.js:329 menu.js:411 menu.js:415
+#: menu.js:334 menu.js:416 menu.js:420
 msgid "Weather"
 msgstr "Meteo"
 
-#: menu.js:346
+#: menu.js:351
 msgid "Refresh now"
 msgstr "Aggiorna adesso"
 
-#: menu.js:351
+#: menu.js:356
 msgid "Preferences"
 msgstr "Preferenze"
 
-#: menu.js:367
+#: menu.js:372
 msgid "Show"
 msgstr "Mostra"
 
-#: menu.js:367
+#: menu.js:372
 msgid "chart"
 msgstr "grafico"
 
-#: menu.js:416
+#: menu.js:421
 msgid "Could not load the forecast"
 msgstr "Impossibile caricare le previsioni"
 
-#: menu.js:579
+#: menu.js:585
 msgid "Refresh forecast — updated"
 msgstr "Aggiorna previsioni — aggiornate alle"
 
-#: menu.js:640
+#: menu.js:646
 msgid "Now"
 msgstr "Adesso"
 
-#: menu.js:749
+#: menu.js:759
 msgid "Today"
 msgstr "Oggi"
 
