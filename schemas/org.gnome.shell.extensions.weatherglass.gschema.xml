@@ -113,7 +113,7 @@ time axis with the icon centred</description>
       <default>'bottom'</default>
       <summary>Where the condition band rides</summary>
       <description>top = along the chart top; bottom = directly above the
-hour labels, Apple-weather style (default)</description>
+hour labels (default)</description>
     </key>
     <key name="hour-format" type="s">
       <choices>

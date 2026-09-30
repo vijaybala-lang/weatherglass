@@ -1,6 +1,6 @@
 # Menu redesign prototypes
 
-Interactive HTML prototype of the panel-icon dropdown: Apple-style layout
+Interactive HTML prototype of the panel-icon dropdown: phone-weather-style layout
 with a full-bleed **animated sky** behind everything that matches the
 selected day's weather and day/night.
 

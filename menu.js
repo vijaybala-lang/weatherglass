@@ -1,5 +1,5 @@
-/* menu.js -- the dropdown: an Apple-Weather-style card with an animated sky
- * backdrop, an hourly chart (Temperature / Precipitation / Wind tabs) and
+/* menu.js -- the dropdown card: an animated sky backdrop, an hourly chart
+ * (Temperature / Precipitation / Wind tabs) and
  * eight selectable day tiles in a 4x2 grid.
  *
  * This file mirrors the mockup's narrow (<=560px) breakpoint, which is the
@@ -313,7 +313,7 @@ export class ForecastPanel {
         tempWrap.add_child(this._tempLbl);
         leftCol.add_child(tempWrap);
 
-        // "Partly Cloudy" under the numeral, Apple-style. The degF/degC choice
+        // "Partly Cloudy" under the numeral. The degF/degC choice
         // lives in preferences only -- the header reads better without it
         this._descLbl = label('', 'aw-desc');
         this._descLbl.clutter_text.ellipsize = Pango.EllipsizeMode.END;

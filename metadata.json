@@ -1,7 +1,7 @@
 {
   "uuid": "weatherglass@vijaybala.dev",
   "name": "Weatherglass",
-  "description": "A little window onto the sky: live sun, drifting clouds, rain and snow in your panel, plus a forecast card you'll actually want to open: animated menu sky, hourly chart and eight days of tiles.",
+  "description": "Live weather menu: the panel icon animates with the current sky (sun, clouds, rain, snow) and the card shows current conditions, an hourly chart of temperature, precipitation or wind, and eight days of forecast. Metric or imperial; data from Open-Meteo, Met.no and NOAA NWS.",
   "shell-version": [
     "50"
   ],

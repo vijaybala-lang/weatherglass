@@ -59,7 +59,7 @@
     font-weight: 200;
 }
 
-/* condition text under the big temp (Apple-style): sits close to the
+/* condition text under the big temp : sits close to the
  * numeral, keeps real air before the metric tabs */
 .aw-desc {
     font-size: 0.85em;

@@ -249,7 +249,7 @@ export function paintChart(cr, opts) {
     const X = i => sx(i / (n - 1));
     // with the band docked bottom, the line + its value labels lift off the
     // floor so nothing sits in the pill zone; the area fill still flows to
-    // its usual depth (behind the translucent band, Apple-style)
+    // its usual depth (behind the translucent band)
     const bot = opts.stripBottom && Array.isArray(opts.scenes) ? BOT + 14 : BOT;
     const Y = v => TOP + (1 - (v - lo) / (hi - lo)) * (h - TOP - bot);
     const pts = values.map((v, i) => [X(i), Y(v)]);
