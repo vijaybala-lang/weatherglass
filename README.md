@@ -31,7 +31,16 @@ precipitation or wind), and eight days of forecast tiles.
 <td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/03-night-wind.png" width="280" alt="Wind chart"></td>
 <td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/05-preferences.png" width="280" alt="Preferences window"></td>
 </tr>
+<tr>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/02-night-precipitation.png" width="280" alt="Dry night precipitation chart at zero percent"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/08-themed-dark.png" width="280" alt="Themed style on the dark system theme"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/09-themed-light.png" width="280" alt="Themed style on the light system theme"></td>
+</tr>
 </table>
+
+The third row's right pair is the **themed background style**: the card
+takes the system theme's colors, and charts and selection states adopt
+the user's accent color -- here the GNOME blue.
 
 **Demo:** animated sky, tab morphs and day tiles (5 s) --
 [watch in the release](https://github.com/vijaybala-lang/weatherglass/releases/tag/v5).

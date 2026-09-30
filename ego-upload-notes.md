@@ -6,10 +6,15 @@ Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 5, ~188K, zipcheck PASS
 ## Screenshots (upload in this order; all ~566x780, prefs is window-sized)
 
 1. ego-ready/01-night-temperature.png  -- hero: night sky, moon, temp curve
-2. ego-ready/04-light-twilight.png     -- light-theme dusk wash (shows theme care)
-3. ego-ready/02-night-precipitation.png
-4. ego-ready/03-night-wind.png         -- new two-way labels (post-fix)
-5. ego-ready/05-preferences.png        -- prefs window, Display tab
+2. ego-ready/06-day-sunny.png          -- sunny day, animated sun
+3. ego-ready/07-rainy-precip.png       -- rainy day with real precip data
+4. ego-ready/04-light-twilight.png     -- light-theme dusk wash
+5. ego-ready/08-themed-dark.png        -- themed style, dark + accent blue
+6. ego-ready/09-themed-light.png       -- themed style, light
+7. ego-ready/05-preferences.png        -- prefs window, Display tab
+
+(02-night-precipitation and 03-night-wind remain in screenshots/ as
+backups; the rainy-day shot sells precipitation better than the 0 % one.)
 
 ## Video
 
