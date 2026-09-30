@@ -69,11 +69,11 @@ RC=$?
 
 echo "--- verdict ---"
 ERRS=$(grep -cE "JS ERROR|logError|CRITICAL|assertion" "$LOG")
-RUNS=$(grep -c "Weatherglass v" "$LOG")
+RUNS=$(grep -c "Weatherglass enabled" "$LOG")
 PAINT=$(grep -c "menutest: DONE" "$LOG")
 STATE=$(grep -c "\"state\": 1" "$LOG" || true)
 [[ $RC == 0 ]] || { echo "zipcheck: FAIL (boot run rc=$RC, see $LOG)"; exit 1; }
-[[ $RUNS -ge 1 ]] || echo "zipcheck: note: 'Weatherglass v…' banner missing"
+[[ $RUNS -ge 1 ]] || echo "zipcheck: note: 'Weatherglass enabled' banner missing"
 [[ $PAINT -ge 1 ]] || { echo "zipcheck: FAIL: popup never painted"; exit 1; }
 [[ $ERRS == 0 ]] || { echo "zipcheck: FAIL: $ERRS error-gate lines in $LOG"; exit 1; }
 echo "zipcheck: PASS — $ZIP installs, boots, paints ($RUNS banner, $PAINT paint sets, $ERRS errors)"

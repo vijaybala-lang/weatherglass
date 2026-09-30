@@ -75,20 +75,9 @@ export function deriveScene(current) {
 
 /* -- formatting helpers --------------------------------------------------- */
 
-const WIND_DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
-                   'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-
-export function windDir(deg) {
-    return WIND_DIRS[Math.round(deg / 22.5) % 16];
-}
-
 export function fmtTemp(c, units) {
     const v = units === 'imperial' ? c * 9 / 5 + 32 : c;
     return `${Math.round(v)}°`;
-}
-
-export function tempUnit(units) {
-    return units === 'imperial' ? '°F' : '°C';
 }
 
 export function fmtWind(kmh, units) {
@@ -106,11 +95,6 @@ const DAYS = [N_('Sun'), N_('Mon'), N_('Tue'), N_('Wed'),
 export function dayName(iso) {
     const [y, m, d] = iso.split('-').map(Number);
     return _(DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]);
-}
-
-/** '2026-09-25T06:08' -> '06:08', or 'HH:MM' as-is. */
-export function fmtTime(iso) {
-    return iso && iso.includes('T') ? iso.slice(11, 16) : (iso ?? '');
 }
 
 /**
@@ -721,9 +705,6 @@ const REGISTRY = new Map([
 export function providerFor(id) {
     return REGISTRY.get(id) ?? REGISTRY.get('open-meteo');
 }
-
-/** For the preferences combo: [{id, name}, ...] in registration order. */
-export const PROVIDER_LIST = [...REGISTRY.values()].map(p => ({id: p.id, name: p.name}));
 
 /* -- client ---------------------------------------------------------------- */
 

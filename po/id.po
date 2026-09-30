@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 20:15-0700\n"
+"POT-Creation-Date: 2026-09-29 21:47-0700\n"
 "Language: id\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -529,42 +529,42 @@ msgstr "Badai petir, hujan es"
 msgid "Unknown"
 msgstr "Tidak diketahui"
 
-#: weather.js:100
+#: weather.js:89
 msgid "Mon"
 msgstr "Sen"
 
-#: weather.js:100
+#: weather.js:89
 msgid "Sun"
 msgstr "Min"
 
-#: weather.js:100
+#: weather.js:89
 msgid "Tue"
 msgstr "Sel"
 
-#: weather.js:100
+#: weather.js:89
 msgid "Wed"
 msgstr "Rab"
 
-#: weather.js:101
+#: weather.js:90
 msgid "Fri"
 msgstr "Jum"
 
-#: weather.js:101
+#: weather.js:90
 msgid "Sat"
 msgstr "Sab"
 
-#: weather.js:101
+#: weather.js:90
 msgid "Thu"
 msgstr "Kam"
 
-#: weather.js:597
+#: weather.js:581
 msgid "NOAA NWS covers US locations only — pick another provider"
 msgstr "NOAA NWS hanya mencakup lokasi di AS — pilih penyedia lain"
 
-#: weather.js:602
+#: weather.js:586
 msgid "NOAA NWS returned no forecast for this location"
 msgstr "NOAA NWS tidak mengembalikan prakiraan untuk lokasi ini"
 
-#: weather.js:747
+#: weather.js:728
 msgid "IP geolocation failed"
 msgstr "Geolokasi IP gagal"

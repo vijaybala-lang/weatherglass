@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 20:16-0700\n"
+"POT-Creation-Date: 2026-09-29 21:47-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -521,42 +521,42 @@ msgstr ""
 msgid "Unknown"
 msgstr ""
 
-#: weather.js:100
+#: weather.js:89
 msgid "Mon"
 msgstr ""
 
-#: weather.js:100
+#: weather.js:89
 msgid "Sun"
 msgstr ""
 
-#: weather.js:100
+#: weather.js:89
 msgid "Tue"
 msgstr ""
 
-#: weather.js:100
+#: weather.js:89
 msgid "Wed"
 msgstr ""
 
-#: weather.js:101
+#: weather.js:90
 msgid "Fri"
 msgstr ""
 
-#: weather.js:101
+#: weather.js:90
 msgid "Sat"
 msgstr ""
 
-#: weather.js:101
+#: weather.js:90
 msgid "Thu"
 msgstr ""
 
-#: weather.js:597
+#: weather.js:581
 msgid "NOAA NWS covers US locations only — pick another provider"
 msgstr ""
 
-#: weather.js:602
+#: weather.js:586
 msgid "NOAA NWS returned no forecast for this location"
 msgstr ""
 
-#: weather.js:747
+#: weather.js:728
 msgid "IP geolocation failed"
 msgstr ""

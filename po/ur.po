@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 20:15-0700\n"
+"POT-Creation-Date: 2026-09-29 21:47-0700\n"
 "Language: ur\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -526,42 +526,42 @@ msgstr "گرج چمک اور اولائیں"
 msgid "Unknown"
 msgstr "نامعلوم"
 
-#: weather.js:100
+#: weather.js:89
 msgid "Mon"
 msgstr "پیر"
 
-#: weather.js:100
+#: weather.js:89
 msgid "Sun"
 msgstr "اتوار"
 
-#: weather.js:100
+#: weather.js:89
 msgid "Tue"
 msgstr "منگل"
 
-#: weather.js:100
+#: weather.js:89
 msgid "Wed"
 msgstr "بدھ"
 
-#: weather.js:101
+#: weather.js:90
 msgid "Fri"
 msgstr "جمعہ"
 
-#: weather.js:101
+#: weather.js:90
 msgid "Sat"
 msgstr "ہفتہ"
 
-#: weather.js:101
+#: weather.js:90
 msgid "Thu"
 msgstr "جمعرات"
 
-#: weather.js:597
+#: weather.js:581
 msgid "NOAA NWS covers US locations only — pick another provider"
 msgstr "NOAA NWS صرف امریکہ کے مقامات کو ڈھانپتا ہے — دوسرا فراہم کنندہ چنیں"
 
-#: weather.js:602
+#: weather.js:586
 msgid "NOAA NWS returned no forecast for this location"
 msgstr "NOAA NWS نے اس مقام کے لیے کوئی پیش گوئی نہیں دی"
 
-#: weather.js:747
+#: weather.js:728
 msgid "IP geolocation failed"
 msgstr "IP سے مقام کی نشاندہی ناکام رہی"

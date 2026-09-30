@@ -504,7 +504,7 @@ export default class AnimatedWeatherExtension extends Extension {
         // build stamp: journalctl --user -o cat | grep "Weatherglass v"
         // shows which on-disk code the long-lived shell process is running
         // (GJS caches extension modules; code edits need a session restart)
-        console.log('Weatherglass v1.0 (provider adapters: Open-Meteo + MET Norway + NOAA NWS)');
+        console.log(`Weatherglass enabled from ${this.dir.get_path()}`);
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
         // our aw-* style classes are CSS hooks no theme knows (St 18 drops
