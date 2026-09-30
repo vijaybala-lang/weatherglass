@@ -23,7 +23,7 @@ import {_, N_} from './i18n.js';
 import {WeatherIcon} from './animation.js';
 import {paintSky, createSky, sampleSky, bodyOf} from './sky.js';
 import {paintChart, ease, lerp, contrastSafe, lumOf, pickInk, ratio,
-        INK_DARK, INK_LIGHT} from './chart.js';
+        judgeInk, splitInk, INK_DARK, INK_LIGHT} from './chart.js';
 import {sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn} from './weather.js';
 
 const FRAME_MS = 50;         // sky: 20 fps is plenty
@@ -812,7 +812,9 @@ export class ForecastPanel {
     /** One-pass smart ink for every free-standing label/button in the card,
      *  JUDGED PER VISUAL GROUP: whole-box sampling (text spans wide, and its
      *  right half may ride over the moon), one consensus ink per group (a tab
-     *  row half dark is a broken-looking control), plus a surgical halo when
+     *  row half dark is a broken-looking control) -- unless an actor's own
+     *  box denies the group ink outright (splitInk flips it, see chart.js) --
+     *  plus a surgical halo when
      *  no single colour can win the group (a label straddling the moon's edge
      *  has no colour that beats both backgrounds -- a white-ink-with-dark-
      *  shadow beats either solid pick). The active pill tab and the day tiles
@@ -838,55 +840,46 @@ export class ForecastPanel {
             return;
         }
         const inkGroup = actors => {
-            const res = this._groupInk(
-                [].concat(...(actors ?? []).map(a => this._bgsOf(a))));
-            const css = inkCss(res.ink) + haloCss(res);
-            for (const a of actors ?? [])
-                set(a, css);
+            const list = actors ?? [];
+            const picks = splitInk(list.map(a => this._bgsOf(a)));
+            list.forEach((a, i) => set(a, inkCss(picks[i].ink) +
+                                           haloCss(picks[i])));
         };
         inkGroup([this._tempLbl, this._descLbl]);   // left column pair
         inkGroup([this._cityLbl, this._clockLbl]);  // right stack pair
-        // ghost buttons: one pair-ink; the direction-matched icon shadow IS
-        // the halo when they ride the moon
-        const g = this._groupInk(
-            [].concat(...(this._ghostIcons ?? []).map(ic => this._bgsOf(ic))));
-        const glow = g.ink === INK_DARK
-            ? ' icon-shadow: 0 1px 3px rgba(255,255,255,0.7);'
-            : ' icon-shadow: 0 1px 4px rgba(0,0,10,0.7);';
-        for (const ic of this._ghostIcons ?? [])
-            set(ic, inkCss(g.ink) + glow);
+        // ghost buttons: group ink, but an icon riding the moon outright
+        // flips to dark-on-disc; the direction-matched icon shadow IS the
+        // halo when a pair straddles and no single ink wins
+        const icons = this._ghostIcons ?? [];
+        const iPick = splitInk(icons.map(ic => this._bgsOf(ic)));
+        icons.forEach((ic, i) => set(ic, inkCss(iPick[i].ink) +
+            (iPick[i].ink === INK_DARK
+                ? ' icon-shadow: 0 1px 3px rgba(255,255,255,0.7);'
+                : ' icon-shadow: 0 1px 4px rgba(0,0,10,0.7);')));
         // metric tabs: inactive share one ink (they share the sky); the
         // active pill answers to its own glass, like the selected tile
-        const row = [];
+        const off = [];
         for (const [key, btn] of Object.entries(this._tabBtns ?? {})) {
             const list = this._bgsOf(btn);
             if (key === this._metric) {
-                const res = this._groupInk(
-                    list.map(bg => compGlass(bg, this._dark)));
+                const res = judgeInk(list.map(bg => compGlass(bg, this._dark)));
                 set(btn, inkCss(res.ink) + haloCss(res));
             } else
-                row.push(...list);
+                off.push([btn, list]);
         }
-        if (row.length) {
-            const res = this._groupInk(row);
-            const css = inkCss(res.ink) + haloCss(res);
-            for (const [key, btn] of Object.entries(this._tabBtns ?? {}))
-                if (key !== this._metric)
-                    set(btn, css);
+        if (off.length) {
+            const picks = splitInk(off.map(([, list]) => list));
+            off.forEach(([btn], i) => set(btn, inkCss(picks[i].ink) +
+                                           haloCss(picks[i])));
         }
     }
 
-    /** Referee over a SET of backdrop samples: pickInk's margin rule, but on
-     *  the worst truth each ink faces anywhere in the group; flags `emboss`
-     *  when the winner still can't clear WCAG's 3:1 graphics floor at some
-     *  sample -- the halo's cue. */
+    /** Referee over a SET of backdrop samples (see chart.js judgeInk);
+     *  unsampled actors fall back to the chart-under sky. */
     _groupInk(bgs) {
         if (!bgs.length)
             return {ink: pickInk(this._bgUnderChart()), emboss: false};
-        const wWorst = Math.min(...bgs.map(bg => ratio(INK_LIGHT, bg)));
-        const dWorst = Math.min(...bgs.map(bg => ratio(INK_DARK, bg)));
-        const ink = dWorst >= wWorst * 1.35 ? INK_DARK : INK_LIGHT;
-        return {ink, emboss: (ink === INK_DARK ? dWorst : wWorst) < 3};
+        return judgeInk(bgs);
     }
 
     /** Backdrop samples across an actor's whole box -- centre plus inset
