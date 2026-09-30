@@ -333,17 +333,25 @@ export function paintChart(cr, opts) {
                 m = sy;
         return m;
     };
+    const curveMax = (xa, xb) => {
+        let m = -Infinity;
+        for (const [sx, sy] of curve)
+            if (sx >= xa - 1 && sx <= xb + 1 && sy > m)
+                m = sy;
+        return m;
+    };
 
     // value + hour labels. Data bleeds off both ends (the edge hours are
     // still drawn), but the first/last PRINTED label is inset past GUT so
     // nothing clips: we offset the every-EVERY stride to the first index
     // whose x clears the gutter, leaving unlabeled hours at both ends.
     // Past that, TEXT-AWARE collision handling: every label is measured,
-    // committed boxes are remembered, and a colliding label nudges one line
-    // up, then one line down -- dropped only if all three slots clash. Wide
-    // wind labels ("11 mph") used to ride over their neighbours at the 3-h
-    // stride, and the accent "now" label (drawn LAST, so its box gets
-    // reserved up front) used to land right on top of them.
+    // committed boxes are remembered, and a label that rides too low is
+    // capped at the curve; a colliding label ducks to the far side of the
+    // stroke, then drops. Wide wind labels ("11 mph") used to ride over
+    // their neighbours at the 3-h stride, and the accent "now" label
+    // (drawn LAST, so its box gets reserved up front) used to land right
+    // on top of its own tick -- that duplicate slot is skipped now.
     const nowI = nowFrac === null ? -1 : Math.round(nowFrac * (n - 1));
     const span0 = (w - PADX * 2) / (n - 1);
     let off0 = Math.ceil((GUT - PADX) / span0);
@@ -386,17 +394,29 @@ export function paintChart(cr, opts) {
         list.some(o => b[0] < o[1] && o[0] < b[1] && b[2] < o[3] && o[2] < b[3]);
     const boxOf = (x0, tw, th, y) => [x0 - 1.5, x0 + tw + 1.5, y - th - 1, y + 1];
     const used = [];
-    // A value label's home: measure once, cap its baseline at the curve's
-    // top edge under its own span (labels read ABOVE the line even where
-    // the curve climbs steeply through them), then walk the collision slots.
+    // hour text height is needed twice: the band's down margin below, and
+    // the value labels' floor (a ducked label must never evict an hour)
+    const hourH = textPx(cr, '0', TS, false, HW)[1];
+    // A value label's home: ride ABOVE the line; on collision duck BELOW
+    // the stroke (inside the accent fill), then drop. The old four-rung
+    // ladder (up/up15/down15/up29) read as random jumps on flat series --
+    // wind 3-8 mph stacked neighbour after neighbour a rung higher (the
+    // "odd staggering" screenshot). With the accent now-label no longer
+    // duplicating its own tick, same-row neighbours fit side by side at
+    // the measured stride, so flat data renders as one honest uniform
+    // row; only a genuine obstacle (band, edge margin) makes a label duck.
     const placeLabel = (txt, lx, y0, a) => {
         const [tw, th] = textPx(cr, txt, TS, false, VW);
         const x0 = a === 'start' ? lx : a === 'end' ? lx - tw : lx - tw / 2;
         const floor = curveMin(x0, x0 + tw) - LINE_W / 2 - 2;
-        for (const yy of [Math.min(y0, floor), y0 - 15, y0 + 15, y0 - 29]) {
-            const yc = Math.min(yy, floor);
+        // below the stroke: glyph top clears the curve, baseline capped so
+        // the label never crowds the hour band at the chart foot
+        const below = Math.min(
+            curveMax(x0, x0 + tw) + LINE_W / 2 + 3 + th,
+            h - 7 - hourH - th);
+        for (const yc of [...new Set([Math.min(y0, floor), below])]) {
             const b = boxOf(x0, tw, th, yc);
-            if (b[2] < 2 || hits(b, used))
+            if (b[2] < 2 || b[3] > h - 2 || hits(b, used))
                 continue;
             used.push(b);
             return { b, lx, y: yc, a, txt };
@@ -420,11 +440,12 @@ export function paintChart(cr, opts) {
         // the band's DOWN margin shrinks to the hour text's height: a
         // 'large' label row would otherwise collide with the fixed band
         // and every hour label gets dropped (observed live in the menu)
-        const hourH = textPx(cr, '0', TS, false, HW)[1];
         used.push([0, w, bandY - 13,
                    Math.min(bandY + 13, h - 7 - hourH)]);
     }
     for (let i = off0; fmtValue && i < n; i += EVERY) {
+        if (i === nowI)          // the accent now-label owns that slot --
+            continue;            // two "7 mph" stacked there read as a bug
         const ax = X(i);
         const a = anchorOf(ax), lx = lxOf(ax, a);
         const placed = placeLabel(fmtValue(i, values[i]), lx,
