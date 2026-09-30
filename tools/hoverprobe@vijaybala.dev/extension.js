@@ -59,6 +59,32 @@ export default class extends Extension {
             };
             log(`hoverprobe: tab classes: ` +
                 `[${(tab.get_style_classes?.() ?? []).join(' ')}]`);
+            // ink-referee dump: what the live per-pixel pass decided for
+            // each tab/ghost/clock, and what backgrounds it saw
+            try {
+                const lum = b => {
+                    const s = b.map(v => v <= 0.03928
+                        ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+                    return (0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2])
+                        .toFixed(2);
+                };
+                for (const [k, btn] of Object.entries(panel._tabBtns ?? {})) {
+                    const bgs = panel._bgsOf(btn);
+                    log(`hoverprobe: ink tab ${k}: css=[${btn._awInk ?? 'n/a'}] ` +
+                        `lum=[${bgs.map(lum).join(',')}]`);
+                }
+                for (const [n, a] of [['clock', panel._clockLbl],
+                                      ['city', panel._cityLbl],
+                                      ['temp', panel._tempLbl]])
+                    log(`hoverprobe: ink ${n}: css=[${a?._awInk ?? 'n/a'}] ` +
+                        `lum=[${(panel._bgsOf(a) ?? []).map(lum).join(',')}]`);
+                (panel._ghostIcons ?? []).forEach((ic, i) =>
+                    log(`hoverprobe: ink ghost${i}: ` +
+                        `css=[${ic._awInk ?? 'n/a'}] ` +
+                        `lum=[${panel._bgsOf(ic).map(lum).join(',')}]`));
+            } catch (e) {
+                log(`hoverprobe: ink dump failed: ${e.message}`);
+            }
             const g = panel._content.get_layout_manager ?
                 panel._content.get_paint_volume() : null;
             const [cx, cy] = panel._content.get_size();
@@ -69,7 +95,30 @@ export default class extends Extension {
             dump('day/plain', day);
             tab.set_hover(true);
             day.set_hover(true);
+            // ink-referee dump lives in the LATER beat: the per-pixel pass
+            // runs from the chart repaint, which needs a frame or two
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 400, () => {
+                const lum = b => {
+                    const s = b.map(v => v <= 0.03928
+                        ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+                    return (0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2])
+                        .toFixed(2);
+                };
+                for (const [k, btn] of Object.entries(panel._tabBtns ?? {})) {
+                    const bgs = panel._bgsOf(btn);
+                    log(`hoverprobe: ink tab ${k}: css=[${btn._awInk ?? 'n/a'}] ` +
+                        `n=${bgs.length} lum=[${bgs.map(lum).join(',')}] ` +
+                        `raw=${JSON.stringify(bgs[0] ?? null)}`);
+                }
+                for (const [n, a] of [['clock', panel._clockLbl],
+                                      ['city', panel._cityLbl],
+                                      ['temp', panel._tempLbl]])
+                    log(`hoverprobe: ink ${n}: css=[${a?._awInk ?? 'n/a'}] ` +
+                        `lum=[${(panel._bgsOf(a) ?? []).map(lum).join(',')}]`);
+                (panel._ghostIcons ?? []).forEach((ic, i) =>
+                    log(`hoverprobe: ink ghost${i}: ` +
+                        `css=[${ic._awInk ?? 'n/a'}] ` +
+                        `lum=[${panel._bgsOf(ic).map(lum).join(',')}]`));
                 dump('tab/HOVER', tab);
                 dump('day/HOVER', day);
                 log('hoverprobe: DONE');

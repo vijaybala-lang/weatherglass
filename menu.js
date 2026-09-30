@@ -812,9 +812,10 @@ export class ForecastPanel {
     /** One-pass smart ink for every free-standing label/button in the card,
      *  JUDGED PER VISUAL GROUP: whole-box sampling (text spans wide, and its
      *  right half may ride over the moon), one consensus ink per group (a tab
-     *  row half dark is a broken-looking control) -- unless an actor's own
-     *  box denies the group ink outright (splitInk flips it, see chart.js) --
-     *  plus a surgical halo when
+     *  row half dark is a broken-looking control) -- EXCEPT the metric tab
+     *  row, which never splits; standalone actors (ghost icons, stacked
+     *  city/clock labels) may flip to their own ink when the group's cannot
+     *  survive their box (splitInk, see chart.js) -- plus a surgical halo when
      *  no single colour can win the group (a label straddling the moon's edge
      *  has no colour that beats both backgrounds -- a white-ink-with-dark-
      *  shadow beats either solid pick). The active pill tab and the day tiles
@@ -856,21 +857,24 @@ export class ForecastPanel {
             (iPick[i].ink === INK_DARK
                 ? ' icon-shadow: 0 1px 3px rgba(255,255,255,0.7);'
                 : ' icon-shadow: 0 1px 4px rgba(0,0,10,0.7);')));
-        // metric tabs: inactive share one ink (they share the sky); the
-        // active pill answers to its own glass, like the selected tile
-        const off = [];
+        // metric tabs: NEVER split (see the 7:09 moon screenshot: one dark
+        // tab mid-row reads as broken, not as local ink); inactive share one
+        // consensus + halo, the active pill answers to its own glass
+        const row = [];
         for (const [key, btn] of Object.entries(this._tabBtns ?? {})) {
             const list = this._bgsOf(btn);
             if (key === this._metric) {
                 const res = judgeInk(list.map(bg => compGlass(bg, this._dark)));
                 set(btn, inkCss(res.ink) + haloCss(res));
             } else
-                off.push([btn, list]);
+                row.push(...list);
         }
-        if (off.length) {
-            const picks = splitInk(off.map(([, list]) => list));
-            off.forEach(([btn], i) => set(btn, inkCss(picks[i].ink) +
-                                           haloCss(picks[i])));
+        if (row.length) {
+            const res = judgeInk(row);
+            const css = inkCss(res.ink) + haloCss(res);
+            for (const [key, btn] of Object.entries(this._tabBtns ?? {}))
+                if (key !== this._metric)
+                    set(btn, css);
         }
     }
 
