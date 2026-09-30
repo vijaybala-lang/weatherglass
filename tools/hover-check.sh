@@ -40,6 +40,7 @@ timeout 120 dbus-run-session -- bash -c "
   gsettings set $SCHEMA location-longitude -122.3321
   gsettings set $SCHEMA location-name 'Seattle'
   gsettings set $SCHEMA menu-style '${AW_STYLE:-animated}'
+  gsettings set $SCHEMA text-emboss '${AW_EMBOSS:-true}'
   gnome-shell --headless --virtual-monitor 1280x800 --no-x11 &
   GPID=\$!
   for i in \$(seq 1 45); do

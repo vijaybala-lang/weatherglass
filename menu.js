@@ -23,7 +23,7 @@ import {_, N_} from './i18n.js';
 import {WeatherIcon} from './animation.js';
 import {paintSky, createSky, sampleSky, bodyOf} from './sky.js';
 import {paintChart, ease, lerp, contrastSafe, lumOf, pickInk, ratio,
-        judgeInk, splitInk, INK_DARK, INK_LIGHT} from './chart.js';
+        judgeInk, INK_DARK, INK_LIGHT} from './chart.js';
 import {sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn} from './weather.js';
 
 const FRAME_MS = 50;         // sky: 20 fps is plenty
@@ -811,16 +811,14 @@ export class ForecastPanel {
 
     /** One-pass smart ink for every free-standing label/button in the card,
      *  JUDGED PER VISUAL GROUP: whole-box sampling (text spans wide, and its
-     *  right half may ride over the moon), one consensus ink per group (a tab
-     *  row half dark is a broken-looking control) -- EXCEPT the metric tab
-     *  row, which never splits; standalone actors (ghost icons, stacked
-     *  city/clock labels) may flip to their own ink when the group's cannot
-     *  survive their box (splitInk, see chart.js) -- plus a surgical halo when
-     *  no single colour can win the group (a label straddling the moon's edge
-     *  has no colour that beats both backgrounds -- a white-ink-with-dark-
-     *  shadow beats either solid pick). The active pill tab and the day tiles
-     *  judge for themselves: they sit on their own background, so ink that
-     *  matches it reads as deliberate, not broken.
+     *  right half may ride over the moon), ONE consensus ink per group --
+     *  a row or pair half dark is a broken-looking control (the 7:09 PM
+     *  moon screenshot: one flipped tab mid-row read exactly that way).
+     *  The active pill tab and the day tiles judge for themselves: they sit
+     *  on their own glass, so ink that matches it reads as deliberate.
+     *  The readability halo exists for moon-edge straddles but RESPECTS the
+     *  Text emboss preference -- with emboss off the user wants clean
+     *  colour, no shadow, and gets exactly that even over the moon.
      *  Runs from the chart repaint (menu is visible, transforms valid). */
     _applyTextInk() {
         const plain = this._style === 'accent' || !this._state;
@@ -840,38 +838,40 @@ export class ForecastPanel {
                 set(btn, '');
             return;
         }
+        const halo = res => this._emboss ? haloCss(res) : '';
         const inkGroup = actors => {
             const list = actors ?? [];
-            const picks = splitInk(list.map(a => this._bgsOf(a)));
-            list.forEach((a, i) => set(a, inkCss(picks[i].ink) +
-                                           haloCss(picks[i])));
+            const res = judgeInk([].concat(...list.map(a => this._bgsOf(a))));
+            const css = inkCss(res.ink) + halo(res);
+            for (const a of list)
+                set(a, css);
         };
         inkGroup([this._tempLbl, this._descLbl]);   // left column pair
         inkGroup([this._cityLbl, this._clockLbl]);  // right stack pair
-        // ghost buttons: group ink, but an icon riding the moon outright
-        // flips to dark-on-disc; the direction-matched icon shadow IS the
-        // halo when a pair straddles and no single ink wins
-        const icons = this._ghostIcons ?? [];
-        const iPick = splitInk(icons.map(ic => this._bgsOf(ic)));
-        icons.forEach((ic, i) => set(ic, inkCss(iPick[i].ink) +
-            (iPick[i].ink === INK_DARK
+        // ghost buttons: one pair-ink; the direction-matched icon shadow IS
+        // their halo -- so it follows the emboss preference too
+        const g = judgeInk(
+            [].concat(...(this._ghostIcons ?? []).map(ic => this._bgsOf(ic))));
+        const glow = !this._emboss ? ''
+            : g.ink === INK_DARK
                 ? ' icon-shadow: 0 1px 3px rgba(255,255,255,0.7);'
-                : ' icon-shadow: 0 1px 4px rgba(0,0,10,0.7);')));
-        // metric tabs: NEVER split (see the 7:09 moon screenshot: one dark
-        // tab mid-row reads as broken, not as local ink); inactive share one
-        // consensus + halo, the active pill answers to its own glass
+                : ' icon-shadow: 0 1px 4px rgba(0,0,10,0.7);';
+        for (const ic of this._ghostIcons ?? [])
+            set(ic, inkCss(g.ink) + glow);
+        // metric tabs: one consensus ink (never split, see above); the
+        // active pill answers to its own glass, like the selected tile
         const row = [];
         for (const [key, btn] of Object.entries(this._tabBtns ?? {})) {
             const list = this._bgsOf(btn);
             if (key === this._metric) {
                 const res = judgeInk(list.map(bg => compGlass(bg, this._dark)));
-                set(btn, inkCss(res.ink) + haloCss(res));
+                set(btn, inkCss(res.ink) + halo(res));
             } else
                 row.push(...list);
         }
         if (row.length) {
             const res = judgeInk(row);
-            const css = inkCss(res.ink) + haloCss(res);
+            const css = inkCss(res.ink) + halo(res);
             for (const [key, btn] of Object.entries(this._tabBtns ?? {}))
                 if (key !== this._metric)
                     set(btn, css);
@@ -896,16 +896,16 @@ export class ForecastPanel {
             const [cw, ch] = this._content.get_size();
             const [ax, ay] = actor.get_transformed_position();
             const [aw, ah] = actor.get_size();
-            if (!cw || !ch || !aw || !ah)
-                return out;
+            if (!cw || !ch || !aw || !ah ||
+                !Number.isFinite(ax + ay + cardX + cardY))
+                return out;   // unmapped/NaN allocation: nothing to judge
             for (const [ux, uy] of [[0.5, 0.5], [0.15, 0.5], [0.85, 0.5],
                                      [0.5, 0.25], [0.5, 0.75]]) {
                 const fc = Math.min(1, Math.max(0,
                     (ay + ah * uy - cardY) / ch));
-                out.push(this._bgAt(fc, {
-                    f: fc,
-                    x: (ax + aw * ux - cardX) / cw,
-                }));
+                const xc = (ax + aw * ux - cardX) / cw;
+                if (Number.isFinite(fc + xc))
+                    out.push(this._bgAt(fc, {f: fc, x: xc}));
             }
         } catch {
             // stale allocation between relayouts: judge with what we have

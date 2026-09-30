@@ -70,6 +70,7 @@ export const pickInk = bg =>
  * faces anywhere in the set; `emboss` flags when the winner still misses
  * WCAG's 3:1 graphics floor somewhere -- the halo's cue. */
 export const judgeInk = bgs => {
+    bgs = bgs.filter(b => Number.isFinite(b[0] + b[1] + b[2]));
     if (!bgs.length)
         return {ink: INK_LIGHT, emboss: false};
     const wWorst = Math.min(...bgs.map(bg => ratio(INK_LIGHT, bg)));
@@ -77,27 +78,6 @@ export const judgeInk = bgs => {
     const ink = dWorst >= wWorst * 1.35 ? INK_DARK : INK_LIGHT;
     return {ink, emboss: (ink === INK_DARK ? dWorst : wWorst) < 3};
 };
-
-/* One judgement per actor, group consensus as the default so a row never
- * half-flips -- but an actor whose box the group ink cannot survive
- * (< 2.5:1 anywhere in it) flips to its own pick when that pick clears a
- * solid 4.5:1 across the box. An icon fully inside the full moon while
- * its neighbour rides dark sky then reads dark-on-moon / white-on-sky:
- * local ink that matches the local background, same as the day tiles. */
-export const splitInk = perActor => {
-    const group = judgeInk([].concat(...perActor));
-    return perActor.map(bgs => {
-        if (!bgs.length)
-            return group;
-        const own = judgeInk(bgs);
-        if (own.ink === group.ink)
-            return group;
-        const ownWorst = Math.min(...bgs.map(bg => ratio(own.ink, bg)));
-        const grpWorst = Math.min(...bgs.map(bg => ratio(group.ink, bg)));
-        return ownWorst >= 4.5 && grpWorst < 2.5 ? own : group;
-    });
-};
-
 
 /* Curve ink over the animated/solid sky. The metric colour is identity
  * (precip blue, temp amber, wind mint) -- so over bright skies we deepen
