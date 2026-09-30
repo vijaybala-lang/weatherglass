@@ -31,7 +31,7 @@ export HOME="$H" XDG_DATA_DIRS=/usr/share
 unset WAYLAND_DISPLAY DISPLAY
 export G_MESSAGES_DEBUG=all
 
-timeout 180 dbus-run-session -- bash -c "
+timeout 300 dbus-run-session -- bash -c "
   echo '=== install from zip (validates layout + metadata) ==='
   gnome-extensions install '$ZIP' || { echo 'FAIL: zip rejected on install'; exit 1; }
   [[ -f \"\$HOME/.local/share/gnome-shell/extensions/$UUID/extension.js\" ]] \
@@ -52,7 +52,16 @@ timeout 180 dbus-run-session -- bash -c "
     busctl --user --no-pager tree org.gnome.Shell >/dev/null 2>&1 || { kill -0 \$GPID || exit 1; continue; }
     sleep 10
     kill -0 \$GPID 2>/dev/null || { echo 'FAIL: shell died with the zip-installed extension'; exit 1; }
-    kill \$GPID; exit 0
+    # crash gate survived; now wait for the FULL paint cycle (10 popup
+    # toggles) instead of a fixed sleep -- provider latency moves the
+    # card-build by tens of seconds and the old window clipped it (v5 flake)
+    for j in \$(seq 1 60); do
+      sleep 2
+      grep -q 'menutest: DONE' '$LOG' 2>/dev/null && { kill \$GPID; exit 0; }
+      kill -0 \$GPID 2>/dev/null || { echo 'FAIL: shell died mid-paint'; exit 1; }
+    done
+    echo 'FAIL: menutest never finished'
+    kill \$GPID; exit 1
   done
   kill \$GPID; exit 1
 " >"$LOG" 2>&1
