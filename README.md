@@ -23,16 +23,18 @@ precipitation or wind), and eight days of forecast tiles.
 <table>
 <tr>
 <td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/01-night-temperature.png" width="280" alt="Night sky with temperature chart"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/06-day-sunny.png" width="280" alt="Sunny day card"></td>
 <td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/04-light-twilight.png" width="280" alt="Light-theme twilight card"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/03-night-wind.png" width="280" alt="Wind chart"></td>
 </tr>
 <tr>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/02-night-precipitation.png" width="280" alt="Precipitation chart"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/07-rainy-precip.png" width="280" alt="Rainy day with precipitation chart"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/03-night-wind.png" width="280" alt="Wind chart"></td>
 <td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/screenshots/05-preferences.png" width="280" alt="Preferences window"></td>
-<td valign="top"><b>Demo</b><br>Animated sky, tab morphs and day tiles (5&nbsp;s):
-<a href="https://github.com/vijaybala-lang/weatherglass/releases/tag/v5">watch in the release</a>.</td>
 </tr>
 </table>
+
+**Demo:** animated sky, tab morphs and day tiles (5 s) --
+[watch in the release](https://github.com/vijaybala-lang/weatherglass/releases/tag/v5).
 
 ## Install
 
