@@ -46,7 +46,7 @@ echo "==> assembling dist/$UUID"
 rm -rf dist
 mkdir -p "dist/$UUID/schemas"
 cp metadata.json extension.js prefs.js menu.js chart.js sky.js painter.js \
-   weather.js moon.js animation.js i18n.js stylesheet.css README.md LICENSE \
+   weather.js moon.js animation.js stylesheet.css README.md LICENSE \
    "dist/$UUID/"
 cp schemas/"$SCHEMA".gschema.xml "dist/$UUID/schemas/"
 cp -r locale "dist/$UUID/"
@@ -73,7 +73,7 @@ done < po/LINGUAS
 echo "==> zipping (flat: extension.js at the archive root — EGO's validator
 ##     rejects a uuid-folder layout with 'Missing extension.js')"
 (cd "dist/$UUID" && zip -qr "../$UUID.zip" metadata.json extension.js prefs.js \
-   menu.js chart.js sky.js painter.js weather.js moon.js animation.js i18n.js \
+   menu.js chart.js sky.js painter.js weather.js moon.js animation.js \
    stylesheet.css README.md LICENSE schemas locale)
 # the validator greps for a root-level extension.js — assert it's really flat
 unzip -l "dist/$UUID.zip" | awk '$4 == "extension.js"' | grep -q . \

@@ -6,6 +6,7 @@
     "50"
   ],
   "settings-schema": "org.gnome.shell.extensions.weatherglass",
+  "gettext-domain": "weatherglass@vijaybala.dev",
   "url": "https://github.com/vijaybala-lang/weatherglass",
   "version": 5
 }
