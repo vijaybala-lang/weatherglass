@@ -2,27 +2,27 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 20:19-0700\n"
+"POT-Creation-Date: 2026-09-30 20:55-0700\n"
 "Language: ja\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:53 prefs.js:782
+#: extension.js:284 prefs.js:782
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
-#: extension.js:142
+#: extension.js:304 menu.js:273
+msgid "Fetching weather…"
+msgstr "天気を取得中…"
+
+#: extension.js:377
 msgid "My location"
 msgstr "現在地"
 
-#: extension.js:143
+#: extension.js:378
 msgid "Custom location"
 msgstr "カスタム位置"
-
-#: extension.js:185 menu.js:274
-msgid "Fetching weather…"
-msgstr "天気を取得中…"
 
 #: menu.js:25
 msgid "Temperature"
@@ -36,39 +36,39 @@ msgstr "降水量"
 msgid "Wind"
 msgstr "風"
 
-#: menu.js:308 menu.js:383 menu.js:387
+#: menu.js:307 menu.js:382 menu.js:386
 msgid "Weather"
 msgstr "天気"
 
-#: menu.js:321
+#: menu.js:320
 msgid "Refresh now"
 msgstr "今すぐ更新"
 
-#: menu.js:324
+#: menu.js:323
 msgid "Preferences"
 msgstr "設定"
 
-#: menu.js:339
+#: menu.js:338
 msgid "Show"
 msgstr "表示"
 
-#: menu.js:339
+#: menu.js:338
 msgid "chart"
 msgstr "グラフ"
 
-#: menu.js:388
+#: menu.js:387
 msgid "Could not load the forecast"
 msgstr "予報を読み込めませんでした"
 
-#: menu.js:536
+#: menu.js:533
 msgid "Refresh forecast — updated"
 msgstr "予報を更新 — 最終更新"
 
-#: menu.js:599
+#: menu.js:596
 msgid "Now"
 msgstr "現在"
 
-#: menu.js:706
+#: menu.js:703
 msgid "Today"
 msgstr "今日"
 
