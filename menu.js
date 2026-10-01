@@ -119,14 +119,14 @@ const SkyArea = GObject.registerClass(
         _start() {
             if (this._animTimerId || !this._animate || this._panel._style === 'accent')
                 return;
-            this._lastMonotonicTimeUs = GLib.get_monotonic_time();
+            this._lastTime = GLib.get_monotonic_time();
             this._animTimerId = GLib.timeout_add(GLib.PRIORITY_LOW, SKY_FRAME_INTERVAL_MS, () => {
-                const nowMonotonicTimeUs = GLib.get_monotonic_time();
+                const now = GLib.get_monotonic_time();
                 if (this.mapped ?? true) {
-                    this._time += Math.min((nowMonotonicTimeUs - this._lastMonotonicTimeUs) / 1000000, 0.1);
+                    this._time += Math.min((now - this._lastTime) / 1000000, 0.1);
                     this.queue_repaint();
                 }
-                this._lastMonotonicTimeUs = nowMonotonicTimeUs;
+                this._lastTime = now;
                 return GLib.SOURCE_CONTINUE;
             });
         }
@@ -222,7 +222,7 @@ export class ForecastPanel {
         this._morphId = 0;
         this._cityClockTimerId = 0;
         this._cityEpochMs = 0;          // wall time in the city's timezone
-        this._cityBaseMonotonicTimeUs = 0;
+        this._cityBaseTime = 0;
         this._desc = '';
         this._fmtValue = null;
         this._fmtHour = null;
@@ -517,7 +517,7 @@ export class ForecastPanel {
 
         // city clock ticks from the API timestamp (city timezone, not ours)
         this._cityEpochMs = state.currentIso ? Date.parse(state.currentIso) : 0;
-        this._cityBaseMonotonicTimeUs = GLib.get_monotonic_time();
+        this._cityBaseTime = GLib.get_monotonic_time();
         this._tickClock();
         if (!this._cityClockTimerId) {
             this._cityClockTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 20, () => {
@@ -665,9 +665,9 @@ export class ForecastPanel {
             this._shown = targetValues.slice();
             return;
         }
-        const startMonotonicTimeUs = GLib.get_monotonic_time();
+        const startTime = GLib.get_monotonic_time();
         this._morphId = GLib.timeout_add(GLib.PRIORITY_LOW, CHART_MORPH_TICK_MS, () => {
-            const progress = Math.min(1, (GLib.get_monotonic_time() - startMonotonicTimeUs) / (CHART_MORPH_DURATION_MS * 1000));
+            const progress = Math.min(1, (GLib.get_monotonic_time() - startTime) / (CHART_MORPH_DURATION_MS * 1000));
             this._shown = lerp(from, targetValues, ease(progress));
             this._chart.queue_repaint();
             if (progress >= 1) {
@@ -886,7 +886,7 @@ export class ForecastPanel {
             return;
         }
         const currentMs = this._cityEpochMs +
-            Math.round((GLib.get_monotonic_time() - this._cityBaseMonotonicTimeUs) / 1000);
+            Math.round((GLib.get_monotonic_time() - this._cityBaseTime) / 1000);
         const cityDate = new Date(currentMs);   // parsed+rendered in machine TZ: cancels out
         const minutesStr = String(cityDate.getMinutes()).padStart(2, '0');
         this._clockLabel.set_text(this._is24Hour
