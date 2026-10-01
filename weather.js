@@ -2,7 +2,8 @@
 
 import GLib from 'gi://GLib';
 import Soup from 'gi://Soup';
-import {_, N_} from './i18n.js';
+
+const N_ = s => s;
 
 const API = 'https://api.open-meteo.com/v1/forecast';
 const GEO = 'https://geocoding-api.open-meteo.com/v1/search';
@@ -47,7 +48,7 @@ export const WMO = {
 
 export function sceneFor(code, isDay = true) {
     const w = WMO[code] ?? {desc: N_('Unknown'), day: 'cloud', night: 'cloud'};
-    return {scene: isDay ? w.day : w.night, desc: _(w.desc)};
+    return {scene: isDay ? w.day : w.night, desc: w.desc};
 }
 
 /**
@@ -63,13 +64,13 @@ export function deriveScene(current) {
     const {code, visibility, cape, isDay} = current;
     const liquid = code >= 51 && code <= 82;   // drizzle ... showers
     if (code === 96 || code === 99 || (cape >= 2500 && liquid))
-        return {scene: 'hail', desc: _('Thunderstorm, hail')};
+        return {scene: 'hail', desc: N_('Thunderstorm, hail')};
     if (code === 95 || (cape >= 1200 && liquid))
-        return {scene: 'storm', desc: _('Thunderstorm')};
+        return {scene: 'storm', desc: N_('Thunderstorm')};
     if (code === 45 || code === 48)
         return sceneFor(code, isDay);
     if (visibility !== null && visibility < 1000 && !liquid)
-        return {scene: 'fog', desc: _('Fog')};
+        return {scene: 'fog', desc: N_('Fog')};
     return sceneFor(code, isDay);
 }
 
@@ -94,7 +95,7 @@ const DAYS = [N_('Sun'), N_('Mon'), N_('Tue'), N_('Wed'),
  *  abbreviations, translated to the locale's usual short weekday). */
 export function dayName(iso) {
     const [y, m, d] = iso.split('-').map(Number);
-    return _(DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]);
+    return DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
 }
 
 /**
@@ -238,8 +239,6 @@ export class OpenMeteoProvider extends WeatherProvider {
                 'temperature_2m', 'relative_humidity_2m', 'apparent_temperature',
                 'is_day', 'precipitation', 'weather_code', 'cloud_cover',
                 'wind_speed_10m', 'wind_direction_10m', 'uv_index',
-                // physical proxies: WMO codes almost never report fog or
-                // storms, but these two variables catch them reliably
                 'visibility', 'cape',
             ].join(','),
             hourly: [
@@ -253,18 +252,9 @@ export class OpenMeteoProvider extends WeatherProvider {
             ].join(','),
             timezone: 'auto',
             forecast_days: days,
-            // canonical units are always metric; the formatters convert for
-            // display, so all internal math (wind threshold, rain slant,
-            // drop density) works on one set of units
             temperature_unit: 'celsius',
             wind_speed_unit: 'kmh',
         };
-        /* best_match is Open-Meteo's regional pick and the API default, so
-         * it needs no param at all -- and asking explicitly for a model the
-         * region doesn't offer is an HTTP 400, not a fallback. Anything the
-         * endpoint rejects (typo, retired model) is retried once bare, so a
-         * stale gsettings value degrades to best_match instead of an empty
-         * card. */
         if (model && model !== 'best_match') {
             params.models = model;
             try {
@@ -293,12 +283,7 @@ export class OpenMeteoProvider extends WeatherProvider {
             windDeg: c.wind_direction_10m,
             uv: c.uv_index ?? null,
             visibility: c.visibility ?? null,   // metres
-            cape: c.cape ?? null,               // J/kg convective available energy
-            // mm/h always (API called with metric); drives drop/flake density
             intensity: c.precipitation ?? 0,
-            // 'YYYY-MM-DDTHH:30' in the forecast location's own timezone --
-            // compare against hourly.time, never the machine clock, so the
-            // "now" marker is right even if shell TZ and city TZ disagree
             timeIso: c.time ?? '',
         };
 
@@ -338,10 +323,7 @@ export class OpenMeteoProvider extends WeatherProvider {
 export function agnosToWmo(symbol) {
     const c = (symbol || '').replace(/_(?:day|night|polartwilight)$/, '');
     if (!c)
-        return 3;                                   // unknown -> overcast
-    // AGNOS welds intensity INTO the family word (heavyrain, lightsnow,
-    // rainshowersandthunder), so match families with includes(), storm
-    // modifiers first, and the sleet/mixed families before plain precip
+        return 3;
     const heavy = c.includes('heavy');
     const light = c.includes('light') || c.includes('lght');
     const shower = c.includes('shower') || c.includes('periods');
@@ -474,8 +456,6 @@ export class MetNorwayProvider extends WeatherProvider {
             };
         });
 
-        // "current" = first timestep's instant; timeIso deliberately matches
-        // hourly[0] so daySlice()/now-marker math stays consistent
         const fd = ts[0]?.data?.instant?.details ?? {};
         const n1 = ts[0]?.data?.next_1_hours ?? {};
         const sym = n1?.summary?.symbol_code ?? '';
@@ -489,8 +469,6 @@ export class MetNorwayProvider extends WeatherProvider {
             wind: (fd.wind_speed ?? 0) * 3.6,
             windDeg: fd.wind_from_direction ?? 0,
             uv: fd.ultraviolet_index_clear_sky ?? null,
-            // no visibility/cape fields: fog arrives via symbol_code,
-            // storms too (thunder family) -- deriveScene's code path covers it
             visibility: null,
             cape: null,
             intensity: n1?.details?.precipitation_amount ?? 0,
@@ -578,7 +556,6 @@ export class NoaaNwsProvider extends WeatherProvider {
             pts = await get(`${NWS}/points/${Number(latitude).toFixed(4)},`
                           + `${Number(longitude).toFixed(4)}`);
         } catch (e) {
-            // NWS answers 400/404 for coordinates outside its grid (US + waters)
             throw new Error(/HTTP 4\d\d/.test(e.message)
                 ? _('NOAA NWS covers US locations only — pick another provider')
                 : e.message);
@@ -590,12 +567,9 @@ export class NoaaNwsProvider extends WeatherProvider {
         const [hourly, daily] = await Promise.all([
             get(p.forecastHourly), get(p.forecast)]);
 
-        // current conditions ride a station observation, not the forecast:
-        // nearest station's latest ob (best effort -- hourly[0] can stand in)
         let obs = null;
         try {
             const sts = await get(p.observationStations);
-            // the list is pre-scored: properties.stationIdentifier + distance
             const feats = (sts?.features ?? []).map(f => ({
                 id: f?.properties?.stationIdentifier ?? f?.properties?.stationId,
                 dist: f?.properties?.distance?.value ?? Infinity,
@@ -657,8 +631,6 @@ export class NoaaNwsProvider extends WeatherProvider {
         };
 
         const op = obs?.properties;
-        // station obs are flaky on humidity/visibility -- hourly periods
-        // carry their own relative humidity, use it before giving up
         const hourRh = hourly?.properties?.periods?.[0]
             ?.relativeHumidity?.value ?? 0;
         if (op?.temperature?.value !== undefined && op?.temperature?.value !== null) {
@@ -683,7 +655,6 @@ export class NoaaNwsProvider extends WeatherProvider {
                 timeIso: String(op.timestamp ?? '').slice(0, 16),
             };
         } else {
-            // no usable observation: the first forecast hour stands in
             const i = 0;
             day.current = {
                 temp: h.temp[i] ?? null, feels: h.temp[i] ?? null,
@@ -713,8 +684,6 @@ export function providerFor(id) {
 export class WeatherClient {
     constructor(providerId = 'open-meteo', model = null) {
         this.providerId = providerId;
-        // Open-Meteo model hint ('ecmwf_ifs025' etc.); null = best_match.
-        // Harmless for other providers: their forecast() ignores it.
         this.model = model;
     }
 
@@ -727,7 +696,7 @@ export class WeatherClient {
         const raw = await get(IPINFO);
         const [lat, lon] = (raw.loc ?? '').split(',').map(Number);
         if (!Number.isFinite(lat) || !Number.isFinite(lon))
-            throw new Error(_('IP geolocation failed'));
+            throw new Error('IP geolocation failed');
         return {
             latitude: lat,
             longitude: lon,

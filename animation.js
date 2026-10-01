@@ -1,12 +1,4 @@
-/* animation.js -- the panel/menu weather icon.
- *
- * An St.DrawingArea driven by paintWeather() (pure cairo, also exercised
- * headlessly by tools/preview.mjs). A GLib source calls queue_repaint()
- * at ~20 fps while the widget is mapped; static variants render one frame.
- * get_surface_size() reports device pixels so HiDPI stays crisp for free.
- *
- * (GNOME 50 removed Clutter.Canvas, hence DrawingArea + vfunc_repaint.)
- */
+/* animation.js -- the panel/menu weather icon. */
 
 import Cairo from 'gi://cairo';
 import Clutter from 'gi://Clutter';
@@ -39,8 +31,6 @@ class WeatherIcon extends St.DrawingArea {
                       intensity: 0, windKmh: 0, phase: null};
 
         this._clockId = 0;
-        // GNOME 50's Clutter has no map/unmap signals: the tick self-idles
-        // while the actor is not on screen (menu closed, panel hidden).
         this.connect('destroy', () => this._stopClock());
         if (animate)
             this._startClock();

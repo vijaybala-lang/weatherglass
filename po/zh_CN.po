@@ -2,559 +2,558 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-29 21:55-0700\n"
+"POT-Creation-Date: 2026-09-30 20:19-0700\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:54 prefs.js:736
+#: extension.js:53 prefs.js:782
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
-#: extension.js:148
+#: extension.js:142
 msgid "My location"
 msgstr "我的位置"
 
-#: extension.js:149
+#: extension.js:143
 msgid "Custom location"
 msgstr "自定义位置"
 
-#: extension.js:193 menu.js:299
+#: extension.js:185 menu.js:274
 msgid "Fetching weather…"
 msgstr "正在获取天气…"
 
-#: menu.js:34
+#: menu.js:25
 msgid "Temperature"
 msgstr "温度"
 
-#: menu.js:35
+#: menu.js:26
 msgid "Precipitation"
 msgstr "降水"
 
-#: menu.js:36
+#: menu.js:27
 msgid "Wind"
 msgstr "风"
 
-#: menu.js:334 menu.js:416 menu.js:420
+#: menu.js:308 menu.js:383 menu.js:387
 msgid "Weather"
 msgstr "天气"
 
-#: menu.js:351
+#: menu.js:321
 msgid "Refresh now"
 msgstr "立即刷新"
 
-#: menu.js:356
+#: menu.js:324
 msgid "Preferences"
 msgstr "首选项"
 
-#: menu.js:372
+#: menu.js:339
 msgid "Show"
 msgstr "显示"
 
-#: menu.js:372
+#: menu.js:339
 msgid "chart"
 msgstr "图表"
 
-#: menu.js:421
+#: menu.js:388
 msgid "Could not load the forecast"
 msgstr "无法加载预报"
 
-#: menu.js:585
+#: menu.js:536
 msgid "Refresh forecast — updated"
 msgstr "刷新预报 — 更新于"
 
-#: menu.js:646
+#: menu.js:599
 msgid "Now"
 msgstr "现在"
 
-#: menu.js:759
+#: menu.js:706
 msgid "Today"
 msgstr "今天"
 
-#: prefs.js:118
+#: prefs.js:238
 msgid "Location"
 msgstr "位置"
 
-#: prefs.js:123
+#: prefs.js:254
 msgid "Automatic"
 msgstr "自动"
 
-#: prefs.js:124
+#: prefs.js:255
 msgid "Coordinates are detected from your public IP address"
 msgstr "坐标从您的公网 IP 地址检测得出"
 
-#: prefs.js:127
+#: prefs.js:258
 msgid "Detect location automatically"
 msgstr "自动检测位置"
 
-#: prefs.js:135
+#: prefs.js:266
 msgid "Search a city"
 msgstr "搜索城市"
 
-#: prefs.js:137
+#: prefs.js:268
 msgid "City name — press Enter to search"
 msgstr "城市名称 — 按 Enter 键搜索"
 
-#: prefs.js:142
+#: prefs.js:273
 msgid "Results"
 msgstr "结果"
 
-#: prefs.js:178
+#: prefs.js:303
 msgid "No matches"
 msgstr "无匹配结果"
 
-#: prefs.js:204
+#: prefs.js:329
 msgid "Manual"
 msgstr "手动"
 
-#: prefs.js:205
+#: prefs.js:330
 msgid "Saved when you press Enter in a field"
 msgstr "在字段中按 Enter 键后即保存"
 
-#: prefs.js:208
+#: prefs.js:333
 msgid "Latitude"
 msgstr "纬度"
 
-#: prefs.js:209
+#: prefs.js:334
 msgid "Longitude"
 msgstr "经度"
 
-#: prefs.js:210
+#: prefs.js:335
 msgid "Display name"
 msgstr "显示名称"
 
-#: prefs.js:252
+#: prefs.js:381
 msgid "Display"
 msgstr "显示"
 
-#: prefs.js:256
+#: prefs.js:391
 msgid "Units"
 msgstr "单位"
 
-#: prefs.js:258
+#: prefs.js:393
 msgid "Measurement system"
 msgstr "计量系统"
 
-#: prefs.js:260
+#: prefs.js:395
 msgid "Imperial (°F, mph)"
 msgstr "英制 (°F, mph)"
 
-#: prefs.js:260
+#: prefs.js:395
 msgid "Metric (°C, km/h)"
 msgstr "公制 (°C, km/h)"
 
-#: prefs.js:268
+#: prefs.js:404
 msgid "Hour format"
 msgstr "时间格式"
 
-#: prefs.js:269
+#: prefs.js:405
 msgid "Clock style for chart hours and the preview clock"
 msgstr "图表小时与预览时钟的时钟样式"
 
-#: prefs.js:271
+#: prefs.js:407
 msgid "12-hour"
 msgstr "12小时制"
 
-#: prefs.js:271
+#: prefs.js:407
 msgid "24-hour"
 msgstr "24小时制"
 
-#: prefs.js:271
+#: prefs.js:407
 msgid "Automatic (system)"
 msgstr "自动（跟随系统）"
 
-#: prefs.js:280
+#: prefs.js:418
 msgid "Panel indicator"
 msgstr "面板指示器"
 
-#: prefs.js:281
+#: prefs.js:419
 msgid "Show animated icon"
 msgstr "显示动态图标"
 
-#: prefs.js:282
+#: prefs.js:420
 msgid "Show temperature"
 msgstr "显示温度"
 
-#: prefs.js:284
+#: prefs.js:422
 msgid "Animate the icon"
 msgstr "让图标动起来"
 
-#: prefs.js:285
+#: prefs.js:423
 msgid "Turn off to save a little battery"
 msgstr "关闭可节省一点电量"
 
-#: prefs.js:295
+#: prefs.js:435
 msgid "Menu background"
 msgstr "菜单背景"
 
-#: prefs.js:297
+#: prefs.js:437
 msgid "Background style"
 msgstr "背景样式"
 
-#: prefs.js:298
+#: prefs.js:438
 msgid "How the dropdown fills itself behind the forecast"
 msgstr "下拉列表如何衬在天气预报背后"
 
-#: prefs.js:301
+#: prefs.js:441
 msgid "Animated sky (translucent)"
 msgstr "动态天空（半透明）"
 
-#: prefs.js:302
+#: prefs.js:442
 msgid "Solid (sky dimmed under a wash)"
 msgstr "纯色（天空压暗一层）"
 
-#: prefs.js:303
+#: prefs.js:443
 msgid "Theme background, accent charts"
 msgstr "主题背景，强调色图表"
 
-#: prefs.js:312
+#: prefs.js:453
 msgid "Text emboss"
 msgstr "文字浮雕"
 
-#: prefs.js:313
+#: prefs.js:454
 msgid "Soft shadow under card text and icons over the sky"
 msgstr "卡片文字与图标在天空背景上的柔和阴影"
 
-#: prefs.js:319
+#: prefs.js:461
 msgid "Weather conditions"
 msgstr "天气状况"
 
-#: prefs.js:320
+#: prefs.js:462
 msgid "How hourly conditions ride the chart"
 msgstr "逐小时状况如何呈现在图表上"
 
-#: prefs.js:322
+#: prefs.js:464
 msgid "Grouped pills"
 msgstr "分组胶囊"
 
-#: prefs.js:322
+#: prefs.js:464
 msgid "Hourly icons"
 msgstr "逐小时图标"
 
-#: prefs.js:322
+#: prefs.js:464
 msgid "Off"
 msgstr "关闭"
 
-#: prefs.js:332
+#: prefs.js:475
 msgid "Condition band position"
 msgstr "状况条位置"
 
-#: prefs.js:333
+#: prefs.js:476
 msgid "Along the chart top, or above the hour labels"
 msgstr "沿图表顶部，或位于小时标签上方"
 
-#: prefs.js:335
+#: prefs.js:478
 msgid "Above hours"
 msgstr "小时标签上方"
 
-#: prefs.js:335
+#: prefs.js:478
 msgid "Chart top"
 msgstr "图表顶部"
 
-#: prefs.js:345
+#: prefs.js:489
 msgid "Data text"
 msgstr "数据文字"
 
-#: prefs.js:346
+#: prefs.js:490
 msgid "Bolder or larger metric values and chart hours"
 msgstr "将指标数值和图表小时加粗或放大"
 
-#: prefs.js:348
+#: prefs.js:492
 msgid "Bold"
 msgstr "粗体"
 
-#: prefs.js:348
+#: prefs.js:492
 msgid "Bold & large"
 msgstr "粗体大号"
 
-#: prefs.js:348
+#: prefs.js:492
 msgid "Large"
 msgstr "大号"
 
-#: prefs.js:348
+#: prefs.js:492
 msgid "Normal"
 msgstr "标准"
 
-#: prefs.js:365
+#: prefs.js:505
 msgid "Data"
 msgstr "数据"
 
-#: prefs.js:369
+#: prefs.js:514
 msgid "Data source"
 msgstr "数据来源"
 
-#: prefs.js:371
+#: prefs.js:516
 msgid "Weather provider"
 msgstr "天气服务提供商"
 
-#: prefs.js:372
+#: prefs.js:517
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "全部免密钥 · MET Norway 数据采用 CC BY-SA 4.0 授权"
 
-#: prefs.js:375
+#: prefs.js:520
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo（默认）"
 
-#: prefs.js:376
+#: prefs.js:521
 msgid "MET Norway (api.met.no)"
 msgstr "MET Norway (api.met.no)"
 
-#: prefs.js:377
+#: prefs.js:522
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS（仅限美国地区）"
 
-#: prefs.js:393
+#: prefs.js:534
 msgid "Forecast model"
 msgstr "预报模型"
 
-#: prefs.js:394
+#: prefs.js:535
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
 msgstr "仅 Open-Meteo · 预报越远模型越分歧 — 若周末预报反常，可换一个试试"
 
-#: prefs.js:397
+#: prefs.js:538
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "最佳匹配（Open-Meteo 区域选择；美国 → GFS）"
 
-#: prefs.js:398
+#: prefs.js:539
 msgid "ECMWF IFS (recommended)"
 msgstr "ECMWF IFS（推荐）"
 
-#: prefs.js:399
+#: prefs.js:540
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON（预报时效较短）"
 
-#: prefs.js:400
+#: prefs.js:541
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:416
+#: prefs.js:559
 msgid "Updates"
 msgstr "更新"
 
-#: prefs.js:418
+#: prefs.js:561
 msgid "Refresh interval (minutes)"
 msgstr "刷新间隔（分钟）"
 
-#: prefs.js:427
+#: prefs.js:570
 msgid "Wind animation threshold (km/h)"
 msgstr "起风动画阈值 (km/h)"
 
-#: prefs.js:428
+#: prefs.js:571
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "风更大的日子会换成风动画图标"
 
-#: prefs.js:446
+#: prefs.js:585
 msgid "Preview"
 msgstr "预览"
 
-#: prefs.js:493
-msgid "Preview scene"
-msgstr "预览场景"
-
-#: prefs.js:494
-msgid "Loops right here for ~12 s — your real panel stays put"
-msgstr "在此循环约 12 秒 — 您的真实面板不受影响"
-
-#: prefs.js:526
-msgid "Scene"
-msgstr "场景"
-
-#: prefs.js:692
+#: prefs.js:606
 msgid "Panel preview"
 msgstr "面板预览"
 
-#: prefs.js:693
+#: prefs.js:607
 msgid ""
 "How the panel button looks for this scene — mock temperature, real icon "
 "animation"
 msgstr "此场景下面板按钮的样子 — 温度为模拟，图标动画为真实"
 
-#: prefs.js:699
+#: prefs.js:612
 msgid "Menu backdrop preview"
 msgstr "菜单背景预览"
 
-#: prefs.js:700
+#: prefs.js:613
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr "您菜单的当前天空，实时呈现 — 在上方选择状况即可在此播放"
 
-#: prefs.js:731
+#: prefs.js:640
+msgid "Preview scene"
+msgstr "预览场景"
+
+#: prefs.js:641
+msgid "Loops right here for ~12 s — your real panel stays put"
+msgstr "在此循环约 12 秒 — 您的真实面板不受影响"
+
+#: prefs.js:673
+msgid "Scene"
+msgstr "场景"
+
+#: prefs.js:777
 msgid "About"
 msgstr "关于"
 
-#: prefs.js:738
+#: prefs.js:784
 msgid "Version"
 msgstr "版本"
 
-#: prefs.js:742
+#: prefs.js:788
 msgid "Contact"
 msgstr "联系方式"
 
-#: prefs.js:746
+#: prefs.js:792
 msgid "Free and open source"
 msgstr "免费且开源"
 
-#: prefs.js:747
+#: prefs.js:793
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "无广告、无账号、不收集数据 — 一片天空，纯粹好用"
 
-#: prefs.js:752
+#: prefs.js:798
 msgid "Support the development"
 msgstr "支持开发"
 
-#: prefs.js:753
+#: prefs.js:799
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
 msgstr "Weatherglass 永久免费。若它让桌面更美，一杯咖啡能让这些像素继续飘落。"
 
-#: prefs.js:756
+#: prefs.js:802
 msgid "Buy me a coffee"
 msgstr "请我喝杯咖啡"
 
-#: weather.js:18
+#: weather.js:19
 msgid "Clear sky"
 msgstr "晴"
 
-#: weather.js:19
+#: weather.js:20
 msgid "Mainly clear"
 msgstr "晴间多云"
 
-#: weather.js:20
+#: weather.js:21
 msgid "Partly cloudy"
 msgstr "局部多云"
 
-#: weather.js:21
+#: weather.js:22
 msgid "Overcast"
 msgstr "阴"
 
-#: weather.js:22 weather.js:72
+#: weather.js:23 weather.js:73
 msgid "Fog"
 msgstr "雾"
 
-#: weather.js:23
+#: weather.js:24
 msgid "Rime fog"
 msgstr "雾凇"
 
-#: weather.js:24
+#: weather.js:25
 msgid "Light drizzle"
 msgstr "轻毛毛雨"
 
-#: weather.js:25
+#: weather.js:26
 msgid "Drizzle"
 msgstr "毛毛雨"
 
-#: weather.js:26
+#: weather.js:27
 msgid "Dense drizzle"
 msgstr "浓毛毛雨"
 
-#: weather.js:27 weather.js:28
+#: weather.js:28 weather.js:29
 msgid "Freezing drizzle"
 msgstr "冻毛毛雨"
 
-#: weather.js:29
+#: weather.js:30
 msgid "Light rain"
 msgstr "小雨"
 
-#: weather.js:30
+#: weather.js:31
 msgid "Rain"
 msgstr "雨"
 
-#: weather.js:31
+#: weather.js:32
 msgid "Heavy rain"
 msgstr "大雨"
 
-#: weather.js:32 weather.js:33
+#: weather.js:33 weather.js:34
 msgid "Freezing rain"
 msgstr "冻雨"
 
-#: weather.js:34
+#: weather.js:35
 msgid "Light snow"
 msgstr "小雪"
 
-#: weather.js:35
+#: weather.js:36
 msgid "Snow"
 msgstr "雪"
 
-#: weather.js:36
+#: weather.js:37
 msgid "Heavy snow"
 msgstr "大雪"
 
-#: weather.js:37
+#: weather.js:38
 msgid "Snow grains"
 msgstr "雪丸"
 
-#: weather.js:38
+#: weather.js:39
 msgid "Light showers"
 msgstr "小阵雨"
 
-#: weather.js:39
+#: weather.js:40
 msgid "Showers"
 msgstr "阵雨"
 
-#: weather.js:40
+#: weather.js:41
 msgid "Violent showers"
 msgstr "强阵雨"
 
-#: weather.js:41
+#: weather.js:42
 msgid "Snow showers"
 msgstr "阵雪"
 
-#: weather.js:42
+#: weather.js:43
 msgid "Heavy snow showers"
 msgstr "强阵雪"
 
-#: weather.js:43 weather.js:68
+#: weather.js:44 weather.js:69
 msgid "Thunderstorm"
 msgstr "雷暴"
 
-#: weather.js:44 weather.js:45 weather.js:66
+#: weather.js:45 weather.js:46 weather.js:67
 msgid "Thunderstorm, hail"
 msgstr "雷暴伴冰雹"
 
-#: weather.js:49
+#: weather.js:50
 msgid "Unknown"
 msgstr "未知"
 
-#: weather.js:89
+#: weather.js:90
 msgid "Mon"
 msgstr "周一"
 
-#: weather.js:89
+#: weather.js:90
 msgid "Sun"
 msgstr "周日"
 
-#: weather.js:89
+#: weather.js:90
 msgid "Tue"
 msgstr "周二"
 
-#: weather.js:89
+#: weather.js:90
 msgid "Wed"
 msgstr "周三"
 
-#: weather.js:90
+#: weather.js:91
 msgid "Fri"
 msgstr "周五"
 
-#: weather.js:90
+#: weather.js:91
 msgid "Sat"
 msgstr "周六"
 
-#: weather.js:90
+#: weather.js:91
 msgid "Thu"
 msgstr "周四"
 
-#: weather.js:583
+#: weather.js:560
 msgid "NOAA NWS covers US locations only — pick another provider"
 msgstr "NOAA NWS 仅覆盖美国地区 — 请选择其他服务提供商"
 
-#: weather.js:588
+#: weather.js:565
 msgid "NOAA NWS returned no forecast for this location"
 msgstr "NOAA NWS 未返回此位置的预报"
 
-#: weather.js:730
-msgid "IP geolocation failed"
-msgstr "IP 定位失败"
+#~ msgid "IP geolocation failed"
+#~ msgstr "IP 定位失败"
