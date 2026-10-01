@@ -85,13 +85,13 @@ function mariaCircles() {
 }
 
 function litPath(cr, radius, phase) {
-    const terminatorScale = Math.cos(TWO_PI * phase);   // signed terminator x-radius / radius
+    const terminatorScale = Math.cos(TWO_PI * phase);
     cr.newPath();
-    cr.arc(0, 0, radius, -Math.PI / 2, Math.PI / 2);     // limb: top -> right -> bottom
+    cr.arc(0, 0, radius, -Math.PI / 2, Math.PI / 2);
     cr.save();
-    cr.scale(terminatorScale, 1);                         // sign swings the bulge L/R
+    cr.scale(terminatorScale, 1);
     (cr.arcNegative ?? cr.arc_negative).call(cr, 0, 0, radius, Math.PI / 2, -Math.PI / 2);
-    cr.restore();                                        // terminator: bottom -> top
+    cr.restore();
     cr.closePath();
 }
 

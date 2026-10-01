@@ -4,13 +4,13 @@ import Cairo from 'gi://cairo';
 import Pango from 'gi://Pango';
 import PangoCairo from 'gi://PangoCairo';
 
-import {paintWeather} from './painter.js';
+import { paintWeather } from './painter.js';
 
 const PADDING_TOP = 38, PADDING_BOTTOM = 30, PADDING_X = 2;
 const LINE_WIDTH = 3, DEFAULT_LABEL_INTERVAL = 3;
 const STRIP_CENTER_Y = 13, STRIP_ICON_SCALE = 0.6;
 // a little precip in the static icon poses so rain/snow scenes read right
-const STRIP_PRECIP_INTENSITY = {rain: 2, snow: 2, sleet: 3, hail: 4, storm: 5};
+const STRIP_PRECIP_INTENSITY = { rain: 2, snow: 2, sleet: 3, hail: 4, storm: 5 };
 
 /* GJS Pango bindings are snake_case on some releases and camelCase on newer
  * ones -- feature-detect once per call rather than betting on one. */
@@ -54,24 +54,24 @@ export const pickInk = bg =>
 export const judgeInk = bgs => {
     bgs = bgs.filter(b => Number.isFinite(b[0] + b[1] + b[2]));
     if (!bgs.length)
-        return {ink: INK_LIGHT, emboss: false};
+        return { ink: INK_LIGHT, emboss: false };
     const worstWhiteRatio = Math.min(...bgs.map(bg => ratio(INK_LIGHT, bg)));
     const worstDarkRatio = Math.min(...bgs.map(bg => ratio(INK_DARK, bg)));
     const ink = worstDarkRatio >= worstWhiteRatio * 1.35 ? INK_DARK : INK_LIGHT;
-    return {ink, emboss: (ink === INK_DARK ? worstDarkRatio : worstWhiteRatio) < 3};
+    return { ink, emboss: (ink === INK_DARK ? worstDarkRatio : worstWhiteRatio) < 3 };
 };
 
 const deepen = baseRgb => {
     const maxVal = Math.max(...baseRgb), minVal = Math.min(...baseRgb), delta = maxVal - minVal;
     let hue = delta === 0 ? 0
         : maxVal === baseRgb[0] ? (60 * ((baseRgb[1] - baseRgb[2]) / delta) + 360) % 360
-        : maxVal === baseRgb[1] ? 60 * ((baseRgb[2] - baseRgb[0]) / delta + 2)
-        : 60 * ((baseRgb[0] - baseRgb[1]) / delta + 4);
+            : maxVal === baseRgb[1] ? 60 * ((baseRgb[2] - baseRgb[0]) / delta + 2)
+                : 60 * ((baseRgb[0] - baseRgb[1]) / delta + 4);
     const sat = Math.min(1, (maxVal === 0 ? 0 : delta / maxVal) * 1.3 + 0.12);
     const toRgb = val => {
         const chroma = val * sat, x = chroma * (1 - Math.abs((hue / 60) % 2 - 1)), match = val - chroma;
         return [[chroma, x, 0], [x, chroma, 0], [0, chroma, x],
-                [0, x, chroma], [x, 0, chroma], [chroma, 0, x]][Math.floor(hue / 60) % 6]
+        [0, x, chroma], [x, 0, chroma], [chroma, 0, x]][Math.floor(hue / 60) % 6]
             .map(k => k + match);
     };
     return toRgb;
@@ -109,10 +109,10 @@ function textPx(cr, text, size, bold, weight = 0) {
     return Array.isArray(px) ? [px[0], px[1], layout] : [px.width, px.height, layout];
 }
 
-export function drawText(cr, text, x, y, {size = 10, bold = false, weight = 0,
-                                          rgba = [1, 1, 1, 1],
-                                          anchor = 'middle',
-                                          vcenter = null} = {}) {
+export function drawText(cr, text, x, y, { size = 10, bold = false, weight = 0,
+    rgba = [1, 1, 1, 1],
+    anchor = 'middle',
+    vcenter = null } = {}) {
     const [pixelWidth, pixelHeight, layout] = textPx(cr, text, size, bold, weight);
     const tx = anchor === 'start' ? x : anchor === 'end' ? x - pixelWidth : x - pixelWidth / 2;
     cr.setSourceRGBA(...rgba);
@@ -127,7 +127,7 @@ function tracePath(cr, pts) {
     cr.moveTo(pts[0][0], pts[0][1]);
     for (let i = 0; i < pts.length - 1; i++) {
         const p0 = pts[Math.max(0, i - 1)], p1 = pts[i],
-              p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+            p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
         cr.curveTo(
             p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6,
             p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6,
@@ -201,16 +201,16 @@ function sampleCurveBounds(pts) {
     const curvePoints = [];
     for (let i = 0; i < pts.length - 1; i++) {
         const p0 = pts[Math.max(0, i - 1)], p1 = pts[i],
-              p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+            p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
         const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6,
-              c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+            c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
         for (let k = 0; k <= 8; k++) {
             const t = k / 8, u = 1 - t;
             curvePoints.push([
                 u * u * u * p1[0] + 3 * u * u * t * c1x
-                    + 3 * u * t * t * c2x + t * t * t * p2[0],
+                + 3 * u * t * t * c2x + t * t * t * p2[0],
                 u * u * u * p1[1] + 3 * u * u * t * c1y
-                    + 3 * u * t * t * c2y + t * t * t * p2[1],
+                + 3 * u * t * t * c2y + t * t * t * p2[1],
             ]);
         }
     }
@@ -228,7 +228,7 @@ function sampleCurveBounds(pts) {
                 maxY = sampleY;
         return maxY;
     };
-    return {curveMin, curveMax};
+    return { curveMin, curveMax };
 }
 
 function drawTimeFade(cr, width, height, fadeX, pastKeepAlpha) {
@@ -257,7 +257,7 @@ function drawNowMarker(cr, markerX, height) {
 }
 
 export function paintChart(cr, opts) {
-    const {w: width, h: height, values, fmtValue, fmtHour, accent, nowFrac = null} = opts;
+    const { w: width, h: height, values, fmtValue, fmtHour, accent, nowFrac = null } = opts;
     const pointCount = values.length;
     if (pointCount < 2)
         return;
@@ -306,7 +306,7 @@ export function paintChart(cr, opts) {
     cr.pushGroup();
 
     drawAreaAndLine(cr, pts, mapX, pointCount, height, accentR, accentG, accentB);
-    const {curveMin, curveMax} = sampleCurveBounds(pts);
+    const { curveMin, curveMax } = sampleCurveBounds(pts);
 
     const nowIndex = nowFrac === null ? -1 : Math.round(nowFrac * (pointCount - 1));
     const pointSpacing = (width - PADDING_X * 2) / (pointCount - 1);
@@ -331,11 +331,11 @@ export function paintChart(cr, opts) {
     const anchorOf = xPos => xPos < 46 ? 'start' : xPos > width - 46 ? 'end' : 'middle';
     const labelXOf = (anchorX, anchor) =>
         anchor === 'start' ? Math.max(edgeGutter, anchorX - 6)
-        : anchor === 'end' ? Math.min(width - edgeGutter, anchorX + 6) : anchorX;
+            : anchor === 'end' ? Math.min(width - edgeGutter, anchorX + 6) : anchorX;
     const boxAt = (text, labelX, baselineY, anchor) => {
         const [textWidth, textHeight] = textPx(cr, text, scaledFontSize, false, hourFontWeight);
         const leftX = anchor === 'start' ? labelX
-                    : anchor === 'end'   ? labelX - textWidth : labelX - textWidth / 2;
+            : anchor === 'end' ? labelX - textWidth : labelX - textWidth / 2;
         return [leftX - 1.5, leftX + textWidth + 1.5, baselineY - textHeight - 1, baselineY + 1];
     };
     const hitsAny = (box, boxList) =>
@@ -358,40 +358,40 @@ export function paintChart(cr, opts) {
             if (box[2] < 2 || box[3] > height - 2 || hitsAny(box, usedBoxes))
                 continue;
             usedBoxes.push(box);
-            return {box, labelX, y: candidateY, anchor, text};
+            return { box, labelX, y: candidateY, anchor, text };
         }
         return null;
     };
     let nowPlacement = null;
-    if (nowIndex >= 0 && fmtValue) {          // reserve the accent label's slot
+    if (nowIndex >= 0 && fmtValue) {
         const anchorX = mapX(nowIndex);
         const anchor = anchorOf(anchorX), labelX = labelXOf(anchorX, anchor);
         const text = fmtValue(nowIndex, values[nowIndex]);
         const [textWidth, textHeight] = textPx(cr, text, scaledFontSize, false, valueFontWeight);
         const leftX = anchor === 'start' ? labelX : anchor === 'end' ? labelX - textWidth : labelX - textWidth / 2;
         const labelY = Math.min(mapY(values[nowIndex]) - 22 + 1,
-                                curveMin(leftX, leftX + textWidth) - LINE_WIDTH / 2 - 2);
-        nowPlacement = {text, labelX, y: labelY, anchor};
+            curveMin(leftX, leftX + textWidth) - LINE_WIDTH / 2 - 2);
+        nowPlacement = { text, labelX, y: labelY, anchor };
         usedBoxes.push(boxOf(leftX, textWidth, textHeight, labelY));
     }
-    if (conditionScenes) {                          // and the condition band's row --
+    if (conditionScenes) {
         const bandCenterY = opts.stripBottom ? height - 34 : STRIP_CENTER_Y;
         // the band's DOWN margin shrinks to the hour text's height: a
         // 'large' label row would otherwise collide with the fixed band
         // and every hour label gets dropped (observed live in the menu)
         usedBoxes.push([0, width, bandCenterY - 13,
-                        Math.min(bandCenterY + 13, height - 7 - hourTextHeight)]);
+            Math.min(bandCenterY + 13, height - 7 - hourTextHeight)]);
     }
     for (let i = firstLabelIndex; fmtValue && i < pointCount; i += labelInterval) {
-        if (i === nowIndex)      // the accent now-label owns that slot --
-            continue;            // two "7 mph" stacked there read as a bug
+        if (i === nowIndex)
+            continue;
         const anchorX = mapX(i);
         const anchor = anchorOf(anchorX), labelX = labelXOf(anchorX, anchor);
         const placed = placeLabel(fmtValue(i, values[i]), labelX,
-                                  mapY(values[i]) - 12 + 1, anchor);
+            mapY(values[i]) - 12 + 1, anchor);
         if (placed)
             drawText(cr, placed.text, labelX, placed.y,
-                     {size: scaledFontSize, weight: valueFontWeight, rgba: [...inkAt(placed.y), 0.62], anchor});
+                { size: scaledFontSize, weight: valueFontWeight, rgba: [...inkAt(placed.y), 0.62], anchor });
     }
     // hour labels stay flat on their baseline -- a clash drops the label
     // instead of staggering the row
@@ -404,7 +404,7 @@ export function paintChart(cr, opts) {
         const box = boxAt(hourText, labelX, height - 5, anchor);
         if (!hitsAny(box, usedBoxes)) {
             usedBoxes.push(box);
-            drawText(cr, hourText, labelX, height - 5, {size: scaledFontSize, weight: hourFontWeight, rgba: [...inkAt(height - 5), 0.62], anchor});
+            drawText(cr, hourText, labelX, height - 5, { size: scaledFontSize, weight: hourFontWeight, rgba: [...inkAt(height - 5), 0.62], anchor });
         }
     }
 
@@ -433,9 +433,11 @@ export function paintChart(cr, opts) {
             const poseIcon = ctx => {
                 ctx.translate(centerX - 12 * scale, centerY - 12 * scale);
                 ctx.scale(scale, scale);
-                paintWeather(ctx, {scene: scene ?? 'cloud', time: 4.1,
-                                   night: !!isNight, dark: !isPaletteDark,
-                                   intensity: STRIP_PRECIP_INTENSITY[scene] ?? 0});
+                paintWeather(ctx, {
+                    scene: scene ?? 'cloud', time: 4.1,
+                    night: !!isNight, dark: !isPaletteDark,
+                    intensity: STRIP_PRECIP_INTENSITY[scene] ?? 0
+                });
             };
             if (!iconOutline || isPaletteDark) {
                 cr.save();
@@ -448,8 +450,10 @@ export function paintChart(cr, opts) {
             const ctxS = new Cairo.Context(surfaceS);
             ctxS.translate(iconRadius - 12 * scale, iconRadius - 12 * scale);
             ctxS.scale(scale, scale);
-            paintWeather(ctxS, {scene: scene ?? 'cloud', time: 4.1, night: !!isNight,
-                                dark: !isPaletteDark, intensity: STRIP_PRECIP_INTENSITY[scene] ?? 0});
+            paintWeather(ctxS, {
+                scene: scene ?? 'cloud', time: 4.1, night: !!isNight,
+                dark: !isPaletteDark, intensity: STRIP_PRECIP_INTENSITY[scene] ?? 0
+            });
             ctxS.$dispose();
             const surfaceT = new Cairo.ImageSurface(Cairo.Format.ARGB32, iconDiameter, iconDiameter);
             const ctxT = new Cairo.Context(surfaceT);
@@ -460,9 +464,9 @@ export function paintChart(cr, opts) {
             ctxT.paint();
             ctxT.$dispose();
             for (const [dx, dy] of [[-1.25, 0], [1.25, 0], [0, 1.25], [0, -1.25],
-                                    [-0.95, -0.95], [0.95, -0.95],
-                                    [-0.95, 0.95], [0.95, 0.95],
-                                    [-0.55, 0], [0.55, 0], [0, -0.55], [0, 0.55]]) {
+            [-0.95, -0.95], [0.95, -0.95],
+            [-0.95, 0.95], [0.95, 0.95],
+            [-0.55, 0], [0.55, 0], [0, -0.55], [0, 0.55]]) {
                 cr.setSourceSurface(surfaceT, centerX - iconRadius + dx, centerY - iconRadius + dy);
                 cr.paint();
             }
@@ -489,7 +493,7 @@ export function paintChart(cr, opts) {
                     endIndex++;
                 const x0 = startIndex === 0 ? scaleX(0) : (mapX(startIndex - 1) + mapX(startIndex)) / 2;
                 const x1 = endIndex === pointCount - 1 ? scaleX(1) : (mapX(endIndex) + mapX(endIndex + 1)) / 2;
-                conditionRuns.push({scene: conditionScenes[startIndex], night: nights[startIndex], width: Math.abs(x1 - x0)});
+                conditionRuns.push({ scene: conditionScenes[startIndex], night: nights[startIndex], width: Math.abs(x1 - x0) });
                 startIndex = endIndex + 1;
             }
             const deficits = conditionRuns.map(run => Math.max(0, MIN_PILL_WIDTH - run.width));
@@ -532,7 +536,7 @@ export function paintChart(cr, opts) {
             currX = isRtl ? plotEndX : plotStartX;
             for (const [k, run] of conditionRuns.entries()) {
                 paintSingleIcon(run.scene, currX + flowDir * pillWidths[k] / 2, run.night,
-                                PILL_ICON_SCALE * (ICON_FOOTPRINT_SCALE[run.scene] ?? 1));
+                    PILL_ICON_SCALE * (ICON_FOOTPRINT_SCALE[run.scene] ?? 1));
                 currX += flowDir * pillWidths[k];
             }
             cr.restore();
@@ -540,19 +544,19 @@ export function paintChart(cr, opts) {
             const step = labelInterval * Math.max(1, Math.ceil(30 / span / labelInterval));
             for (let i = firstLabelIndex; i < pointCount; i += step) {
                 const anchorX = mapX(i);
-                if (anchorX > width - edgeGutter)          // same skip as the label loop
+                if (anchorX > width - edgeGutter)
                     continue;
                 const anchor = anchorOf(anchorX);
                 const labelX = labelXOf(anchorX, anchor);
                 let textWidth = textPx(cr, fmtValue ? fmtValue(i, values[i])
-                                                    : String(values[i]), scaledFontSize, false, valueFontWeight)[0];
+                    : String(values[i]), scaledFontSize, false, valueFontWeight)[0];
                 if (fmtHour) {
                     const hourText = fmtHour(i);
                     if (hourText)
                         textWidth = Math.max(textWidth, textPx(cr, hourText, scaledFontSize, false, hourFontWeight)[0]);
                 }
                 const iconCenterX = anchor === 'start' ? labelX + textWidth / 2
-                                  : anchor === 'end'   ? labelX - textWidth / 2 : labelX;
+                    : anchor === 'end' ? labelX - textWidth / 2 : labelX;
                 paintSingleIcon(conditionScenes[i], iconCenterX, nights[i], STRIP_ICON_SCALE * (ICON_FOOTPRINT_SCALE[conditionScenes[i]] ?? 1));
             }
         }
@@ -574,10 +578,12 @@ export function paintChart(cr, opts) {
     // accent is re-safened against the backdrop at ITS y, not the chart mid.
     if (nowPlacement)
         drawText(cr, nowPlacement.text, nowPlacement.labelX, nowPlacement.y,
-                 {size: scaledFontSize, weight: valueFontWeight,
-                  rgba: [...(bgFn ? contrastSafe(accent, bgFn(nowPlacement.y))
-                                  : (opts.nowLabel ?? [accentR, accentG, accentB])), 1],
-                  anchor: nowPlacement.anchor});
+            {
+                size: scaledFontSize, weight: valueFontWeight,
+                rgba: [...(bgFn ? contrastSafe(accent, bgFn(nowPlacement.y))
+                    : (opts.nowLabel ?? [accentR, accentG, accentB])), 1],
+                anchor: nowPlacement.anchor
+            });
 }
 
 /** ease-out cubic, 0..1 */
