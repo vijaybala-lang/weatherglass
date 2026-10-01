@@ -8,7 +8,7 @@ import St from 'gi://St';
 
 import {paintWeather, createParticles, GRID} from './painter.js';
 
-const FRAME_MS = 50;   // 20 fps is plenty and cheap on the compositor
+const FRAME_INTERVAL_MS = 50;   // 20 fps is plenty and cheap on the compositor
 
 export const WeatherIcon = GObject.registerClass(
 class WeatherIcon extends St.DrawingArea {
@@ -51,9 +51,9 @@ class WeatherIcon extends St.DrawingArea {
         this.queue_repaint();
     }
 
-    setAnimate(on) {
-        this._animate = on;
-        if (on)
+    setAnimate(enabled) {
+        this._animate = enabled;
+        if (enabled)
             this._startClock();
         else
             this._stopClock();
@@ -64,14 +64,14 @@ class WeatherIcon extends St.DrawingArea {
     }
 
     vfunc_repaint() {
-        let [width] = this.get_surface_size();   // device px (HiDPI scaled)
-        if (width <= 0)
+        const [surfaceWidth] = this.get_surface_size();   // device px (HiDPI scaled)
+        if (surfaceWidth <= 0)
             return;
         const cr = this.get_context();
         cr.setOperator(Cairo.Operator.CLEAR);
         cr.paint();
         cr.setOperator(Cairo.Operator.OVER);
-        cr.scale(width / GRID, width / GRID);
+        cr.scale(surfaceWidth / GRID, surfaceWidth / GRID);
         paintWeather(cr, {
             ...this._opts,
             dark: this._dark,
@@ -84,15 +84,16 @@ class WeatherIcon extends St.DrawingArea {
     _startClock() {
         if (this._clockId || !this._animate)
             return;
-        this._lastUs = GLib.get_monotonic_time();
-        this._clockId = GLib.timeout_add(GLib.PRIORITY_LOW, FRAME_MS, () => {
-            const now = GLib.get_monotonic_time();
+        this._lastMonotonicTimeUs = GLib.get_monotonic_time();
+        this._clockId = GLib.timeout_add(GLib.PRIORITY_LOW, FRAME_INTERVAL_MS, () => {
+            const nowMonotonicTimeUs = GLib.get_monotonic_time();
             if (this.mapped ?? true) {
                 // keep the clock honest across long unmapped stretches
-                this._time += Math.min((now - this._lastUs) / 1000000, 0.1);
+                const elapsedSeconds = (nowMonotonicTimeUs - this._lastMonotonicTimeUs) / 1000000;
+                this._time += Math.min(elapsedSeconds, 0.1);
                 this.queue_repaint();
             }
-            this._lastUs = now;
+            this._lastMonotonicTimeUs = nowMonotonicTimeUs;
             return GLib.SOURCE_CONTINUE;
         });
     }
