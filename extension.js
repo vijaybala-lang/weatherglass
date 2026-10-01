@@ -19,19 +19,19 @@ import { moonPhase } from './moon.js';
 
 /* Adwaita accent swatches (org.gnome.desktop.interface accent-color) */
 const ACCENTS = {
-    blue:     [0.208, 0.518, 0.894],   // #3584e4
-    teal:     [0.129, 0.565, 0.655],   // #2190a7
-    green:    [0.227, 0.580, 0.290],   // #3a944a
-    yellow:   [0.784, 0.533, 0.000],   // #c88800
-    orange:   [0.929, 0.357, 0.000],   // #ed5b00
-    red:      [0.878, 0.106, 0.141],   // #e01b24
-    pink:     [0.835, 0.380, 0.600],   // #d56199
-    purple:   [0.569, 0.255, 0.675],   // #9141ac
-    slate:    [0.435, 0.514, 0.588],   // #6f8396
+    blue: [0.208, 0.518, 0.894],   // #3584e4
+    teal: [0.129, 0.565, 0.655],   // #2190a7
+    green: [0.227, 0.580, 0.290],   // #3a944a
+    yellow: [0.784, 0.533, 0.000],   // #c88800
+    orange: [0.929, 0.357, 0.000],   // #ed5b00
+    red: [0.878, 0.106, 0.141],   // #e01b24
+    pink: [0.835, 0.380, 0.600],   // #d56199
+    purple: [0.569, 0.255, 0.675],   // #9141ac
+    slate: [0.435, 0.514, 0.588],   // #6f8396
     lavender: [0.388, 0.271, 0.812],   // #6345cf
-    violet:   [0.486, 0.306, 0.635],   // #7c4ea2
-    sage:     [0.396, 0.569, 0.380],
-    rose:     [0.925, 0.420, 0.506],
+    violet: [0.486, 0.306, 0.635],   // #7c4ea2
+    sage: [0.396, 0.569, 0.380],
+    rose: [0.925, 0.420, 0.506],
 };
 const FALLBACK_ACCENT = ACCENTS.blue;
 
@@ -154,8 +154,8 @@ class WeatherCoordinator {
         );
 
         this._refreshTimerId = 0;
-        this._locationDebounceTimerId = 0;
-        this._lastFetchTimestampSec = 0;
+        this._locationTimerId = 0;
+        this._lastFetch = 0;
         this._data = null;
         this._busy = false;
         this._refetchPending = false;
@@ -187,7 +187,7 @@ class WeatherCoordinator {
     isStale() {
         const intervalSec = this._settings.get_int('refresh-minutes') * 60;
         const nowSec = GLib.get_monotonic_time() / 1000000;
-        return this._lastFetchTimestampSec === 0 || (nowSec - this._lastFetchTimestampSec) > intervalSec;
+        return this._lastFetch === 0 || (nowSec - this._lastFetch) > intervalSec;
     }
 
     async fetch(force = false) {
@@ -209,7 +209,7 @@ class WeatherCoordinator {
             if (this._isDestroyed)
                 return;
             this._data = data;
-            this._lastFetchTimestampSec = GLib.get_monotonic_time() / 1000000;
+            this._lastFetch = GLib.get_monotonic_time() / 1000000;
             this._onData?.(data, isAutoLocation);
         } catch (err) {
             if (this._isDestroyed)
@@ -250,10 +250,10 @@ class WeatherCoordinator {
     }
 
     scheduleLocationFetch() {
-        if (this._locationDebounceTimerId)
+        if (this._locationTimerId)
             return;
-        this._locationDebounceTimerId = GLib.timeout_add(GLib.PRIORITY_LOW, 250, () => {
-            this._locationDebounceTimerId = 0;
+        this._locationTimerId = GLib.timeout_add(GLib.PRIORITY_LOW, 250, () => {
+            this._locationTimerId = 0;
             this.fetch(true);
             return GLib.SOURCE_REMOVE;
         });
@@ -265,9 +265,9 @@ class WeatherCoordinator {
             GLib.source_remove(this._refreshTimerId);
             this._refreshTimerId = 0;
         }
-        if (this._locationDebounceTimerId) {
-            GLib.source_remove(this._locationDebounceTimerId);
-            this._locationDebounceTimerId = 0;
+        if (this._locationTimerId) {
+            GLib.source_remove(this._locationTimerId);
+            this._locationTimerId = 0;
         }
         this._onLoading = null;
         this._onData = null;
@@ -279,290 +279,283 @@ class WeatherCoordinator {
  * Shell top-panel indicator button with weather icon and dropdown forecast menu.
  */
 const WeatherIndicator = GObject.registerClass(
-class WeatherIndicator extends PanelMenu.Button {
-    _init(extension) {
-        super._init(0.0, _('Weatherglass'), false);
+    class WeatherIndicator extends PanelMenu.Button {
+        _init(extension) {
+            super._init(0.0, _('Weatherglass'), false);
 
-        this._ext = extension;
-        this._settings = extension.getSettings();
-        this._previewTimeoutId = 0;
-
-        // -- Subsystems ----------------------------------------------------
-        this._themeWatcher = new SystemThemeWatcher(event => {
-            if (event.type === 'dark')
-                this._panel.setDark(this._themeWatcher.isDark);
-            else if (event.type === 'accent')
-                this._panel.setAccent(this._themeWatcher.accentColor);
-            else if (event.type === 'clock')
-                this._panel.setHourFormat(this._resolveHour24());
-        });
-
-        this._coordinator = new WeatherCoordinator(this._settings);
-        this._coordinator.onLoading(() => {
-            this._icon.setScene('loading');
-            if (!this._coordinator.data)
-                this._panel.showPlaceholder(_('Fetching weather…'));
-        });
-        this._coordinator.onData((data, isAutoLocation) => {
-            this._panel.setPlaceName(
-                (isAutoLocation && data.detectedName) || this._placeName());
-            this._update(data);
-        });
-        this._coordinator.onError(err => {
-            this._icon.setScene('error');
-            if (!this._coordinator.data) {
-                this._temperatureLabel.set_text('');
-                this._panel.setError(`Weather unavailable: ${err.message}`);
-            }
-        });
-
-        // -- Panel button UI -----------------------------------------------
-        const panelButtonBox = new St.BoxLayout({
-            style_class: 'aw-panel-box',
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        this._icon = new WeatherIcon({
-            size: PANEL_ICON_SIZE,
-            animate: this._settings.get_boolean('animate'),
-        });
-        this._temperatureLabel = new St.Label({
-            text: '', style_class: 'aw-temp',
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        panelButtonBox.add_child(this._icon);
-        panelButtonBox.add_child(this._temperatureLabel);
-        this._icon.visible = this._settings.get_boolean('show-icon');
-        this.add_child(panelButtonBox);
-
-        // -- Dropdown menu -------------------------------------------------
-        this._panel = new ForecastPanel({ animate: this._settings.get_boolean('animate') });
-        this._panel.onRefresh(() => this._coordinator.fetch(true));
-        this._panel.onSettings(() => this._ext.openPreferences());
-        this._panel.onSky((scene, night) => {
-            this._settings.set_string('live-scene', scene);
-            this._settings.set_boolean('live-night', night);
-        });
-
-        this._syncPanelLook();
-
-        const section = new PopupMenu.PopupMenuSection();
-        section.actor.add_child(this._panel.actor);
-        this.menu.addMenuItem(section);
-        this.menu.actor.add_style_class_name('aw-menu');
-        this._section = section;
-
-        for (let ancestor = this._panel.actor; ancestor; ancestor = ancestor.get_parent()) {
-            ancestor.set_style('padding: 0px; margin: 0px; border-width: 0px;');
-            if (ancestor === this.menu.actor)
-                break;
-        }
-
-        this._panel.setPlaceName(this._placeName());
-
-        // -- Signal listeners ----------------------------------------------
-        this._menuOpenChangedId = this.menu.connect('open-state-changed', (menu, open) => {
-            if (open && this._coordinator.isStale())
-                this._coordinator.fetch(false);
-        });
-
-        this._settingsChangedId = this._settings.connect('changed', (settings, key) =>
-            this._onSetting(key));
-
-        this._coordinator.fetch(true);
-        this._coordinator.restartTimer();
-    }
-
-    _placeName() {
-        if (this._settings.get_boolean('auto-location'))
-            return _('My location');
-        return this._settings.get_string('location-name') || _('Custom location');
-    }
-
-    _resolveHour24() {
-        return this._themeWatcher.resolveHour24(this._settings.get_string('hour-format'));
-    }
-
-    _syncPanelLook() {
-        this._panel.setDark(this._themeWatcher.isDark);
-        this._panel.setAccent(this._themeWatcher.accentColor);
-        this._panel.setHourFormat(this._resolveHour24());
-        this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
-        this._panel.setStyle(this._settings.get_string('menu-style'));
-        this._panel.setConditions(this._settings.get_string('condition-strip'));
-        this._panel.setCondPos(this._settings.get_string('condition-pos'));
-        this._panel.setEmboss(this._settings.get_boolean('text-emboss'));
-    }
-
-    _windy(data) {
-        const threshold = this._settings.get_int('windy-threshold');
-        if (threshold === 0)
-            return false;
-        // data.current.wind is canonical km/h, threshold is stored in km/h
-        return data.current.wind >= threshold;
-    }
-
-    _update(data = this._coordinator.data) {
-        if (!data)
-            return;
-
-        const units = this._settings.get_string('units');
-        const { current, daily } = data;
-        const effective = deriveScene(current);
-        const { scene } = effective;
-        const windy = this._windy(data);
-
-        // panel icon: strong wind swaps in the dedicated wind scene when the
-        // sky scene has no precipitation of its own
-        const panelScene = windy && ['sun', 'moon', 'partly', 'cloud', 'fog'].includes(scene)
-            ? 'wind' : scene;
-        const phase = moonPhase().phase;   // tonight's real lunar phase
-        this._icon.setScene(panelScene, {
-            windy: windy && panelScene !== 'wind',
-            night: !current.isDay,
-            intensity: current.intensity,
-            windKmh: current.wind,          // canonical km/h
-            phase,
-        });
-
-        this._temperatureLabel.set_text(
-            this._settings.get_boolean('show-temperature')
-                ? fmtTemp(current.temp, units) : '');
-
-        this._panel.render({
-            current,
-            daily,
-            hourly: data.hourly,
-            currentIso: current.timeIso,
-            units,
-            windy,
-            effective,
-            windKmh: current.wind,          // canonical km/h
-            dark: this._themeWatcher.isDark,
-            phase,                          // tonight's real lunar phase
-            updated: GLib.DateTime.new_now_local(),
-        });
-    }
-
-    _onSetting(key) {
-        switch (key) {
-            case 'auto-location':
-            case 'location-latitude':
-            case 'location-longitude':
-            case 'location-name':
-            case 'units':
-                this._panel.setPlaceName(this._placeName());
-                this._coordinator.scheduleLocationFetch();
-                break;
-            case 'refresh-minutes':
-                this._coordinator.restartTimer();
-                break;
-            case 'animate': {
-                const isAnimated = this._settings.get_boolean('animate');
-                this._icon.setAnimate(isAnimated);
-                this._panel.destroy();
-                this._rebuildPanel(isAnimated);
-                if (this._coordinator.data)
-                    this._update();
-                break;
-            }
-            case 'show-icon':
-                this._icon.visible = this._settings.get_boolean('show-icon');
-                break;
-            case 'show-temperature':
-            case 'windy-threshold':
-                if (this._coordinator.data)
-                    this._update();
-                break;
-            case 'provider':
-                this._coordinator.setProvider(this._settings.get_string('provider'));
-                break;
-            case 'om-model':
-                this._coordinator.setModel(this._settings.get_string('om-model'));
-                break;
-            case 'menu-style':
-                this._panel.setStyle(this._settings.get_string('menu-style'));
-                break;
-            case 'condition-strip':
-                this._panel.setConditions(this._settings.get_string('condition-strip'));
-                break;
-            case 'condition-pos':
-                this._panel.setCondPos(this._settings.get_string('condition-pos'));
-                break;
-            case 'text-emboss':
-                this._panel.setEmboss(this._settings.get_boolean('text-emboss'));
-                break;
-            case 'hour-format':
-                this._panel.setHourFormat(this._resolveHour24());
-                break;
-            case 'text-emphasis':
-                this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
-                break;
-            case 'preview-scene':
-                this._previewScene();
-                break;
-        }
-    }
-
-    _previewScene() {
-        const scene = this._settings.get_string('preview-scene');
-        if (!scene)
-            return;
-        if (this._previewTimeoutId)
-            GLib.source_remove(this._previewTimeoutId);
-        this._icon.setScene(scene, {
-            windy: ['sun', 'moon', 'partly', 'cloud', 'fog', 'wind'].includes(scene),
-            night: scene === 'moon',
-            intensity: 7,
-            windKmh: 34,
-        });
-        this._previewTimeoutId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 12, () => {
+            this._ext = extension;
+            this._settings = extension.getSettings();
             this._previewTimeoutId = 0;
-            this._settings.set_string('preview-scene', '');
-            if (this._coordinator.data)
-                this._update();
-            else
+
+            this._themeWatcher = new SystemThemeWatcher(event => {
+                if (event.type === 'dark')
+                    this._panel.setDark(this._themeWatcher.isDark);
+                else if (event.type === 'accent')
+                    this._panel.setAccent(this._themeWatcher.accentColor);
+                else if (event.type === 'clock')
+                    this._panel.setHourFormat(this._resolveHour24());
+            });
+
+            this._coordinator = new WeatherCoordinator(this._settings);
+            this._coordinator.onLoading(() => {
                 this._icon.setScene('loading');
-            return GLib.SOURCE_REMOVE;
-        });
-    }
+                if (!this._coordinator.data)
+                    this._panel.showPlaceholder(_('Fetching weather…'));
+            });
+            this._coordinator.onData((data, isAutoLocation) => {
+                this._panel.setPlaceName(
+                    (isAutoLocation && data.detectedName) || this._placeName());
+                this._update(data);
+            });
+            this._coordinator.onError(err => {
+                this._icon.setScene('error');
+                if (!this._coordinator.data) {
+                    this._temperatureLabel.set_text('');
+                    this._panel.setError(`Weather unavailable: ${err.message}`);
+                }
+            });
 
-    _rebuildPanel(animate) {
-        this._section.actor.remove_child(this._panel.actor);
-        this._panel.destroy();
-        this._panel = new ForecastPanel({ animate });
-        this._panel.onRefresh(() => this._coordinator.fetch(true));
-        this._panel.onSettings(() => this._ext.openPreferences());
-        this._panel.onSky((scene, night) => {
-            this._settings.set_string('live-scene', scene);
-            this._settings.set_boolean('live-night', night);
-        });
-        this._syncPanelLook();
-        this._panel.setPlaceName(this._placeName());
-        this._section.actor.add_child(this._panel.actor);
-    }
+            const panelButtonBox = new St.BoxLayout({
+                style_class: 'aw-panel-box',
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            this._icon = new WeatherIcon({
+                size: PANEL_ICON_SIZE,
+                animate: this._settings.get_boolean('animate'),
+            });
+            this._temperatureLabel = new St.Label({
+                text: '', style_class: 'aw-temp',
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            panelButtonBox.add_child(this._icon);
+            panelButtonBox.add_child(this._temperatureLabel);
+            this._icon.visible = this._settings.get_boolean('show-icon');
+            this.add_child(panelButtonBox);
 
-    destroy() {
-        if (this._previewTimeoutId) {
-            GLib.source_remove(this._previewTimeoutId);
-            this._previewTimeoutId = 0;
+            this._panel = new ForecastPanel({ animate: this._settings.get_boolean('animate') });
+            this._panel.onRefresh(() => this._coordinator.fetch(true));
+            this._panel.onSettings(() => this._ext.openPreferences());
+            this._panel.onSky((scene, night) => {
+                this._settings.set_string('live-scene', scene);
+                this._settings.set_boolean('live-night', night);
+            });
+
+            this._syncPanelLook();
+
+            const section = new PopupMenu.PopupMenuSection();
+            section.actor.add_child(this._panel.actor);
+            this.menu.addMenuItem(section);
+            this.menu.actor.add_style_class_name('aw-menu');
+            this._section = section;
+
+            for (let ancestor = this._panel.actor; ancestor; ancestor = ancestor.get_parent()) {
+                ancestor.set_style('padding: 0px; margin: 0px; border-width: 0px;');
+                if (ancestor === this.menu.actor)
+                    break;
+            }
+
+            this._panel.setPlaceName(this._placeName());
+
+            this._menuOpenChangedId = this.menu.connect('open-state-changed', (menu, open) => {
+                if (open && this._coordinator.isStale())
+                    this._coordinator.fetch(false);
+            });
+
+            this._settingsChangedId = this._settings.connect('changed', (settings, key) =>
+                this._onSetting(key));
+
+            this._coordinator.fetch(true);
+            this._coordinator.restartTimer();
         }
-        if (this._settingsChangedId) {
-            this._settings.disconnect(this._settingsChangedId);
-            this._settingsChangedId = 0;
+
+        _placeName() {
+            if (this._settings.get_boolean('auto-location'))
+                return _('My location');
+            return this._settings.get_string('location-name') || _('Custom location');
         }
-        if (this._menuOpenChangedId) {
-            this.menu.disconnect(this._menuOpenChangedId);
-            this._menuOpenChangedId = 0;
+
+        _resolveHour24() {
+            return this._themeWatcher.resolveHour24(this._settings.get_string('hour-format'));
         }
-        this._coordinator?.destroy();
-        this._coordinator = null;
-        this._themeWatcher?.destroy();
-        this._themeWatcher = null;
-        this._panel?.destroy();
-        this._panel = null;
-        super.destroy();
-    }
-});
+
+        _syncPanelLook() {
+            this._panel.setDark(this._themeWatcher.isDark);
+            this._panel.setAccent(this._themeWatcher.accentColor);
+            this._panel.setHourFormat(this._resolveHour24());
+            this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
+            this._panel.setStyle(this._settings.get_string('menu-style'));
+            this._panel.setConditions(this._settings.get_string('condition-strip'));
+            this._panel.setCondPos(this._settings.get_string('condition-pos'));
+            this._panel.setEmboss(this._settings.get_boolean('text-emboss'));
+        }
+
+        _windy(data) {
+            const threshold = this._settings.get_int('windy-threshold');
+            if (threshold === 0)
+                return false;
+            return data.current.wind >= threshold;
+        }
+
+        _update(data = this._coordinator.data) {
+            if (!data)
+                return;
+
+            const units = this._settings.get_string('units');
+            const { current, daily } = data;
+            const effective = deriveScene(current);
+            const { scene } = effective;
+            const windy = this._windy(data);
+
+            const panelScene = windy && ['sun', 'moon', 'partly', 'cloud', 'fog'].includes(scene)
+                ? 'wind' : scene;
+            const phase = moonPhase().phase;
+            this._icon.setScene(panelScene, {
+                windy: windy && panelScene !== 'wind',
+                night: !current.isDay,
+                intensity: current.intensity,
+                windKmh: current.wind,
+                phase,
+            });
+
+            this._temperatureLabel.set_text(
+                this._settings.get_boolean('show-temperature')
+                    ? fmtTemp(current.temp, units) : '');
+
+            this._panel.render({
+                current,
+                daily,
+                hourly: data.hourly,
+                currentIso: current.timeIso,
+                units,
+                windy,
+                effective,
+                windKmh: current.wind,
+                dark: this._themeWatcher.isDark,
+                phase,
+                updated: GLib.DateTime.new_now_local(),
+            });
+        }
+
+        _onSetting(key) {
+            switch (key) {
+                case 'auto-location':
+                case 'location-latitude':
+                case 'location-longitude':
+                case 'location-name':
+                case 'units':
+                    this._panel.setPlaceName(this._placeName());
+                    this._coordinator.scheduleLocationFetch();
+                    break;
+                case 'refresh-minutes':
+                    this._coordinator.restartTimer();
+                    break;
+                case 'animate': {
+                    const isAnimated = this._settings.get_boolean('animate');
+                    this._icon.setAnimate(isAnimated);
+                    this._panel.destroy();
+                    this._rebuildPanel(isAnimated);
+                    if (this._coordinator.data)
+                        this._update();
+                    break;
+                }
+                case 'show-icon':
+                    this._icon.visible = this._settings.get_boolean('show-icon');
+                    break;
+                case 'show-temperature':
+                case 'windy-threshold':
+                    if (this._coordinator.data)
+                        this._update();
+                    break;
+                case 'provider':
+                    this._coordinator.setProvider(this._settings.get_string('provider'));
+                    break;
+                case 'om-model':
+                    this._coordinator.setModel(this._settings.get_string('om-model'));
+                    break;
+                case 'menu-style':
+                    this._panel.setStyle(this._settings.get_string('menu-style'));
+                    break;
+                case 'condition-strip':
+                    this._panel.setConditions(this._settings.get_string('condition-strip'));
+                    break;
+                case 'condition-pos':
+                    this._panel.setCondPos(this._settings.get_string('condition-pos'));
+                    break;
+                case 'text-emboss':
+                    this._panel.setEmboss(this._settings.get_boolean('text-emboss'));
+                    break;
+                case 'hour-format':
+                    this._panel.setHourFormat(this._resolveHour24());
+                    break;
+                case 'text-emphasis':
+                    this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
+                    break;
+                case 'preview-scene':
+                    this._previewScene();
+                    break;
+            }
+        }
+
+        _previewScene() {
+            const scene = this._settings.get_string('preview-scene');
+            if (!scene)
+                return;
+            if (this._previewTimeoutId)
+                GLib.source_remove(this._previewTimeoutId);
+            this._icon.setScene(scene, {
+                windy: ['sun', 'moon', 'partly', 'cloud', 'fog', 'wind'].includes(scene),
+                night: scene === 'moon',
+                intensity: 7,
+                windKmh: 34,
+            });
+            this._previewTimeoutId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 12, () => {
+                this._previewTimeoutId = 0;
+                this._settings.set_string('preview-scene', '');
+                if (this._coordinator.data)
+                    this._update();
+                else
+                    this._icon.setScene('loading');
+                return GLib.SOURCE_REMOVE;
+            });
+        }
+
+        _rebuildPanel(animate) {
+            this._section.actor.remove_child(this._panel.actor);
+            this._panel.destroy();
+            this._panel = new ForecastPanel({ animate });
+            this._panel.onRefresh(() => this._coordinator.fetch(true));
+            this._panel.onSettings(() => this._ext.openPreferences());
+            this._panel.onSky((scene, night) => {
+                this._settings.set_string('live-scene', scene);
+                this._settings.set_boolean('live-night', night);
+            });
+            this._syncPanelLook();
+            this._panel.setPlaceName(this._placeName());
+            this._section.actor.add_child(this._panel.actor);
+        }
+
+        destroy() {
+            if (this._previewTimeoutId) {
+                GLib.source_remove(this._previewTimeoutId);
+                this._previewTimeoutId = 0;
+            }
+            if (this._settingsChangedId) {
+                this._settings.disconnect(this._settingsChangedId);
+                this._settingsChangedId = 0;
+            }
+            if (this._menuOpenChangedId) {
+                this.menu.disconnect(this._menuOpenChangedId);
+                this._menuOpenChangedId = 0;
+            }
+            this._coordinator?.destroy();
+            this._coordinator = null;
+            this._themeWatcher?.destroy();
+            this._themeWatcher = null;
+            this._panel?.destroy();
+            this._panel = null;
+            super.destroy();
+        }
+    });
 
 export default class AnimatedWeatherExtension extends Extension {
     enable() {
