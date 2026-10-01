@@ -192,34 +192,63 @@ function hailStones(cr, particles, time, count) {
 }
 
 function sunBody(cr, centerX, centerY, radius, time, rayLength) {
-    // soft pulsing glow
-    const glow = new Cairo.RadialGradient(centerX, centerY, radius * 0.5, centerX, centerY, radius * 2.15);
-    glow.addColorStopRGBA(0, 1, 0.78, 0.15, 0.5);
-    glow.addColorStopRGBA(1, 1, 0.62, 0.0, 0);
-    cr.setSource(glow);
-    cr.paintWithAlpha(0.75 + 0.25 * Math.sin(time * 1.7));
+    const outerGlowRadius = radius * 2.35;
+    const outerGlow = new Cairo.RadialGradient(centerX, centerY, radius * 0.4, centerX, centerY, outerGlowRadius);
+    const outerAlpha = _light ? 0.28 : 0.40;
+    outerGlow.addColorStopRGBA(0, 1.0, 0.76, 0.16, outerAlpha);
+    outerGlow.addColorStopRGBA(0.55, 1.0, 0.60, 0.08, outerAlpha * 0.45);
+    outerGlow.addColorStopRGBA(1, 1.0, 0.50, 0.0, 0);
+    cr.setSource(outerGlow);
+    cr.paintWithAlpha(0.70 + 0.30 * Math.sin(time * 1.3));
+
+    const innerGlowRadius = radius * 1.55;
+    const innerGlow = new Cairo.RadialGradient(centerX, centerY, radius * 0.5, centerX, centerY, innerGlowRadius);
+    const innerAlpha = _light ? 0.32 : 0.45;
+    innerGlow.addColorStopRGBA(0, 1.0, 0.92, 0.45, innerAlpha);
+    innerGlow.addColorStopRGBA(1, 1.0, 0.75, 0.15, 0);
+    cr.setSource(innerGlow);
+    cr.paintWithAlpha(0.75 + 0.25 * Math.sin(time * 2.1));
 
     cr.save();
     cr.translate(centerX, centerY);
-    cr.rotate(time * 0.45);
+    cr.rotate(time * 0.14);
     cr.setLineCap(Cairo.LineCap.ROUND);
-    cr.setLineWidth(1.5);
-    cr.setSourceRGBA(1.0, 0.72, 0.10, 0.95);
-    const dynamicLength = rayLength * (1 + 0.12 * Math.sin(time * 2.3));
+
     for (let i = 0; i < 8; i++) {
+        const isCardinal = (i % 2 === 0);
         const angle = (i / 8) * TWO_PI;
         const cosAngle = Math.cos(angle), sinAngle = Math.sin(angle);
+
+        let dynamicLength, alpha, lineWidth;
+        if (isCardinal) {
+            const wave = Math.sin(time * 1.9 + i * 0.35);
+            dynamicLength = rayLength * (1.04 + 0.14 * wave);
+            alpha = 0.92 + 0.08 * wave;
+            lineWidth = 1.55;
+            cr.setSourceRGBA(1.0, 0.76, 0.12, alpha);
+        } else {
+            const wave = Math.sin(time * 1.9 + Math.PI * 0.6 + i * 0.35);
+            dynamicLength = rayLength * (0.76 + 0.12 * wave);
+            alpha = 0.78 + 0.12 * wave;
+            lineWidth = 1.35;
+            cr.setSourceRGBA(1.0, 0.68, 0.08, alpha);
+        }
+
+        cr.setLineWidth(lineWidth);
         cr.newSubPath();
         cr.moveTo(cosAngle * (radius + 1.1), sinAngle * (radius + 1.1));
         cr.lineTo(cosAngle * (radius + 1.1 + dynamicLength), sinAngle * (radius + 1.1 + dynamicLength));
+        cr.stroke();
     }
-    cr.stroke();
     cr.restore();
 
-    const core = new Cairo.RadialGradient(centerX - radius * 0.35, centerY - radius * 0.35, radius * 0.2,
-        centerX, centerY, radius);
-    core.addColorStopRGB(0, 1.0, 0.93, 0.55);
-    core.addColorStopRGB(1, 1.0, 0.71, 0.10);
+    const core = new Cairo.RadialGradient(
+        centerX - radius * 0.35, centerY - radius * 0.35, radius * 0.15,
+        centerX, centerY, radius
+    );
+    core.addColorStopRGB(0, 1.0, 0.97, 0.68);
+    core.addColorStopRGB(0.5, 1.0, 0.83, 0.18);
+    core.addColorStopRGB(1, 0.98, 0.58, 0.08);
     cr.setSource(core);
     circle(cr, centerX, centerY, radius);
     cr.fill();
