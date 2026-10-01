@@ -10,12 +10,12 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import {WeatherIcon} from './animation.js';
-import {ForecastPanel} from './menu.js';
-import {WeatherClient, sceneFor, deriveScene, fmtTemp} from './weather.js';
-import {moonPhase} from './moon.js';
+import { WeatherIcon } from './animation.js';
+import { ForecastPanel } from './menu.js';
+import { WeatherClient, sceneFor, deriveScene, fmtTemp } from './weather.js';
+import { moonPhase } from './moon.js';
 
 /* Adwaita accent swatches (org.gnome.desktop.interface accent-color) */
 const ACCENTS = {
@@ -35,123 +35,61 @@ const ACCENTS = {
 };
 const FALLBACK_ACCENT = ACCENTS.blue;
 
-function hexRgb(s) {
-    const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/.exec(s);
-    if (!m)
+function hexRgb(hexString) {
+    const match = /^#([0-9a-f]{3}|[0-9a-f]{6})$/.exec(hexString);
+    if (!match)
         return null;
-    let hex = m[1];
+    let hex = match[1];
     if (hex.length === 3)
-        hex = hex.split('').map(c => c + c).join('');
-    return [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+        hex = hex.split('').map(char => char + char).join('');
+    return [0, 2, 4].map(idx => parseInt(hex.slice(idx, idx + 2), 16) / 255);
 }
 
 const PANEL_ICON_SIZE = 20;
 
-const WeatherIndicator = GObject.registerClass(
-class WeatherIndicator extends PanelMenu.Button {
-    _init(extension) {
-        super._init(0.0, _('Weatherglass'), false);
-
-        this._ext = extension;
-        this._settings = extension.getSettings();
-        this._client = new WeatherClient(this._settings.get_string('provider'),
-                                         this._settings.get_string('om-model'));
-        this._timer = 0;
-        this._locTimer = 0;
-        this._previewId = 0;
-        this._refetch = false;
-        this._lastFetch = 0;        // GLib DateTime seconds, 0 = never
-        this._data = null;
-        this._busy = false;
-
-        // -- panel button contents -----------------------------------------
-        const box = new St.BoxLayout({
-            style_class: 'aw-panel-box',
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        this._icon = new WeatherIcon({size: PANEL_ICON_SIZE,
-                                      animate: this._settings.get_boolean('animate')});
-        this._tempLbl = new St.Label({text: '', style_class: 'aw-temp',
-                                      y_align: Clutter.ActorAlign.CENTER});
-        box.add_child(this._icon);
-        box.add_child(this._tempLbl);
-        this._icon.visible = this._settings.get_boolean('show-icon');
-        this.add_child(box);
-
-        // -- dropdown ------------------------------------------------------
-        this._panel = new ForecastPanel({animate: this._settings.get_boolean('animate')});
-        this._panel.onRefresh(() => this._fetch(true));
-        this._panel.onSettings(() => this._ext.openPreferences());
-        // remember the live sky so the preferences legend can idle on it
-        this._panel.onSky((scene, night) => {
-            this._settings.set_string('live-scene', scene);
-            this._settings.set_boolean('live-night', night);
-        });
-
-        // OS dark-mode + accent tracking: color-scheme wins, legacy bool is
-        // the fallback; accent-color feeds the 'accent' menu style
+/**
+ * Tracks desktop-wide dark mode, accent colour, and clock preferences
+ * from org.gnome.desktop.interface.
+ */
+class SystemThemeWatcher {
+    constructor(onChange) {
+        this._onChange = onChange;
+        this._iface = null;
+        this._changedId = 0;
         this._dark = true;
         this._accent = FALLBACK_ACCENT;
+
         try {
-            this._iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
-            this._dark = this._isDark();
-            this._accent = this._accentColor();
-            this._darkId = this._iface.connect('changed', (s, key) => {
+            this._iface = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            this._dark = this._readIsDark();
+            this._accent = this._readAccentColor();
+            this._changedId = this._iface.connect('changed', (settings, key) => {
                 if (key === 'color-scheme' || key === 'gtk-application-prefer-dark-theme') {
-                    this._dark = this._isDark();   // keep the field current:
-                    this._panel.setDark(this._dark);  // _syncPanelLook replays it
-                } else if (key === 'accent-color')
-                    this._panel.setAccent(this._accentColor());
-                else if (key === 'clock-format')
-                    this._panel.setHourFormat(this._resolveHour24());
+                    this._dark = this._readIsDark();
+                    this._onChange?.({ type: 'dark', isDark: this._dark });
+                } else if (key === 'accent-color') {
+                    this._accent = this._readAccentColor();
+                    this._onChange?.({ type: 'accent', accent: this._accent });
+                } else if (key === 'clock-format') {
+                    this._onChange?.({ type: 'clock' });
+                }
             });
         } catch {
-            this._iface = null;   // exotic distro without the interface schema
+            this._iface = null;
         }
-        this._syncPanelLook();
-
-        const section = new PopupMenu.PopupMenuSection();
-        section.actor.add_child(this._panel.actor);
-        this.menu.addMenuItem(section);
-        this.menu.actor.add_style_class_name('aw-menu');
-        this._section = section;
-
-        for (let a = this._panel.actor; a; a = a.get_parent()) {
-            a.set_style('padding: 0px; margin: 0px; border-width: 0px;');
-            if (a === this.menu.actor)
-                break;
-        }
-
-        this._panel.setPlaceName(this._placeName());
-
-        // -- signals -------------------------------------------------------
-        this._openId = this.menu.connect('open-state-changed', (menu, open) => {
-            if (open && this._isStale())
-                this._fetch(false);
-        });
-
-        this._settingsId = this._settings.connect('changed', (s, key) =>
-            this._onSetting(key));
-
-        this._fetch(true);
-        this._restartTimer();
     }
 
-    _placeName() {
-        if (this._settings.get_boolean('auto-location'))
-            return _('My location');
-        return this._settings.get_string('location-name') || _('Custom location');
+    get isDark() {
+        return this._iface ? this._readIsDark() : this._dark;
     }
 
-    _units() {
-        return this._settings.get_string('units');
+    get accentColor() {
+        return this._iface ? this._readAccentColor() : this._accent;
     }
 
-    /** Mirror GNOME's own dark-mode rule: color-scheme preference wins,
-     *  falling back to the legacy prefer-dark-theme boolean. */
-    _isDark() {
+    _readIsDark() {
         if (!this._iface)
-            return this._dark;   // no interface schema: keep last known state
+            return this._dark;
         try {
             const scheme = this._iface.get_string('color-scheme');
             if (scheme === 'prefer-dark' || scheme === 'force-dark')
@@ -164,81 +102,295 @@ class WeatherIndicator extends PanelMenu.Button {
         return this._iface.get_boolean('gtk-application-prefer-dark-theme');
     }
 
-    _isStale() {
-        const interval = this._settings.get_int('refresh-minutes') * 60;
-        const now = GLib.get_monotonic_time() / 1000000;
-        return this._lastFetch === 0 || (now - this._lastFetch) > interval;
+    _readAccentColor() {
+        if (!this._iface)
+            return this._accent;
+        const rawAccentName = (this._iface.get_string('accent-color') ?? '').trim().toLowerCase();
+        return ACCENTS[rawAccentName] ?? hexRgb(rawAccentName) ?? FALLBACK_ACCENT;
     }
 
-    async _fetch(force) {
+    resolveHour24(modePreference) {
+        if (modePreference === '24h')
+            return true;
+        if (modePreference === '12h')
+            return false;
+        if (this._iface) {
+            try {
+                const format = this._iface.get_string('clock-format');
+                if (format)
+                    return format.includes('24');
+            } catch {
+                // older GNOME: enum may be missing -- fall through
+            }
+        }
+        try {
+            return new Intl.DateTimeFormat(undefined, { hour: 'numeric' })
+                .resolvedOptions().hour12 === false;
+        } catch {
+            return false;
+        }
+    }
+
+    destroy() {
+        if (this._changedId && this._iface) {
+            this._iface.disconnect(this._changedId);
+            this._changedId = 0;
+        }
+        this._iface = null;
+        this._onChange = null;
+    }
+}
+
+/**
+ * Coordinates background weather fetches, debounce delays, periodic refresh
+ * timers, and retry backoffs without touching UI actors.
+ */
+class WeatherCoordinator {
+    constructor(settings) {
+        this._settings = settings;
+        this._client = new WeatherClient(
+            this._settings.get_string('provider'),
+            this._settings.get_string('om-model')
+        );
+
+        this._refreshTimerId = 0;
+        this._locationDebounceTimerId = 0;
+        this._lastFetchTimestampSec = 0;
+        this._data = null;
+        this._busy = false;
+        this._refetchPending = false;
+        this._isDestroyed = false;
+
+        this._onLoading = null;
+        this._onData = null;
+        this._onError = null;
+    }
+
+    get data() {
+        return this._data;
+    }
+
+    onLoading(callback) { this._onLoading = callback; }
+    onData(callback) { this._onData = callback; }
+    onError(callback) { this._onError = callback; }
+
+    setProvider(providerId) {
+        this._client.providerId = providerId;
+        this.fetch(true);
+    }
+
+    setModel(model) {
+        this._client.model = model;
+        this.fetch(true);
+    }
+
+    isStale() {
+        const intervalSec = this._settings.get_int('refresh-minutes') * 60;
+        const nowSec = GLib.get_monotonic_time() / 1000000;
+        return this._lastFetchTimestampSec === 0 || (nowSec - this._lastFetchTimestampSec) > intervalSec;
+    }
+
+    async fetch(force = false) {
         if (this._busy) {
-            // a forced request while one is in flight means settings changed
-            // mid-fetch -- remember it and refetch with the final values
             if (force)
-                this._refetch = true;
+                this._refetchPending = true;
             return;
         }
         this._busy = true;
-
-        this._icon.setScene('loading');
-        if (!this._data)
-            this._panel.showPlaceholder(_('Fetching weather…'));
+        this._onLoading?.();
 
         try {
-            const auto = this._settings.get_boolean('auto-location');
+            const isAutoLocation = this._settings.get_boolean('auto-location');
             const data = await this._client.fetch({
-                auto,
+                auto: isAutoLocation,
                 latitude: this._settings.get_double('location-latitude'),
                 longitude: this._settings.get_double('location-longitude'),
             });
-            if (this._dead)
-                return;   // disabled while the fetch was in flight
-            this._data = data;
-            this._lastFetch = GLib.get_monotonic_time() / 1000000;
-            this._panel.setPlaceName(
-                (auto && data.detectedName) || this._placeName());
-            this._update();
-        } catch (e) {
-            if (this._dead)
+            if (this._isDestroyed)
                 return;
-            logError(e, 'Weatherglass');
-            this._icon.setScene('error');
-            if (!this._data) {
-                this._tempLbl.set_text('');
-                this._panel.setError(`Weather unavailable: ${e.message}`);
-            }
-            this._scheduleRetry();
+            this._data = data;
+            this._lastFetchTimestampSec = GLib.get_monotonic_time() / 1000000;
+            this._onData?.(data, isAutoLocation);
+        } catch (err) {
+            if (this._isDestroyed)
+                return;
+            logError(err, 'Weatherglass');
+            this._onError?.(err);
+            this.scheduleRetry();
         } finally {
             this._busy = false;
-            if (this._refetch && !this._dead) {
-                this._refetch = false;
-                this._fetch(true);
+            if (this._refetchPending && !this._isDestroyed) {
+                this._refetchPending = false;
+                this.fetch(true);
             }
         }
     }
 
-    _scheduleRetry() {
-        // Back off for 60 s but keep the old data visible.
-        if (this._timer)
-            GLib.source_remove(this._timer);
-        this._timer = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 60, () => {
-            this._timer = 0;
-            this._fetch(true);
+    scheduleRetry() {
+        if (this._refreshTimerId)
+            GLib.source_remove(this._refreshTimerId);
+        this._refreshTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 60, () => {
+            this._refreshTimerId = 0;
+            this.fetch(true);
             return GLib.SOURCE_REMOVE;
         });
     }
 
-    _restartTimer() {
-        if (this._timer) {
-            GLib.source_remove(this._timer);
-            this._timer = 0;
+    restartTimer() {
+        if (this._refreshTimerId) {
+            GLib.source_remove(this._refreshTimerId);
+            this._refreshTimerId = 0;
         }
-        const mins = this._settings.get_int('refresh-minutes');
-        this._timer = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, mins * 60, () => {
-            this._timer = 0;
-            this._fetch(true);
+        const refreshMinutes = this._settings.get_int('refresh-minutes');
+        this._refreshTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, refreshMinutes * 60, () => {
+            this._refreshTimerId = 0;
+            this.fetch(true);
             return GLib.SOURCE_REMOVE;
         });
+    }
+
+    scheduleLocationFetch() {
+        if (this._locationDebounceTimerId)
+            return;
+        this._locationDebounceTimerId = GLib.timeout_add(GLib.PRIORITY_LOW, 250, () => {
+            this._locationDebounceTimerId = 0;
+            this.fetch(true);
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    destroy() {
+        this._isDestroyed = true;
+        if (this._refreshTimerId) {
+            GLib.source_remove(this._refreshTimerId);
+            this._refreshTimerId = 0;
+        }
+        if (this._locationDebounceTimerId) {
+            GLib.source_remove(this._locationDebounceTimerId);
+            this._locationDebounceTimerId = 0;
+        }
+        this._onLoading = null;
+        this._onData = null;
+        this._onError = null;
+    }
+}
+
+/**
+ * Shell top-panel indicator button with weather icon and dropdown forecast menu.
+ */
+const WeatherIndicator = GObject.registerClass(
+class WeatherIndicator extends PanelMenu.Button {
+    _init(extension) {
+        super._init(0.0, _('Weatherglass'), false);
+
+        this._ext = extension;
+        this._settings = extension.getSettings();
+        this._previewTimeoutId = 0;
+
+        // -- Subsystems ----------------------------------------------------
+        this._themeWatcher = new SystemThemeWatcher(event => {
+            if (event.type === 'dark')
+                this._panel.setDark(this._themeWatcher.isDark);
+            else if (event.type === 'accent')
+                this._panel.setAccent(this._themeWatcher.accentColor);
+            else if (event.type === 'clock')
+                this._panel.setHourFormat(this._resolveHour24());
+        });
+
+        this._coordinator = new WeatherCoordinator(this._settings);
+        this._coordinator.onLoading(() => {
+            this._icon.setScene('loading');
+            if (!this._coordinator.data)
+                this._panel.showPlaceholder(_('Fetching weather…'));
+        });
+        this._coordinator.onData((data, isAutoLocation) => {
+            this._panel.setPlaceName(
+                (isAutoLocation && data.detectedName) || this._placeName());
+            this._update(data);
+        });
+        this._coordinator.onError(err => {
+            this._icon.setScene('error');
+            if (!this._coordinator.data) {
+                this._temperatureLabel.set_text('');
+                this._panel.setError(`Weather unavailable: ${err.message}`);
+            }
+        });
+
+        // -- Panel button UI -----------------------------------------------
+        const panelButtonBox = new St.BoxLayout({
+            style_class: 'aw-panel-box',
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        this._icon = new WeatherIcon({
+            size: PANEL_ICON_SIZE,
+            animate: this._settings.get_boolean('animate'),
+        });
+        this._temperatureLabel = new St.Label({
+            text: '', style_class: 'aw-temp',
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        panelButtonBox.add_child(this._icon);
+        panelButtonBox.add_child(this._temperatureLabel);
+        this._icon.visible = this._settings.get_boolean('show-icon');
+        this.add_child(panelButtonBox);
+
+        // -- Dropdown menu -------------------------------------------------
+        this._panel = new ForecastPanel({ animate: this._settings.get_boolean('animate') });
+        this._panel.onRefresh(() => this._coordinator.fetch(true));
+        this._panel.onSettings(() => this._ext.openPreferences());
+        this._panel.onSky((scene, night) => {
+            this._settings.set_string('live-scene', scene);
+            this._settings.set_boolean('live-night', night);
+        });
+
+        this._syncPanelLook();
+
+        const section = new PopupMenu.PopupMenuSection();
+        section.actor.add_child(this._panel.actor);
+        this.menu.addMenuItem(section);
+        this.menu.actor.add_style_class_name('aw-menu');
+        this._section = section;
+
+        for (let ancestor = this._panel.actor; ancestor; ancestor = ancestor.get_parent()) {
+            ancestor.set_style('padding: 0px; margin: 0px; border-width: 0px;');
+            if (ancestor === this.menu.actor)
+                break;
+        }
+
+        this._panel.setPlaceName(this._placeName());
+
+        // -- Signal listeners ----------------------------------------------
+        this._menuOpenChangedId = this.menu.connect('open-state-changed', (menu, open) => {
+            if (open && this._coordinator.isStale())
+                this._coordinator.fetch(false);
+        });
+
+        this._settingsChangedId = this._settings.connect('changed', (settings, key) =>
+            this._onSetting(key));
+
+        this._coordinator.fetch(true);
+        this._coordinator.restartTimer();
+    }
+
+    _placeName() {
+        if (this._settings.get_boolean('auto-location'))
+            return _('My location');
+        return this._settings.get_string('location-name') || _('Custom location');
+    }
+
+    _resolveHour24() {
+        return this._themeWatcher.resolveHour24(this._settings.get_string('hour-format'));
+    }
+
+    _syncPanelLook() {
+        this._panel.setDark(this._themeWatcher.isDark);
+        this._panel.setAccent(this._themeWatcher.accentColor);
+        this._panel.setHourFormat(this._resolveHour24());
+        this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
+        this._panel.setStyle(this._settings.get_string('menu-style'));
+        this._panel.setConditions(this._settings.get_string('condition-strip'));
+        this._panel.setCondPos(this._settings.get_string('condition-pos'));
+        this._panel.setEmboss(this._settings.get_boolean('text-emboss'));
     }
 
     _windy(data) {
@@ -249,15 +401,14 @@ class WeatherIndicator extends PanelMenu.Button {
         return data.current.wind >= threshold;
     }
 
-    _update() {
-        const data = this._data;
+    _update(data = this._coordinator.data) {
         if (!data)
             return;
 
-        const units = this._units();
-        const {current, daily} = data;
+        const units = this._settings.get_string('units');
+        const { current, daily } = data;
         const effective = deriveScene(current);
-        const {scene} = effective;
+        const { scene } = effective;
         const windy = this._windy(data);
 
         // panel icon: strong wind swaps in the dedicated wind scene when the
@@ -273,7 +424,7 @@ class WeatherIndicator extends PanelMenu.Button {
             phase,
         });
 
-        this._tempLbl.set_text(
+        this._temperatureLabel.set_text(
             this._settings.get_boolean('show-temperature')
                 ? fmtTemp(current.temp, units) : '');
 
@@ -286,7 +437,7 @@ class WeatherIndicator extends PanelMenu.Button {
             windy,
             effective,
             windKmh: current.wind,          // canonical km/h
-            dark: this._isDark(),   // live read: survives toggles since boot
+            dark: this._themeWatcher.isDark,
             phase,                          // tonight's real lunar phase
             updated: GLib.DateTime.new_now_local(),
         });
@@ -294,63 +445,61 @@ class WeatherIndicator extends PanelMenu.Button {
 
     _onSetting(key) {
         switch (key) {
-        case 'auto-location':
-        case 'location-latitude':
-        case 'location-longitude':
-        case 'location-name':
-        case 'units':
-            this._panel.setPlaceName(this._placeName());
-            this._scheduleLocationFetch();
-            break;
-        case 'refresh-minutes':
-            this._restartTimer();
-            break;
-        case 'animate': {
-            const on = this._settings.get_boolean('animate');
-            this._icon.setAnimate(on);
-            this._panel.destroy();
-            this._rebuildPanel(on);
-            if (this._data)
-                this._update();
-            break;
-        }
-        case 'show-icon':
-            this._icon.visible = this._settings.get_boolean('show-icon');
-            break;
-        case 'show-temperature':
-        case 'windy-threshold':
-            if (this._data)
-                this._update();
-            break;
-        case 'provider':
-            this._client.providerId = this._settings.get_string('provider');
-            this._fetch(true);
-            break;
-        case 'om-model':
-            this._client.model = this._settings.get_string('om-model');
-            this._fetch(true);
-            break;
-        case 'menu-style':
-            this._panel.setStyle(this._settings.get_string('menu-style'));
-            break;
-        case 'condition-strip':
-            this._panel.setConditions(this._settings.get_string('condition-strip'));
-            break;
-        case 'condition-pos':
-            this._panel.setCondPos(this._settings.get_string('condition-pos'));
-            break;
-        case 'text-emboss':
-            this._panel.setEmboss(this._settings.get_boolean('text-emboss'));
-            break;
-        case 'hour-format':
-            this._panel.setHourFormat(this._resolveHour24());
-            break;
-        case 'text-emphasis':
-            this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
-            break;
-        case 'preview-scene':
-            this._previewScene();
-            break;
+            case 'auto-location':
+            case 'location-latitude':
+            case 'location-longitude':
+            case 'location-name':
+            case 'units':
+                this._panel.setPlaceName(this._placeName());
+                this._coordinator.scheduleLocationFetch();
+                break;
+            case 'refresh-minutes':
+                this._coordinator.restartTimer();
+                break;
+            case 'animate': {
+                const isAnimated = this._settings.get_boolean('animate');
+                this._icon.setAnimate(isAnimated);
+                this._panel.destroy();
+                this._rebuildPanel(isAnimated);
+                if (this._coordinator.data)
+                    this._update();
+                break;
+            }
+            case 'show-icon':
+                this._icon.visible = this._settings.get_boolean('show-icon');
+                break;
+            case 'show-temperature':
+            case 'windy-threshold':
+                if (this._coordinator.data)
+                    this._update();
+                break;
+            case 'provider':
+                this._coordinator.setProvider(this._settings.get_string('provider'));
+                break;
+            case 'om-model':
+                this._coordinator.setModel(this._settings.get_string('om-model'));
+                break;
+            case 'menu-style':
+                this._panel.setStyle(this._settings.get_string('menu-style'));
+                break;
+            case 'condition-strip':
+                this._panel.setConditions(this._settings.get_string('condition-strip'));
+                break;
+            case 'condition-pos':
+                this._panel.setCondPos(this._settings.get_string('condition-pos'));
+                break;
+            case 'text-emboss':
+                this._panel.setEmboss(this._settings.get_boolean('text-emboss'));
+                break;
+            case 'hour-format':
+                this._panel.setHourFormat(this._resolveHour24());
+                break;
+            case 'text-emphasis':
+                this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
+                break;
+            case 'preview-scene':
+                this._previewScene();
+                break;
         }
     }
 
@@ -358,18 +507,18 @@ class WeatherIndicator extends PanelMenu.Button {
         const scene = this._settings.get_string('preview-scene');
         if (!scene)
             return;
-        if (this._previewId)
-            GLib.source_remove(this._previewId);
+        if (this._previewTimeoutId)
+            GLib.source_remove(this._previewTimeoutId);
         this._icon.setScene(scene, {
             windy: ['sun', 'moon', 'partly', 'cloud', 'fog', 'wind'].includes(scene),
             night: scene === 'moon',
             intensity: 7,
             windKmh: 34,
         });
-        this._previewId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 12, () => {
-            this._previewId = 0;
+        this._previewTimeoutId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 12, () => {
+            this._previewTimeoutId = 0;
             this._settings.set_string('preview-scene', '');
-            if (this._data)
+            if (this._coordinator.data)
                 this._update();
             else
                 this._icon.setScene('loading');
@@ -377,24 +526,12 @@ class WeatherIndicator extends PanelMenu.Button {
         });
     }
 
-    _scheduleLocationFetch() {
-        if (this._locTimer)
-            return;
-        this._locTimer = GLib.timeout_add(GLib.PRIORITY_LOW, 250, () => {
-            this._locTimer = 0;
-            this._fetch(true);
-            return GLib.SOURCE_REMOVE;
-        });
-    }
-
     _rebuildPanel(animate) {
-        // ForecastPanel was built with a fixed animate flag; rebuild it.
         this._section.actor.remove_child(this._panel.actor);
         this._panel.destroy();
-        this._panel = new ForecastPanel({animate});
-        this._panel.onRefresh(() => this._fetch(true));
+        this._panel = new ForecastPanel({ animate });
+        this._panel.onRefresh(() => this._coordinator.fetch(true));
         this._panel.onSettings(() => this._ext.openPreferences());
-        // remember the live sky so the preferences legend can idle on it
         this._panel.onSky((scene, night) => {
             this._settings.set_string('live-scene', scene);
             this._settings.set_boolean('live-night', night);
@@ -404,63 +541,23 @@ class WeatherIndicator extends PanelMenu.Button {
         this._section.actor.add_child(this._panel.actor);
     }
 
-    /** 'auto' follows GNOME's clock-format (locale hour12 as fallback);
-     *  forcing 12h/24h bypasses both. */
-    _resolveHour24() {
-        const mode = this._settings.get_string('hour-format');
-        if (mode === '24h')
-            return true;
-        if (mode === '12h')
-            return false;
-        if (this._iface) {
-            try {
-                if (this._iface.get_string('clock-format'))
-                    return this._iface.get_string('clock-format').includes('24');
-            } catch {
-                // older GNOME: enum may be missing -- fall through
-            }
-        }
-        try {
-            return new Intl.DateTimeFormat(undefined, {hour: 'numeric'})
-                .resolvedOptions().hour12 === false;
-        } catch {
-            return false;
-        }
-    }
-
-    /** (re)apply all OS/settings look state a fresh panel needs */
-    _syncPanelLook() {
-        this._panel.setDark(this._dark);
-        this._panel.setAccent(this._accent);
-        this._panel.setHourFormat(this._resolveHour24());
-        this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
-        this._panel.setStyle(this._settings.get_string('menu-style'));
-        this._panel.setConditions(this._settings.get_string('condition-strip'));
-        this._panel.setCondPos(this._settings.get_string('condition-pos'));
-        this._panel.setEmboss(this._settings.get_boolean('text-emboss'));
-    }
-
-    /** OS accent colour as [r, g, b] 0..1: Adwaita swatch names or a custom
-     *  '#rrggbb'; anything unknown (or no schema) falls back to GNOME blue. */
-    _accentColor() {
-        const raw = (this._iface.get_string('accent-color') ?? '').trim().toLowerCase();
-        return ACCENTS[raw] ?? hexRgb(raw) ?? FALLBACK_ACCENT;
-    }
-
     destroy() {
-        this._dead = true;   // async _fetch continuations check this
-        if (this._timer)
-            GLib.source_remove(this._timer);
-        if (this._locTimer)
-            GLib.source_remove(this._locTimer);
-        if (this._previewId)
-            GLib.source_remove(this._previewId);
-        if (this._settingsId)
-            this._settings.disconnect(this._settingsId);
-        if (this._darkId && this._iface)
-            this._iface.disconnect(this._darkId);
-        if (this._openId)
-            this.menu.disconnect(this._openId);
+        if (this._previewTimeoutId) {
+            GLib.source_remove(this._previewTimeoutId);
+            this._previewTimeoutId = 0;
+        }
+        if (this._settingsChangedId) {
+            this._settings.disconnect(this._settingsChangedId);
+            this._settingsChangedId = 0;
+        }
+        if (this._menuOpenChangedId) {
+            this.menu.disconnect(this._menuOpenChangedId);
+            this._menuOpenChangedId = 0;
+        }
+        this._coordinator?.destroy();
+        this._coordinator = null;
+        this._themeWatcher?.destroy();
+        this._themeWatcher = null;
         this._panel?.destroy();
         this._panel = null;
         super.destroy();

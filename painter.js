@@ -5,7 +5,7 @@ import {paintMoon, moonPhase, illumOf} from './moon.js';
 
 export const GRID = 24;
 
-const TAU = Math.PI * 2;
+const TWO_PI = Math.PI * 2;
 
 function rand(min, max) {
     return min + Math.random() * (max - min);
@@ -14,21 +14,21 @@ function rand(min, max) {
 export function createParticles() {
     const drops = [];
     for (let i = 0; i < 16; i++)
-        drops.push({x: rand(3, 21), y: rand(9, 24), len: rand(1.6, 3.2), sp: rand(11, 18)});
+        drops.push({x: rand(3, 21), y: rand(9, 24), length: rand(1.6, 3.2), speed: rand(11, 18)});
     const flakes = [];
     for (let i = 0; i < 12; i++)
-        flakes.push({x: rand(3, 21), y: rand(9, 24), r: rand(0.8, 1.4),
-                     sp: rand(2.5, 4.5), ph: rand(0, TAU)});
+        flakes.push({x: rand(3, 21), y: rand(9, 24), radius: rand(0.8, 1.4),
+                     speed: rand(2.5, 4.5), phase: rand(0, TWO_PI)});
     const hail = [];
     for (let i = 0; i < 10; i++) {
         // scatter initial heights so the first cycle doesn't fall in unison
         hail.push(Object.assign(newHailStone(), {y: rand(9, FLOOR), vy: rand(2, 9)}));
     }
     const stars = [
-        {x: 19.5, y: 4.5, ph: 0.0}, {x: 21.5, y: 9, ph: 1.7},
-        {x: 17.5, y: 8, ph: 3.1}, {x: 20.5, y: 13.5, ph: 4.4},
+        {x: 19.5, y: 4.5, phase: 0.0}, {x: 21.5, y: 9, phase: 1.7},
+        {x: 17.5, y: 8, phase: 3.1}, {x: 20.5, y: 13.5, phase: 4.4},
     ];
-    return {drops, flakes, hail, stars, lastT: null};
+    return {drops, flakes, hail, stars, lastTime: null, lastT: null};
 }
 
 const FLOOR = 21.8;   // where hailstones bounce
@@ -37,13 +37,13 @@ function newHailStone() {
     return {
         x: rand(3, 21), y: rand(8.5, 11),
         vx: rand(-1, 1.5), vy: rand(6, 10),
-        r: rand(0.7, 1.25), bounces: 0,
+        radius: rand(0.7, 1.25), bounces: 0,
     };
 }
 
-function circle(cr, x, y, r) {
+function circle(cr, x, y, radius) {
     cr.newSubPath();
-    cr.arc(x, y, r, 0, TAU);
+    cr.arc(x, y, radius, 0, TWO_PI);
 }
 
 function line(cr, x1, y1, x2, y2) {
@@ -52,15 +52,15 @@ function line(cr, x1, y1, x2, y2) {
 }
 
 /** Puffy cloud made of three bumps over a flat base, one gradient fill. */
-function cloud(cr, cx, cy, s, top, bot, alpha = 1) {
-    const g = new Cairo.LinearGradient(0, cy - 5 * s, 0, cy + 2.4 * s);
-    g.addColorStopRGBA(0, top[0], top[1], top[2], alpha);
-    g.addColorStopRGBA(1, bot[0], bot[1], bot[2], alpha);
-    cr.setSource(g);
-    circle(cr, cx - 3.2 * s, cy - 0.3 * s, 2.4 * s);
-    circle(cr, cx + 3.1 * s, cy - 0.1 * s, 2.6 * s);
-    circle(cr, cx,          cy - 1.8 * s, 3.2 * s);
-    cr.rectangle(cx - 5.6 * s, cy - 0.5 * s, 11.2 * s, 2.9 * s);
+function cloud(cr, centerX, centerY, scale, topColor, bottomColor, alpha = 1) {
+    const gradient = new Cairo.LinearGradient(0, centerY - 5 * scale, 0, centerY + 2.4 * scale);
+    gradient.addColorStopRGBA(0, topColor[0], topColor[1], topColor[2], alpha);
+    gradient.addColorStopRGBA(1, bottomColor[0], bottomColor[1], bottomColor[2], alpha);
+    cr.setSource(gradient);
+    circle(cr, centerX - 3.2 * scale, centerY - 0.3 * scale, 2.4 * scale);
+    circle(cr, centerX + 3.1 * scale, centerY - 0.1 * scale, 2.6 * scale);
+    circle(cr, centerX,               centerY - 1.8 * scale, 3.2 * scale);
+    cr.rectangle(centerX - 5.6 * scale, centerY - 0.5 * scale, 11.2 * scale, 2.9 * scale);
     cr.fill();
 }
 
@@ -80,11 +80,11 @@ const INK_SPIN   = () => _light ? [0.28, 0.33, 0.40] : [0.85, 0.88, 0.92];
 const INK_MOON_EDGE = () => _light ? [0.24, 0.30, 0.40, 0.85] : null;
 
 /** Flowing dash "wind streak" across the full width of the scene. */
-function streak(cr, y, lw, alpha, dashOn, dashOff, offset, color = null) {
-    const c = color ?? INK_STREAK();
+function streak(cr, y, lineWidth, alpha, dashOn, dashOff, offset, color = null) {
+    const chosenColor = color ?? INK_STREAK();
     cr.save();
-    cr.setSourceRGBA(c[0], c[1], c[2], alpha);
-    cr.setLineWidth(lw);
+    cr.setSourceRGBA(chosenColor[0], chosenColor[1], chosenColor[2], alpha);
+    cr.setLineWidth(lineWidth);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setDash([dashOn, dashOff], offset);
     cr.moveTo(-2, y);
@@ -94,59 +94,66 @@ function streak(cr, y, lw, alpha, dashOn, dashOff, offset, color = null) {
 }
 
 /** A few wind streaks, used for the windy scene and as an overlay. */
-function windStreaks(cr, t, alphaScale, count = 3) {
+function windStreaks(cr, time, alphaScale, count = 3) {
     for (let i = 0; i < count; i++) {
         const y = 5.5 + i * (13 / Math.max(count - 1, 1));
-        const sp = 3.2 + i * 0.9;
-        streak(cr, y + Math.sin(t * 0.8 + i * 2.1) * 0.5,
+        const speed = 3.2 + i * 0.9;
+        streak(cr, y + Math.sin(time * 0.8 + i * 2.1) * 0.5,
                0.9 + (i % 2) * 0.35,
                (0.45 + 0.25 * ((i + 1) % 3)) * alphaScale,
                5 + i, 4.5 + i * 0.7,
-               -(t * sp) % 9.5);
+               -(time * speed) % 9.5);
     }
 }
 
 /** Raindrops, advanced with the shared particle clock. */
-function rainDrops(cr, p, t, count, slant, alpha) {
-    const dt = p.lastT === null ? 0 : Math.min(0.06, t - p.lastT);
+function rainDrops(cr, particles, time, count, slant, alpha) {
+    const lastTime = particles.lastTime ?? particles.lastT;
+    const dt = lastTime === null ? 0 : Math.min(0.06, time - lastTime);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineWidth(1.0);
-    const c = INK_WATER();
-    cr.setSourceRGBA(c[0], c[1], c[2], alpha);
+    const waterColor = INK_WATER();
+    cr.setSourceRGBA(waterColor[0], waterColor[1], waterColor[2], alpha);
     for (let i = 0; i < count; i++) {
-        const d = p.drops[i];
-        d.y += d.sp * dt;
-        if (d.y > 23.5) {
-            d.y = rand(9.3, 11);
-            d.x = rand(2.5, 21.5);
+        const drop = particles.drops[i];
+        const speed = drop.speed ?? drop.sp;
+        const length = drop.length ?? drop.len;
+        drop.y += speed * dt;
+        if (drop.y > 23.5) {
+            drop.y = rand(9.3, 11);
+            drop.x = rand(2.5, 21.5);
         }
-        line(cr, d.x, d.y, d.x - slant * d.len, d.y + d.len);
+        line(cr, drop.x, drop.y, drop.x - slant * length, drop.y + length);
     }
     cr.stroke();
 }
 
 /** Snowflakes (six spokes), drifting side to side. */
-function snowFlakes(cr, p, t, count) {
-    const dt = p.lastT === null ? 0 : Math.min(0.06, t - p.lastT);
+function snowFlakes(cr, particles, time, count) {
+    const lastTime = particles.lastTime ?? particles.lastT;
+    const dt = lastTime === null ? 0 : Math.min(0.06, time - lastTime);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineWidth(0.55);
     for (let i = 0; i < count; i++) {
-        const f = p.flakes[i];
-        f.y += f.sp * dt;
-        if (f.y > 23.5) {
-            f.y = rand(9.3, 11);
-            f.x = rand(3, 21);
+        const flake = particles.flakes[i];
+        const speed = flake.speed ?? flake.sp;
+        const phase = flake.phase ?? flake.ph;
+        const radius = flake.radius ?? flake.r;
+        flake.y += speed * dt;
+        if (flake.y > 23.5) {
+            flake.y = rand(9.3, 11);
+            flake.x = rand(3, 21);
         }
-        const x = f.x + Math.sin(t * 1.4 + f.ph) * 1.1;
-        const rot = t * 1.2 + f.ph;
+        const x = flake.x + Math.sin(time * 1.4 + phase) * 1.1;
+        const rot = time * 1.2 + phase;
         cr.save();
-        cr.translate(x, f.y);
+        cr.translate(x, flake.y);
         cr.rotate(rot);
-        const c = INK_FLAKE();
-        cr.setSourceRGBA(c[0], c[1], c[2], 0.95);
+        const flakeColor = INK_FLAKE();
+        cr.setSourceRGBA(flakeColor[0], flakeColor[1], flakeColor[2], 0.95);
         for (let k = 0; k < 6; k++) {
-            const a = (k / 6) * TAU;
-            line(cr, 0, 0, Math.cos(a) * f.r, Math.sin(a) * f.r);
+            const angle = (k / 6) * TWO_PI;
+            line(cr, 0, 0, Math.cos(angle) * radius, Math.sin(angle) * radius);
         }
         cr.stroke();
         cr.restore();
@@ -154,174 +161,177 @@ function snowFlakes(cr, p, t, count) {
 }
 
 /** Hailstones: fall under gravity, bounce & scatter on the floor, respawn. */
-function hailStones(cr, p, t, count) {
-    const dt = p.lastT === null ? 0 : Math.min(0.06, t - p.lastT);
+function hailStones(cr, particles, time, count) {
+    const lastTime = particles.lastTime ?? particles.lastT;
+    const dt = lastTime === null ? 0 : Math.min(0.06, time - lastTime);
     for (let i = 0; i < count; i++) {
-        const h = p.hail[i];
-        h.vy += 24 * dt;                  // gravity
-        h.x += h.vx * dt;
-        h.y += h.vy * dt;
-        if (h.y >= FLOOR && h.vy > 0) {   // bounce with energy loss
-            h.y = FLOOR;
-            h.vy *= -0.42;
-            h.vx = rand(-3, 3);
-            h.bounces++;
+        const stone = particles.hail[i];
+        const radius = stone.radius ?? stone.r;
+        stone.vy += 24 * dt;                  // gravity
+        stone.x += stone.vx * dt;
+        stone.y += stone.vy * dt;
+        if (stone.y >= FLOOR && stone.vy > 0) {   // bounce with energy loss
+            stone.y = FLOOR;
+            stone.vy *= -0.42;
+            stone.vx = rand(-3, 3);
+            stone.bounces++;
         }
-        if (h.bounces > 2 || Math.abs(h.vy) < 0.6 && h.bounces > 0 ||
-            h.x < -1 || h.x > 25)
-            Object.assign(h, newHailStone());
-        const sc = INK_STONE();
-        cr.setSourceRGBA(sc[0], sc[1], sc[2], 0.95);
-        circle(cr, h.x, h.y, h.r);
+        if (stone.bounces > 2 || (Math.abs(stone.vy) < 0.6 && stone.bounces > 0) ||
+            stone.x < -1 || stone.x > 25)
+            Object.assign(stone, newHailStone());
+        const stoneColor = INK_STONE();
+        cr.setSourceRGBA(stoneColor[0], stoneColor[1], stoneColor[2], 0.95);
+        circle(cr, stone.x, stone.y, radius);
         cr.fill();
         cr.setSourceRGBA(1, 1, 1, 0.55);  // glint
-        circle(cr, h.x - h.r * 0.3, h.y - h.r * 0.35, h.r * 0.35);
+        circle(cr, stone.x - radius * 0.3, stone.y - radius * 0.35, radius * 0.35);
         cr.fill();
     }
 }
 
-function sunBody(cr, cx, cy, r, t, rayLen) {
+function sunBody(cr, centerX, centerY, radius, time, rayLength) {
     // soft pulsing glow
-    const glow = new Cairo.RadialGradient(cx, cy, r * 0.5, cx, cy, r * 2.15);
+    const glow = new Cairo.RadialGradient(centerX, centerY, radius * 0.5, centerX, centerY, radius * 2.15);
     glow.addColorStopRGBA(0, 1, 0.78, 0.15, 0.5);
     glow.addColorStopRGBA(1, 1, 0.62, 0.0, 0);
     cr.setSource(glow);
-    cr.paintWithAlpha(0.75 + 0.25 * Math.sin(t * 1.7));
+    cr.paintWithAlpha(0.75 + 0.25 * Math.sin(time * 1.7));
 
     // slowly rotating rays
     cr.save();
-    cr.translate(cx, cy);
-    cr.rotate(t * 0.45);
+    cr.translate(centerX, centerY);
+    cr.rotate(time * 0.45);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineWidth(1.5);
     cr.setSourceRGBA(1.0, 0.72, 0.10, 0.95);
-    const len = rayLen * (1 + 0.12 * Math.sin(t * 2.3));
+    const dynamicLength = rayLength * (1 + 0.12 * Math.sin(time * 2.3));
     for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * TAU;
-        const c = Math.cos(a), s = Math.sin(a);
+        const angle = (i / 8) * TWO_PI;
+        const cosAngle = Math.cos(angle), sinAngle = Math.sin(angle);
         cr.newSubPath();
-        cr.moveTo(c * (r + 1.1), s * (r + 1.1));
-        cr.lineTo(c * (r + 1.1 + len), s * (r + 1.1 + len));
+        cr.moveTo(cosAngle * (radius + 1.1), sinAngle * (radius + 1.1));
+        cr.lineTo(cosAngle * (radius + 1.1 + dynamicLength), sinAngle * (radius + 1.1 + dynamicLength));
     }
     cr.stroke();
     cr.restore();
 
     // core
-    const core = new Cairo.RadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.2,
-                                          cx, cy, r);
+    const core = new Cairo.RadialGradient(centerX - radius * 0.35, centerY - radius * 0.35, radius * 0.2,
+                                          centerX, centerY, radius);
     core.addColorStopRGB(0, 1.0, 0.93, 0.55);
     core.addColorStopRGB(1, 1.0, 0.71, 0.10);
     cr.setSource(core);
-    circle(cr, cx, cy, r);
+    circle(cr, centerX, centerY, radius);
     cr.fill();
 }
 
-function moonBody(cr, cx, cy, r, t, p, phase) {
-    const ph = Number.isFinite(phase) ? phase : moonPhase().phase;
+function moonBody(cr, centerX, centerY, radius, time, particles, phase) {
+    const lunarPhase = Number.isFinite(phase) ? phase : moonPhase().phase;
     if (!_light) {
-        const glow = new Cairo.RadialGradient(cx, cy, r * 0.5, cx, cy, r * 2.2);
-        glow.addColorStopRGBA(0, 0.86, 0.87, 0.97, 0.30 * (0.25 + 0.75 * illumOf(ph)));
+        const glow = new Cairo.RadialGradient(centerX, centerY, radius * 0.5, centerX, centerY, radius * 2.2);
+        glow.addColorStopRGBA(0, 0.86, 0.87, 0.97, 0.30 * (0.25 + 0.75 * illumOf(lunarPhase)));
         glow.addColorStopRGBA(1, 0.86, 0.87, 0.97, 0);
         cr.setSource(glow);
         cr.paint();
     }
 
-    paintMoon(cr, cx, cy, r, ph, 'icon',
+    paintMoon(cr, centerX, centerY, radius, lunarPhase, 'icon',
               {outline: INK_MOON_EDGE(),
                face: _light ? [0.84, 0.86, 0.90] : null});
 
     // twinkling stars
-    const sc = INK_STAR();
-    for (const s of p.stars) {
-        const a = 0.35 + 0.6 * Math.abs(Math.sin(t * 1.3 + s.ph));
-        cr.setSourceRGBA(sc[0], sc[1], sc[2], a);
-        circle(cr, s.x, s.y, 0.55);
+    const starColor = INK_STAR();
+    for (const star of particles.stars) {
+        const starPhase = star.phase ?? star.ph;
+        const alpha = 0.35 + 0.6 * Math.abs(Math.sin(time * 1.3 + starPhase));
+        cr.setSourceRGBA(starColor[0], starColor[1], starColor[2], alpha);
+        circle(cr, star.x, star.y, 0.55);
         cr.fill();
     }
 }
 
 function sceneSun(cr, ctx) {
-    const {t, windy} = ctx;
-    sunBody(cr, 12, 12, 4.6, t, 3.6);
+    const {time, windy} = ctx;
+    sunBody(cr, 12, 12, 4.6, time, 3.6);
     if (windy)
-        windStreaks(cr, t, 0.45, 2);
+        windStreaks(cr, time, 0.45, 2);
 }
 
 function sceneMoon(cr, ctx) {
-    const {t, p, windy} = ctx;
-    moonBody(cr, 12, 12, 4.8, t, p, ctx.phase);
+    const {time, particles, windy, phase} = ctx;
+    moonBody(cr, 12, 12, 4.8, time, particles, phase);
     if (windy)
-        windStreaks(cr, t, 0.45, 2);
+        windStreaks(cr, time, 0.45, 2);
 }
 
 function scenePartly(cr, ctx) {
-    const {t, windy, night} = ctx;
+    const {time, windy, night, particles, phase} = ctx;
     if (night)
-        moonBody(cr, 8.5, 8, 3.6, t, ctx.p, ctx.phase);
+        moonBody(cr, 8.5, 8, 3.6, time, particles, phase);
     else
-        sunBody(cr, 8.5, 8, 3.6, t, 2.6);
-    const dx = Math.sin(t * 0.7) * 0.7;
+        sunBody(cr, 8.5, 8, 3.6, time, 2.6);
+    const dx = Math.sin(time * 0.7) * 0.7;
     cloud(cr, 13.5 + dx, 15, 0.85, CLOUD_LIGHT[0], CLOUD_LIGHT[1]);
     if (windy)
-        windStreaks(cr, t, 0.4, 2);
+        windStreaks(cr, time, 0.4, 2);
 }
 
 function sceneCloud(cr, ctx) {
-    const {t, windy} = ctx;
-    cloud(cr, 9.5 - Math.sin(t * 0.5) * 0.8, 8.5, 0.62, CLOUD_LIGHT[0], CLOUD_LIGHT[1], 0.65);
-    cloud(cr, 13 + Math.sin(t * 0.6) * 0.7, 14, 0.95, CLOUD_LIGHT[0], CLOUD_LIGHT[1]);
+    const {time, windy} = ctx;
+    cloud(cr, 9.5 - Math.sin(time * 0.5) * 0.8, 8.5, 0.62, CLOUD_LIGHT[0], CLOUD_LIGHT[1], 0.65);
+    cloud(cr, 13 + Math.sin(time * 0.6) * 0.7, 14, 0.95, CLOUD_LIGHT[0], CLOUD_LIGHT[1]);
     if (windy)
-        windStreaks(cr, t, 0.4, 2);
+        windStreaks(cr, time, 0.4, 2);
 }
 
 function sceneFog(cr, ctx) {
-    const {t} = ctx;
-    cloud(cr, 12 + Math.sin(t * 0.5) * 0.5, 8, 0.7, CLOUD_LIGHT[0], CLOUD_LIGHT[1], 0.8);
+    const {time} = ctx;
+    cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 8, 0.7, CLOUD_LIGHT[0], CLOUD_LIGHT[1], 0.8);
     for (let i = 0; i < 3; i++) {
-        const fc = INK_FOG();
+        const fogColor = INK_FOG();
         streak(cr, 14.5 + i * 3.2, 1.7, 0.40 - i * 0.06, 7, 3.5,
-               -(t * (2.4 + i)) % 10.5, fc);
+               -(time * (2.4 + i)) % 10.5, fogColor);
     }
 }
 
 function sceneRain(cr, ctx) {
-    const {t, p, intensity, windKmh, windy} = ctx;
-    cloud(cr, 12 + Math.sin(t * 0.5) * 0.5, 7.5, 0.95, CLOUD_RAIN[0], CLOUD_RAIN[1]);
-    const count = 7 + Math.min(9, Math.round(intensity * 2.2));
+    const {time, particles, intensity, windKmh, windy} = ctx;
+    cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 7.5, 0.95, CLOUD_RAIN[0], CLOUD_RAIN[1]);
+    const dropCount = 7 + Math.min(9, Math.round(intensity * 2.2));
     const slant = Math.min(0.9, windKmh / 45);
-    rainDrops(cr, p, t, count, slant, 0.9);
+    rainDrops(cr, particles, time, dropCount, slant, 0.9);
     if (windy)
-        windStreaks(cr, t, 0.35, 2);
+        windStreaks(cr, time, 0.35, 2);
 }
 
 function sceneSnow(cr, ctx) {
-    const {t, p, intensity, windy} = ctx;
-    cloud(cr, 12 + Math.sin(t * 0.5) * 0.5, 7.5, 0.92, CLOUD_RAIN[0], CLOUD_RAIN[1]);
-    const count = 6 + Math.min(6, Math.round(intensity * 1.8));
-    snowFlakes(cr, p, t, count);
+    const {time, particles, intensity, windy} = ctx;
+    cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 7.5, 0.92, CLOUD_RAIN[0], CLOUD_RAIN[1]);
+    const flakeCount = 6 + Math.min(6, Math.round(intensity * 1.8));
+    snowFlakes(cr, particles, time, flakeCount);
     if (windy)
-        windStreaks(cr, t, 0.35, 2);
+        windStreaks(cr, time, 0.35, 2);
 }
 
 /** Sleet / freezing rain: half drops, half flakes, extra slant. */
 function sceneSleet(cr, ctx) {
-    const {t, p, intensity, windKmh, windy} = ctx;
-    cloud(cr, 12 + Math.sin(t * 0.5) * 0.5, 7.5, 0.92, CLOUD_RAIN[0], CLOUD_RAIN[1]);
-    const n = 5 + Math.min(5, Math.round(intensity * 1.4));
-    rainDrops(cr, p, t, n, Math.min(1.1, windKmh / 36 + 0.25), 0.8);
-    snowFlakes(cr, p, t, Math.max(4, n - 2));
+    const {time, particles, intensity, windKmh, windy} = ctx;
+    cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 7.5, 0.92, CLOUD_RAIN[0], CLOUD_RAIN[1]);
+    const count = 5 + Math.min(5, Math.round(intensity * 1.4));
+    rainDrops(cr, particles, time, count, Math.min(1.1, windKmh / 36 + 0.25), 0.8);
+    snowFlakes(cr, particles, time, Math.max(4, count - 2));
     if (windy)
-        windStreaks(cr, t, 0.35, 2);
+        windStreaks(cr, time, 0.35, 2);
 }
 
 /** Hail: dark storm cloud, a few hard rain streaks, bouncing ice stones. */
 function sceneHail(cr, ctx) {
-    const {t, p, windKmh, windy} = ctx;
-    cloud(cr, 12 + Math.sin(t * 0.45) * 0.5, 7.2, 0.98, CLOUD_DARK[0], CLOUD_DARK[1]);
-    rainDrops(cr, p, t, 5, Math.min(0.9, windKmh / 45), 0.5);
-    hailStones(cr, p, t, p.hail.length);
+    const {time, particles, windKmh, windy} = ctx;
+    cloud(cr, 12 + Math.sin(time * 0.45) * 0.5, 7.2, 0.98, CLOUD_DARK[0], CLOUD_DARK[1]);
+    rainDrops(cr, particles, time, 5, Math.min(0.9, windKmh / 45), 0.5);
+    hailStones(cr, particles, time, particles.hail.length);
     if (windy)
-        windStreaks(cr, t, 0.35, 2);
+        windStreaks(cr, time, 0.35, 2);
 }
 
 const BOLTS = [
@@ -330,18 +340,18 @@ const BOLTS = [
 ];
 
 function sceneStorm(cr, ctx) {
-    const {t, p, intensity, windKmh, windy} = ctx;
-    cloud(cr, 12 + Math.sin(t * 0.4) * 0.5, 7.2, 1.0, CLOUD_DARK[0], CLOUD_DARK[1]);
-    rainDrops(cr, p, t, 8 + Math.min(8, Math.round(intensity * 2)), Math.min(0.9, windKmh / 45), 0.85);
+    const {time, particles, intensity, windKmh, windy} = ctx;
+    cloud(cr, 12 + Math.sin(time * 0.4) * 0.5, 7.2, 1.0, CLOUD_DARK[0], CLOUD_DARK[1]);
+    rainDrops(cr, particles, time, 8 + Math.min(8, Math.round(intensity * 2)), Math.min(0.9, windKmh / 45), 0.85);
 
     // double-flick lightning every ~2.8 s, alternating bolt shape
-    const cycle = Math.floor(t / 2.8);
-    const c = t % 2.8;
+    const cycle = Math.floor(time / 2.8);
+    const cycleFraction = time % 2.8;
     let flash = 0;
-    if (c < 0.07)       flash = c / 0.07;
-    else if (c < 0.14)  flash = 1 - (c - 0.07) / 0.07;
-    else if (c < 0.20)  flash = 0.6 * (c - 0.14) / 0.06;
-    else if (c < 0.28)  flash = 0.6 * (1 - (c - 0.20) / 0.08);
+    if (cycleFraction < 0.07)       flash = cycleFraction / 0.07;
+    else if (cycleFraction < 0.14)  flash = 1 - (cycleFraction - 0.07) / 0.07;
+    else if (cycleFraction < 0.20)  flash = 0.6 * (cycleFraction - 0.14) / 0.06;
+    else if (cycleFraction < 0.28)  flash = 0.6 * (1 - (cycleFraction - 0.20) / 0.08);
     if (flash > 0) {
         // soft sky glow behind the bolt
         const glow = new Cairo.RadialGradient(12, 12, 2, 12, 12, 15);
@@ -366,33 +376,33 @@ function sceneStorm(cr, ctx) {
         cr.restore();
     }
     if (windy)
-        windStreaks(cr, t, 0.3, 2);
+        windStreaks(cr, time, 0.3, 2);
 }
 
 /** Curling gust that travels across the scene (wind-scene garnish). */
-function gustCurl(cr, x, y, s, alpha) {
+function gustCurl(cr, x, y, scale, alpha) {
     cr.save();
     cr.translate(x, y);
     cr.setSourceRGBA(0.55, 0.85, 1.0, alpha);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineWidth(0.8);
     cr.newPath();
-    cr.arc(0, 0, s, Math.PI * 0.9, Math.PI * 2.2);     // open spiral
+    cr.arc(0, 0, scale, Math.PI * 0.9, Math.PI * 2.2);     // open spiral
     cr.stroke();
     cr.newPath();
-    cr.arc(s * 0.5, s * 0.4, s * 0.45, Math.PI * 1.1, Math.PI * 2.5);
+    cr.arc(scale * 0.5, scale * 0.4, scale * 0.45, Math.PI * 1.1, Math.PI * 2.5);
     cr.stroke();
     cr.restore();
 }
 
 function sceneWind(cr, ctx) {
-    const {t} = ctx;
-    windStreaks(cr, t, 1.0, 4);
+    const {time} = ctx;
+    windStreaks(cr, time, 1.0, 4);
     // one longer high streak for depth
-    streak(cr, 3.2 + Math.sin(t) * 0.4, 0.7, 0.35, 3.5, 6, -(t * 5) % 9.5);
+    streak(cr, 3.2 + Math.sin(time) * 0.4, 0.7, 0.35, 3.5, 6, -(time * 5) % 9.5);
     // two curling gusts sweeping left->right at different depths
-    gustCurl(cr, (t * 4.4) % 28 - 2, 8.5 + Math.sin(t * 1.6) * 0.8, 1.5, 0.6);
-    gustCurl(cr, ((t * 3.1) % 28) - 2 + 9, 16 + Math.cos(t * 1.2) * 0.8, 1.1, 0.4);
+    gustCurl(cr, (time * 4.4) % 28 - 2, 8.5 + Math.sin(time * 1.6) * 0.8, 1.5, 0.6);
+    gustCurl(cr, ((time * 3.1) % 28) - 2 + 9, 16 + Math.cos(time * 1.2) * 0.8, 1.1, 0.4);
 }
 
 function sceneError(cr) {
@@ -403,13 +413,13 @@ function sceneError(cr) {
     cr.selectFontFace('Sans', Cairo.FontSlant.NORMAL, Cairo.FontWeight.BOLD);
     cr.setFontSize(11);
     cr.setSourceRGBA(0.95, 0.45, 0.40, 0.95);
-    const ext = cr.textExtents('!');
-    cr.moveTo(12 - ext.xAdvance / 2 - ext.xBearing, 12 - ext.yBearing - ext.height / 2);
+    const extents = cr.textExtents('!');
+    cr.moveTo(12 - extents.xAdvance / 2 - extents.xBearing, 12 - extents.yBearing - extents.height / 2);
     cr.showText('!');
 }
 
 function sceneLoading(cr, ctx) {
-    const {t} = ctx;
+    const {time} = ctx;
     cr.save();
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineWidth(2);
@@ -417,10 +427,10 @@ function sceneLoading(cr, ctx) {
     circle(cr, 12, 12, 6);
     cr.stroke();
     cr.newPath();
-    const a = t * 4;
-    cr.arc(12, 12, 6, a, a + Math.PI * 1.1);
-    const c = INK_SPIN();
-    cr.setSourceRGBA(c[0], c[1], c[2], 0.95);
+    const angle = time * 4;
+    cr.arc(12, 12, 6, angle, angle + Math.PI * 1.1);
+    const spinColor = INK_SPIN();
+    cr.setSourceRGBA(spinColor[0], spinColor[1], spinColor[2], 0.95);
     cr.stroke();
     cr.restore();
 }
@@ -444,11 +454,14 @@ const SCENES = {
  *   windKmh    wind speed in km/h, drives rain slant
  */
 export function paintWeather(cr, opts) {
-    const p = opts.particles || createParticles();
+    const particles = opts.particles || createParticles();
     _light = opts.dark === false;          // one palette decision per frame
+    const currentTime = opts.time || 0;
     const ctx = {
-        t: opts.time || 0,
-        p,
+        time: currentTime,
+        t: currentTime,
+        particles,
+        p: particles,
         windy: !!opts.windy,
         night: !!opts.night,
         intensity: opts.intensity || 0,
@@ -457,8 +470,9 @@ export function paintWeather(cr, opts) {
     };
     cr.save();
     // fade rain/storm drops out from under the cloud
-    const fn = SCENES[opts.scene] || sceneError;
-    fn(cr, ctx);
+    const sceneRenderer = SCENES[opts.scene] || sceneError;
+    sceneRenderer(cr, ctx);
     cr.restore();
-    p.lastT = ctx.t;   // advance the shared particle clock for the next frame
+    particles.lastTime = currentTime;
+    particles.lastT = currentTime;   // advance the shared particle clock for the next frame
 }

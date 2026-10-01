@@ -2,11 +2,12 @@
 
 import Cairo from 'gi://cairo';
 
-const TAU = Math.PI * 2;
+const TWO_PI = Math.PI * 2;
 
 // Mean synodic month (days) and a reference new moon: 2000-01-06 18:14 UTC.
-const SYNODIC = 29.530588853;
+const SYNODIC_MONTH_DAYS = 29.530588853;
 const NEW_MOON_EPOCH = Date.UTC(2000, 0, 6, 18, 14, 0);
+const MILLISECONDS_PER_DAY = 86400000;
 
 const PHASE_NAMES = [
     [0.03, 'New Moon'], [0.22, 'Waxing Crescent'], [0.28, 'First Quarter'],
@@ -16,17 +17,17 @@ const PHASE_NAMES = [
 
 /** Illuminated fraction 0..1 for a phase value (0..1). */
 export function illumOf(phase) {
-    return (1 - Math.cos(TAU * (((phase % 1) + 1) % 1))) / 2;
+    return (1 - Math.cos(TWO_PI * (((phase % 1) + 1) % 1))) / 2;
 }
 
 /** {phase 0..1, illum 0..1, waxing bool, name} for the given date (default now). */
 export function moonPhase(date = new Date()) {
-    const days = (date.getTime() - NEW_MOON_EPOCH) / 86400000;
-    let phase = (days % SYNODIC) / SYNODIC;
+    const daysSinceEpoch = (date.getTime() - NEW_MOON_EPOCH) / MILLISECONDS_PER_DAY;
+    let phase = (daysSinceEpoch % SYNODIC_MONTH_DAYS) / SYNODIC_MONTH_DAYS;
     if (phase < 0)
         phase += 1;
-    const illum = (1 - Math.cos(TAU * phase)) / 2;
-    const name = PHASE_NAMES.find(b => phase < b[0])[1];
+    const illum = (1 - Math.cos(TWO_PI * phase)) / 2;
+    const name = PHASE_NAMES.find(([threshold]) => phase < threshold)[1];
     return { phase, illum, waxing: phase < 0.5, name };
 }
 
@@ -52,13 +53,13 @@ const SPECKS = [
 ];
 
 function prng(seed) {
-    let a = seed >>> 0;
+    let state = seed >>> 0;
     return () => {
-        a |= 0;
-        a = (a + 0x6D2B79F5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        state |= 0;
+        state = (state + 0x6D2B79F5) | 0;
+        let temp = Math.imul(state ^ (state >>> 15), 1 | state);
+        temp = (temp + Math.imul(temp ^ (temp >>> 7), 61 | temp)) ^ temp;
+        return ((temp ^ (temp >>> 14)) >>> 0) / 4294967296;
     };
 }
 
@@ -66,16 +67,16 @@ let mariaCache = null;
 function mariaCircles() {
     if (!mariaCache) {
         mariaCache = [];
-        for (const [cx, cy, rad, seed] of MARIA_SPOTS) {
-            const rnd = prng(seed);
-            const n = 8;
-            for (let i = 0; i < n; i++) {
-                const a = (i / n) * TAU + rnd() * 0.8;
-                const d = rad * (0.3 + rnd() * 0.80);
+        for (const [centerX, centerY, radius, seed] of MARIA_SPOTS) {
+            const random = prng(seed);
+            const spotCount = 8;
+            for (let i = 0; i < spotCount; i++) {
+                const angle = (i / spotCount) * TWO_PI + random() * 0.8;
+                const distance = radius * (0.3 + random() * 0.80);
                 mariaCache.push([
-                    cx + Math.cos(a) * d,
-                    cy + Math.sin(a) * d * 0.85,
-                    rad * (0.36 + rnd() * 0.34),
+                    centerX + Math.cos(angle) * distance,
+                    centerY + Math.sin(angle) * distance * 0.85,
+                    radius * (0.36 + random() * 0.34),
                 ]);
             }
         }
@@ -83,36 +84,36 @@ function mariaCircles() {
     return mariaCache;
 }
 
-function litPath(cr, r, phase) {
-    const s = Math.cos(TAU * phase);   // signed terminator x-radius / r
+function litPath(cr, radius, phase) {
+    const terminatorScale = Math.cos(TWO_PI * phase);   // signed terminator x-radius / radius
     cr.newPath();
-    cr.arc(0, 0, r, -Math.PI / 2, Math.PI / 2);     // limb: top -> right -> bottom
+    cr.arc(0, 0, radius, -Math.PI / 2, Math.PI / 2);     // limb: top -> right -> bottom
     cr.save();
-    cr.scale(s, 1);                                  // sign swings the bulge L/R
-    (cr.arcNegative ?? cr.arc_negative).call(cr, 0, 0, r, Math.PI / 2, -Math.PI / 2);
-    cr.restore();                                    // terminator: bottom -> top
+    cr.scale(terminatorScale, 1);                         // sign swings the bulge L/R
+    (cr.arcNegative ?? cr.arc_negative).call(cr, 0, 0, radius, Math.PI / 2, -Math.PI / 2);
+    cr.restore();                                        // terminator: bottom -> top
     cr.closePath();
 }
 
 /**
- * paintMoon(cr, cx, cy, r, phase, style, opts)
+ * paintMoon(cr, centerX, centerY, radius, phase, style, opts)
  *   style 'icon' -- flat warm-lit disc, transparent unlit part (crisp at 24px)
  *   style 'sky'  -- pale soft sphere: gentle shading + low-contrast maria
  * opts: reserved.
  */
-export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
+export function paintMoon(cr, centerX, centerY, radius, phase, style = 'sky', opts = {}) {
     const { illum, waxing } = moonPhaseFrom(phase);
 
     cr.save();
-    cr.translate(cx, cy);
+    cr.translate(centerX, centerY);
 
     // Dark-side earthshine: sky keeps a whisper of the whole disc so a thin
     // moon reads against the sky; the icon keeps a stronger ghost so the
     // panel icon never vanishes at new moon.
     if (illum < 0.99) {
-        const esA = style === 'icon' ? 0.16 : 0.03 + 0.10 * (1 - illum);
-        cr.setSourceRGBA(0.72, 0.74, 0.86, esA);
-        cr.arc(0, 0, r, 0, TAU);
+        const earthshineAlpha = style === 'icon' ? 0.16 : 0.03 + 0.10 * (1 - illum);
+        cr.setSourceRGBA(0.72, 0.74, 0.86, earthshineAlpha);
+        cr.arc(0, 0, radius, 0, TWO_PI);
         cr.fill();
     }
 
@@ -125,21 +126,21 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
         cr.scale(-1, 1);
 
     cr.save();
-    litPath(cr, r, phase);
+    litPath(cr, radius, phase);
 
     if (style === 'icon') {
         // opts.face: light-card palette dims the disc to porcelain --
         // bare 0.95 white blows out over bright day skies
-        const fc = opts.face ?? [0.95, 0.95, 0.99];
+        const faceColor = opts.face ?? [0.95, 0.95, 0.99];
         if (opts.outline) {           // pale disc needs an edge on light cards
-            const ol = opts.outline;
-            cr.setSourceRGBA(fc[0], fc[1], fc[2], 1);
+            const outlineColor = opts.outline;
+            cr.setSourceRGBA(faceColor[0], faceColor[1], faceColor[2], 1);
             cr.fillPreserve();
-            cr.setSourceRGBA(ol[0], ol[1], ol[2], ol[3]);
+            cr.setSourceRGBA(outlineColor[0], outlineColor[1], outlineColor[2], outlineColor[3]);
             cr.setLineWidth(0.5);
             cr.stroke();
         } else {
-            cr.setSourceRGBA(fc[0], fc[1], fc[2], 1);   // warm off-white
+            cr.setSourceRGBA(faceColor[0], faceColor[1], faceColor[2], 1);   // warm off-white
             cr.fill();
         }
         cr.restore();
@@ -153,37 +154,37 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
 
     // gentle sphere shading: light off the upper-left limb, slightly cooler
     // and darker toward the far edge -- pale grey, never a bright white coin
-    const bg = new Cairo.RadialGradient(-r * 0.3, -r * 0.3, r * 0.15,
-        0, 0, r * 1.25);
-    bg.addColorStopRGBA(0, 0.95, 0.95, 0.945, 1);
-    bg.addColorStopRGBA(0.6, 0.875, 0.88, 0.895, 1);
-    bg.addColorStopRGBA(1, 0.715, 0.73, 0.775, 1);
-    cr.setSource(bg);
+    const gradient = new Cairo.RadialGradient(-radius * 0.3, -radius * 0.3, radius * 0.15,
+        0, 0, radius * 1.25);
+    gradient.addColorStopRGBA(0, 0.95, 0.95, 0.945, 1);
+    gradient.addColorStopRGBA(0.6, 0.875, 0.88, 0.895, 1);
+    gradient.addColorStopRGBA(1, 0.715, 0.73, 0.775, 1);
+    cr.setSource(gradient);
     cr.newPath();
-    cr.arc(0, 0, r, 0, TAU);
+    cr.arc(0, 0, radius, 0, TWO_PI);
     cr.fill();
 
     // maria: every clump circle is a subpath of ONE union path, painted with
     // a single low-alpha pass -- overlapping circles therefore merge into
     // continuous soft shading instead of doubling into darker dots
-    const newSub = cr.newSubPath ?? cr.new_sub_path;
+    const newSubPath = cr.newSubPath ?? cr.new_sub_path;
     cr.newPath();
-    for (const [x, y, rad] of mariaCircles()) {
-        newSub.call(cr);
-        cr.arc(x * r, y * r, rad * r, 0, TAU);
+    for (const [spotX, spotY, spotRadius] of mariaCircles()) {
+        newSubPath.call(cr);
+        cr.arc(spotX * radius, spotY * radius, spotRadius * radius, 0, TWO_PI);
     }
     cr.setSourceRGBA(0.60, 0.62, 0.68, 0.20);
     cr.fill();
 
     // a whisper of small craters + Tycho's bright dot low-centre
-    for (const [x, y, rad] of SPECKS) {
+    for (const [speckX, speckY, speckRadius] of SPECKS) {
         cr.newPath();
-        cr.arc(x * r, y * r, rad * r, 0, TAU);
+        cr.arc(speckX * radius, speckY * radius, speckRadius * radius, 0, TWO_PI);
         cr.setSourceRGBA(0.45, 0.47, 0.56, 0.13);
         cr.fill();
     }
     cr.newPath();
-    cr.arc(0.04 * r, 0.60 * r, r * 0.028, 0, TAU);
+    cr.arc(0.04 * radius, 0.60 * radius, radius * 0.028, 0, TWO_PI);
     cr.setSourceRGBA(1, 1, 1, 0.35);
     cr.fill();
 
@@ -194,5 +195,5 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
 /* moonPhase() needs a Date; paintMoon only has the 0..1 number -- derive the
  * two fields it uses without re-reading the clock. */
 function moonPhaseFrom(phase) {
-    return { illum: (1 - Math.cos(TAU * phase)) / 2, waxing: phase < 0.5 };
+    return { illum: (1 - Math.cos(TWO_PI * phase)) / 2, waxing: phase < 0.5 };
 }
