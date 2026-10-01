@@ -1,17 +1,4 @@
-/* menu.js -- the dropdown card: an animated sky backdrop, an hourly chart
- * (Temperature / Precipitation / Wind tabs) and
- * eight selectable day tiles in a 4x2 grid.
- *
- * This file mirrors the mockup's narrow (<=560px) breakpoint, which is the
- * card's actual size (330x430): no big header icon and no details grid (the
- * chart beats them for space there), pill tabs, units live in preferences,
- * hi/lo on one line, "Today" labels the first tile.
- *
- * All drawing is delegated to the pure-cairo modules sky.js and chart.js;
- * this file is St glue + selection state. Dark and light themes (tracked
- * from the OS) share the same engines -- the theme only swaps ink colors and
- * paints a scrim over the sky in light mode.
- */
+/* menu.js -- forecast dropdown panel */
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
@@ -19,42 +6,43 @@ import GObject from 'gi://GObject';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 
-import {_, N_} from './i18n.js';
-import {WeatherIcon} from './animation.js';
-import {paintSky, createSky, sampleSky, bodyOf} from './sky.js';
-import {paintChart, ease, lerp, contrastSafe, lumOf, pickInk, ratio,
-        judgeInk, INK_DARK, INK_LIGHT} from './chart.js';
-import {sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn} from './weather.js';
+import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
+
+const N_ = s => s;
+import { WeatherIcon } from './animation.js';
+import { paintSky, createSky, sampleSky, bodyOf } from './sky.js';
+import {
+    paintChart, ease, lerp, contrastSafe, lumOf, pickInk, ratio,
+    judgeInk, INK_DARK, INK_LIGHT
+} from './chart.js';
+import { sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn } from './weather.js';
 
 const FRAME_MS = 50;         // sky: 20 fps is plenty
 const STATIC_TIME = 1.1;     // frame that makes static mini icons look lively
 const MORPH_MS = 420, MORPH_TICK = 25;
 
 const METRICS = {
-    temp:   {label: N_('Temperature'),   accent: [0.96, 0.65, 0.14]},
-    precip: {label: N_('Precipitation'), accent: [0.30, 0.64, 1.00]},
-    wind:   {label: N_('Wind'),          accent: [0.24, 0.81, 0.56]},
+    temp: { label: N_('Temperature'), accent: [0.96, 0.65, 0.14] },
+    precip: { label: N_('Precipitation'), accent: [0.30, 0.64, 1.00] },
+    wind: { label: N_('Wind'), accent: [0.24, 0.81, 0.56] },
 };
 
-/* Theme = label ink + a scrim painted over the sky. Dark keeps the sky as
- * painted (white ink); light washes it pale so dark ink stays legible.
- * The light wash is day/night split: white over the pale day sky reads as
- * sky; flat white over a deep night sky turns milky gray and ghosts out
- * moon and stars (the washed-out 8:10 PM screenshot). A bluer, denser
- * twilight scrim keeps the night card a deliberate dusk-pastel instead. */
+/* Theme colors and scrim */
 const THEME = {
-    dark:  {ink: [0.96, 0.97, 0.98], scrim: null,            cls: 'aw-dark',
-            scrimSolid: [0.03, 0.045, 0.08, 0.78]},
-    light: {ink: [0.10, 0.13, 0.19], scrim: [1, 1, 1, 0.42], cls: 'aw-light',
-            scrimNight: [0.70, 0.78, 1.0, 0.68],
-            scrimSolid: [0.97, 0.975, 0.995, 0.80]},
+    dark: {
+        ink: [0.96, 0.97, 0.98], scrim: null, cls: 'aw-dark',
+        scrimSolid: [0.03, 0.045, 0.08, 0.78]
+    },
+    light: {
+        ink: [0.10, 0.13, 0.19], scrim: [1, 1, 1, 0.42], cls: 'aw-light',
+        scrimNight: [0.70, 0.78, 1.0, 0.68],
+        scrimSolid: [0.97, 0.975, 0.995, 0.80]
+    },
 };
 
 const FILL = Clutter.ActorAlign.FILL;
 
-/* (contrast referee lives in chart.js: contrastSafe / ratio / pickInk) */
 
-/* theme glass the selected tile / active tab wears over the sky */
 const compGlass = (bg, dark) => {
     const g = dark ? [16 / 255, 20 / 255, 28 / 255, 0.45] : [1, 1, 1, 0.68];
     return bg.map((v, k) => v * (1 - g[3]) + g[k] * g[3]);
@@ -66,31 +54,29 @@ const inkCss = (ink, a = 1) => {
         : `color: rgb(${c(ink[0])}, ${c(ink[1])}, ${c(ink[2])});`;
 };
 
-/* Readability halo: when no single ink clears 3:1 across its whole box
- * (labels straddling the moon's edge have NO colour that beats both
- * backgrounds), the chosen ink gets a hard opposite-colour edge from a
- * soft glow + tight drop -- beating either solid pick, without ever
- * splitting one row of text into two colours. */
+
 const haloCss = res => !res.emboss ? ''
     : res.ink === INK_DARK
         ? ' text-shadow: 0 0 3px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.55);'
         : ' text-shadow: 0 0 3px rgba(0,0,12,0.9), 0 0 8px rgba(0,0,12,0.6), 0 1px 2px rgba(0,0,12,0.85);';
 
 function label(text, cls) {
-    return new St.Label({text, style_class: cls, y_align: Clutter.ActorAlign.CENTER});
+    return new St.Label({ text, style_class: cls, y_align: Clutter.ActorAlign.CENTER });
 }
 
 function row(cls) {
-    return new St.BoxLayout({style_class: cls, x_expand: true,
-                             y_align: Clutter.ActorAlign.CENTER});
+    return new St.BoxLayout({
+        style_class: cls, x_expand: true,
+        y_align: Clutter.ActorAlign.CENTER
+    });
 }
 
 function column(cls) {
-    return new St.BoxLayout({vertical: true, style_class: cls, x_expand: true});
+    return new St.BoxLayout({ vertical: true, style_class: cls, x_expand: true });
 }
 
 function spacer() {
-    return new St.Widget({x_expand: true, x_align: FILL});
+    return new St.Widget({ x_expand: true, x_align: FILL });
 }
 
 /** '2026-09-25T15:00' -> '3PM' (or '15') for the chart axis. */
@@ -101,142 +87,131 @@ function hourLabel(iso, h24) {
     return `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? 'AM' : 'PM'}`;
 }
 
-/* -- animated painting areas ----------------------------------------------
- * GNOME 50's St.DrawingArea emits repaint SYNCHRONOUSLY from allocate and
- * style-changed. Querying allocation/theme inside repaint re-enters that
- * machinery, frees the mapped Cogl buffer underfoot and aborts the shell
- * (observed live: cogl_buffer_dispose MAPPED assert -> null cairo context ->
- * SIGABRT). So repaint handlers touch get_surface_size() + get_context()
- * and NOTHING else -- the surface size is already logical px and the context
- * arrives device-scaled and pre-cleared.
- */
-
 const SkyArea = GObject.registerClass(
-class SkyArea extends St.DrawingArea {
-    _init(panel, animate) {
-        super._init({x_align: FILL, y_align: FILL, x_expand: true, y_expand: true});
-        this._panel = panel;
-        this._animate = animate;
-        this._time = animate ? Math.random() * 3 : STATIC_TIME;
-        this._clockId = 0;
-        this.connect('destroy', () => this._stop());
-        this._start();
-    }
+    class SkyArea extends St.DrawingArea {
+        _init(panel, animate) {
+            super._init({ x_align: FILL, y_align: FILL, x_expand: true, y_expand: true });
+            this._panel = panel;
+            this._animate = animate;
+            this._time = animate ? Math.random() * 3 : STATIC_TIME;
+            this._animTimerId = 0;
+            this.connect('destroy', () => this._stop());
+            this._start();
+        }
 
-    vfunc_repaint() {
-        const [w, h] = this.get_surface_size();
-        if (w <= 0 || h <= 0)
-            return;
-        const cr = this.get_context();
-        const o = this._panel._skyOpts;
-        if (this._panel._style !== 'accent')
-            paintSky(cr, {w, h, time: this._time,
-                          scene: o.scene, night: o.night, scrim: o.scrim,
-                          sky: o.sky, radius: o.radius ?? 0, phase: o.phase ?? null});
-        // 'accent' style paints NOTHING: the surface stays transparent and
-        // the shell theme's own popup background becomes the menu surface --
-        // the theme's specified solid colour, any theme, auto-contrast.
-        cr.$dispose();
-    }
+        vfunc_repaint() {
+            const [w, h] = this.get_surface_size();
+            if (w <= 0 || h <= 0)
+                return;
+            const cr = this.get_context();
+            const o = this._panel._skyOpts;
+            if (this._panel._style !== 'accent')
+                paintSky(cr, {
+                    w, h, time: this._time,
+                    scene: o.scene, night: o.night, scrim: o.scrim,
+                    sky: o.sky, radius: o.radius ?? 0, phase: o.phase ?? null
+                });
+            // 'accent' style paints NOTHING: the surface stays transparent and
+            // the shell theme's own popup background becomes the menu surface --
+            // the theme's specified solid colour, any theme, auto-contrast.
+            cr.$dispose();
+        }
 
-    /* self-idles while unmapped (menu closed) -- GNOME 50 has no map signals;
-     * stays parked in 'accent' style too: no sky to animate there. */
-    _start() {
-        if (this._clockId || !this._animate || this._panel._style === 'accent')
-            return;
-        this._lastUs = GLib.get_monotonic_time();
-        this._clockId = GLib.timeout_add(GLib.PRIORITY_LOW, FRAME_MS, () => {
-            const now = GLib.get_monotonic_time();
-            if (this.mapped ?? true) {
-                this._time += Math.min((now - this._lastUs) / 1000000, 0.1);
-                this.queue_repaint();
+        _start() {
+            if (this._animTimerId || !this._animate || this._panel._style === 'accent')
+                return;
+            this._lastUs = GLib.get_monotonic_time();
+            this._animTimerId = GLib.timeout_add(GLib.PRIORITY_LOW, FRAME_MS, () => {
+                const now = GLib.get_monotonic_time();
+                if (this.mapped ?? true) {
+                    this._time += Math.min((now - this._lastUs) / 1000000, 0.1);
+                    this.queue_repaint();
+                }
+                this._lastUs = now;
+                return GLib.SOURCE_CONTINUE;
+            });
+        }
+
+        _stop() {
+            if (this._animTimerId) {
+                GLib.source_remove(this._animTimerId);
+                this._animTimerId = 0;
             }
-            this._lastUs = now;
-            return GLib.SOURCE_CONTINUE;
-        });
-    }
-
-    _stop() {
-        if (this._clockId)
-            GLib.source_remove(this._clockId);
-        this._clockId = 0;
-    }
-});
+        }
+    });
 
 const ChartArea = GObject.registerClass(
-class ChartArea extends St.DrawingArea {
-    _init(panel) {
-        super._init({x_align: FILL, y_expand: true, x_expand: true, height: 150});
-        this._panel = panel;
-    }
+    class ChartArea extends St.DrawingArea {
+        _init(panel) {
+            super._init({ x_align: FILL, y_expand: true, x_expand: true, height: 150 });
+            this._panel = panel;
+        }
 
-    vfunc_repaint() {
-        const [w, h] = this.get_surface_size();
-        if (w <= 0 || h <= 0)
-            return;
-        const p = this._panel, m = METRICS[p._metric];
-        // 'accent' style unifies the data in the OS accent colour; sky
-        // modes keep the mock's per-metric palette
-        const accent = p._style === 'accent' ? p._accent : m.accent;
-        // full card width: .aw-content has no horizontal padding (rows pad
-        // themselves), so the fill bleeds to the edges like the mockup; the
-        // mock's narrow chart labels every 3rd hour, ink-dim, 8pt
-        const cr = this.get_context();
-        paintChart(cr, {
-            w, h,
-            values: p._shown,
-            fmtValue: p._fmtValue ?? (() => ''),
-            fmtHour: p._fmtHour ?? (() => ''),
-            accent,
-            ink: p._theme().ink,
-            nowFrac: p._day === 0 ? (p._nowFrac ?? 0) : null,
-            scenes: p._conditions !== 'off' ? p._strip?.scenes ?? null : null,
-            nights: p._conditions !== 'off' ? p._strip?.nights ?? null : null,
-            pills: p._conditions === 'pills',
-            dark: p._dark,
-            // Arabic/Hebrew sessions: the chart mirrors (earliest hour at
-            // the right, now-fade covering the RIGHT half). St widgets
-            // around this canvas already flip via the toolkit; the painted
-            // surface has to be told explicitly.
-            rtl: Clutter.get_default_text_direction() === Clutter.TextDirection.RTL,
-            stripBottom: p._condPos === 'bottom',
-            // over the sky (animated/solid): pills take the day-tile hover
-            // glass; the accent style keeps the accent tint on its calm
-            // backdrop
-            pillGlass: p._style !== 'accent',
-            // the "now" value label rides the sky, not the ink theme: hand
-            // it a contrast-safe variant of the accent (no-op when the
-            // accent already clears ~3:1 against the composited backdrop)
-            nowLabel: contrastSafe(accent, p._bgUnderChart()),
-            // smart text ink: labels sample the composited sky at their OWN
-            // y -- hour text over a bright day-sky foot goes dark, night text
-            // stays white. accent style's flat card needs none of this.
-            bgFn: p._style === 'accent' ? null : (yPx => {
-                const top = this.get_transformed_position()[1];
-                const cardY = p._content.get_transformed_position()[1];
-                const cardH = p._content.get_size()[1] || 1;
-                return p._bgAt(Math.min(1, Math.max(0,
-                    (top + yPx - cardY) / cardH)));
-            }),
-            // strip icons get a hairline silhouette ring when the backdrop
-            // under the chart is mid/bright (overcast days swallow flat icons)
-            iconOutline: p._iconOutline(),
-            fontSize: w < 480 ? 8 : 8.5,
-            // 'Data text' emphasis: values + hours bigger and/or heavier
-            textScale: p._textScale,
-            textBold: p._textBold,
-        });
-        cr.$dispose();
-        // the card's free-standing labels (header, tabs) sample the same way
-        // -- run here so it happens whenever the menu is actually visible
-        p._applyTextInk();
-    }
-});
-
-/* -- the panel ------------------------------------------------------------ */
+        vfunc_repaint() {
+            const [w, h] = this.get_surface_size();
+            if (w <= 0 || h <= 0)
+                return;
+            const p = this._panel, m = METRICS[p._metric];
+            // 'accent' style unifies the data in the OS accent colour; sky
+            // modes keep the mock's per-metric palette
+            const accent = p._style === 'accent' ? p._accent : m.accent;
+            // full card width: .aw-content has no horizontal padding (rows pad
+            // themselves), so the fill bleeds to the edges like the mockup; the
+            // mock's narrow chart labels every 3rd hour, ink-dim, 8pt
+            const cr = this.get_context();
+            paintChart(cr, {
+                w, h,
+                values: p._shown,
+                fmtValue: p._fmtValue ?? (() => ''),
+                fmtHour: p._fmtHour ?? (() => ''),
+                accent,
+                ink: p._theme().ink,
+                nowFrac: p._day === 0 ? (p._nowFrac ?? 0) : null,
+                scenes: p._conditions !== 'off' ? p._strip?.scenes ?? null : null,
+                nights: p._conditions !== 'off' ? p._strip?.nights ?? null : null,
+                pills: p._conditions === 'pills',
+                dark: p._dark,
+                // Arabic/Hebrew sessions: the chart mirrors (earliest hour at
+                // the right, now-fade covering the RIGHT half). St widgets
+                // around this canvas already flip via the toolkit; the painted
+                // surface has to be told explicitly.
+                rtl: Clutter.get_default_text_direction() === Clutter.TextDirection.RTL,
+                stripBottom: p._condPos === 'bottom',
+                // over the sky (animated/solid): pills take the day-tile hover
+                // glass; the accent style keeps the accent tint on its calm
+                // backdrop
+                pillGlass: p._style !== 'accent',
+                // the "now" value label rides the sky, not the ink theme: hand
+                // it a contrast-safe variant of the accent (no-op when the
+                // accent already clears ~3:1 against the composited backdrop)
+                nowLabel: contrastSafe(accent, p._bgUnderChart()),
+                // smart text ink: labels sample the composited sky at their OWN
+                // y -- hour text over a bright day-sky foot goes dark, night text
+                // stays white. accent style's flat card needs none of this.
+                bgFn: p._style === 'accent' ? null : (yPx => {
+                    const top = this.get_transformed_position()[1];
+                    const cardY = p._content.get_transformed_position()[1];
+                    const cardH = p._content.get_size()[1] || 1;
+                    return p._bgAt(Math.min(1, Math.max(0,
+                        (top + yPx - cardY) / cardH)));
+                }),
+                // strip icons get a hairline silhouette ring when the backdrop
+                // under the chart is mid/bright (overcast days swallow flat icons)
+                iconOutline: p._iconOutline(),
+                fontSize: w < 480 ? 8 : 8.5,
+                // 'Data text' emphasis: values + hours bigger and/or heavier
+                textScale: p._textScale,
+                textBold: p._textBold,
+            });
+            cr.$dispose();
+            // the card's free-standing labels (header, tabs) sample the same way
+            // -- run here so it happens whenever the menu is actually visible
+            p._applyTextInk();
+        }
+    });
 
 export class ForecastPanel {
-    constructor({animate}) {
+    constructor({ animate }) {
         this._animate = animate;
         this._onRefresh = this._onSettings = this._onSky = null;
 
@@ -246,7 +221,7 @@ export class ForecastPanel {
         this._state = null;
         this._shown = [];          // currently displayed chart values (morphs)
         this._morphId = 0;
-        this._clockId = 0;
+        this._cityClockTimerId = 0;
         this._cityMs = 0;          // wall time in the city's timezone
         this._cityBaseUs = 0;
         this._desc = '';
@@ -258,8 +233,10 @@ export class ForecastPanel {
 
         this._sky = createSky();
         // radius 18 matches the shell's polished-popup corner radius
-        this._skyOpts = {scene: 'loading', night: false, scrim: THEME.dark.scrim,
-                         sky: this._sky, radius: 18};
+        this._skyOpts = {
+            scene: 'loading', night: false, scrim: THEME.dark.scrim,
+            sky: this._sky, radius: 18
+        };
         this._nowFrac = null;
         this._style = 'animated';                 // animated | solid | accent
         this._conditions = 'icons';               // chart strip: off | icons | pills
@@ -269,7 +246,7 @@ export class ForecastPanel {
         this._emboss = true;                      // CSS text/icon shadows
 
         // St.Widget with BinLayout = overlay: sky fills, content rides on top
-        this.actor = new St.Widget({layout_manager: new Clutter.BinLayout()});
+        this.actor = new St.Widget({ layout_manager: new Clutter.BinLayout() });
         this._skyArea = new SkyArea(this, animate);
         this.actor.add_child(this._skyArea);
 
@@ -285,8 +262,6 @@ export class ForecastPanel {
         this._showBody(false);
     }
 
-    /* -- construction ----------------------------------------------------- */
-
     _buildPlaceholder() {
         this._placeholderBox = new St.BoxLayout({
             style_class: 'aw-placeholder',
@@ -294,7 +269,7 @@ export class ForecastPanel {
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true, y_expand: true,
         });
-        this._placeholderIcon = new WeatherIcon({size: 34, animate: this._animate});
+        this._placeholderIcon = new WeatherIcon({ size: 34, animate: this._animate });
         this._placeholderIcon.setScene('loading');
         this._placeholderText = label(_('Fetching weather…'), 'aw-placeholder-text');
         this._placeholderBox.add_child(this._placeholderIcon);
@@ -306,20 +281,17 @@ export class ForecastPanel {
         const main = column('aw-main');
         this._main = main;
 
-        // header (mockup narrow breakpoint): huge temp + degF | degC text toggle
-        // with the current condition text under it, then city / clock+actions
-        // pushed right. No big icon -- the chart earns the space.
         const header = row('aw-header');
 
-        const leftCol = new St.BoxLayout({vertical: true, style_class: 'aw-temp-col',
-                                          y_align: Clutter.ActorAlign.START});
+        const leftCol = new St.BoxLayout({
+            vertical: true, style_class: 'aw-temp-col',
+            y_align: Clutter.ActorAlign.START
+        });
         const tempWrap = row('aw-temp-line');
         this._tempLbl = label('', 'aw-current-temp');
         tempWrap.add_child(this._tempLbl);
         leftCol.add_child(tempWrap);
 
-        // "Partly Cloudy" under the numeral. The degF/degC choice
-        // lives in preferences only -- the header reads better without it
         this._descLbl = label('', 'aw-desc');
         this._descLbl.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._descLbl.x_align = Clutter.ActorAlign.START;
@@ -328,38 +300,33 @@ export class ForecastPanel {
 
         header.add_child(spacer());
 
-        const right = new St.BoxLayout({vertical: true, style_class: 'aw-city-col',
-                                        x_align: Clutter.ActorAlign.END,
-                                        y_align: Clutter.ActorAlign.START});
+        const right = new St.BoxLayout({
+            vertical: true, style_class: 'aw-city-col',
+            x_align: Clutter.ActorAlign.END,
+            y_align: Clutter.ActorAlign.START
+        });
         this._cityLbl = label(_('Weather'), 'aw-city');
-        // long city names must never crowd the temperature side
         this._cityLbl.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        this._cityLbl.x_align = Clutter.ActorAlign.END;   // flush right edge
+        this._cityLbl.x_align = Clutter.ActorAlign.END;
         right.add_child(this._cityLbl);
 
-        // the clock keeps its own line (condition text lives under the temp);
-        // refresh/settings get their own row under the clock -- inline they
-        // collided with the time text and the moon behind it
         const infoRow = row('aw-info-row');
         infoRow.x_align = Clutter.ActorAlign.END;
-        this._clockRow = infoRow;         // _syncHeader hides it for future days
+        this._clockRow = infoRow;
         this._clockLbl = label('', 'aw-clockline');
         infoRow.add_child(this._clockLbl);
         right.add_child(infoRow);
         const btnRow = row('aw-btn-row');
         btnRow.x_align = Clutter.ActorAlign.END;
         this._refreshBtn = this._iconButton('view-refresh-symbolic', _('Refresh now'),
-                                            () => this._onRefresh?.());
+            () => this._onRefresh?.());
         btnRow.add_child(this._refreshBtn);
-        // emblem-system draws its gear inset (optically smaller than the
-        // refresh circle at the same icon_size) -- nudge it up one notch
         btnRow.add_child(this._iconButton('emblem-system-symbolic', _('Preferences'),
-                                          () => this._onSettings?.(), 18));
+            () => this._onSettings?.(), 18));
         right.add_child(btnRow);
         header.add_child(right);
         main.add_child(header);
 
-        // metric tabs: pill behind the active one, whole row centred
         const tabs = row('aw-tabs');
         tabs.x_align = Clutter.ActorAlign.CENTER;
         this._tabBtns = {};
@@ -391,8 +358,10 @@ export class ForecastPanel {
     }
 
     _iconButton(iconName, name, cb, size = 16) {
-        const icon = new St.Icon({icon_name: iconName, icon_size: size,
-                                  y_align: Clutter.ActorAlign.CENTER});
+        const icon = new St.Icon({
+            icon_name: iconName, icon_size: size,
+            y_align: Clutter.ActorAlign.CENTER
+        });
         const btn = new St.Button({
             style_class: 'aw-icon-btn',
             can_focus: true,
@@ -405,12 +374,10 @@ export class ForecastPanel {
         return btn;
     }
 
-    /* -- public API (used by extension.js) -------------------------------- */
-
-    onRefresh(cb)  { this._onRefresh = cb; }
+    onRefresh(cb) { this._onRefresh = cb; }
     onSettings(cb) { this._onSettings = cb; }
     /** reports the sky the menu just started painting: (scene, night) */
-    onSky(cb)      { this._onSky = cb; }
+    onSky(cb) { this._onSky = cb; }
 
     setPlaceName(name) {
         this._cityLbl.set_text(name || _('Weather'));
@@ -501,21 +468,10 @@ export class ForecastPanel {
             this._content.add_style_class_name('aw-flat');
     }
 
-    /* The pixel color actually riding under the chart: themed cards are a
-     * flat theme bg; animated/solid = sky gradient sampled mid-chart, then
-     * the active scrim composited over it. Contrast reference for accent-
-     * colored text (the "now" label). */
-    /** Composited backdrop (sky + scrim, or the flat accent card) at height
-     *  fraction f -- what's actually painted behind content at that y. With
-     *  a point {f, x} the SUN/MOON DISC counts too: the gradient alone
-     *  calls a night sky dark, but white city text riding across a full
-     *  moon is unreadable -- the disc is part of what's under the pixels. */
     _bgAt(f, pt) {
         if (this._style === 'accent')
             return this._dark ? [0.185, 0.185, 0.19] : [0.96, 0.96, 0.97];
         const c = sampleSky(this._skyOpts.scene, this._skyOpts.night, f);
-        // _skyOpts.scrim IS the active wash (_syncScrim: theme, style and
-        // day/night) -- reading it here keeps judge and painter identical
         const scrim = this._skyOpts.scrim;
         const bg = scrim
             ? c.map((v, i) => v * (1 - scrim[3]) + scrim[i] * scrim[3])
@@ -523,10 +479,10 @@ export class ForecastPanel {
         if (pt) {
             const [cw, ch] = this._content.get_size();
             const body = bodyOf(this._skyOpts.scene, this._skyOpts.night,
-                                cw || 330, ch || 430);
+                cw || 330, ch || 430);
             if (body) {
                 const d = Math.hypot(pt.x * (cw || 330) - body.x,
-                                     pt.f * (ch || 430) - body.y);
+                    pt.f * (ch || 430) - body.y);
                 const cov = d <= body.r ? body.max
                     : Math.max(0, body.max * (1 - (d - body.r) / body.soft));
                 if (cov > 0.02)
@@ -540,11 +496,6 @@ export class ForecastPanel {
         return this._bgAt(0.62);
     }
 
-    /** Ring colour for the chart's condition icons, chosen against the real
-     *  composited backdrop: anything mid-bright and up (overcast is the
-     *  worst offender -- a flat grey-blue that swallows flat grey-blue
-     *  clouds) gets a dark hairline silhouette. Dark night skies need none:
-     *  the painter already gives them bright icon palettes. */
     _iconOutline() {
         return lumOf(this._bgUnderChart()) >= 0.38
             ? [0.04, 0.05, 0.09, 0.62] : null;
@@ -559,20 +510,20 @@ export class ForecastPanel {
         this._applyTheme();
         this._showBody(true);
 
-        const {current, daily} = state;
+        const { current, daily } = state;
         const today = daily[0];
-        const {scene, desc} = state.effective ?? sceneFor(current.code, current.isDay);
+        const { scene, desc } = state.effective ?? sceneFor(current.code, current.isDay);
         const windy = !!state.windy;
         // the big temp + condition line are (re)written by _syncHeader at the
         // end of render, so a selected future day survives refreshes
-        this._desc = desc;
+        this._desc = _(desc);
 
         // city clock ticks from the API timestamp (city timezone, not ours)
         this._cityMs = state.currentIso ? Date.parse(state.currentIso) : 0;
         this._cityBaseUs = GLib.get_monotonic_time();
         this._tickClock();
-        if (!this._clockId) {
-            this._clockId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 20, () => {
+        if (!this._cityClockTimerId) {
+            this._cityClockTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 20, () => {
                 this._tickClock();
                 return GLib.SOURCE_CONTINUE;
             });
@@ -592,14 +543,16 @@ export class ForecastPanel {
     }
 
     destroy() {
-        if (this._morphId)
+        if (this._morphId) {
             GLib.source_remove(this._morphId);
-        if (this._clockId)
-            GLib.source_remove(this._clockId);
+            this._morphId = 0;
+        }
+        if (this._cityClockTimerId) {
+            GLib.source_remove(this._cityClockTimerId);
+            this._cityClockTimerId = 0;
+        }
         this.actor.destroy();
     }
-
-    /* -- selection logic -------------------------------------------------- */
 
     _selectDay(i) {
         if (i === this._day)
@@ -648,16 +601,14 @@ export class ForecastPanel {
             const d = s.daily[Math.min(this._day, s.daily.length - 1)];
             this._tempLbl.set_text(fmtTemp(d.tmax, s.units));
             this._descLbl.set_text(
-                `${dayName(d.date)}: ${sceneFor(d.code, true).desc}`);
+                `${_(dayName(d.date))}: ${_(sceneFor(d.code, true).desc)}`);
         }
-        // the city clock describes NOW only -- no point showing it while a
-        // future day is selected
         this._clockRow.visible = this._day === 0;
     }
 
     _chartValues() {
         const s = this._state;
-        const field = {temp: 'temp', precip: 'precipProb', wind: 'wind'}[this._metric];
+        const field = { temp: 'temp', precip: 'precipProb', wind: 'wind' }[this._metric];
         const idx = s.hourly ? daySlice(s.hourly, s.daily, this._day, s.currentIso) : [];
         const units = s.units;
         this._fmtValue = this._metric === 'temp'
@@ -667,9 +618,6 @@ export class ForecastPanel {
                 : (i, v) => fmtWind(v, units);
         const times = s.hourly ? idx.map(i => s.hourly.time[i]) : [];
         this._fmtHour = i => hourLabel(times[i] ?? 'T00', this._hour24);
-        // hourly condition-icon strip (the chart only draws it if the panel
-        // setting is on). Day/night comes from the provider's own is_day per
-        // hour when present -- real sunset, not a wall-clock guess.
         this._strip = null;
         if (s.hourly && idx.length) {
             const days = times.map((t, k) => s.hourly.isDay?.[idx[k]] ?? (() => {
@@ -705,13 +653,11 @@ export class ForecastPanel {
             this._syncScrim();
         }
         this._skyOpts.phase = Number.isFinite(s.phase) ? s.phase : null;
-        // only today's sky is "live state"; browsing future tiles is transient
         if (this._day === 0)
             this._onSky?.(scene, night);
         this._skyArea.queue_repaint();
     }
 
-    /* 420 ms ease-out morph between series (mockup behaviour). */
     _morphTo(target) {
         if (this._morphId) {
             GLib.source_remove(this._morphId);
@@ -735,10 +681,8 @@ export class ForecastPanel {
         });
     }
 
-    /* -- day tiles -------------------------------------------------------- */
-
     _buildDayTiles() {
-        const {daily, units} = this._state;
+        const { daily, units } = this._state;
         this._daysGrid.destroy_all_children();
         this._dayBtns = [];
         this._dayLoLbls = [];
@@ -748,31 +692,41 @@ export class ForecastPanel {
             const rowTiles = row('aw-days');
             for (let i = r; i < Math.min(r + 4, n); i++) {
                 const d = daily[i];
-                const {scene} = sceneFor(d.code, true);
+                const { scene } = sceneFor(d.code, true);
                 const btn = new St.Button({
                     style_class: 'aw-day',
                     can_focus: true,
                     x_expand: true,
                 });
-                const col = new St.BoxLayout({vertical: true, style_class: 'aw-day-col',
-                                              x_align: FILL});
-                col.add_child(new St.Label({text: i === 0 ? _('Today') : dayName(d.date),
-                                            style_class: 'aw-day-name',
-                                            x_align: Clutter.ActorAlign.CENTER}));
-                const icon = new WeatherIcon({size: 26, animate: false,
-                                              time: STATIC_TIME + i * 0.2,
-                                              dark: this._dark});
+                const col = new St.BoxLayout({
+                    vertical: true, style_class: 'aw-day-col',
+                    x_align: FILL
+                });
+                col.add_child(new St.Label({
+                    text: i === 0 ? _('Today') : _(dayName(d.date)),
+                    style_class: 'aw-day-name',
+                    x_align: Clutter.ActorAlign.CENTER
+                }));
+                const icon = new WeatherIcon({
+                    size: 26, animate: false,
+                    time: STATIC_TIME + i * 0.2,
+                    dark: this._dark
+                });
                 this._tileIcons.push(icon);
-                icon.setScene(scene, {intensity: d.precipProb / 25, windKmh: d.windMax});
+                icon.setScene(scene, { intensity: d.precipProb / 25, windKmh: d.windMax });
                 col.add_child(icon);
-                // hi + lo share one line (mock .hl); hierarchy by weight,
-                // never opacity -- lows must survive sun-bright skies
-                const hl = new St.BoxLayout({style_class: 'aw-day-hl',
-                                             x_align: Clutter.ActorAlign.CENTER});
-                hl.add_child(new St.Label({text: fmtTemp(d.tmax, units),
-                                           style_class: 'aw-day-hi'}));
-                const loLbl = new St.Label({text: fmtTemp(d.tmin, units),
-                                            style_class: 'aw-day-lo'});
+                const hl = new St.BoxLayout({
+                    style_class: 'aw-day-hl',
+                    x_align: Clutter.ActorAlign.CENTER
+                });
+                hl.add_child(new St.Label({
+                    text: fmtTemp(d.tmax, units),
+                    style_class: 'aw-day-hi'
+                }));
+                const loLbl = new St.Label({
+                    text: fmtTemp(d.tmin, units),
+                    style_class: 'aw-day-lo'
+                });
                 this._dayLoLbls.push(loLbl);   // smart ink dims it slightly
                 hl.add_child(loLbl);
                 col.add_child(hl);
@@ -795,11 +749,6 @@ export class ForecastPanel {
         this._applyTileInk();
     }
 
-    /** Sky (animated/solid) styles only: the tiles sit over whatever the
-     *  sky painter is actually drawing there, so each tile picks black or
-     *  white by WCAG ratio against the sampled pixels -- same referee as the
-     *  now-label. The selected tile answers to sky + its tinted glass on
-     *  top. 'accent' keeps the plain theme ink (inline style cleared). */
     _applyTileInk() {
         for (const [i, btn] of (this._dayBtns ?? []).entries()) {
             const lo = this._dayLoLbls?.[i];
@@ -813,23 +762,10 @@ export class ForecastPanel {
                 bg = compGlass(bg, this._dark);
             const ink = pickInk(bg);
             btn.set_style(inkCss(ink));
-            // lows: same ink, lighter touch (theme CSS handled this before
-            // inline ink took over -- .82 mirrors the old .8/.85 pair)
             lo?.set_style(inkCss(ink, 0.82));
         }
     }
 
-    /** One-pass smart ink for every free-standing label/button in the card,
-     *  JUDGED PER VISUAL GROUP: whole-box sampling (text spans wide, and its
-     *  right half may ride over the moon), ONE consensus ink per group --
-     *  a row or pair half dark is a broken-looking control (the 7:09 PM
-     *  moon screenshot: one flipped tab mid-row read exactly that way).
-     *  The active pill tab and the day tiles judge for themselves: they sit
-     *  on their own glass, so ink that matches it reads as deliberate.
-     *  The readability halo exists for moon-edge straddles but RESPECTS the
-     *  Text emboss preference -- with emboss off the user wants clean
-     *  colour, no shadow, and gets exactly that even over the moon.
-     *  Runs from the chart repaint (menu is visible, transforms valid). */
     _applyTextInk() {
         const plain = this._style === 'accent' || !this._state;
         const set = (a, css) => {
@@ -840,7 +776,7 @@ export class ForecastPanel {
         };
         if (plain) {
             for (const a of [this._tempLbl, this._descLbl, this._cityLbl,
-                             this._clockLbl])
+            this._clockLbl])
                 set(a, '');
             for (const ic of this._ghostIcons ?? [])
                 set(ic, '');
@@ -857,9 +793,7 @@ export class ForecastPanel {
                 set(a, css);
         };
         inkGroup([this._tempLbl, this._descLbl]);   // left column pair
-        inkGroup([this._cityLbl, this._clockLbl]);  // right stack pair
-        // ghost buttons: one pair-ink; the direction-matched icon shadow IS
-        // their halo -- so it follows the emboss preference too
+        inkGroup([this._cityLbl, this._clockLbl]);
         const g = judgeInk(
             [].concat(...(this._ghostIcons ?? []).map(ic => this._bgsOf(ic))));
         const glow = !this._emboss ? ''
@@ -868,8 +802,6 @@ export class ForecastPanel {
                 : ' icon-shadow: 0 1px 4px rgba(0,0,10,0.7);';
         for (const ic of this._ghostIcons ?? [])
             set(ic, inkCss(g.ink) + glow);
-        // metric tabs: one consensus ink (never split, see above); the
-        // active pill answers to its own glass, like the selected tile
         const row = [];
         for (const [key, btn] of Object.entries(this._tabBtns ?? {})) {
             const list = this._bgsOf(btn);
@@ -888,17 +820,12 @@ export class ForecastPanel {
         }
     }
 
-    /** Referee over a SET of backdrop samples (see chart.js judgeInk);
-     *  unsampled actors fall back to the chart-under sky. */
     _groupInk(bgs) {
         if (!bgs.length)
-            return {ink: pickInk(this._bgUnderChart()), emboss: false};
+            return { ink: pickInk(this._bgUnderChart()), emboss: false };
         return judgeInk(bgs);
     }
 
-    /** Backdrop samples across an actor's whole box -- centre plus inset
-     *  edge points. A label spans; "San Francisco" with its tail over the
-     *  moon must be judged on every pixel it covers, not its middle. */
     _bgsOf(actor) {
         const out = [];
         try {
@@ -910,20 +837,18 @@ export class ForecastPanel {
                 !Number.isFinite(ax + ay + cardX + cardY))
                 return out;   // unmapped/NaN allocation: nothing to judge
             for (const [ux, uy] of [[0.5, 0.5], [0.15, 0.5], [0.85, 0.5],
-                                     [0.5, 0.25], [0.5, 0.75]]) {
+            [0.5, 0.25], [0.5, 0.75]]) {
                 const fc = Math.min(1, Math.max(0,
                     (ay + ah * uy - cardY) / ch));
                 const xc = (ax + aw * ux - cardX) / cw;
                 if (Number.isFinite(fc + xc))
-                    out.push(this._bgAt(fc, {f: fc, x: xc}));
+                    out.push(this._bgAt(fc, { f: fc, x: xc }));
             }
         } catch {
             // stale allocation between relayouts: judge with what we have
         }
         return out;
     }
-
-    /* -- misc ------------------------------------------------------------- */
 
     _theme() {
         return this._dark ? THEME.dark : THEME.light;
@@ -948,9 +873,9 @@ export class ForecastPanel {
     _syncScrim() {
         const t = this._theme();
         const wash = this._skyOpts.night && t.scrimNight ? t.scrimNight
-                                                        : t.scrim;
+            : t.scrim;
         this._skyOpts.scrim = this._style === 'solid' ? t.scrimSolid
-                            : this._style === 'accent' ? null : wash;
+            : this._style === 'accent' ? null : wash;
     }
 
     _showBody(haveData) {
@@ -964,7 +889,7 @@ export class ForecastPanel {
             return;
         }
         const ms = this._cityMs +
-                   Math.round((GLib.get_monotonic_time() - this._cityBaseUs) / 1000);
+            Math.round((GLib.get_monotonic_time() - this._cityBaseUs) / 1000);
         const d = new Date(ms);   // parsed+rendered in machine TZ: cancels out
         const mm = String(d.getMinutes()).padStart(2, '0');
         this._clockLbl.set_text(this._hour24

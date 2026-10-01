@@ -10,11 +10,10 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import {WeatherIcon} from './animation.js';
 import {ForecastPanel} from './menu.js';
-import {initI18n, _} from './i18n.js';
 import {WeatherClient, sceneFor, deriveScene, fmtTemp} from './weather.js';
 import {moonPhase} from './moon.js';
 
@@ -117,9 +116,6 @@ class WeatherIndicator extends PanelMenu.Button {
         this.menu.actor.add_style_class_name('aw-menu');
         this._section = section;
 
-        // The theme's .popup-menu-content padding (~12px) would shrink the
-        // 330px card and frame the full-bleed sky in popup grey. Inline styles
-        // outrank class CSS whatever the wrapper chain looks like.
         for (let a = this._panel.actor; a; a = a.get_parent()) {
             a.set_style('padding: 0px; margin: 0px; border-width: 0px;');
             if (a === this.menu.actor)
@@ -140,8 +136,6 @@ class WeatherIndicator extends PanelMenu.Button {
         this._fetch(true);
         this._restartTimer();
     }
-
-    /* -- location / units ------------------------------------------------- */
 
     _placeName() {
         if (this._settings.get_boolean('auto-location'))
@@ -169,8 +163,6 @@ class WeatherIndicator extends PanelMenu.Button {
         }
         return this._iface.get_boolean('gtk-application-prefer-dark-theme');
     }
-
-    /* -- fetching --------------------------------------------------------- */
 
     _isStale() {
         const interval = this._settings.get_int('refresh-minutes') * 60;
@@ -249,8 +241,6 @@ class WeatherIndicator extends PanelMenu.Button {
         });
     }
 
-    /* -- painting --------------------------------------------------------- */
-
     _windy(data) {
         const threshold = this._settings.get_int('windy-threshold');
         if (threshold === 0)
@@ -301,8 +291,6 @@ class WeatherIndicator extends PanelMenu.Button {
             updated: GLib.DateTime.new_now_local(),
         });
     }
-
-    /* -- settings changes ------------------------------------------------- */
 
     _onSetting(key) {
         switch (key) {
@@ -366,12 +354,6 @@ class WeatherIndicator extends PanelMenu.Button {
         }
     }
 
-    /**
-     * The preferences window writes a scene name to 'preview-scene' to force
-     * that animation on the panel icon for a while (so users can watch rare
-     * scenes without waiting for the sky). We reset the key when done, which
-     * re-fires 'changed' -- the empty-string guard below breaks that loop.
-     */
     _previewScene() {
         const scene = this._settings.get_string('preview-scene');
         if (!scene)
@@ -395,11 +377,6 @@ class WeatherIndicator extends PanelMenu.Button {
         });
     }
 
-    /**
-     * Choosing a city writes auto-location=false + lat + lon + name in quick
-     * succession; each key fires 'changed'. Coalesce those into one fetch so
-     * we never request the weather for a half-updated location.
-     */
     _scheduleLocationFetch() {
         if (this._locTimer)
             return;
@@ -470,8 +447,6 @@ class WeatherIndicator extends PanelMenu.Button {
         return ACCENTS[raw] ?? hexRgb(raw) ?? FALLBACK_ACCENT;
     }
 
-    /* -- teardown --------------------------------------------------------- */
-
     destroy() {
         this._dead = true;   // async _fetch continuations check this
         if (this._timer)
@@ -486,10 +461,6 @@ class WeatherIndicator extends PanelMenu.Button {
             this._iface.disconnect(this._darkId);
         if (this._openId)
             this.menu.disconnect(this._openId);
-        // ForecastPanel is plain JS, not an actor: actor teardown below does
-        // NOT reach its city-clock GLib timeout. Without this the timer keeps
-        // ticking set_text() on disposed labels after every disable
-        // (observed: disposed-label storm -> SIGSEGV on theme reload).
         this._panel?.destroy();
         this._panel = null;
         super.destroy();
@@ -498,19 +469,9 @@ class WeatherIndicator extends PanelMenu.Button {
 
 export default class AnimatedWeatherExtension extends Extension {
     enable() {
-        // catalogs first: the menu constructor builds labels immediately,
-        // and gettext() only finds them once the domain is bound
-        initI18n(this.uuid, this.dir.get_path());
-        // build stamp: journalctl --user -o cat | grep "Weatherglass v"
-        // shows which on-disk code the long-lived shell process is running
-        // (GJS caches extension modules; code edits need a session restart)
         console.log(`Weatherglass enabled from ${this.dir.get_path()}`);
         this._indicator = new WeatherIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
-        // our aw-* style classes are CSS hooks no theme knows (St 18 drops
-        // the default 'button' styling when style_class is set), so the
-        // card's hover/pressed/focus affordances ship with us: see
-        // stylesheet.css, themed off the system accent colour
         this._sheet = this.dir.get_child('stylesheet.css');
         St.ThemeContext.get_for_stage(global.stage)
             .get_theme().load_stylesheet(this._sheet);

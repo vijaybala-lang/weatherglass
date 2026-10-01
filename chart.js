@@ -1,13 +1,5 @@
-/* chart.js -- pure cairo hourly line chart (mirrors the mockup's SVG renderer).
- *
- * paintChart(cr, opts) draws: gradient area fill + smooth Catmull-Rom line,
- * value labels every N points (edge-aware anchors), hour labels, and an
- * optional dashed "now" marker. Stateless -- morphing between metrics is the
- * caller's job (it interpolates `values` and repaints).
- *
- * Call in logical coordinates: scale the context for HiDPI first
- * (cr.scale(dpr, dpr)), then pass w/h in logical px.
- */
+/* chart.js -- hourly line chart */
+
 
 import Cairo from 'gi://cairo';
 import Pango from 'gi://Pango';
@@ -28,10 +20,6 @@ function call(obj, camel, snake, ...args) {
     return fn.call(obj, ...args);
 }
 
-/* -- shared WCAG referee: menu text, tabs, tiles and chart labels all
- *   pick their ink with these. 'dark wins down to L~0.18, white above'
- *   is decided on RATIO, not a luminance threshold (thresholds
- *   misclassify mid-bright skies). Exported for menu.js. -- */
 export const lumOf = c => {
     const f = v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
     return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
@@ -55,20 +43,12 @@ export function contrastSafe(accent, bg) {
     }
     return best;
 }
-export const INK_DARK = [0.063, 0.094, 0.137];    // #101823
+export const INK_DARK = [0.063, 0.094, 0.137];
 export const INK_LIGHT = [1, 1, 1];
-/* Black-vs-white over sky tones. WCAG is symmetric but perception is not:
- * halation smears thin dark glyphs over mid-tone color, so dark ink must
- * win the ratio by a clear ~35% margin before it beats white. That moves
- * the flip from L~0.20 to L~0.24+: header text over a mid-blue day sky and
- * the dark-glass selected tile read white (right), while chart labels
- * (L~0.33+) and day tiles (L~0.45+) keep their dark ink. */
+
 export const pickInk = bg =>
     ratio(INK_DARK, bg) >= ratio(INK_LIGHT, bg) * 1.35 ? INK_DARK : INK_LIGHT;
 
-/* Referee over a SET of samples (menu labels): the worst truth each ink
- * faces anywhere in the set; `emboss` flags when the winner still misses
- * WCAG's 3:1 graphics floor somewhere -- the halo's cue. */
 export const judgeInk = bgs => {
     bgs = bgs.filter(b => Number.isFinite(b[0] + b[1] + b[2]));
     if (!bgs.length)
@@ -79,13 +59,6 @@ export const judgeInk = bgs => {
     return {ink, emboss: (ink === INK_DARK ? dWorst : wWorst) < 3};
 };
 
-/* Curve ink over the animated/solid sky. The metric colour is identity
- * (precip blue, temp amber, wind mint) -- so over bright skies we deepen
- * rather than replace. Multiplying channels darkens but ALSO dulls (olive
- * amber, steel blue -- the eye reads desaturated), so the twin is built in
- * HSV instead: brightness walks down only as far as it must, saturation
- * pushes UP to stay vivid -- the eye reads a multiplied dark twin as
- * desaturated (steel blue), an HSV-darkened one as the same colour. */
 const deepen = base => {
     const mx = Math.max(...base), mn = Math.min(...base), d = mx - mn;
     let h = d === 0 ? 0
@@ -102,13 +75,6 @@ const deepen = base => {
     return toRgb;
 };
 
-/* Curve ink over the animated/solid sky. Warm ink is identity: the
- * temperature line is the panel icon's amber on every sky, unaltered.
- * Bright yellow over a bright sky can't also be 3:1 -- darkening walks
- * into brown, and every workaround tried (rim, plate) reads as an
- * unwanted outline -- so the colour wins and the area gradient carries
- * the shape's legibility instead. Cool inks have the luminance
- * headroom blue and green afford them, and keep deepening plainly. */
 export const lineInk = (base, bgs) => {
     if (!bgs.length)
         return base;
@@ -187,20 +153,13 @@ function tracePath(cr, pts) {
  *   fontSize:        label font size in pt (default 8.5)
  * }
  */
-/* -- pill helpers (grouped condition mode) -------------------------------- */
 
-/* Footprint compensation: the sun's rays fill the 24-unit grid, cloud-only
- * scenes occupy barely 60 % of it -- at one shared scale the cloud pills look
- * half-empty next to the sun. Scale small-footprint scenes up so every pill
- * (and strip icon) reads as an equally sized glyph. Moon stays capped so
- * its stars stay inside a minimum-size pill. */
+/* Footprint scale adjustments */
 const FOOT = {
     moon: 1.5, cloud: 1.35, fog: 1.25, rain: 1.2, drizzle: 1.2,
     sleet: 1.2, snow: 1.2, partly: 1.15, hail: 1.1, storm: 1.1,
 };
 
-/* Rounded box for the grouped-pill strip: radius < half-height gives a
- * soft rect, not a capsule (capsules read as pills-on-a-stick at 19 px). */
 function pillPath(cr, x0, y0, x1, y1, r) {
     r = Math.min(r, (x1 - x0) / 2, (y1 - y0) / 2);
     cr.newPath();
@@ -214,6 +173,85 @@ function pillPath(cr, x0, y0, x1, y1, r) {
     cr.lineTo(x0, y0 + r);
     cr.arc(x0 + r, y0 + r, r, Math.PI, 1.5 * Math.PI);
     cr.closePath();
+}
+
+function drawAreaAndLine(cr, pts, X, n, h, acR, acG, acB) {
+    const grad = new Cairo.LinearGradient(0, TOP, 0, h - BOT + 10);
+    grad.addColorStopRGBA(0, acR, acG, acB, 0.38);
+    grad.addColorStopRGBA(1, acR, acG, acB, 0);
+    cr.newPath();
+    tracePath(cr, pts);
+    cr.lineTo(X(n - 1), h - BOT + 10);
+    cr.lineTo(X(0), h - BOT + 10);
+    cr.closePath();
+    cr.setSource(grad);
+    cr.fill();
+
+    cr.newPath();
+    tracePath(cr, pts);
+    cr.setSourceRGBA(acR, acG, acB, 1);
+    cr.setLineWidth(LINE_W);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.stroke();
+}
+
+function sampleCurveBounds(pts) {
+    const curve = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[Math.max(0, i - 1)], p1 = pts[i],
+              p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+        const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6,
+              c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+        for (let k = 0; k <= 8; k++) {
+            const t = k / 8, u = 1 - t;
+            curve.push([
+                u * u * u * p1[0] + 3 * u * u * t * c1x
+                    + 3 * u * t * t * c2x + t * t * t * p2[0],
+                u * u * u * p1[1] + 3 * u * u * t * c1y
+                    + 3 * u * t * t * c2y + t * t * t * p2[1],
+            ]);
+        }
+    }
+    const curveMin = (xa, xb) => {
+        let m = Infinity;
+        for (const [sx, sy] of curve)
+            if (sx >= xa - 1 && sx <= xb + 1 && sy < m)
+                m = sy;
+        return m;
+    };
+    const curveMax = (xa, xb) => {
+        let m = -Infinity;
+        for (const [sx, sy] of curve)
+            if (sx >= xa - 1 && sx <= xb + 1 && sy > m)
+                m = sy;
+        return m;
+    };
+    return {curveMin, curveMax};
+}
+
+function drawTimeFade(cr, w, h, fx, pastKeep) {
+    cr.save();
+    cr.rectangle(0, 0, fx, h);
+    cr.clip();
+    cr.paintWithAlpha(pastKeep);
+    cr.restore();
+    cr.save();
+    cr.rectangle(fx, 0, w - fx, h);
+    cr.clip();
+    cr.paint();
+    cr.restore();
+}
+
+function drawNowMarker(cr, nx, h) {
+    cr.save();
+    cr.setSourceRGBA(1, 1, 1, 0.35);
+    cr.setLineWidth(1);
+    for (let y = TOP - 26; y < h - BOT; y += 8) {
+        cr.moveTo(nx, y);
+        cr.lineTo(nx, Math.min(y + 3, h - BOT));
+    }
+    cr.stroke();
+    cr.restore();
 }
 
 export function paintChart(cr, opts) {
@@ -246,121 +284,32 @@ export function paintChart(cr, opts) {
     const pad = (hi - lo) * 0.35 + 1;
     lo -= pad; hi += pad * (strip ? 1.75 : 1.15);
 
-    // Data bleeds edge-to-edge (the mockup's behaviour); the LABEL rhythm
-    // is what's inset: the first/last printed hour sits at least GUT px
-    // from the card edge, with unlabeled hours still rendered beyond them.
-    // (Unlabeled hours = real data points before/after the label range.)
     const GUT = opts.gutter ?? 14;
     const PX0 = PADX, PX1 = w - PADX;
-    /* RTL (Arabic/Hebrew sessions): time flows right -> left. Every x in
-     * this painter rides X() or the sx()/so() edges below, so one mirror
-     * flips curve, labels, strip band, past-fade and now marker together.
-     * Slot order stays chronological in the data -- only the canvas maps
-     * it backwards, which is exactly what an RTL reader expects. */
     const rtl = !!opts.rtl;
     const sx = f => PADX + (rtl ? 1 - f : f) * (w - PADX * 2);
     const X = i => sx(i / (n - 1));
-    // with the band docked bottom, the line + its value labels lift off the
-    // floor so nothing sits in the pill zone; the area fill still flows to
-    // its usual depth (behind the translucent band)
     const bot = opts.stripBottom && Array.isArray(opts.scenes) ? BOT + 14 : BOT;
     const Y = v => TOP + (1 - (v - lo) / (hi - lo)) * (h - TOP - bot);
     const pts = values.map((v, i) => [X(i), Y(v)]);
 
-    /* Smart curve ink: a light-blue 2px line milks out over bright
-     * overcast cloud (worst case ~1.6:1 in the wild). Sample the real
-     * backdrop across the curve's own y-spread; cool inks deepen to a
-     * vivid HSV twin, warm ink stays true amber on every sky. */
     const curveBgs = [];
     if (bgFn)
         for (let i = 0; i < pts.length; i += Math.max(1, pts.length >> 2))
             curveBgs.push(bgFn(pts[i][1]));
     const [acR, acG, acB] = lineInk(accent, curveBgs);
 
-    // All grid ink (area fill, curve, value/hour labels) is drawn into an
-    // isolated cairo group and composited back at the end: past the marker
-    // at pastKeep alpha, future at full. This fades ONLY the chart's own
-    // ink -- the widget background and the sky behind it stay untouched.
-    // (An earlier DEST_OUT attempt punched a see-through hole in the
-    // composited widget background instead: the "box left of the marker".)
     const hasNow = nowFrac !== null && nowFrac >= 0 && nowFrac <= 1;
     cr.save();
     cr.pushGroup();
 
-    // area (gradient) -- fill under the curve to just above the hour labels
-    const grad = new Cairo.LinearGradient(0, TOP, 0, h - BOT + 10);
-    grad.addColorStopRGBA(0, acR, acG, acB, 0.38);
-    grad.addColorStopRGBA(1, acR, acG, acB, 0);
-    cr.newPath();
-    tracePath(cr, pts);
-    cr.lineTo(X(n - 1), h - BOT + 10);
-    cr.lineTo(X(0), h - BOT + 10);
-    cr.closePath();
-    cr.setSource(grad);
-    cr.fill();
-    // stroke ONLY the curve (re-trace): fillPreserve here would outline the
-    // whole closed area polygon -- the "box around the line" bug
-    cr.newPath();
-    tracePath(cr, pts);
-    cr.setSourceRGBA(acR, acG, acB, 1);
-    cr.setLineWidth(LINE_W);
-    cr.setLineCap(Cairo.LineCap.ROUND);
-    cr.stroke();
+    drawAreaAndLine(cr, pts, X, n, h, acR, acG, acB);
+    const {curveMin, curveMax} = sampleCurveBounds(pts);
 
-    // The curve's TOP edge at any x: labels float above the line, so we
-    // sample the same Catmull-Rom -> cubic segments tracePath draws --
-    // clearance matches the visible stroke, not a straight-line guess.
-    const curve = [];
-    for (let i = 0; i < pts.length - 1; i++) {
-        const p0 = pts[Math.max(0, i - 1)], p1 = pts[i],
-              p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
-        const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6,
-              c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
-        for (let k = 0; k <= 8; k++) {
-            const t = k / 8, u = 1 - t;
-            curve.push([
-                u * u * u * p1[0] + 3 * u * u * t * c1x
-                    + 3 * u * t * t * c2x + t * t * t * p2[0],
-                u * u * u * p1[1] + 3 * u * u * t * c1y
-                    + 3 * u * t * t * c2y + t * t * t * p2[1],
-            ]);
-        }
-    }
-    const curveMin = (xa, xb) => {
-        let m = Infinity;
-        for (const [sx, sy] of curve)
-            if (sx >= xa - 1 && sx <= xb + 1 && sy < m)
-                m = sy;
-        return m;
-    };
-    const curveMax = (xa, xb) => {
-        let m = -Infinity;
-        for (const [sx, sy] of curve)
-            if (sx >= xa - 1 && sx <= xb + 1 && sy > m)
-                m = sy;
-        return m;
-    };
-
-    // value + hour labels. Data bleeds off both ends (the edge hours are
-    // still drawn), but the first/last PRINTED label is inset past GUT so
-    // nothing clips: we offset the every-EVERY stride to the first index
-    // whose x clears the gutter, leaving unlabeled hours at both ends.
-    // Past that, TEXT-AWARE collision handling: every label is measured,
-    // committed boxes are remembered, and a label that rides too low is
-    // capped at the curve; a colliding label ducks to the far side of the
-    // stroke, then drops. Wide wind labels ("11 mph") used to ride over
-    // their neighbours at the 3-h stride, and the accent "now" label
-    // (drawn LAST, so its box gets reserved up front) used to land right
-    // on top of its own tick -- that duplicate slot is skipped now.
     const nowI = nowFrac === null ? -1 : Math.round(nowFrac * (n - 1));
     const span0 = (w - PADX * 2) / (n - 1);
     let off0 = Math.ceil((GUT - PADX) / span0);
     if (off0 < 0) off0 = 0;
-    // text-aware stride: measure the widest label at the current emphasis
-    // and widen the tick until neighbouring boxes fit with breathing room.
-    // 'large' AM/PM labels (~33 px) overrun the ~37 px slots of a 3-h tick,
-    // and the collision referee's only answer for neighbour-vs-neighbour
-    // clashes is dropping every other hour (seen live as a broken axis).
     if (opts.labelEvery === undefined && fmtHour && n > 8) {
         let widest = 0;
         for (let i = off0; i < n; i++) {
@@ -371,9 +320,6 @@ export function paintChart(cr, opts) {
                 widest = Math.max(widest,
                     textPx(cr, fmtValue(i, values[i]), TS, false, VW)[0]);
         }
-        // margin: 3 px box padding + ~6 px for the edge-anchor nudge --
-        // wind labels ('7 mph' = 28 px) otherwise squeak past a fit at the
-        // 3-h tick and the referee drops labels once the stagger runs out
         for (const c of [3, 4, 6, 8, 12])
             if (c >= EVERY && span0 * c >= widest + 9) {
                 EVERY = c;
@@ -394,17 +340,7 @@ export function paintChart(cr, opts) {
         list.some(o => b[0] < o[1] && o[0] < b[1] && b[2] < o[3] && o[2] < b[3]);
     const boxOf = (x0, tw, th, y) => [x0 - 1.5, x0 + tw + 1.5, y - th - 1, y + 1];
     const used = [];
-    // hour text height is needed twice: the band's down margin below, and
-    // the value labels' floor (a ducked label must never evict an hour)
     const hourH = textPx(cr, '0', TS, false, HW)[1];
-    // A value label's home: ride ABOVE the line; on collision duck BELOW
-    // the stroke (inside the accent fill), then drop. The old four-rung
-    // ladder (up/up15/down15/up29) read as random jumps on flat series --
-    // wind 3-8 mph stacked neighbour after neighbour a rung higher (the
-    // "odd staggering" screenshot). With the accent now-label no longer
-    // duplicating its own tick, same-row neighbours fit side by side at
-    // the measured stride, so flat data renders as one honest uniform
-    // row; only a genuine obstacle (band, edge margin) makes a label duck.
     const placeLabel = (txt, lx, y0, a) => {
         const [tw, th] = textPx(cr, txt, TS, false, VW);
         const x0 = a === 'start' ? lx : a === 'end' ? lx - tw : lx - tw / 2;
@@ -488,22 +424,8 @@ export function paintChart(cr, opts) {
         // 5+ px clear of that, and even the lowest value label (floor
         // h-42) stays off the band top.
         const stripY = opts.stripBottom ? h - 34 : STRIP_Y;
-        // flat icons vanish on mid-tone skies (overcast days especially).
-        // When the panel hands us an iconOutline colour (picked against the
-        // REAL composited backdrop), stamp a 1-px silhouette ring of it
-        // under the icon: render once offscreen, knock the flat colour out
-        // of the icon's own alpha, stamp the silhouette at 8 sub-pixel
-        // offsets, then the real icon on top.
         const OUT = Array.isArray(opts.iconOutline) ? opts.iconOutline : null;
         const paint1 = (scene, cx, night, scale, cy = stripY) => {
-            /* The palette follows the SKY the icon rides, not the theme:
-             * white moons and stars blow out across a bright day foot
-             * (1 AM glyphs over a clear-sky noon backdrop). Each icon
-             * samples its own backdrop -- genuinely bright (0.55 up)
-             * turns pale glyphs into their dark twins, and the
-             * silhouette ring (built to edge OUT pale glyphs) stands
-             * down, else dark-on-dark reads chunky. Mid-tone skies
-             * (overcast foot ~0.52) keep the approved pale + ring look. */
             const palDark = bgFn ? lumOf(bgFn(cy)) >= 0.55 : dark;
             const pose = c => {
                 c.translate(cx - 12 * scale, cy - 12 * scale);
@@ -534,9 +456,6 @@ export function paintChart(cr, opts) {
             c3.setSourceSurface(S, 0, 0);
             c3.paint();
             c3.$dispose();
-            // denser ring than a lone 4-way stamp: inner + mid offsets fuse
-            // into a solid ~1.5 px contour so pale night-cloud glyphs read
-            // even on a matching overcast wash
             for (const [dx, dy] of [[-1.25, 0], [1.25, 0], [0, 1.25], [0, -1.25],
                                     [-0.95, -0.95], [0.95, -0.95],
                                     [-0.95, 0.95], [0.95, 0.95],
@@ -550,15 +469,6 @@ export function paintChart(cr, opts) {
         };
 
         if (opts.pills) {
-            // Grouped band: consecutive same-condition hours become one
-            // CELL; cells share edges (no gaps) inside a single rounded
-            // band. Dotted vertical seams mark condition changes (never at
-            // the band's outer edges) and a heavier bottom rule grounds it
-            // as an axis -- doubly so when docked above the hour labels.
-            // Cells narrower than MINW borrow width from longer neighbours,
-            // so they stay consistent AND can never overlap. Tint: light
-            // neutral gray on plain (accent-style) cards; the day-tile
-            // hover glass, a shade lighter, on animated/solid skies.
             const PH = 10.5, SS = 0.58, MINW = 23, PILL_R = 6, BW = 1.9;
             const glass = !!opts.pillGlass;
             const fill = glass
@@ -598,9 +508,6 @@ export function paintChart(cr, opts) {
             cr.stroke();
             cr.restore();
 
-            // everything below rides inside the band clip: the bottom rule
-            // follows the rounded corners, and boosted scenes (moon glow,
-            // stars) can never leak over the band edges
             cr.save();
             band();
             cr.clip();
@@ -608,8 +515,6 @@ export function paintChart(cr, opts) {
             cr.rectangle(PX0, stripY + PH - BW, bandX1 - PX0, BW);
             cr.fill();
 
-            // dotted seams at interior cell borders (GJS cairo has no
-            // setDash -- real dots it is). RTL walks right -> left.
             const dir = rtl ? -1 : 1;
             cr.setSourceRGBA(edge[0], edge[1], edge[2], Math.min(0.65, edge[3] * 2.6));
             let acc = rtl ? PX1 : PX0;
@@ -629,11 +534,6 @@ export function paintChart(cr, opts) {
             }
             cr.restore();
         } else {
-            // Icons only: ride the exact printed-label rhythm -- same stride
-            // (multiples of EVERY), same gutter offset, same edge anchors --
-            // so every icon sits centred over its hour/value text column.
-            // At the card edges the labels flow inward and the icon follows
-            // the TEXT centre, not the data point.
             const step = EVERY * Math.max(1, Math.ceil(30 / span / EVERY));
             for (let i = off0; i < n; i += step) {
                 const ax = X(i);
@@ -657,36 +557,14 @@ export function paintChart(cr, opts) {
     }
 
     cr.popGroupToSource();
-    if (hasNow && nowFrac > 0) {
-        const fx = PX0 + nowFrac * (PX1 - PX0);
-        cr.save();
-        cr.rectangle(0, 0, fx, h);
-        cr.clip();
-        cr.paintWithAlpha(opts.pastKeep ?? 0.55);   // lived hours recede
-        cr.restore();
-        cr.save();
-        cr.rectangle(fx, 0, w - fx, h);
-        cr.clip();
+    if (hasNow && nowFrac > 0)
+        drawTimeFade(cr, w, h, PX0 + nowFrac * (PX1 - PX0), opts.pastKeep ?? 0.55);
+    else
         cr.paint();
-        cr.restore();
-    } else {
-        cr.paint();
-    }
     cr.restore();
 
-    // now marker (manual dashes -- cr.setDash binding is unreliable in GJS)
-    if (nowFrac !== null && nowFrac >= 0 && nowFrac <= 1) {
-        const nx = PX0 + nowFrac * (PX1 - PX0);
-        cr.save();
-        cr.setSourceRGBA(1, 1, 1, 0.35);
-        cr.setLineWidth(1);
-        for (let y = TOP - 26; y < h - BOT; y += 8) {
-            cr.moveTo(nx, y);
-            cr.lineTo(nx, Math.min(y + 3, h - BOT));
-        }
-        cr.stroke();
-        cr.restore();
-    }
+    if (nowFrac !== null && nowFrac >= 0 && nowFrac <= 1)
+        drawNowMarker(cr, PX0 + nowFrac * (PX1 - PX0), h);
 
     // accent label riding the now marker, above the veil -- drawn at the
     // exact slot reserved in the label pass (curve-cleared baseline, inward
@@ -699,8 +577,6 @@ export function paintChart(cr, opts) {
                                   : (opts.nowLabel ?? [acR, acG, acB])), 1],
                   anchor: nowPlace.a});
 }
-
-/* -- morphing helper (shared by the menu) -------------------------------- */
 
 /** ease-out cubic, 0..1 */
 export function ease(k) {

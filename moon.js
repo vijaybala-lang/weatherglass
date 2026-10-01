@@ -1,23 +1,4 @@
-/* moon.js -- the real moon: computed phase + a soft, pale photographic face.
- *
- * moonPhase(date) gives the lunar age (0=new, .25=first quarter, .5=full,
- * .75=last quarter) from a known new-moon epoch and the mean synodic month
- * -- accurate to a few hours, plenty to pick the right picture.
- *
- * paintMoon() draws that phase as a single lit region bounded by the limb
- * (a true half-circle) and the terminator (a half-ellipse whose signed
- * x-radius cos(2pi-phase) swings it toward the lit side for a crescent and
- * away for a gibbous moon -- the classic two-arc construction). The maria
- * are painted only inside the lit region, so the terminator bites into them.
- *
- * The sky-style face follows soft illustration references: a pale sphere
- * lit from the upper left with very low-contrast maria -- irregular blobs
- * unioned into ONE path and filled once, which is what stops the surface
- * reading as a pile of overlapping circles.
- *
- * Pure cairo + real time: importable from the host for offscreen previews,
- * and side-effect free (the caller supplies the phase it wants).
- */
+/* moon.js -- lunar phase calculation and rendering */
 
 import Cairo from 'gi://cairo';
 
@@ -46,38 +27,30 @@ export function moonPhase(date = new Date()) {
         phase += 1;
     const illum = (1 - Math.cos(TAU * phase)) / 2;
     const name = PHASE_NAMES.find(b => phase < b[0])[1];
-    return {phase, illum, waxing: phase < 0.5, name};
+    return { phase, illum, waxing: phase < 0.5, name };
 }
 
-/* -- surface data -----------------------------------------------------------
- * The near side's maria, roughly where photos put them: Imbrium top, the
- * Procellarum sweep down the west limb, the Serenitatis->Tranquillitatis->
- * Fecunditatis chain east, Nubium/Humorum low. Each spot becomes a clump of
- * overlapping circles whose wobble comes from a seeded PRNG, so every frame
- * draws the exact same organic outline. Coords are unit-disc, y down. */
 const MARIA_SPOTS = [
     [-0.15, -0.35, 0.30, 11],   // Imbrium
-    [ 0.05, -0.58, 0.12, 88],   // Frigoris
+    [0.05, -0.58, 0.12, 88],   // Frigoris
     [-0.45, -0.05, 0.26, 22],   // Procellarum (north)
-    [-0.36,  0.22, 0.24, 33],   // Procellarum (south)
-    [ 0.20, -0.22, 0.18, 44],   // Serenitatis
-    [ 0.34,  0.04, 0.20, 55],   // Tranquillitatis
-    [ 0.30,  0.30, 0.16, 66],   // Fecunditatis
-    [-0.10,  0.45, 0.16, 77],   // Nubium / Humorum
-    [ 0.05, -0.12, 0.15, 99],   // light bridge linking the seas
-    [ 0.44, -0.30, 0.13, 111],  // east of Serenitatis
-    [ 0.10,  0.58, 0.14, 122],  // south mass
-    [-0.52,  0.42, 0.12, 133],  // south-west
+    [-0.36, 0.22, 0.24, 33],   // Procellarum (south)
+    [0.20, -0.22, 0.18, 44],   // Serenitatis
+    [0.34, 0.04, 0.20, 55],   // Tranquillitatis
+    [0.30, 0.30, 0.16, 66],   // Fecunditatis
+    [-0.10, 0.45, 0.16, 77],   // Nubium / Humorum
+    [0.05, -0.12, 0.15, 99],   // light bridge linking the seas
+    [0.44, -0.30, 0.13, 111],  // east of Serenitatis
+    [0.10, 0.58, 0.14, 122],  // south mass
+    [-0.52, 0.42, 0.12, 133],  // south-west
 ];
 
-/* faint speck craters + one bright ray crater (Tycho, low centre) */
 const SPECKS = [
     [-0.25, -0.15, 0.030], [0.12, 0.25, 0.028], [-0.05, 0.20, 0.022],
     [0.42, -0.38, 0.024], [-0.40, 0.40, 0.026], [0.15, -0.45, 0.020],
     [-0.20, 0.30, 0.024], [0.50, 0.15, 0.020], [0.22, 0.55, 0.022],
 ];
 
-/* mulberry32: tiny deterministic PRNG, fixed seed per maria spot */
 function prng(seed) {
     let a = seed >>> 0;
     return () => {
@@ -101,7 +74,7 @@ function mariaCircles() {
                 const d = rad * (0.3 + rnd() * 0.80);
                 mariaCache.push([
                     cx + Math.cos(a) * d,
-                    cy + Math.sin(a) * d * 0.85,     // slight vertical squash
+                    cy + Math.sin(a) * d * 0.85,
                     rad * (0.36 + rnd() * 0.34),
                 ]);
             }
@@ -110,9 +83,6 @@ function mariaCircles() {
     return mariaCache;
 }
 
-/* Trace the lit region of a phase into the current path (centre = CTM origin,
- * radius r). Assumes the "right-lit" convention; waning is a mirror-image
- * of this, so paintMoon mirrors the whole face with scale(-1,1). */
 function litPath(cr, r, phase) {
     const s = Math.cos(TAU * phase);   // signed terminator x-radius / r
     cr.newPath();
@@ -131,7 +101,7 @@ function litPath(cr, r, phase) {
  * opts: reserved.
  */
 export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
-    const {illum, waxing} = moonPhaseFrom(phase);
+    const { illum, waxing } = moonPhaseFrom(phase);
 
     cr.save();
     cr.translate(cx, cy);
@@ -146,13 +116,13 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
         cr.fill();
     }
 
-    if (illum < 0.012) {          // new moon: earthshine ghost only
+    if (illum < 0.012) {
         cr.restore();
         return;
     }
 
     if (!waxing)
-        cr.scale(-1, 1);          // mirror to put the lit limb on the left
+        cr.scale(-1, 1);
 
     cr.save();
     litPath(cr, r, phase);
@@ -184,7 +154,7 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
     // gentle sphere shading: light off the upper-left limb, slightly cooler
     // and darker toward the far edge -- pale grey, never a bright white coin
     const bg = new Cairo.RadialGradient(-r * 0.3, -r * 0.3, r * 0.15,
-                                        0, 0, r * 1.25);
+        0, 0, r * 1.25);
     bg.addColorStopRGBA(0, 0.95, 0.95, 0.945, 1);
     bg.addColorStopRGBA(0.6, 0.875, 0.88, 0.895, 1);
     bg.addColorStopRGBA(1, 0.715, 0.73, 0.775, 1);
@@ -199,10 +169,10 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
     const newSub = cr.newSubPath ?? cr.new_sub_path;
     cr.newPath();
     for (const [x, y, rad] of mariaCircles()) {
-        newSub.call(cr);                       // no connecting lines between blobs
+        newSub.call(cr);
         cr.arc(x * r, y * r, rad * r, 0, TAU);
     }
-    cr.setSourceRGBA(0.60, 0.62, 0.68, 0.20);   // whisper-low contrast
+    cr.setSourceRGBA(0.60, 0.62, 0.68, 0.20);
     cr.fill();
 
     // a whisper of small craters + Tycho's bright dot low-centre
@@ -217,12 +187,12 @@ export function paintMoon(cr, cx, cy, r, phase, style = 'sky', opts = {}) {
     cr.setSourceRGBA(1, 1, 1, 0.35);
     cr.fill();
 
-    cr.restore();      // discards the clip + mirror
+    cr.restore();
     cr.restore();
 }
 
 /* moonPhase() needs a Date; paintMoon only has the 0..1 number -- derive the
  * two fields it uses without re-reading the clock. */
 function moonPhaseFrom(phase) {
-    return {illum: (1 - Math.cos(TAU * phase)) / 2, waxing: phase < 0.5};
+    return { illum: (1 - Math.cos(TAU * phase)) / 2, waxing: phase < 0.5 };
 }
