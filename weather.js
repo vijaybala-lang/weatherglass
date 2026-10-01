@@ -5,13 +5,13 @@ import Soup from 'gi://Soup';
 
 const N_ = s => s;
 
-const API = 'https://api.open-meteo.com/v1/forecast';
-const GEO = 'https://geocoding-api.open-meteo.com/v1/search';
-const IPINFO = 'https://ipinfo.io/json';
+const OPEN_METEO_FORECAST_API = 'https://api.open-meteo.com/v1/forecast';
+const OPEN_METEO_GEOCODING_API = 'https://geocoding-api.open-meteo.com/v1/search';
+const IPINFO_API = 'https://ipinfo.io/json';
 // MET Norway (Norwegian Meteorological Institute), keyless, global;
 // strict about identifying User-Agents (403 otherwise)
-const MET = 'https://api.met.no/weatherapi/locationforecast/2.0/complete';
-const NWS = 'https://api.weather.gov';
+const MET_NORWAY_API = 'https://api.met.no/weatherapi/locationforecast/2.0/complete';
+const NOAA_NWS_API = 'https://api.weather.gov';
 
 /* -- WMO 4677 weather codes -> description + animation scene --------------- */
 
@@ -47,8 +47,8 @@ export const WMO = {
 };
 
 export function sceneFor(code, isDay = true) {
-    const w = WMO[code] ?? {desc: N_('Unknown'), day: 'cloud', night: 'cloud'};
-    return {scene: isDay ? w.day : w.night, desc: w.desc};
+    const entry = WMO[code] ?? {desc: N_('Unknown'), day: 'cloud', night: 'cloud'};
+    return {scene: isDay ? entry.day : entry.night, desc: entry.desc};
 }
 
 /**
@@ -62,29 +62,29 @@ export function sceneFor(code, isDay = true) {
  */
 export function deriveScene(current) {
     const {code, visibility, cape, isDay} = current;
-    const liquid = code >= 51 && code <= 82;   // drizzle ... showers
-    if (code === 96 || code === 99 || (cape >= 2500 && liquid))
+    const isLiquidPrecip = code >= 51 && code <= 82;   // drizzle ... showers
+    if (code === 96 || code === 99 || (cape >= 2500 && isLiquidPrecip))
         return {scene: 'hail', desc: N_('Thunderstorm, hail')};
-    if (code === 95 || (cape >= 1200 && liquid))
+    if (code === 95 || (cape >= 1200 && isLiquidPrecip))
         return {scene: 'storm', desc: N_('Thunderstorm')};
     if (code === 45 || code === 48)
         return sceneFor(code, isDay);
-    if (visibility !== null && visibility < 1000 && !liquid)
+    if (visibility !== null && visibility < 1000 && !isLiquidPrecip)
         return {scene: 'fog', desc: N_('Fog')};
     return sceneFor(code, isDay);
 }
 
 /* -- formatting helpers --------------------------------------------------- */
 
-export function fmtTemp(c, units) {
-    const v = units === 'imperial' ? c * 9 / 5 + 32 : c;
-    return `${Math.round(v)}°`;
+export function fmtTemp(celsiusTemp, units) {
+    const convertedTemp = units === 'imperial' ? celsiusTemp * 9 / 5 + 32 : celsiusTemp;
+    return `${Math.round(convertedTemp)}°`;
 }
 
-export function fmtWind(kmh, units) {
+export function fmtWind(windKmh, units) {
     if (units === 'imperial')
-        return `${Math.round(kmh * 0.621371)} mph`;
-    return `${Math.round(kmh)} km/h`;
+        return `${Math.round(windKmh * 0.621371)} mph`;
+    return `${Math.round(windKmh)} km/h`;
 }
 
 const DAYS = [N_('Sun'), N_('Mon'), N_('Tue'), N_('Wed'),
@@ -94,8 +94,8 @@ const DAYS = [N_('Sun'), N_('Mon'), N_('Tue'), N_('Wed'),
  *  itself zone-independent; the msgids are the three-letter English
  *  abbreviations, translated to the locale's usual short weekday). */
 export function dayName(iso) {
-    const [y, m, d] = iso.split('-').map(Number);
-    return DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+    const [year, month, day] = iso.split('-').map(Number);
+    return DAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
 }
 
 /**
@@ -108,43 +108,43 @@ export function dayName(iso) {
  * midnight to midnight.
  * Comparison is on ISO strings (zero-padded) -- no Date parsing, no tz traps.
  */
-const NOW_BACKFILL = 2;
+const NOW_BACKFILL_HOURS = 2;
 
 export function daySlice(hourly, daily, dayIndex, nowIso) {
     if (dayIndex === 0 && nowIso) {
-        const hour = nowIso.slice(0, 13);                     // 'YYYY-MM-DDTHH'
-        const at = hourly.time.findIndex(t => t.slice(0, 13) === hour);
-        if (at >= 0) {
-            const start = Math.max(0, at - NOW_BACKFILL);
-            const idx = [];
-            for (let i = start; i < Math.min(start + 24, hourly.time.length); i++)
-                idx.push(i);
-            return idx;
+        const currentHourPrefix = nowIso.slice(0, 13);                     // 'YYYY-MM-DDTHH'
+        const matchIndex = hourly.time.findIndex(timeStr => timeStr.slice(0, 13) === currentHourPrefix);
+        if (matchIndex >= 0) {
+            const startIndex = Math.max(0, matchIndex - NOW_BACKFILL_HOURS);
+            const hourlyIndices = [];
+            for (let i = startIndex; i < Math.min(startIndex + 24, hourly.time.length); i++)
+                hourlyIndices.push(i);
+            return hourlyIndices;
         }
     }
-    const key = daily[dayIndex]?.date ?? '';
-    const idx = [];
+    const dayKey = daily[dayIndex]?.date ?? '';
+    const hourlyIndices = [];
     for (let i = 0; i < hourly.time.length; i++)
-        if (hourly.time[i].startsWith(key))
-            idx.push(i);
-    return idx.slice(0, 24);
+        if (hourly.time[i].startsWith(dayKey))
+            hourlyIndices.push(i);
+    return hourlyIndices.slice(0, 24);
 }
 
 /** Where the current hour sits inside a daySlice as a 0..1 fraction of the
  *  chart's x axis (matches chart.js X(i) = i/(n-1)); null if outside. */
-export function nowFracIn(hourly, idx, nowIso) {
-    if (!nowIso || !idx || idx.length < 2)
+export function nowFracIn(hourly, hourlyIndices, nowIso) {
+    if (!nowIso || !hourlyIndices || hourlyIndices.length < 2)
         return null;
-    const hour = nowIso.slice(0, 13);
-    const at = idx.indexOf(hourly.time.findIndex(t => t.slice(0, 13) === hour));
-    return at < 0 ? null : at / (idx.length - 1);
+    const currentHourPrefix = nowIso.slice(0, 13);
+    const matchIndex = hourlyIndices.indexOf(hourly.time.findIndex(timeStr => timeStr.slice(0, 13) === currentHourPrefix));
+    return matchIndex < 0 ? null : matchIndex / (hourlyIndices.length - 1);
 }
 
 /* -- HTTP ------------------------------------------------------------------ */
 
-function qs(params) {
+function buildQueryString(params) {
     return Object.entries(params)
-        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .map(([key, val]) => `${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
         .join('&');
 }
 
@@ -173,8 +173,8 @@ function get(url) {
                     return;
                 }
                 resolve(JSON.parse(new TextDecoder().decode(bytes.get_data())));
-            } catch (e) {
-                reject(e);
+            } catch (err) {
+                reject(err);
             } finally {
                 session.abort();
             }
@@ -258,54 +258,54 @@ export class OpenMeteoProvider extends WeatherProvider {
         if (model && model !== 'best_match') {
             params.models = model;
             try {
-                return this.parse(await get(`${API}?${qs(params)}`));
-            } catch (e) {
+                return this.parse(await get(`${OPEN_METEO_FORECAST_API}?${buildQueryString(params)}`));
+            } catch (err) {
                 delete params.models;
-                return this.parse(await get(`${API}?${qs(params)}`));
+                return this.parse(await get(`${OPEN_METEO_FORECAST_API}?${buildQueryString(params)}`));
             }
         }
-        const raw = await get(`${API}?${qs(params)}`);
+        const raw = await get(`${OPEN_METEO_FORECAST_API}?${buildQueryString(params)}`);
         return this.parse(raw);
     }
 
     parse(raw) {
-        const c = raw.current;
-        const d = raw.daily;
-        const h = raw.hourly;
+        const rawCurrent = raw.current;
+        const rawDaily = raw.daily;
+        const rawHourly = raw.hourly;
         const current = {
-            temp: c.temperature_2m,
-            feels: c.apparent_temperature,
-            code: c.weather_code,
-            isDay: !!c.is_day,
-            humidity: c.relative_humidity_2m,
-            precip: c.precipitation ?? 0,
-            wind: c.wind_speed_10m,          // always km/h
-            windDeg: c.wind_direction_10m,
-            uv: c.uv_index ?? null,
-            visibility: c.visibility ?? null,   // metres
-            intensity: c.precipitation ?? 0,
-            timeIso: c.time ?? '',
+            temp: rawCurrent.temperature_2m,
+            feels: rawCurrent.apparent_temperature,
+            code: rawCurrent.weather_code,
+            isDay: !!rawCurrent.is_day,
+            humidity: rawCurrent.relative_humidity_2m,
+            precip: rawCurrent.precipitation ?? 0,
+            wind: rawCurrent.wind_speed_10m,          // always km/h
+            windDeg: rawCurrent.wind_direction_10m,
+            uv: rawCurrent.uv_index ?? null,
+            visibility: rawCurrent.visibility ?? null,   // metres
+            intensity: rawCurrent.precipitation ?? 0,
+            timeIso: rawCurrent.time ?? '',
         };
 
-        const daily = (d.time ?? []).map((date, i) => ({
+        const daily = (rawDaily.time ?? []).map((date, i) => ({
             date,
-            code: d.weather_code[i],
-            tmax: d.temperature_2m_max[i],
-            tmin: d.temperature_2m_min[i],
-            precipProb: d.precipitation_probability_max[i] ?? 0,
-            sunrise: d.sunrise[i],
-            sunset: d.sunset[i],
-            uv: d.uv_index_max[i] ?? 0,
-            windMax: d.wind_speed_10m_max[i] ?? 0,
+            code: rawDaily.weather_code[i],
+            tmax: rawDaily.temperature_2m_max[i],
+            tmin: rawDaily.temperature_2m_min[i],
+            precipProb: rawDaily.precipitation_probability_max[i] ?? 0,
+            sunrise: rawDaily.sunrise[i],
+            sunset: rawDaily.sunset[i],
+            uv: rawDaily.uv_index_max[i] ?? 0,
+            windMax: rawDaily.wind_speed_10m_max[i] ?? 0,
         }));
 
         const hourly = {
-            time: h?.time ?? [],
-            temp: h?.temperature_2m ?? [],
-            precipProb: h?.precipitation_probability ?? [],
-            wind: h?.wind_speed_10m ?? [],
-            code: h?.weather_code ?? [],
-            isDay: (h?.is_day ?? []).map(v => !!v),
+            time: rawHourly?.time ?? [],
+            temp: rawHourly?.temperature_2m ?? [],
+            precipProb: rawHourly?.precipitation_probability ?? [],
+            wind: rawHourly?.wind_speed_10m ?? [],
+            code: rawHourly?.weather_code ?? [],
+            isDay: (rawHourly?.is_day ?? []).map(val => !!val),
         };
 
         return {current, daily, hourly};
@@ -321,28 +321,28 @@ export class OpenMeteoProvider extends WeatherProvider {
  * _showers/_periods modifiers.
  */
 export function agnosToWmo(symbol) {
-    const c = (symbol || '').replace(/_(?:day|night|polartwilight)$/, '');
-    if (!c)
+    const cleanSymbol = (symbol || '').replace(/_(?:day|night|polartwilight)$/, '');
+    if (!cleanSymbol)
         return 3;
-    const heavy = c.includes('heavy');
-    const light = c.includes('light') || c.includes('lght');
-    const shower = c.includes('shower') || c.includes('periods');
-    if (c.includes('hail'))
-        return c.includes('thunder') || heavy ? 99 : 96;
-    if (c.includes('thunder'))
+    const heavy = cleanSymbol.includes('heavy');
+    const light = cleanSymbol.includes('light') || cleanSymbol.includes('lght');
+    const shower = cleanSymbol.includes('shower') || cleanSymbol.includes('periods');
+    if (cleanSymbol.includes('hail'))
+        return cleanSymbol.includes('thunder') || heavy ? 99 : 96;
+    if (cleanSymbol.includes('thunder'))
         return 95;
-    if (c.includes('clearsky')) return 0;
-    if (c.includes('fair')) return 1;
-    if (c.includes('partlycloudy')) return 2;        // before plain cloudy
-    if (c.includes('fog')) return 45;
-    if (c.includes('cloudy')) return 3;
-    if (c.includes('sleet') || c.includes('ice')
-        || (c.includes('rain') && c.includes('snow')))
+    if (cleanSymbol.includes('clearsky')) return 0;
+    if (cleanSymbol.includes('fair')) return 1;
+    if (cleanSymbol.includes('partlycloudy')) return 2;        // before plain cloudy
+    if (cleanSymbol.includes('fog')) return 45;
+    if (cleanSymbol.includes('cloudy')) return 3;
+    if (cleanSymbol.includes('sleet') || cleanSymbol.includes('ice')
+        || (cleanSymbol.includes('rain') && cleanSymbol.includes('snow')))
         return light ? 66 : 67;
-    if (c.includes('drizzle')) return light ? 51 : heavy ? 55 : 53;
-    if (c.includes('snow'))
+    if (cleanSymbol.includes('drizzle')) return light ? 51 : heavy ? 55 : 53;
+    if (cleanSymbol.includes('snow'))
         return shower ? (heavy ? 86 : 85) : (light ? 71 : heavy ? 75 : 73);
-    if (c.includes('rain'))
+    if (cleanSymbol.includes('rain'))
         return shower ? (light ? 80 : heavy ? 82 : 81) : (light ? 61 : heavy ? 65 : 63);
     return 3;
 }
@@ -363,17 +363,17 @@ export function precipProbFrom(amountMm, cloudPct = 0) {
  *  naive ISO, so convert (auto-located users are always in their own tz).
  *  glib >= 2.84 renamed new_from_iso8601_string -> new_from_iso8601(iso, tz). */
 function localFromUtc(iso) {
-    let dt = null;
+    let dateTime = null;
     try {
-        dt = GLib.DateTime.new_from_iso8601
+        dateTime = GLib.DateTime.new_from_iso8601
             ? GLib.DateTime.new_from_iso8601(iso, null)
             : GLib.DateTime.new_from_iso8601_string?.(iso) ?? null;
-    } catch (e) {
-        dt = null;
+    } catch (err) {
+        dateTime = null;
     }
-    if (!dt)
+    if (!dateTime)
         return (iso || '').slice(0, 16).replace(' ', 'T');
-    return dt.to_local().format('%Y-%m-%dT%H:%M');
+    return dateTime.to_local().format('%Y-%m-%dT%H:%M');
 }
 
 /** _day/_night suffix where present, else a generous 06-21 local heuristic */
@@ -391,26 +391,26 @@ export class MetNorwayProvider extends WeatherProvider {
 
     async forecast({latitude, longitude, days = 8}) {
         // locationforecast covers ~9 days regardless; 4-decimal coords
-        const url = `${MET}?lat=${Number(latitude).toFixed(4)}`
+        const url = `${MET_NORWAY_API}?lat=${Number(latitude).toFixed(4)}`
                   + `&lon=${Number(longitude).toFixed(4)}`;
         const raw = await get(url);
         return this.parse(raw, {days});
     }
 
     parse(raw, {days = 8} = {}) {
-        const ts = raw?.properties?.timeseries ?? [];
+        const timeseries = raw?.properties?.timeseries ?? [];
         const hourly = {time: [], temp: [], precipProb: [], wind: [], code: [], isDay: []};
         const byDate = new Map();
 
-        for (const t of ts) {
-            const iso = localFromUtc(t.time);              // '...T21:00'
-            const inst = t.data?.instant?.details ?? {};
-            const n1 = t.data?.next_1_hours ?? {};
-            const sym = n1?.summary?.symbol_code
-                ?? t.data?.next_6_hours?.summary?.symbol_code
-                ?? t.data?.next_12_hours?.summary?.symbol_code ?? '';
+        for (const entry of timeseries) {
+            const iso = localFromUtc(entry.time);              // '...T21:00'
+            const inst = entry.data?.instant?.details ?? {};
+            const next1Hours = entry.data?.next_1_hours ?? {};
+            const sym = next1Hours?.summary?.symbol_code
+                ?? entry.data?.next_6_hours?.summary?.symbol_code
+                ?? entry.data?.next_12_hours?.summary?.symbol_code ?? '';
             const temp = inst.air_temperature ?? null;
-            const prob = precipProbFrom(n1?.details?.precipitation_amount,
+            const prob = precipProbFrom(next1Hours?.details?.precipitation_amount,
                                         inst.cloud_area_fraction);
             const wind = inst.wind_speed !== undefined ? inst.wind_speed * 3.6 : null;
             hourly.time.push(`${iso.slice(0, 13)}:00`);
@@ -456,22 +456,22 @@ export class MetNorwayProvider extends WeatherProvider {
             };
         });
 
-        const fd = ts[0]?.data?.instant?.details ?? {};
-        const n1 = ts[0]?.data?.next_1_hours ?? {};
-        const sym = n1?.summary?.symbol_code ?? '';
+        const firstDetails = timeseries[0]?.data?.instant?.details ?? {};
+        const next1Hours = timeseries[0]?.data?.next_1_hours ?? {};
+        const sym = next1Hours?.summary?.symbol_code ?? '';
         const current = {
-            temp: fd.air_temperature ?? null,
-            feels: fd.apparent_air_temperature ?? fd.air_temperature ?? null,
+            temp: firstDetails.air_temperature ?? null,
+            feels: firstDetails.apparent_air_temperature ?? firstDetails.air_temperature ?? null,
             code: agnosToWmo(sym),
             isDay: isDayFromSymbol(sym, Number(hourly.time[0]?.slice(11, 13))),
-            humidity: fd.relative_humidity ?? 0,
-            precip: n1?.details?.precipitation_amount ?? 0,
-            wind: (fd.wind_speed ?? 0) * 3.6,
-            windDeg: fd.wind_from_direction ?? 0,
-            uv: fd.ultraviolet_index_clear_sky ?? null,
+            humidity: firstDetails.relative_humidity ?? 0,
+            precip: next1Hours?.details?.precipitation_amount ?? 0,
+            wind: (firstDetails.wind_speed ?? 0) * 3.6,
+            windDeg: firstDetails.wind_from_direction ?? 0,
+            uv: firstDetails.ultraviolet_index_clear_sky ?? null,
             visibility: null,
             cape: null,
-            intensity: n1?.details?.precipitation_amount ?? 0,
+            intensity: next1Hours?.details?.precipitation_amount ?? 0,
             timeIso: hourly.time[0] ?? '',
         };
 
@@ -488,61 +488,61 @@ export class MetNorwayProvider extends WeatherProvider {
  * can fall back to sky cover.
  */
 export function nwsTextToWmo(text) {
-    const t = (text || '').toLowerCase();
-    if (!t)
+    const lowerText = (text || '').toLowerCase();
+    if (!lowerText)
         return null;
-    if (t.includes('thunder') || t.includes('storm'))
-        return t.includes('hail') ? 99 : 95;
-    if (t.includes('sleet') || t.includes('freezing rain')
-        || t.includes('freezing drizzle') || t.includes('wintry mix')
-        || (t.includes('snow') && t.includes('rain')))
+    if (lowerText.includes('thunder') || lowerText.includes('storm'))
+        return lowerText.includes('hail') ? 99 : 95;
+    if (lowerText.includes('sleet') || lowerText.includes('freezing rain')
+        || lowerText.includes('freezing drizzle') || lowerText.includes('wintry mix')
+        || (lowerText.includes('snow') && lowerText.includes('rain')))
         return 67;
-    if (t.includes('fog') || t.includes('mist') || t.includes('haze'))
+    if (lowerText.includes('fog') || lowerText.includes('mist') || lowerText.includes('haze'))
         return 45;
-    if (t.includes('snow') || t.includes('blizzard')) {
-        if (t.includes('shower'))
-            return t.includes('heavy') ? 86 : 85;
-        return t.includes('blizzard') || t.includes('heavy') ? 75
-            : t.includes('light') ? 71 : 73;
+    if (lowerText.includes('snow') || lowerText.includes('blizzard')) {
+        if (lowerText.includes('shower'))
+            return lowerText.includes('heavy') ? 86 : 85;
+        return lowerText.includes('blizzard') || lowerText.includes('heavy') ? 75
+            : lowerText.includes('light') ? 71 : 73;
     }
-    if (t.includes('drizzle'))
-        return t.includes('heavy') ? 55 : 51;
-    if (t.includes('rain') || t.includes('shower')) {
-        if (t.includes('shower'))
-            return t.includes('heavy') ? 82 : t.includes('light') ? 80 : 81;
-        return t.includes('heavy') ? 65 : t.includes('light') ? 61 : 63;
+    if (lowerText.includes('drizzle'))
+        return lowerText.includes('heavy') ? 55 : 51;
+    if (lowerText.includes('rain') || lowerText.includes('shower')) {
+        if (lowerText.includes('shower'))
+            return lowerText.includes('heavy') ? 82 : lowerText.includes('light') ? 80 : 81;
+        return lowerText.includes('heavy') ? 65 : lowerText.includes('light') ? 61 : 63;
     }
-    if (t.includes('overcast') || t.includes('mostly cloudy')
-        || t.includes('scattered') || t.includes('widespread'))
+    if (lowerText.includes('overcast') || lowerText.includes('mostly cloudy')
+        || lowerText.includes('scattered') || lowerText.includes('widespread'))
         return 3;
-    if (t.includes('partly') || t.includes('mostly clear')
-        || t.includes('mostly sunny'))
+    if (lowerText.includes('partly') || lowerText.includes('mostly clear')
+        || lowerText.includes('mostly sunny'))
         return 2;
-    if (t.includes('cloud'))                    // "cloudy", "increasing clouds"
+    if (lowerText.includes('cloud'))                    // "cloudy", "increasing clouds"
         return 3;
     return 0;                                   // sunny / clear / fair / dry
 }
 
 /** first number in '10 to 15 mph' / 'Calm' / '57' -- max when a range */
 function nwsNum(text) {
-    const m = String(text ?? '').match(/-?\d+(?:\.\d+)?/g);
-    return m ? Math.max(...m.map(Number)) : null;
+    const matches = String(text ?? '').match(/-?\d+(?:\.\d+)?/g);
+    return matches ? Math.max(...matches.map(Number)) : null;
 }
 
 /** wind phrase -> km/h ('10 mph', '12 kt', 'Calm' -> 0, metric passthrough) */
 function nwsWindKmh(text) {
-    const v = nwsNum(text);
-    if (v === null)
+    const num = nwsNum(text);
+    if (num === null)
         return 0;
-    const t = String(text).toLowerCase();
-    if (t.includes('kt') || t.includes('knot')) return v * 1.852;
-    if (t.includes('km')) return v;
-    if (t.includes('m/s')) return v * 3.6;
-    return v * 1.60934;                         // default: mph
+    const lower = String(text).toLowerCase();
+    if (lower.includes('kt') || lower.includes('knot')) return num * 1.852;
+    if (lower.includes('km')) return num;
+    if (lower.includes('m/s')) return num * 3.6;
+    return num * 1.60934;                         // default: mph
 }
 
-const nwsTempC = (v, unit) =>
-    v === null ? null : (String(unit).toUpperCase() === 'F' ? (v - 32) * 5 / 9 : v);
+const nwsTempC = (val, unit) =>
+    val === null ? null : (String(unit).toUpperCase() === 'F' ? (val - 32) * 5 / 9 : val);
 
 export class NoaaNwsProvider extends WeatherProvider {
     constructor() {
@@ -551,117 +551,117 @@ export class NoaaNwsProvider extends WeatherProvider {
     }
 
     async forecast({latitude, longitude, days = 8}) {
-        let pts;
+        let pointsData;
         try {
-            pts = await get(`${NWS}/points/${Number(latitude).toFixed(4)},`
-                          + `${Number(longitude).toFixed(4)}`);
-        } catch (e) {
-            throw new Error(/HTTP 4\d\d/.test(e.message)
+            pointsData = await get(`${NOAA_NWS_API}/points/${Number(latitude).toFixed(4)},`
+                                 + `${Number(longitude).toFixed(4)}`);
+        } catch (err) {
+            throw new Error(/HTTP 4\d\d/.test(err.message)
                 ? _('NOAA NWS covers US locations only — pick another provider')
-                : e.message);
+                : err.message);
         }
-        const p = pts?.properties ?? {};
-        if (!p.forecastHourly || !p.forecast)
+        const props = pointsData?.properties ?? {};
+        if (!props.forecastHourly || !props.forecast)
             throw new Error(_('NOAA NWS returned no forecast for this location'));
 
         const [hourly, daily] = await Promise.all([
-            get(p.forecastHourly), get(p.forecast)]);
+            get(props.forecastHourly), get(props.forecast)]);
 
-        let obs = null;
+        let observationData = null;
         try {
-            const sts = await get(p.observationStations);
-            const feats = (sts?.features ?? []).map(f => ({
-                id: f?.properties?.stationIdentifier ?? f?.properties?.stationId,
-                dist: f?.properties?.distance?.value ?? Infinity,
-            })).filter(f => f.id);
-            if (feats.length) {
-                const near = feats.reduce((a, b) => (b.dist < a.dist ? b : a));
-                obs = await get(`${NWS}/stations/${near.id}/observations/latest`);
+            const stationsData = await get(props.observationStations);
+            const stationFeatures = (stationsData?.features ?? []).map(feature => ({
+                id: feature?.properties?.stationIdentifier ?? feature?.properties?.stationId,
+                distance: feature?.properties?.distance?.value ?? Infinity,
+            })).filter(feature => feature.id);
+            if (stationFeatures.length) {
+                const nearestStation = stationFeatures.reduce((closest, curr) => (curr.distance < closest.distance ? curr : closest));
+                observationData = await get(`${NOAA_NWS_API}/stations/${nearestStation.id}/observations/latest`);
             }
-        } catch (e) {
-            obs = null;
+        } catch (err) {
+            observationData = null;
         }
-        return this.parse({hourly, daily, obs, days});
+        return this.parse({hourly, daily, obs: observationData, days});
     }
 
     parse({hourly, daily, obs, days = 8} = {}) {
-        const h = {time: [], temp: [], precipProb: [], wind: [], code: [], isDay: []};
+        const hourlyData = {time: [], temp: [], precipProb: [], wind: [], code: [], isDay: []};
         // NWS times are already local-with-offset -- slice() keeps local naive
-        for (const per of hourly?.properties?.periods ?? []) {
+        for (const period of hourly?.properties?.periods ?? []) {
             // NWS periods: startTime '2026-09-27T07:00:00-07:00', isDaytime
-            const iso = String(per.startTime ?? per.time ?? '').slice(0, 16);
+            const iso = String(period.startTime ?? period.time ?? '').slice(0, 16);
             if (!iso)
                 continue;
-            h.time.push(`${iso.slice(0, 13)}:00`);
-            h.temp.push(nwsTempC(nwsNum(per.temperature), per.temperatureUnit));
-            h.precipProb.push(per.probabilityOfPrecipitation?.value ?? 0);
-            h.wind.push(nwsWindKmh(per.windSpeed));
-            h.code.push(nwsTextToWmo(per.shortForecast) ?? 3);
-            h.isDay.push(!!(per.isDaytime ?? per.isDayTime));
+            hourlyData.time.push(`${iso.slice(0, 13)}:00`);
+            hourlyData.temp.push(nwsTempC(nwsNum(period.temperature), period.temperatureUnit));
+            hourlyData.precipProb.push(period.probabilityOfPrecipitation?.value ?? 0);
+            hourlyData.wind.push(nwsWindKmh(period.windSpeed));
+            hourlyData.code.push(nwsTextToWmo(period.shortForecast) ?? 3);
+            hourlyData.isDay.push(!!(period.isDaytime ?? period.isDayTime));
         }
 
         // day/night period pairs -> daily rows keyed by the period's start date
         const byDate = new Map();
-        for (const per of daily?.properties?.periods ?? []) {
-            const date = String(per.startTime ?? per.time ?? '').slice(0, 10);
+        for (const period of daily?.properties?.periods ?? []) {
+            const date = String(period.startTime ?? period.time ?? '').slice(0, 10);
             if (!date)
                 continue;
             let row = byDate.get(date);
             if (!row)
                 byDate.set(date, row = {date, code: 3, tmax: null, tmin: null,
                                         precipProb: 0, windMax: 0});
-            const t = nwsTempC(nwsNum(per.temperature), per.temperatureUnit);
-            if (per.isDaytime ?? per.isDayTime) {
-                row.code = nwsTextToWmo(per.shortForecast) ?? row.code;
-                row.tmax = t ?? row.tmax;
+            const temp = nwsTempC(nwsNum(period.temperature), period.temperatureUnit);
+            if (period.isDaytime ?? period.isDayTime) {
+                row.code = nwsTextToWmo(period.shortForecast) ?? row.code;
+                row.tmax = temp ?? row.tmax;
                 row.precipProb = Math.max(row.precipProb,
-                                          per.probabilityOfPrecipitation?.value ?? 0);
-                row.windMax = Math.max(row.windMax, nwsWindKmh(per.windSpeed));
+                                          period.probabilityOfPrecipitation?.value ?? 0);
+                row.windMax = Math.max(row.windMax, nwsWindKmh(period.windSpeed));
             } else {
-                row.tmin = t ?? row.tmin;       // tonight's low owns tonight's date
+                row.tmin = temp ?? row.tmin;       // tonight's low owns tonight's date
                 row.precipProb = Math.max(row.precipProb,
-                                          per.probabilityOfPrecipitation?.value ?? 0);
+                                          period.probabilityOfPrecipitation?.value ?? 0);
             }
         }
         const rows = [...byDate.values()].slice(0, days);
         const day = {
             current: null,
             daily: rows.map(r => ({...r, sunrise: null, sunset: null, uv: null})),
-            hourly: h,
+            hourly: hourlyData,
         };
 
-        const op = obs?.properties;
+        const observationProps = obs?.properties;
         const hourRh = hourly?.properties?.periods?.[0]
             ?.relativeHumidity?.value ?? 0;
-        if (op?.temperature?.value !== undefined && op?.temperature?.value !== null) {
-            const code = nwsTextToWmo(op.textDescription)
-                ?? (op.skyCover?.value >= 87 ? 3 : op.skyCover?.value >= 25 ? 2 : 0);
+        if (observationProps?.temperature?.value !== undefined && observationProps?.temperature?.value !== null) {
+            const code = nwsTextToWmo(observationProps.textDescription)
+                ?? (observationProps.skyCover?.value >= 87 ? 3 : observationProps.skyCover?.value >= 25 ? 2 : 0);
             day.current = {
-                temp: op.temperature.value,
-                feels: op.apparentTemperature?.value ?? op.temperature.value,
+                temp: observationProps.temperature.value,
+                feels: observationProps.apparentTemperature?.value ?? observationProps.temperature.value,
                 code,
                 isDay: (() => {
-                    const hr = Number(String(op.timestamp ?? '').slice(11, 13));
+                    const hr = Number(String(observationProps.timestamp ?? '').slice(11, 13));
                     return hr >= 6 && hr < 21;
                 })(),
-                humidity: op.relativeHumidity?.value ?? hourRh,
-                precip: op.precipitation?.value ?? 0,
-                wind: op.windSpeed?.value ?? 0,           // already km/h
-                windDeg: op.windDirection?.value ?? 0,
-                uv: op.uvIndex ?? null,
-                visibility: op.visibility?.value ?? null,
+                humidity: observationProps.relativeHumidity?.value ?? hourRh,
+                precip: observationProps.precipitation?.value ?? 0,
+                wind: observationProps.windSpeed?.value ?? 0,           // already km/h
+                windDeg: observationProps.windDirection?.value ?? 0,
+                uv: observationProps.uvIndex ?? null,
+                visibility: observationProps.visibility?.value ?? null,
                 cape: null,                               // NWS ob has no CAPE
-                intensity: op.precipitation?.value ?? 0,
-                timeIso: String(op.timestamp ?? '').slice(0, 16),
+                intensity: observationProps.precipitation?.value ?? 0,
+                timeIso: String(observationProps.timestamp ?? '').slice(0, 16),
             };
         } else {
             const i = 0;
             day.current = {
-                temp: h.temp[i] ?? null, feels: h.temp[i] ?? null,
-                code: h.code[i] ?? 3, isDay: !!h.isDay[i],
-                humidity: hourRh, precip: 0, wind: h.wind[i] ?? 0, windDeg: 0,
+                temp: hourlyData.temp[i] ?? null, feels: hourlyData.temp[i] ?? null,
+                code: hourlyData.code[i] ?? 3, isDay: !!hourlyData.isDay[i],
+                humidity: hourRh, precip: 0, wind: hourlyData.wind[i] ?? 0, windDeg: 0,
                 uv: null, visibility: null, cape: null, intensity: 0,
-                timeIso: h.time[i] ?? '',
+                timeIso: hourlyData.time[i] ?? '',
             };
         }
         return day;
@@ -693,7 +693,7 @@ export class WeatherClient {
 
     /** IP-based approximate location (keyless, ~city accuracy). */
     async detectLocation() {
-        const raw = await get(IPINFO);
+        const raw = await get(IPINFO_API);
         const [lat, lon] = (raw.loc ?? '').split(',').map(Number);
         if (!Number.isFinite(lat) || !Number.isFinite(lon))
             throw new Error('IP geolocation failed');
@@ -715,10 +715,10 @@ export class WeatherClient {
         let lon = longitude;
         let detectedName = null;
         if (auto) {
-            const det = await this.detectLocation();
-            lat = det.latitude;
-            lon = det.longitude;
-            detectedName = det.name || null;
+            const detectedLocation = await this.detectLocation();
+            lat = detectedLocation.latitude;
+            lon = detectedLocation.longitude;
+            detectedName = detectedLocation.name || null;
         }
         const data = await this.provider.forecast({latitude: lat, longitude: lon,
                                                    days, model: this.model});
@@ -727,14 +727,14 @@ export class WeatherClient {
 
     /** City search for the preferences dialog. */
     async geocode(query) {
-        const raw = await get(`${GEO}?${qs({name: query, count: 6,
-                                            language: 'en', format: 'json'})}`);
-        return (raw.results ?? []).map(r => ({
-            name: r.name,
-            admin: r.admin1 ?? '',
-            country: r.country ?? '',
-            latitude: r.latitude,
-            longitude: r.longitude,
+        const raw = await get(`${OPEN_METEO_GEOCODING_API}?${buildQueryString({name: query, count: 6,
+                                                                              language: 'en', format: 'json'})}`);
+        return (raw.results ?? []).map(result => ({
+            name: result.name,
+            admin: result.admin1 ?? '',
+            country: result.country ?? '',
+            latitude: result.latitude,
+            longitude: result.longitude,
         }));
     }
 }
