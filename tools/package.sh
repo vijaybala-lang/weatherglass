@@ -14,6 +14,13 @@ ROOT=$PWD
 fail() { echo "package: FAIL: $*" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# cheapest gate first: every module must parse (and must EXIST)
+if SYNTAX=$(gjs -m tools/syntax-check.mjs 2>&1); then :; fi
+if grep -q FAILED <<<"$SYNTAX"; then
+    echo "$SYNTAX" >&2
+    fail 'syntax check failed'
+fi
+
 UUID=$(python3 -c "import json;print(json.load(open('metadata.json'))['uuid'])") \
     || fail 'metadata.json unreadable'
 SCHEMA=$(python3 -c "import json;print(json.load(open('metadata.json'))['settings-schema'])")
