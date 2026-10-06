@@ -596,22 +596,16 @@ export function paintChart(cr, opts) {
             cr.restore();
         } else {
             const step = labelInterval * Math.max(1, Math.ceil(30 / span / labelInterval));
+            // coins center on the DATA x, clamped whole-disc-in from the
+            // edges -- labels may shift or widen to dodge clipping, but the
+            // icon row must stay evenly spaced (edges clamp symmetrically)
+            const discHalf = STRIP_DISC_RADIUS + 2;
             for (let i = firstLabelIndex; i < pointCount; i += step) {
                 const anchorX = mapX(i);
                 if (anchorX > width - edgeGutter)
                     continue;
-                const anchor = anchorOf(anchorX);
-                const labelX = labelXOf(anchorX, anchor);
-                let textWidth = textPx(cr, fmtValue ? fmtValue(i, values[i])
-                    : String(values[i]), scaledFontSize, false, valueFontWeight)[0];
-                if (fmtHour) {
-                    const hourText = fmtHour(i);
-                    if (hourText)
-                        textWidth = Math.max(textWidth, textPx(cr, hourText, scaledFontSize, false, hourFontWeight)[0]);
-                }
-                const iconCenterX = anchor === 'start' ? labelX + textWidth / 2
-                    : anchor === 'end' ? labelX - textWidth / 2 : labelX;
-                paintSingleIcon(conditionScenes[i], iconCenterX, nights[i],
+                const iconX = Math.min(Math.max(anchorX, discHalf), width - discHalf);
+                paintSingleIcon(conditionScenes[i], iconX, nights[i],
                     STRIP_ICON_SCALE * (ICON_FOOTPRINT_SCALE[conditionScenes[i]] ?? 1),
                     stripCenterY, true, iconIntensities?.[i] ?? null);
             }
