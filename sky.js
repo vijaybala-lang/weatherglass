@@ -39,21 +39,92 @@ const SCENE_FEATURES = {
     wind: { streaks: 22 },
 };
 
-/** Approximate the composited sky RGB at height fraction f (0 top .. 1 bottom). */
-export function sampleSky(scene, night, heightFraction = 0.62) {
+/* Twilight tints, [zenith, mid, low, horizon]: golden hour while the sun
+ * is still up, a violet-to-ember afterglow (or pre-dawn) once it is down. */
+const TWILIGHT_PALETTES = {
+    d: [[0.33, 0.36, 0.64], [0.80, 0.56, 0.62], [0.99, 0.66, 0.46], [1.00, 0.76, 0.44]],
+    n: [[0.09, 0.10, 0.26], [0.30, 0.23, 0.45], [0.74, 0.39, 0.42], [0.96, 0.56, 0.34]],
+};
+const TWILIGHT_STOPS = [0, 0.45, 0.8, 1];
+/* per-stop [strength, easing exponent]: the horizon warms first and the
+ * zenith follows, so mid-twilight never passes through a muddy grey */
+const TWILIGHT_EASE = [[0.75, 1.6], [0.88, 1.1], [0.88, 0.7], [0.9, 0.55]];
+
+/* how much twilight colour shows through each scene's cloud deck */
+const TWILIGHT_CLARITY = {
+    clear: 1, sun: 1, moon: 1, partly: 0.9, wind: 0.8, cloud: 0.5, fog: 0.4,
+    rain: 0.3, sleet: 0.3, snow: 0.35, hail: 0.15, storm: 0.15,
+};
+
+const mix = (a, b, t) => a.map((channelVal, idx) => channelVal + (b[idx] - channelVal) * t);
+
+/* High-sun tints on the same stops, [colour, strength]: a deep zenith blue
+ * over a pale, hazy horizon -- the look of a clear sky near solar noon. */
+const NOON_PALETTE = [
+    [[0.09, 0.32, 0.66], 0.6], [[0.32, 0.58, 0.86], 0.4],
+    [[0.70, 0.84, 0.96], 0.3], [[0.88, 0.93, 0.97], 0.5],
+];
+
+/* noon blue needs open sky: overcast and precipitation keep their grey */
+const NOON_CLARITY = { clear: 1, sun: 1, moon: 1, partly: 0.8, wind: 0.7 };
+
+const clamp01 = v => Math.max(0, Math.min(1, v || 0));
+
+function twilightOf(scene, glow) {
+    return clamp01(glow) * (TWILIGHT_CLARITY[scene] ?? 0);
+}
+
+/* solar: 0..1 sun height through the day (1 at solar noon), null if unknown */
+function noonOf(scene, night, solar) {
+    if (night || !Number.isFinite(solar))
+        return 0;
+    return clamp01(solar) ** 2 * (NOON_CLARITY[scene] ?? 0);
+}
+
+/* Sun's spot on the card: it rides the corner, climbing toward the top
+ * edge at noon and settling lower toward sunrise/sunset. */
+function sunSpot(width, height, night, solar) {
+    const y = !night && Number.isFinite(solar) ? 0.21 - 0.09 * clamp01(solar) : 0.16;
+    return [width * 0.82, height * y];
+}
+
+/* [offset, rgb] gradient stops; with no twilight or noon the inner stops
+ * sit on the plain top->bottom line, so the gradient is unchanged. */
+function skyStops(scene, night, glow, solar) {
     const [top, bottom] = paletteFor(scene, night);
-    return top.map((channelVal, idx) => channelVal + (bottom[idx] - channelVal) * heightFraction);
+    const twilight = twilightOf(scene, glow);
+    const noon = noonOf(scene, night, solar);
+    const tints = TWILIGHT_PALETTES[night ? 'n' : 'd'];
+    return TWILIGHT_STOPS.map((offset, idx) => {
+        const [strength, easing] = TWILIGHT_EASE[idx];
+        const [noonRgb, noonStrength] = NOON_PALETTE[idx];
+        const base = mix(mix(top, bottom, offset), noonRgb, noonStrength * noon);
+        return [offset, mix(base, tints[idx], strength * twilight ** easing)];
+    });
+}
+
+/** Approximate the composited sky RGB at height fraction f (0 top .. 1 bottom). */
+export function sampleSky(scene, night, heightFraction = 0.62, glow = 0, solar = null) {
+    const stops = skyStops(scene, night, glow, solar);
+    const f = Math.max(0, Math.min(1, heightFraction));
+    for (let i = 1; i < stops.length; i++) {
+        const [offset, rgb] = stops[i], [prevOffset, prevRgb] = stops[i - 1];
+        if (f <= offset)
+            return mix(prevRgb, rgb, (f - prevOffset) / (offset - prevOffset));
+    }
+    return stops[stops.length - 1][1];
 }
 
 const MOON_COVER = 0.5;
 
-export function bodyOf(scene, night, width, height) {
+export function bodyOf(scene, night, width, height, glow = 0, solar = null) {
     const features = SCENE_FEATURES[scene] ?? {};
     const baseRadius = 64 * height / 420;
+    const [sunX, sunY] = sunSpot(width, height, night, solar);
     if ((features.sun || features.moon) && !night)
         return {
-            x: width * 0.82, y: height * 0.16, r: baseRadius * 0.45, soft: 10,
-            col: [1, 0.8, 0.4], max: 0.75
+            x: sunX, y: sunY, r: baseRadius * 0.45, soft: 10,
+            col: mix([1, 0.8, 0.4], SUNSET_CORE, twilightOf(scene, glow)), max: 0.75
         };
     if (features.moon && night) {
         const currentPhase = moonPhase().phase;
@@ -221,22 +292,49 @@ export function paintPlain(cr, { w: width, h: height, accent = [0.19, 0.19, 0.19
     cr.restore();
 }
 
-function drawBackdrop(cr, height, top, bottom) {
+function drawBackdrop(cr, height, stops) {
     const gradient = new Cairo.LinearGradient(0, 0, 0, height);
-    gradient.addColorStopRGB(0, ...top);
-    gradient.addColorStopRGB(1, ...bottom);
+    for (const [offset, rgb] of stops)
+        gradient.addColorStopRGB(offset, ...rgb);
     cr.setSource(gradient);
     cr.paint();
 }
 
-function drawSun(cr, sunX, sunY, radius, scale, time) {
-    const auraRadius = radius * 3.6;
+/* Low-sun haze along the horizon: a wide ember ellipse under the sun's
+ * side of the card, breathing slowly. Night side it is the afterglow. */
+function drawHorizonGlow(cr, width, height, twilight, night, time) {
+    if (twilight <= 0.01)
+        return;
+    const breath = 1 + 0.06 * Math.sin(time * 0.4);
+    const alpha = twilight * (night ? 0.42 : 0.34) * breath;
+    const [r, g, b] = night ? [1.0, 0.45, 0.28] : [1.0, 0.62, 0.30];
+    cr.save();
+    cr.translate(width * 0.7, height * 1.04);
+    cr.scale(width * 0.95, height * 0.42);
+    const haze = new Cairo.RadialGradient(0, 0, 0, 0, 0, 1);
+    haze.addColorStopRGBA(0, r, g, b, alpha);
+    haze.addColorStopRGBA(0.45, r, g * 0.92, b * 1.1, alpha * 0.45);
+    haze.addColorStopRGBA(1, r, g, b, 0);
+    cr.setSource(haze);
+    cr.arc(0, 0, 1, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+}
+
+/* sun colours at full twilight: the disc deepens to a molten orange */
+const SUNSET_CORE = [1.0, 0.56, 0.26];
+const SUNSET_RAY = [1.0, 0.52, 0.30];
+
+function drawSun(cr, sunX, sunY, radius, scale, time, twilight = 0, noon = 0) {
+    // high sun bleaches toward white; low sun deepens toward molten orange
+    const warm = (rgb, target) => mix(mix(rgb, [1.0, 0.97, 0.86], 0.35 * noon), target, twilight);
+    const auraRadius = radius * (3.6 + 1.2 * twilight);
     const aura = new Cairo.RadialGradient(sunX, sunY, radius * 0.2, sunX, sunY, auraRadius);
-    const auraBreath = 0.40 + 0.08 * Math.sin(time * 0.7);
-    aura.addColorStopRGBA(0, 1.0, 0.88, 0.45, auraBreath);
-    aura.addColorStopRGBA(0.35, 1.0, 0.72, 0.22, auraBreath * 0.5);
-    aura.addColorStopRGBA(0.7, 1.0, 0.58, 0.12, auraBreath * 0.2);
-    aura.addColorStopRGBA(1, 1.0, 0.50, 0.05, 0);
+    const auraBreath = (0.40 + 0.08 * Math.sin(time * 0.7)) * (1 + 0.3 * twilight);
+    aura.addColorStopRGBA(0, ...warm([1.0, 0.88, 0.45], [1.0, 0.66, 0.36]), auraBreath);
+    aura.addColorStopRGBA(0.35, ...warm([1.0, 0.72, 0.22], [1.0, 0.50, 0.30]), auraBreath * 0.5);
+    aura.addColorStopRGBA(0.7, ...warm([1.0, 0.58, 0.12], [0.95, 0.40, 0.36]), auraBreath * 0.2);
+    aura.addColorStopRGBA(1, ...warm([1.0, 0.50, 0.05], [0.90, 0.36, 0.40]), 0);
     cr.setSource(aura);
     cr.arc(sunX, sunY, auraRadius, 0, TWO_PI);
     cr.fill();
@@ -265,10 +363,12 @@ function drawSun(cr, sunX, sunY, radius, scale, time) {
             rayAlpha = 0.13 + 0.04 * wave;
         }
 
+        // low sun: rays soften as the light scatters through more air
+        rayAlpha *= 1 - 0.3 * twilight;
         const beamGrad = new Cairo.LinearGradient(0, -radius * 0.6, 0, -rayRadius);
-        beamGrad.addColorStopRGBA(0, 1.0, 0.90, 0.50, rayAlpha);
-        beamGrad.addColorStopRGBA(0.5, 1.0, 0.78, 0.28, rayAlpha * 0.6);
-        beamGrad.addColorStopRGBA(1, 1.0, 0.65, 0.15, 0);
+        beamGrad.addColorStopRGBA(0, ...warm([1.0, 0.90, 0.50], SUNSET_RAY), rayAlpha);
+        beamGrad.addColorStopRGBA(0.5, ...warm([1.0, 0.78, 0.28], SUNSET_RAY), rayAlpha * 0.6);
+        beamGrad.addColorStopRGBA(1, ...warm([1.0, 0.65, 0.15], SUNSET_RAY), 0);
 
         cr.setSource(beamGrad);
         cr.newPath();
@@ -285,9 +385,9 @@ function drawSun(cr, sunX, sunY, radius, scale, time) {
     const coronaRadius = radius * 1.9;
     const corona = new Cairo.RadialGradient(sunX, sunY, radius * 0.5, sunX, sunY, coronaRadius);
     const coronaBreath = 0.65 + 0.12 * Math.sin(time * 1.5);
-    corona.addColorStopRGBA(0, 1.0, 0.94, 0.60, coronaBreath);
-    corona.addColorStopRGBA(0.5, 1.0, 0.78, 0.25, coronaBreath * 0.45);
-    corona.addColorStopRGBA(1, 1.0, 0.65, 0.15, 0);
+    corona.addColorStopRGBA(0, ...warm([1.0, 0.94, 0.60], [1.0, 0.74, 0.46]), coronaBreath);
+    corona.addColorStopRGBA(0.5, ...warm([1.0, 0.78, 0.25], [1.0, 0.50, 0.28]), coronaBreath * 0.45);
+    corona.addColorStopRGBA(1, ...warm([1.0, 0.65, 0.15], [0.95, 0.38, 0.30]), 0);
     cr.setSource(corona);
     cr.arc(sunX, sunY, coronaRadius, 0, TWO_PI);
     cr.fill();
@@ -297,10 +397,10 @@ function drawSun(cr, sunX, sunY, radius, scale, time) {
         sunX - radius * 0.25, sunY - radius * 0.25, radius * 0.1,
         sunX, sunY, coreRadius
     );
-    core.addColorStopRGBA(0, 1.0, 0.99, 0.88, 1.0);
-    core.addColorStopRGBA(0.45, 1.0, 0.88, 0.35, 0.98);
-    core.addColorStopRGBA(0.85, 1.0, 0.70, 0.14, 0.96);
-    core.addColorStopRGBA(1, 0.98, 0.55, 0.08, 0.90);
+    core.addColorStopRGBA(0, ...warm([1.0, 0.99, 0.88], [1.0, 0.90, 0.66]), 1.0);
+    core.addColorStopRGBA(0.45, ...warm([1.0, 0.88, 0.35], [1.0, 0.68, 0.32]), 0.98);
+    core.addColorStopRGBA(0.85, ...warm([1.0, 0.70, 0.14], SUNSET_CORE), 0.96);
+    core.addColorStopRGBA(1, ...warm([0.98, 0.55, 0.08], [0.94, 0.36, 0.16]), 0.90);
     cr.setSource(core);
     cr.arc(sunX, sunY, coreRadius, 0, TWO_PI);
     cr.fill();
@@ -322,10 +422,14 @@ function drawMoon(cr, moonX, moonY, radius, phase) {
     cr.paintWithAlpha(MOON_COVER);
 }
 
-function drawStars(cr, stars, time) {
+function drawStars(cr, stars, time, twilight = 0) {
+    // afterglow: only the brightest stars have come out yet
+    const visibility = 1 - 0.85 * twilight;
+    if (visibility <= 0.02)
+        return;
     for (const star of stars) {
         const wave = Math.abs(Math.sin(time * 1.3 + (star.phase ?? star.ph)));
-        const alpha = 0.25 + 0.5 * wave;
+        const alpha = (0.25 + 0.5 * wave) * visibility;
         const radius = star.radius ?? star.r;
         const isTwinkle = star.isTwinkle ?? star.tw;
         const isCool = star.isCool ?? star.cool;
@@ -343,23 +447,27 @@ function drawStars(cr, stars, time) {
     }
 }
 
-function drawCelestial(cr, width, height, scale, features, sky, time, night, phase) {
-    const sunX = width * 0.82, sunY = height * 0.16, radius = 64 * scale;
+function drawCelestial(cr, width, height, scale, features, sky, time, night, phase, twilight,
+    solar, noon) {
+    const [sunX, sunY] = sunSpot(width, height, night, solar);
+    const radius = 64 * scale;
     if ((features.sun || features.moon) && !night) {
-        drawSun(cr, sunX, sunY, radius, scale, time);
+        drawSun(cr, sunX, sunY, radius, scale, time, twilight, noon);
     } else if (features.stars || features.moon) {
-        drawStars(cr, sky.stars, time);
+        drawStars(cr, sky.stars, time, twilight);
         if (features.moon)
             drawMoon(cr, sunX, sunY, radius, phase);
     }
 }
 
-function drawClouds(cr, sky, width, scale, dt, time, scene, night) {
+function drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight) {
     if (!sky.clouds.length)
         return;
     if (!sky.sprite)
         sky.sprite = makeCloudSprite();
-    const tint = night ? 0.45 : 1;
+    // twilight lifts night clouds too: their bellies catch the low light
+    const tint = night ? 0.45 + 0.35 * twilight : 1;
+    const [glowR, glowG, glowB] = night ? [1.0, 0.50, 0.46] : [1.0, 0.62, 0.48];
     for (const cloudItem of sky.clouds) {
         const cloudSpeed = cloudItem.speed ?? cloudItem.sp;
         const cloudScale = cloudItem.scale ?? cloudItem.s;
@@ -372,6 +480,10 @@ function drawClouds(cr, sky, width, scale, dt, time, scene, night) {
         cr.scale(cloudWidth / 400, cloudHeight / 200);
         cr.setSourceSurface(sky.sprite, 0, 0);
         cr.paintWithAlpha((scene === 'clear' || scene === 'sun' ? 0.45 : 0.8) * tint);
+        if (twilight > 0.01) {
+            cr.setSourceRGBA(glowR, glowG, glowB, 0.55 * twilight);
+            cr.maskSurface(sky.sprite, 0, 0);
+        }
         cr.restore();
     }
 }
@@ -500,8 +612,11 @@ function drawLightning(cr, width, height, scale, time) {
     cr.restore();
 }
 
+/* glow: 0..1 twilight strength (1 at sunrise/sunset); solar: 0..1 sun
+ * height through the day (1 at solar noon, null if unknown). Both come
+ * from the menu's city clock. */
 export function paintSky(cr, { w: width, h: height, time, scene, night, sky, scrim = null,
-    radius = 0, phase = null }) {
+    radius = 0, phase = null, glow = 0, solar = null }) {
     const roundedWidth = Math.round(width);
     const roundedHeight = Math.round(height);
     if (sky.scene !== scene || sky.w !== roundedWidth || sky.h !== roundedHeight)
@@ -512,16 +627,19 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky, scr
     sky.lastTime = time;
     sky.lastT = time;
     const features = SCENE_FEATURES[scene] ?? {};
-    const [top, bottom] = paletteFor(scene, night);
+    const twilight = twilightOf(scene, glow);
+    const noon = noonOf(scene, night, solar);
     const scale = height / 420;
 
     cr.save();
     roundClip(cr, width, height, radius);
     cr.clip();
 
-    drawBackdrop(cr, height, top, bottom);
-    drawCelestial(cr, width, height, scale, features, sky, time, night, phase);
-    drawClouds(cr, sky, width, scale, dt, time, scene, night);
+    drawBackdrop(cr, height, skyStops(scene, night, glow, solar));
+    drawHorizonGlow(cr, width, height, twilight, night, time);
+    drawCelestial(cr, width, height, scale, features, sky, time, night, phase, twilight,
+        solar, noon);
+    drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight);
     drawFog(cr, sky, width, dt);
     drawRain(cr, sky, width, height, scale, dt, scene);
     drawSnow(cr, sky, width, height, scale, dt, time);

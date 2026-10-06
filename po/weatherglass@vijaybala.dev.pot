@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 5.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 21:27-0700\n"
+"POT-Creation-Date: 2026-10-05 20:31-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,19 +17,19 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:284 prefs.js:782
+#: extension.js:280 prefs.js:782
 msgid "Weatherglass"
 msgstr ""
 
-#: extension.js:303 menu.js:273
+#: extension.js:299 menu.js:273
 msgid "Fetching weather…"
 msgstr ""
 
-#: extension.js:373
+#: extension.js:369
 msgid "My location"
 msgstr ""
 
-#: extension.js:374
+#: extension.js:370
 msgid "Custom location"
 msgstr ""
 
@@ -45,7 +45,7 @@ msgstr ""
 msgid "Wind"
 msgstr ""
 
-#: menu.js:307 menu.js:382 menu.js:386
+#: menu.js:307 menu.js:388 menu.js:392
 msgid "Weather"
 msgstr ""
 
@@ -53,31 +53,31 @@ msgstr ""
 msgid "Refresh now"
 msgstr ""
 
-#: menu.js:323
+#: menu.js:326
 msgid "Preferences"
 msgstr ""
 
-#: menu.js:338
+#: menu.js:344
 msgid "Show"
 msgstr ""
 
-#: menu.js:338
+#: menu.js:344
 msgid "chart"
 msgstr ""
 
-#: menu.js:387
+#: menu.js:393
 msgid "Could not load the forecast"
 msgstr ""
 
-#: menu.js:533
+#: menu.js:539
 msgid "Refresh forecast — updated"
 msgstr ""
 
-#: menu.js:596
+#: menu.js:602
 msgid "Now"
 msgstr ""
 
-#: menu.js:703
+#: menu.js:709
 msgid "Today"
 msgstr ""
 
@@ -549,10 +549,10 @@ msgstr ""
 msgid "Thu"
 msgstr ""
 
-#: weather.js:560
+#: weather.js:558
 msgid "NOAA NWS covers US locations only — pick another provider"
 msgstr ""
 
-#: weather.js:565
+#: weather.js:563
 msgid "NOAA NWS returned no forecast for this location"
 msgstr ""

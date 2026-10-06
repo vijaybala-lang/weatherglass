@@ -2,25 +2,25 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 21:27-0700\n"
+"POT-Creation-Date: 2026-10-05 20:31-0400\n"
 "Language: id\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:284 prefs.js:782
+#: extension.js:280 prefs.js:782
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
-#: extension.js:303 menu.js:273
+#: extension.js:299 menu.js:273
 msgid "Fetching weather…"
 msgstr "Mengambil cuaca…"
 
-#: extension.js:373
+#: extension.js:369
 msgid "My location"
 msgstr "Lokasi saya"
 
-#: extension.js:374
+#: extension.js:370
 msgid "Custom location"
 msgstr "Lokasi kustom"
 
@@ -36,7 +36,7 @@ msgstr "Presipitasi"
 msgid "Wind"
 msgstr "Angin"
 
-#: menu.js:307 menu.js:382 menu.js:386
+#: menu.js:307 menu.js:388 menu.js:392
 msgid "Weather"
 msgstr "Cuaca"
 
@@ -44,31 +44,31 @@ msgstr "Cuaca"
 msgid "Refresh now"
 msgstr "Muat ulang sekarang"
 
-#: menu.js:323
+#: menu.js:326
 msgid "Preferences"
 msgstr "Preferensi"
 
-#: menu.js:338
+#: menu.js:344
 msgid "Show"
 msgstr "Tampilkan"
 
-#: menu.js:338
+#: menu.js:344
 msgid "chart"
 msgstr "grafik"
 
-#: menu.js:387
+#: menu.js:393
 msgid "Could not load the forecast"
 msgstr "Prakiraan gagal dimuat"
 
-#: menu.js:533
+#: menu.js:539
 msgid "Refresh forecast — updated"
 msgstr "Muat ulang prakiraan — diperbarui"
 
-#: menu.js:596
+#: menu.js:602
 msgid "Now"
 msgstr "Sekarang"
 
-#: menu.js:703
+#: menu.js:709
 msgid "Today"
 msgstr "Hari ini"
 
@@ -557,11 +557,11 @@ msgstr "Sab"
 msgid "Thu"
 msgstr "Kam"
 
-#: weather.js:560
+#: weather.js:558
 msgid "NOAA NWS covers US locations only — pick another provider"
 msgstr "NOAA NWS hanya mencakup lokasi di AS — pilih penyedia lain"
 
-#: weather.js:565
+#: weather.js:563
 msgid "NOAA NWS returned no forecast for this location"
 msgstr "NOAA NWS tidak mengembalikan prakiraan untuk lokasi ini"
 
