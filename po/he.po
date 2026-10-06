@@ -2,25 +2,25 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 21:27-0700\n"
+"POT-Creation-Date: 2026-10-05 20:31-0400\n"
 "Language: he\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:284 prefs.js:782
+#: extension.js:280 prefs.js:782
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
-#: extension.js:303 menu.js:273
+#: extension.js:299 menu.js:273
 msgid "Fetching weather…"
 msgstr "מוריד נתוני מזג אוויר…"
 
-#: extension.js:373
+#: extension.js:369
 msgid "My location"
 msgstr "המיקום שלי"
 
-#: extension.js:374
+#: extension.js:370
 msgid "Custom location"
 msgstr "מיקום מותאם"
 
@@ -36,7 +36,7 @@ msgstr "משקעים"
 msgid "Wind"
 msgstr "רוח"
 
-#: menu.js:307 menu.js:382 menu.js:386
+#: menu.js:307 menu.js:388 menu.js:392
 msgid "Weather"
 msgstr "מזג אוויר"
 
@@ -44,31 +44,31 @@ msgstr "מזג אוויר"
 msgid "Refresh now"
 msgstr "רענן עכשיו"
 
-#: menu.js:323
+#: menu.js:326
 msgid "Preferences"
 msgstr "העדפות"
 
-#: menu.js:338
+#: menu.js:344
 msgid "Show"
 msgstr "תצוגה"
 
-#: menu.js:338
+#: menu.js:344
 msgid "chart"
 msgstr "התרשים"
 
-#: menu.js:387
+#: menu.js:393
 msgid "Could not load the forecast"
 msgstr "לא ניתן לטעון את התחזית"
 
-#: menu.js:533
+#: menu.js:539
 msgid "Refresh forecast — updated"
 msgstr "רענון תחזית — עודכן"
 
-#: menu.js:596
+#: menu.js:602
 msgid "Now"
 msgstr "עכשיו"
 
-#: menu.js:703
+#: menu.js:709
 msgid "Today"
 msgstr "היום"
 
@@ -552,11 +552,11 @@ msgstr "ש׳"
 msgid "Thu"
 msgstr "ה׳"
 
-#: weather.js:560
+#: weather.js:558
 msgid "NOAA NWS covers US locations only — pick another provider"
 msgstr "NOAA NWS מכסה מיקומים בארה״ב בלבד — בחרו ספק אחר"
 
-#: weather.js:565
+#: weather.js:563
 msgid "NOAA NWS returned no forecast for this location"
 msgstr "NOAA NWS לא החזיר תחזית למיקום זה"
 

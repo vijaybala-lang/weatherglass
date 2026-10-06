@@ -70,7 +70,7 @@ function openUri(parent, uri) {
     try {
         const launcher = new Gtk.UriLauncher({ uri });
         const launchPromise = launcher.launch(parent, null);
-        launchPromise?.catch?.(() => { });
+        launchPromise.catch(() => { });
     } catch (err) {
         try {
             Gio.AppInfo.launch_default_for_uri(uri, null);
