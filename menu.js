@@ -27,15 +27,17 @@ const METRICS = {
     wind: { label: N_('Wind'), accent: [0.24, 0.81, 0.56] },
 };
 
-/* Theme colors and scrim */
+/* Theme colors and washes. The animated sky carries its own contrast (the
+ * ink judge reads the painted pixels), so it always presents the dark
+ * treatment regardless of the system theme (see _paintDark); only the
+ * solid style needs a per-theme wash. */
 const THEME_CONFIG = {
     dark: {
-        ink: [0.96, 0.97, 0.98], scrim: null, cls: 'aw-dark',
+        ink: [0.96, 0.97, 0.98], cls: 'aw-dark',
         scrimSolid: [0.03, 0.045, 0.08, 0.78]
     },
     light: {
-        ink: [0.10, 0.13, 0.19], scrim: [1, 1, 1, 0.42], cls: 'aw-light',
-        scrimNight: [0.70, 0.78, 1.0, 0.68],
+        ink: [0.10, 0.13, 0.19], cls: 'aw-light',
         scrimSolid: [0.97, 0.975, 0.995, 0.80]
     },
 };
@@ -169,7 +171,7 @@ const ChartArea = GObject.registerClass(
                 scenes: panel._conditions !== 'off' ? panel._strip?.scenes ?? null : null,
                 nights: panel._conditions !== 'off' ? panel._strip?.nights ?? null : null,
                 pills: panel._conditions === 'pills',
-                dark: panel._dark,
+                dark: panel._paintDark(),
                 // Arabic/Hebrew sessions: the chart mirrors (earliest hour at
                 // the right, now-fade covering the RIGHT half). St widgets
                 // around this canvas already flip via the toolkit; the painted
@@ -233,7 +235,7 @@ export class ForecastPanel {
         this._sky = createSky();
         // radius 18 matches the shell's polished-popup corner radius
         this._skyOpts = {
-            scene: 'loading', night: false, scrim: THEME_CONFIG.dark.scrim,
+            scene: 'loading', night: false, scrim: null,
             sky: this._sky, radius: 18
         };
         this._nowFrac = null;
@@ -413,7 +415,8 @@ export class ForecastPanel {
             this._content.add_style_class_name('aw-theme');
         else
             this._content.remove_style_class_name('aw-theme');
-        this._syncScrim();
+        // crossing into/out of animated swaps the whole presentation theme
+        this._applyTheme();
         if (style === 'accent')
             this._skyArea._stop();     // no sky to tick: park the clock
         else
@@ -650,11 +653,7 @@ export class ForecastPanel {
             night = false;
         }
         this._skyOpts.scene = scene;
-        if (this._skyOpts.night !== night) {
-            this._skyOpts.night = night;
-            // the light wash is night-aware: day->dusk flip changes it
-            this._syncScrim();
-        }
+        this._skyOpts.night = night;
         this._skyOpts.phase = Number.isFinite(state.phase) ? state.phase : null;
         if (this._day === 0 && this._onSky)
             this._onSky(scene, night);
@@ -713,7 +712,7 @@ export class ForecastPanel {
                 const icon = new WeatherIcon({
                     size: 26, animate: false,
                     time: STATIC_TIME + i * 0.2,
-                    dark: this._dark
+                    dark: this._paintDark()
                 });
                 this._tileIcons.push(icon);
                 icon.setScene(scene, { intensity: dayItem.precipProb / 25, windKmh: dayItem.windMax });
@@ -762,7 +761,7 @@ export class ForecastPanel {
             }
             let bg = this._bgAt(0.9);              // tiles live at card foot
             if (i === this._day)                   // selected: + tile glass
-                bg = compGlass(bg, this._dark);
+                bg = compGlass(bg, this._paintDark());
             const ink = pickInk(bg);
             btn.set_style(inkCss(ink));
             lowLabel?.set_style(inkCss(ink, 0.82));
@@ -809,7 +808,7 @@ export class ForecastPanel {
         for (const [key, btn] of Object.entries(this._tabButtons ?? {})) {
             const list = this._bgsOf(btn);
             if (key === this._metric) {
-                const result = judgeInk(list.map(bg => compGlass(bg, this._dark)));
+                const result = judgeInk(list.map(bg => compGlass(bg, this._paintDark())));
                 setActorStyle(btn, inkCss(result.ink) + halo(result));
             } else
                 rowBgList.push(...list);
@@ -853,8 +852,16 @@ export class ForecastPanel {
         return out;
     }
 
+    /* what the CARD shows is not always what the system is: animated sky
+     * is a self-contrasting painting, so it keeps the dark presentation in
+     * light sessions too (no wash, white-biased ink, dark pills). The ink
+     * judge still flips individual labels over bright sun/clouds. */
+    _paintDark() {
+        return this._style === 'animated' || this._dark;
+    }
+
     _theme() {
-        return this._dark ? THEME_CONFIG.dark : THEME_CONFIG.light;
+        return this._paintDark() ? THEME_CONFIG.dark : THEME_CONFIG.light;
     }
 
     _applyTheme() {
@@ -865,8 +872,8 @@ export class ForecastPanel {
         // day-tile + placeholder icons paint their own weather scenes; tell
         // them the new background so pale glyphs (moon/snow/fog) stay visible
         for (const icon of this._tileIcons ?? [])
-            icon.setDark(this._dark);
-        this._placeholderIcon?.setDark(this._dark);
+            icon.setDark(this._paintDark());
+        this._placeholderIcon?.setDark(this._paintDark());
         this._applyTileInk();          // selected-tile glass differs per theme
         this._skyArea.queue_repaint();
         this._chart.queue_repaint();
@@ -874,11 +881,7 @@ export class ForecastPanel {
 
     /* which wash rides over the background for the current menu style */
     _syncScrim() {
-        const theme = this._theme();
-        const wash = this._skyOpts.night && theme.scrimNight ? theme.scrimNight
-            : theme.scrim;
-        this._skyOpts.scrim = this._style === 'solid' ? theme.scrimSolid
-            : this._style === 'accent' ? null : wash;
+        this._skyOpts.scrim = this._style === 'solid' ? this._theme().scrimSolid : null;
     }
 
     _showBody(haveData) {

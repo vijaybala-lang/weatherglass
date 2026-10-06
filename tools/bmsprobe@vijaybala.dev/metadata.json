@@ -1,0 +1,7 @@
+{
+  "uuid": "bmsprobe@vijaybala.dev",
+  "name": "BMS Probe",
+  "description": "nested-only diagnostic: opens menus and logs blur-my-shell surface state",
+  "shell-version": ["50"],
+  "url": "https://github.com/vijaybala-lang/weatherglass"
+}
