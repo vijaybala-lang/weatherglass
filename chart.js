@@ -303,6 +303,9 @@ export function paintChart(cr, opts) {
     // an enabled condition strip asks for noticeably more sky above the line
     const conditionScenes = Array.isArray(opts.scenes) && opts.scenes.length === pointCount
         ? opts.scenes : null;
+    // disc icons center on the data x: hour/value labels join them there
+    // so slot columns read straight; the pills band centers its own icons
+    const stripAlignedX = !!conditionScenes && !opts.pills;
     let minVal = Math.min(...values), maxVal = Math.max(...values);
     if (maxVal - minVal < 1e-6) { minVal -= 1; maxVal += 1; }
     const yPadding = (maxVal - minVal) * 0.35 + 1;
@@ -407,8 +410,15 @@ export function paintChart(cr, opts) {
     for (let i = firstLabelIndex; fmtValue && i < pointCount; i += labelInterval) {
         if (i === nowIndex)
             continue;
-        const anchorX = mapX(i);
-        const anchor = anchorOf(anchorX), labelX = labelXOf(anchorX, anchor);
+        let anchorX = mapX(i);
+        let anchor = anchorOf(anchorX), labelX = labelXOf(anchorX, anchor);
+        if (stripAlignedX) {
+            const valueText = fmtValue(i, values[i]);
+            const need = Math.max(STRIP_DISC_RADIUS + 2,
+                textPx(cr, valueText, scaledFontSize, false, valueFontWeight)[0] / 2 + 2);
+            labelX = Math.min(Math.max(anchorX, need), width - need);
+            anchor = 'middle';
+        }
         const placed = placeLabel(fmtValue(i, values[i]), labelX,
             mapY(values[i]) - 12 + 1, anchor);
         if (placed)
@@ -421,8 +431,14 @@ export function paintChart(cr, opts) {
         const hourText = fmtHour(i);
         if (!hourText)
             continue;
-        const anchorX = mapX(i);
-        const anchor = anchorOf(anchorX), labelX = labelXOf(anchorX, anchor);
+        let anchorX = mapX(i);
+        let anchor = anchorOf(anchorX), labelX = labelXOf(anchorX, anchor);
+        if (stripAlignedX) {
+            const need = Math.max(STRIP_DISC_RADIUS + 2,
+                textPx(cr, hourText, scaledFontSize, false, hourFontWeight)[0] / 2 + 2);
+            labelX = Math.min(Math.max(anchorX, need), width - need);
+            anchor = 'middle';
+        }
         const box = boxAt(hourText, labelX, height - 5, anchor);
         if (!hitsAny(box, usedBoxes)) {
             usedBoxes.push(box);
@@ -474,9 +490,16 @@ export function paintChart(cr, opts) {
                 // uniform coins; capped only so the rim survives the canvas
                 // edge at the top strip position (stripCenterY == 13)
                 const radius = Math.min(STRIP_DISC_RADIUS, stripCenterY - 0.5);
+                // the disc samples the live backdrop at its own spot (x
+                // included: coins near the sun follow its warmth) and paints
+                // a darkened twin of it -- a tinted ground, not a black scrim
+                const ground = bgFn ? bgFn(centerY, centerX) : null;
+                const [fillR, fillG, fillB, fillA] = ground
+                    ? [...ground.map(c => c * 0.28), 0.68]
+                    : [16 / 255, 20 / 255, 28 / 255, 0.42];
                 cr.save();
                 cr.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-                cr.setSourceRGBA(16 / 255, 20 / 255, 28 / 255, 0.42);
+                cr.setSourceRGBA(fillR, fillG, fillB, fillA);
                 cr.fillPreserve();
                 cr.setSourceRGBA(1, 1, 1, 0.16);
                 cr.setLineWidth(1);
