@@ -13,7 +13,7 @@ import { WeatherIcon } from './animation.js';
 import { paintSky, createSky, sampleSky, bodyOf } from './sky.js';
 import {
     paintChart, ease, lerp, contrastSafe, lumOf, pickInk, ratio,
-    judgeInk, INK_DARK, INK_LIGHT
+    judgeInk, INK_DARK, INK_LIGHT, STRIP_PRECIP_INTENSITY
 } from './chart.js';
 import { sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn } from './weather.js';
 
@@ -711,11 +711,14 @@ export class ForecastPanel {
                 }));
                 const icon = new WeatherIcon({
                     size: 26, animate: false,
-                    time: STATIC_TIME + i * 0.2,
+                    time: STATIC_TIME,
                     dark: this._paintDark()
                 });
                 this._tileIcons.push(icon);
-                icon.setScene(scene, { intensity: dayItem.precipProb / 25, windKmh: dayItem.windMax });
+                // canonical pose (shared with the chart strip): same scene
+                // always paints the identical glyph -- the day's precip
+                // probability and wind must not retune the icon
+                icon.setScene(scene, { intensity: STRIP_PRECIP_INTENSITY[scene] ?? 0 });
                 col.add_child(icon);
                 const hl = new St.BoxLayout({
                     style_class: 'aw-day-hl',
