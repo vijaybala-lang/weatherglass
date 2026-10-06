@@ -42,8 +42,16 @@ The third row's right pair is the **themed background style**: the card
 takes the system theme's colors, and charts and selection states adopt
 the user's accent color -- here the GNOME blue.
 
-**Demo:** animated sky, tab morphs and day tiles (5 s) --
-[watch in the release](https://github.com/vijaybala-lang/weatherglass/releases/tag/v6).
+**Demo:** animated sky, tab morphs and day tiles:
+
+<table><tr><td>
+<img src="https://github.com/vijaybala-lang/weatherglass/raw/master/assets/weatherglass-demo.gif" width="300" alt="Animated demo: opening the card, switching between temperature and precipitation tabs">
+</td><td valign="middle">
+The sky is live cairo animation -- stars twinkle, the moon carries the
+real phase, and switching tabs morphs the chart between series. The full
+5&nbsp;s capture as an mp4 is in the
+<a href="https://github.com/vijaybala-lang/weatherglass/releases/tag/v6">release</a>.
+</td></tr></table>
 
 ## Install
 
