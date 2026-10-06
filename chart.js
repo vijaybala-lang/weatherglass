@@ -410,11 +410,14 @@ export function paintChart(cr, opts) {
 
     // condition strip along the top -- the same flat vocabulary as the panel
     // icon (painter.js), posed statically. Two modes:
-    //   'icons': one icon per stride slot (>=30 px apart), edge ones nudge in
+    //   'icons': one icon per stride slot (>=30 px apart), edge ones nudge in;
+    //            each rides a translucent medallion so the glyph always sits
+    //            on a dark-ish ground instead of raw sky (no outline fuzz)
     //   'pills': consecutive same-condition hours merge into one rounded pill
     //            spanning exactly their slice of the axis, icon centred
-    // dark=true paints for the dark sky; light cards pass dark:false so pale
-    // glyphs (moon/snow/fog) use their darker twins (painter.js INK_*).
+    // dark=true paints for the dark sky; loose icons on bright sky fall back
+    // to dark painter glyphs + the outline stencil inside pills (light cards
+    // pass dark:false so pale glyphs (moon/snow/fog) use their INK_* twins).
     // pillGlass=true switches the pill fill from the accent tint to the
     // day-tile hover glass (same design language as the tiles).
     if (conditionScenes) {
@@ -428,8 +431,12 @@ export function paintChart(cr, opts) {
         // h-42) stays off the band top.
         const stripCenterY = opts.stripBottom ? height - 34 : STRIP_CENTER_Y;
         const iconOutline = Array.isArray(opts.iconOutline) ? opts.iconOutline : null;
-        const paintSingleIcon = (scene, centerX, isNight, scale, centerY = stripCenterY) => {
-            const isPaletteDark = bgFn ? lumOf(bgFn(centerY)) >= 0.55 : isDark;
+        const paintSingleIcon = (scene, centerX, isNight, scale, centerY = stripCenterY, onDisc = false) => {
+            // the medallion composites to a dark ground everywhere (even over
+            // the noon sun), so its glyph can always pick the light palette;
+            // loose/stencil paths still judge the live background per icon
+            const isPaletteDark = onDisc ? false
+                : bgFn ? lumOf(bgFn(centerY)) >= 0.55 : isDark;
             const poseIcon = ctx => {
                 ctx.translate(centerX - 12 * scale, centerY - 12 * scale);
                 ctx.scale(scale, scale);
@@ -439,6 +446,26 @@ export function paintChart(cr, opts) {
                     intensity: STRIP_PRECIP_INTENSITY[scene] ?? 0
                 });
             };
+            if (onDisc) {
+                // capped so the biggest medallion (moon) keeps its rim on the
+                // canvas edge: stripCenterY is measured from the chart's top
+                const radius = Math.min(12 * scale + 3, stripCenterY - 0.5);
+                cr.save();
+                cr.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                cr.setSourceRGBA(16 / 255, 20 / 255, 28 / 255, 0.5);
+                cr.fillPreserve();
+                cr.setSourceRGBA(1, 1, 1, 0.16);
+                cr.setLineWidth(1);
+                cr.stroke();
+                // glyphs are clipped to the disc: the moon's glow halo stays
+                // inside the medallion instead of bleeding into the hour label
+                cr.newPath();
+                cr.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                cr.clip();
+                poseIcon(cr);
+                cr.restore();
+                return;
+            }
             if (!iconOutline || isPaletteDark) {
                 cr.save();
                 poseIcon(cr);
@@ -557,7 +584,9 @@ export function paintChart(cr, opts) {
                 }
                 const iconCenterX = anchor === 'start' ? labelX + textWidth / 2
                     : anchor === 'end' ? labelX - textWidth / 2 : labelX;
-                paintSingleIcon(conditionScenes[i], iconCenterX, nights[i], STRIP_ICON_SCALE * (ICON_FOOTPRINT_SCALE[conditionScenes[i]] ?? 1));
+                paintSingleIcon(conditionScenes[i], iconCenterX, nights[i],
+                    STRIP_ICON_SCALE * (ICON_FOOTPRINT_SCALE[conditionScenes[i]] ?? 1),
+                    stripCenterY, true);
             }
         }
     }
