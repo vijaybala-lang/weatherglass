@@ -566,9 +566,12 @@ export function paintChart(cr, opts) {
         if (opts.pills) {
             const PILL_HALF_HEIGHT = 10.5, PILL_ICON_SCALE = 0.58, MIN_PILL_WIDTH = 23, PILL_RADIUS = 6, BOTTOM_BORDER_HEIGHT = 1.9;
             const isGlass = !!opts.pillGlass;
+            // band fills, thinned ~25-30%: the icons are the message,
+            // the pill is only a whisper of a plate under them (the
+            // stroke keeps the pill legible at these alphas)
             const fillColor = isGlass
-                ? (isDark ? [16 / 255, 20 / 255, 28 / 255, 0.22] : [1, 1, 1, 0.36])
-                : (isDark ? [1, 1, 1, 0.10] : [0.14, 0.16, 0.19, 0.07]);
+                ? (isDark ? [16 / 255, 20 / 255, 28 / 255, 0.16] : [1, 1, 1, 0.27])
+                : (isDark ? [1, 1, 1, 0.075] : [0.14, 0.16, 0.19, 0.05]);
             const edgeColor = isGlass
                 ? (isDark ? [1, 1, 1, 0.16] : [16 / 255, 24 / 255, 35 / 255, 0.15])
                 : (isDark ? [1, 1, 1, 0.16] : [0.14, 0.16, 0.19, 0.12]);
