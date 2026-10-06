@@ -14,7 +14,10 @@ const STRIP_CENTER_Y = 13, STRIP_ICON_SCALE = 0.6;
  * same coin, only the glyph varies */
 const STRIP_DISC_RADIUS = 12.5;
 // a little precip in the static icon poses so rain/snow scenes read right
-const STRIP_PRECIP_INTENSITY = { rain: 2, snow: 2, sleet: 3, hail: 4, storm: 5 };
+/* canonical precip poses: same icon for the same scene everywhere
+ * (chart strip + day tiles); tilt comes from the painter's calm default,
+ * never from the day's actual wind -- a forecast icon, not a gauge */
+export const STRIP_PRECIP_INTENSITY = { rain: 2, snow: 2, sleet: 3, hail: 4, storm: 5 };
 
 /* GJS Pango bindings are snake_case on some releases and camelCase on newer
  * ones -- feature-detect once per call rather than betting on one. */
