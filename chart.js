@@ -470,6 +470,22 @@ export function paintChart(cr, opts) {
         const stripCenterY = opts.stripBottom ? height - 34 : STRIP_CENTER_Y;
         const iconOutline = Array.isArray(opts.iconOutline) ? opts.iconOutline : null;
         const iconIntensities = Array.isArray(opts.iconIntensities) ? opts.iconIntensities : null;
+        // row tint: the strip's own backdrop averaged across its width --
+        // one darkened twin color for the whole coin row. Per-coin sampling
+        // made the row patchy near the sun (warm coins under the disc, cool
+        // ones away from it); the sky is a smooth gradient, so the average
+        // along the strip line is its dominant color
+        let rowTint = null;
+        if (bgFn) {
+            const acc = [0, 0, 0];
+            const TINT_SAMPLES = 9;
+            for (let k = 0; k < TINT_SAMPLES; k++) {
+                const sample = bgFn(stripCenterY,
+                    plotStartX + (k + 0.5) * (plotEndX - plotStartX) / TINT_SAMPLES);
+                acc[0] += sample[0]; acc[1] += sample[1]; acc[2] += sample[2];
+            }
+            rowTint = acc.map(channelSum => channelSum / TINT_SAMPLES * 0.3);
+        }
         const paintSingleIcon = (scene, centerX, isNight, scale, centerY = stripCenterY, onDisc = false, intensity = null) => {
             const iconIntensity = intensity ?? STRIP_PRECIP_INTENSITY[scene] ?? 0;
             // the medallion composites to a dark ground everywhere (even over
@@ -490,12 +506,10 @@ export function paintChart(cr, opts) {
                 // uniform coins; capped only so the rim survives the canvas
                 // edge at the top strip position (stripCenterY == 13)
                 const radius = Math.min(STRIP_DISC_RADIUS, stripCenterY - 0.5);
-                // the disc samples the live backdrop at its own spot (x
-                // included: coins near the sun follow its warmth) and paints
-                // a darkened twin of it -- a tinted ground, not a black scrim
-                const ground = bgFn ? bgFn(centerY, centerX) : null;
-                const [fillR, fillG, fillB, fillA] = ground
-                    ? [...ground.map(c => c * 0.28), 0.68]
+                // the row-tinted ground (darkened twin of the strip's own
+                // backdrop) or the neutral fallback on un-sampled surfaces
+                const [fillR, fillG, fillB, fillA] = rowTint
+                    ? [...rowTint, 0.62]
                     : [16 / 255, 20 / 255, 28 / 255, 0.42];
                 cr.save();
                 cr.arc(centerX, centerY, radius, 0, 2 * Math.PI);
