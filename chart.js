@@ -527,13 +527,9 @@ export function paintChart(cr, opts) {
                 cr.restore();
                 return;
             }
-            if (!iconOutline || isPaletteDark) {
-                cr.save();
-                poseIcon(cr);
-                cr.restore();
-                return;
-            }
             const iconDiameter = Math.ceil(24 * scale) + 4, iconRadius = iconDiameter / 2;
+            // the glyph painted once to a surface: its alpha mask drives the
+            // emboss below (the real colored icon is re-used as the stamp)
             const surfaceS = new Cairo.ImageSurface(Cairo.Format.ARGB32, iconDiameter, iconDiameter);
             const ctxS = new Cairo.Context(surfaceS);
             ctxS.translate(iconRadius - 12 * scale, iconRadius - 12 * scale);
@@ -543,21 +539,35 @@ export function paintChart(cr, opts) {
                 dark: !isPaletteDark, intensity: iconIntensity
             });
             ctxS.$dispose();
-            const surfaceT = new Cairo.ImageSurface(Cairo.Format.ARGB32, iconDiameter, iconDiameter);
-            const ctxT = new Cairo.Context(surfaceT);
-            ctxT.setSourceRGBA(iconOutline[0], iconOutline[1], iconOutline[2], iconOutline[3]);
-            ctxT.paint();
-            ctxT.setOperator(Cairo.Operator.IN);
-            ctxT.setSourceSurface(surfaceS, 0, 0);
-            ctxT.paint();
-            ctxT.$dispose();
-            for (const [dx, dy] of [[-1.25, 0], [1.25, 0], [0, 1.25], [0, -1.25],
-            [-0.95, -0.95], [0.95, -0.95],
-            [-0.95, 0.95], [0.95, 0.95],
-            [-0.55, 0], [0.55, 0], [0, -0.55], [0, 0.55]]) {
-                cr.setSourceSurface(surfaceT, centerX - iconRadius + dx, centerY - iconRadius + dy);
+            // emboss (replaces the old 12-way halo fuzz, which read as edge
+            // noise): the icon carries its own light — a soft cast-shadow to
+            // the bottom-right and a catch-light rim to the top-left — so it
+            // lifts off ANY ground, bright or dark, with no plate behind it.
+            const silhouette = (r, g, b, a) => {
+                const s = new Cairo.ImageSurface(Cairo.Format.ARGB32, iconDiameter, iconDiameter);
+                const c = new Cairo.Context(s);
+                c.setSourceRGBA(r, g, b, a);
+                c.paint();
+                c.setOperator(Cairo.Operator.IN);
+                c.setSourceSurface(surfaceS, 0, 0);
+                c.paint();
+                c.$dispose();
+                return s;
+            };
+            const shadow = iconOutline ?? [0.04, 0.05, 0.09, 0.5];
+            const shadowS = silhouette(shadow[0], shadow[1], shadow[2],
+                Math.min(0.46, shadow[3]));
+            // white catch-light: bold on a dark sky, restrained on a pale one
+            // (where the dark shadow does the separation instead)
+            const lightS = silhouette(1, 1, 1, isPaletteDark ? 0.32 : 0.5);
+            const stamp = (surf, dx, dy) => {
+                cr.setSourceSurface(surf, centerX - iconRadius + dx, centerY - iconRadius + dy);
                 cr.paint();
-            }
+            };
+            for (const [dx, dy] of [[0.6, 0.7], [1.1, 1.2], [1.7, 1.9]])
+                stamp(shadowS, dx, dy);
+            for (const [dx, dy] of [[-0.6, -0.7], [-1.1, -1.2]])
+                stamp(lightS, dx, dy);
             cr.save();
             poseIcon(cr);
             cr.restore();
@@ -566,12 +576,13 @@ export function paintChart(cr, opts) {
         if (opts.pills) {
             const PILL_HALF_HEIGHT = 10.5, PILL_ICON_SCALE = 0.58, MIN_PILL_WIDTH = 23, PILL_RADIUS = 6, BOTTOM_BORDER_HEIGHT = 1.9;
             const isGlass = !!opts.pillGlass;
-            // band fills, thinned ~25-30%: the icons are the message,
-            // the pill is only a whisper of a plate under them (the
-            // stroke keeps the pill legible at these alphas)
+            // the plate is now only a grouping whisper: with the glyphs
+            // embossed they separate from the sky on their own, so the
+            // band fill recedes toward transparency (the mid-alpha scrim
+            // was the visual noise). Stroke + separators carry grouping.
             const fillColor = isGlass
-                ? (isDark ? [16 / 255, 20 / 255, 28 / 255, 0.16] : [1, 1, 1, 0.27])
-                : (isDark ? [1, 1, 1, 0.075] : [0.14, 0.16, 0.19, 0.05]);
+                ? (isDark ? [16 / 255, 20 / 255, 28 / 255, 0.09] : [1, 1, 1, 0.15])
+                : (isDark ? [1, 1, 1, 0.05] : [0.14, 0.16, 0.19, 0.03]);
             const edgeColor = isGlass
                 ? (isDark ? [1, 1, 1, 0.16] : [16 / 255, 24 / 255, 35 / 255, 0.15])
                 : (isDark ? [1, 1, 1, 0.16] : [0.14, 0.16, 0.19, 0.12]);
@@ -611,7 +622,8 @@ export function paintChart(cr, opts) {
             cr.save();
             drawBandPath();
             cr.clip();
-            cr.setSourceRGBA(edgeColor[0], edgeColor[1], edgeColor[2], Math.min(0.42, edgeColor[3] * 1.9));
+            cr.setSourceRGBA(edgeColor[0], edgeColor[1], edgeColor[2],
+                Math.min(0.22, edgeColor[3] * 1.05));
             cr.rectangle(plotStartX, stripCenterY + PILL_HALF_HEIGHT - BOTTOM_BORDER_HEIGHT, bandEndX - plotStartX, BOTTOM_BORDER_HEIGHT);
             cr.fill();
 
