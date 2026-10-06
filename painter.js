@@ -271,7 +271,12 @@ function moonBody(cr, centerX, centerY, radius, time, particles, phase) {
         });
 
     const starColor = INK_STAR();
+    // stars orbiting the drawn disc would dot the moon itself (worst on
+    // the dark side); those inside disc + star size stay hidden
+    const keepOut = radius + 1.4;
     for (const star of particles.stars) {
+        if (Math.hypot(star.x - centerX, star.y - centerY) < keepOut)
+            continue;
         const starPhase = star.phase ?? star.ph;
         const alpha = 0.35 + 0.6 * Math.abs(Math.sin(time * 1.3 + starPhase));
         cr.setSourceRGBA(starColor[0], starColor[1], starColor[2], alpha);
