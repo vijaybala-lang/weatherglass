@@ -2,25 +2,25 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 21:27-0700\n"
+"POT-Creation-Date: 2026-10-05 20:31-0400\n"
 "Language: fa\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:284 prefs.js:782
+#: extension.js:280 prefs.js:782
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
-#: extension.js:303 menu.js:273
+#: extension.js:299 menu.js:273
 msgid "Fetching weather…"
 msgstr "در حال دریافت وضعیت آب‌وهوا…"
 
-#: extension.js:373
+#: extension.js:369
 msgid "My location"
 msgstr "موقعیت من"
 
-#: extension.js:374
+#: extension.js:370
 msgid "Custom location"
 msgstr "موقعیت دلخواه"
 
@@ -36,7 +36,7 @@ msgstr "بارش"
 msgid "Wind"
 msgstr "باد"
 
-#: menu.js:307 menu.js:382 menu.js:386
+#: menu.js:307 menu.js:388 menu.js:392
 msgid "Weather"
 msgstr "آب‌وهوا"
 
@@ -44,31 +44,31 @@ msgstr "آب‌وهوا"
 msgid "Refresh now"
 msgstr "هم‌اکنون تازه‌سازی"
 
-#: menu.js:323
+#: menu.js:326
 msgid "Preferences"
 msgstr "ترجیحات"
 
-#: menu.js:338
+#: menu.js:344
 msgid "Show"
 msgstr "نمایش"
 
-#: menu.js:338
+#: menu.js:344
 msgid "chart"
 msgstr "نمودار"
 
-#: menu.js:387
+#: menu.js:393
 msgid "Could not load the forecast"
 msgstr "بارگیری پیش‌بینی ممکن نشد"
 
-#: menu.js:533
+#: menu.js:539
 msgid "Refresh forecast — updated"
 msgstr "تازه‌سازی پیش‌بینی — به‌روز شد"
 
-#: menu.js:596
+#: menu.js:602
 msgid "Now"
 msgstr "اکنون"
 
-#: menu.js:703
+#: menu.js:709
 msgid "Today"
 msgstr "امروز"
 
@@ -553,12 +553,12 @@ msgstr "ش"
 msgid "Thu"
 msgstr "پ"
 
-#: weather.js:560
+#: weather.js:558
 msgid "NOAA NWS covers US locations only — pick another provider"
 msgstr ""
 "NOAA NWS فقط موقعیت‌های آمریکا را پوشش می‌دهد — ارائه‌دهنده دیگری انتخاب کنید"
 
-#: weather.js:565
+#: weather.js:563
 msgid "NOAA NWS returned no forecast for this location"
 msgstr "NOAA NWS برای این موقعیت پیش‌بینی‌ای بازنگرداند"
 
