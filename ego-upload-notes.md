@@ -1,7 +1,7 @@
-# EGO upload kit -- v5
+# EGO upload kit -- v6
 
 Upload at: https://extensions.gnome.org/upload/
-Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 5, ~188K, zipcheck PASS)
+Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 6, ~176K, zipcheck PASS)
 
 ## Screenshots (upload in this order; all ~566x780, prefs is window-sized)
 
@@ -20,7 +20,7 @@ backups; the rainy-day shot sells precipitation better than the 0 % one.)
 
 Hosted on the GitHub release (v5): ~/Videos/Screencasts/ego/weatherglass-demo-card.mp4
 Direct link for the EGO description:
-https://github.com/vijaybala-lang/weatherglass/releases/download/v5/weatherglass-demo-card.mp4
+https://github.com/vijaybala-lang/weatherglass/releases/download/v6/weatherglass-demo-card.mp4
 
 ## Description text (for the EGO page)
 
@@ -34,7 +34,7 @@ The menu follows the system light/dark style, adapts its ink to the
 background for readability, and supports metric or imperial units, 12/24
 hour clocks and 20 languages.
 
-Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v5/weatherglass-demo-card.mp4
+Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v6/weatherglass-demo-card.mp4
 
 ## Reply to reviewer (paste in the review thread)
 

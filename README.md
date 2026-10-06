@@ -43,7 +43,7 @@ takes the system theme's colors, and charts and selection states adopt
 the user's accent color -- here the GNOME blue.
 
 **Demo:** animated sky, tab morphs and day tiles (5 s) --
-[watch in the release](https://github.com/vijaybala-lang/weatherglass/releases/tag/v5).
+[watch in the release](https://github.com/vijaybala-lang/weatherglass/releases/tag/v6).
 
 ## Install
 
