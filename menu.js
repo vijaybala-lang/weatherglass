@@ -13,7 +13,7 @@ import { WeatherIcon } from './animation.js';
 import { paintSky, createSky, sampleSky, bodyOf } from './sky.js';
 import {
     paintChart, ease, lerp, contrastSafe, lumOf, pickInk, ratio,
-    judgeInk, INK_DARK, INK_LIGHT, STRIP_PRECIP_INTENSITY
+    judgeInk, INK_DARK, INK_LIGHT, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
 } from './chart.js';
 import { sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn } from './weather.js';
 
@@ -170,6 +170,7 @@ const ChartArea = GObject.registerClass(
                 nowFrac: panel._day === 0 ? (panel._nowFrac ?? 0) : null,
                 scenes: panel._conditions !== 'off' ? panel._strip?.scenes ?? null : null,
                 nights: panel._conditions !== 'off' ? panel._strip?.nights ?? null : null,
+                iconIntensities: panel._conditions !== 'off' ? panel._strip?.intensities ?? null : null,
                 pills: panel._conditions === 'pills',
                 dark: panel._paintDark(),
                 // Arabic/Hebrew sessions: the chart mirrors (earliest hour at
@@ -633,6 +634,7 @@ export class ForecastPanel {
             this._strip = {
                 scenes: hourlyIndices.map((i, k) => sceneFor(state.hourly.code[i], days[k]).scene),
                 nights: days.map(d => !d),
+                intensities: hourlyIndices.map(i => CODE_PRECIP_INTENSITY[state.hourly.code[i]] ?? null),
             };
         }
         // today's window starts 2 h early: the now marker sits that far in
@@ -715,10 +717,10 @@ export class ForecastPanel {
                     dark: this._paintDark()
                 });
                 this._tileIcons.push(icon);
-                // canonical pose (shared with the chart strip): same scene
-                // always paints the identical glyph -- the day's precip
-                // probability and wind must not retune the icon
-                icon.setScene(scene, { intensity: STRIP_PRECIP_INTENSITY[scene] ?? 0 });
+                // canonical pose (shared with the chart strip): the WMO code
+                // sets the severity tier, never the day's live precip/wind --
+                // same code always paints the identical glyph
+                icon.setScene(scene, { intensity: CODE_PRECIP_INTENSITY[dayItem.code] ?? STRIP_PRECIP_INTENSITY[scene] ?? 0 });
                 col.add_child(icon);
                 const hl = new St.BoxLayout({
                     style_class: 'aw-day-hl',
