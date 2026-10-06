@@ -422,7 +422,7 @@ function drawMoon(cr, moonX, moonY, radius, phase) {
     cr.paintWithAlpha(MOON_COVER);
 }
 
-function drawStars(cr, stars, time, twilight = 0) {
+function drawStars(cr, stars, time, twilight = 0, keepOut = null) {
     // afterglow: only the brightest stars have come out yet
     const visibility = 1 - 0.85 * twilight;
     if (visibility <= 0.02)
@@ -433,6 +433,12 @@ function drawStars(cr, stars, time, twilight = 0) {
         const radius = star.radius ?? star.r;
         const isTwinkle = star.isTwinkle ?? star.tw;
         const isCool = star.isCool ?? star.cool;
+        // the moon is painted over the star field at partial cover, so a
+        // star inside its disc ghosts through -- visible worst on the dark
+        // side; stars whose reach touches the disc are not drawn at all
+        if (keepOut && Math.hypot(star.x - keepOut.x, star.y - keepOut.y) <
+            keepOut.r + radius * (isTwinkle ? 1.2 : 1))
+            continue;
         if (isTwinkle) {
             sparkle(cr, star.x, star.y, radius * (0.7 + 0.5 * wave), alpha, isCool);
             continue;
@@ -454,7 +460,10 @@ function drawCelestial(cr, width, height, scale, features, sky, time, night, pha
     if ((features.sun || features.moon) && !night) {
         drawSun(cr, sunX, sunY, radius, scale, time, twilight, noon);
     } else if (features.stars || features.moon) {
-        drawStars(cr, sky.stars, time, twilight);
+        if (features.moon)
+            drawStars(cr, sky.stars, time, twilight, { x: sunX, y: sunY, r: radius * 0.85 });
+        else
+            drawStars(cr, sky.stars, time, twilight);
         if (features.moon)
             drawMoon(cr, sunX, sunY, radius, phase);
     }
