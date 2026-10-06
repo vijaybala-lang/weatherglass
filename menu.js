@@ -190,12 +190,15 @@ const ChartArea = GObject.registerClass(
                 // smart text ink: labels sample the composited sky at their OWN
                 // y -- hour text over a bright day-sky foot goes dark, night text
                 // stays white. accent style's flat card needs none of this.
-                bgFn: panel._style === 'accent' ? null : (yPx => {
-                    const top = this.get_transformed_position()[1];
-                    const cardY = panel._content.get_transformed_position()[1];
-                    const cardH = panel._content.get_size()[1] || 1;
-                    return panel._bgAt(Math.min(1, Math.max(0,
-                        (top + yPx - cardY) / cardH)));
+                bgFn: panel._style === 'accent' ? null : (yPx, xPx) => {
+                    const [chartX, top] = this.get_transformed_position();
+                    const [cardX, cardY] = panel._content.get_transformed_position();
+                    const [cardW, cardH] = panel._content.get_size();
+                    const f = Math.min(1, Math.max(0, (top + yPx - cardY) / (cardH || 1)));
+                    if (xPx === undefined)
+                        return panel._bgAt(f);
+                    return panel._bgAt(f, { f,
+                        x: Math.min(1, Math.max(0, (chartX + xPx - cardX) / (cardW || 1))) });
                 }),
                 // strip icons get a hairline silhouette ring when the backdrop
                 // under the chart is mid/bright (overcast days swallow flat icons)
