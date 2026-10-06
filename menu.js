@@ -194,12 +194,12 @@ const ChartArea = GObject.registerClass(
                     const [chartX, top] = this.get_transformed_position();
                     const [cardX, cardY] = panel._content.get_transformed_position();
                     const [cardW, cardH] = panel._content.get_size();
-                    const f = Math.min(1, Math.max(0, (top + yPx - cardY) / (cardH || 1)));
+                    const fy = Math.min(1, Math.max(0, (top + yPx - cardY) / (cardH || 1)));
                     if (xPx === undefined)
-                        return panel._bgAt(f);
-                    return panel._bgAt(f, { f,
-                        x: Math.min(1, Math.max(0, (chartX + xPx - cardX) / (cardW || 1))) });
-                }),
+                        return panel._bgAt(fy);
+                    const fx = Math.min(1, Math.max(0, (chartX + xPx - cardX) / (cardW || 1)));
+                    return panel._bgAt(fy, { f: fy, x: fx });
+                },
                 // strip icons get a hairline silhouette ring when the backdrop
                 // under the chart is mid/bright (overcast days swallow flat icons)
                 iconOutline: panel._iconOutline(),
