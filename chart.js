@@ -19,6 +19,18 @@ const STRIP_DISC_RADIUS = 12.5;
  * never from the day's actual wind -- a forecast icon, not a gauge */
 export const STRIP_PRECIP_INTENSITY = { rain: 2, snow: 2, sleet: 3, hail: 4, storm: 5 };
 
+/* severity tiers per WMO code over the scene base: drizzle codes paint
+ * sparser streaks than downpours -- still deterministic per code (same
+ * code, always the same glyph), but the streak density tells light from
+ * heavy at a glance */
+export const CODE_PRECIP_INTENSITY = {
+    51: 1, 53: 2, 55: 3, 56: 3, 57: 4,
+    61: 1, 63: 2, 65: 3, 66: 3, 67: 4,
+    71: 1, 73: 2, 75: 3, 77: 1,
+    80: 1, 81: 2, 82: 3, 85: 2, 86: 3,
+    95: 5, 96: 6, 99: 6,
+};
+
 /* GJS Pango bindings are snake_case on some releases and camelCase on newer
  * ones -- feature-detect once per call rather than betting on one. */
 function call(obj, camel, snake, ...args) {
@@ -158,6 +170,9 @@ function tracePath(cr, pts) {
  *                    via nights[i]; lives inside the fade group, so the
  *                    past hours' icons recede with the rest of the ink
  *   nights:          bool[] matching scenes
+ *   iconIntensities: int[] | null -- per-slot severity overrides (WMO tiers
+ *                    from CODE_PRECIP_INTENSITY); null entries fall back to
+ *                    the per-scene base pose
  *   labelEvery:      label stride (default 3; narrow cards pass a bigger one)
  *   fontSize:        label font size in pt (default 8.5)
  * }
@@ -438,7 +453,9 @@ export function paintChart(cr, opts) {
         // h-42) stays off the band top.
         const stripCenterY = opts.stripBottom ? height - 34 : STRIP_CENTER_Y;
         const iconOutline = Array.isArray(opts.iconOutline) ? opts.iconOutline : null;
-        const paintSingleIcon = (scene, centerX, isNight, scale, centerY = stripCenterY, onDisc = false) => {
+        const iconIntensities = Array.isArray(opts.iconIntensities) ? opts.iconIntensities : null;
+        const paintSingleIcon = (scene, centerX, isNight, scale, centerY = stripCenterY, onDisc = false, intensity = null) => {
+            const iconIntensity = intensity ?? STRIP_PRECIP_INTENSITY[scene] ?? 0;
             // the medallion composites to a dark ground everywhere (even over
             // the noon sun), so its glyph can always pick the light palette;
             // loose/stencil paths still judge the live background per icon
@@ -450,7 +467,7 @@ export function paintChart(cr, opts) {
                 paintWeather(ctx, {
                     scene: scene ?? 'cloud', time: 4.1,
                     night: !!isNight, dark: !isPaletteDark,
-                    intensity: STRIP_PRECIP_INTENSITY[scene] ?? 0
+                    intensity: iconIntensity
                 });
             };
             if (onDisc) {
@@ -486,7 +503,7 @@ export function paintChart(cr, opts) {
             ctxS.scale(scale, scale);
             paintWeather(ctxS, {
                 scene: scene ?? 'cloud', time: 4.1, night: !!isNight,
-                dark: !isPaletteDark, intensity: STRIP_PRECIP_INTENSITY[scene] ?? 0
+                dark: !isPaletteDark, intensity: iconIntensity
             });
             ctxS.$dispose();
             const surfaceT = new Cairo.ImageSurface(Cairo.Format.ARGB32, iconDiameter, iconDiameter);
@@ -527,7 +544,9 @@ export function paintChart(cr, opts) {
                     endIndex++;
                 const x0 = startIndex === 0 ? scaleX(0) : (mapX(startIndex - 1) + mapX(startIndex)) / 2;
                 const x1 = endIndex === pointCount - 1 ? scaleX(1) : (mapX(endIndex) + mapX(endIndex + 1)) / 2;
-                conditionRuns.push({ scene: conditionScenes[startIndex], night: nights[startIndex], width: Math.abs(x1 - x0) });
+                conditionRuns.push({ scene: conditionScenes[startIndex], night: nights[startIndex],
+                    intensity: iconIntensities?.[startIndex] ?? null,
+                    width: Math.abs(x1 - x0) });
                 startIndex = endIndex + 1;
             }
             const deficits = conditionRuns.map(run => Math.max(0, MIN_PILL_WIDTH - run.width));
@@ -570,7 +589,8 @@ export function paintChart(cr, opts) {
             currX = isRtl ? plotEndX : plotStartX;
             for (const [k, run] of conditionRuns.entries()) {
                 paintSingleIcon(run.scene, currX + flowDir * pillWidths[k] / 2, run.night,
-                    PILL_ICON_SCALE * (ICON_FOOTPRINT_SCALE[run.scene] ?? 1));
+                    PILL_ICON_SCALE * (ICON_FOOTPRINT_SCALE[run.scene] ?? 1), stripCenterY, false,
+                    run.intensity);
                 currX += flowDir * pillWidths[k];
             }
             cr.restore();
@@ -593,7 +613,7 @@ export function paintChart(cr, opts) {
                     : anchor === 'end' ? labelX - textWidth / 2 : labelX;
                 paintSingleIcon(conditionScenes[i], iconCenterX, nights[i],
                     STRIP_ICON_SCALE * (ICON_FOOTPRINT_SCALE[conditionScenes[i]] ?? 1),
-                    stripCenterY, true);
+                    stripCenterY, true, iconIntensities?.[i] ?? null);
             }
         }
     }
