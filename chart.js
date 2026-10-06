@@ -484,7 +484,7 @@ export function paintChart(cr, opts) {
                     plotStartX + (k + 0.5) * (plotEndX - plotStartX) / TINT_SAMPLES);
                 acc[0] += sample[0]; acc[1] += sample[1]; acc[2] += sample[2];
             }
-            rowTint = acc.map(channelSum => channelSum / TINT_SAMPLES * 0.3);
+            rowTint = acc.map(channelSum => channelSum / TINT_SAMPLES * 0.22);
         }
         const paintSingleIcon = (scene, centerX, isNight, scale, centerY = stripCenterY, onDisc = false, intensity = null) => {
             const iconIntensity = intensity ?? STRIP_PRECIP_INTENSITY[scene] ?? 0;
@@ -509,8 +509,8 @@ export function paintChart(cr, opts) {
                 // the row-tinted ground (darkened twin of the strip's own
                 // backdrop) or the neutral fallback on un-sampled surfaces
                 const [fillR, fillG, fillB, fillA] = rowTint
-                    ? [...rowTint, 0.62]
-                    : [16 / 255, 20 / 255, 28 / 255, 0.42];
+                    ? [...rowTint, 0.5]
+                    : [16 / 255, 20 / 255, 28 / 255, 0.34];
                 cr.save();
                 cr.arc(centerX, centerY, radius, 0, 2 * Math.PI);
                 cr.setSourceRGBA(fillR, fillG, fillB, fillA);
