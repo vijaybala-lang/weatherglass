@@ -9,6 +9,10 @@ import { paintWeather } from './painter.js';
 const PADDING_TOP = 38, PADDING_BOTTOM = 30, PADDING_X = 2;
 const LINE_WIDTH = 3, DEFAULT_LABEL_INTERVAL = 3;
 const STRIP_CENTER_Y = 13, STRIP_ICON_SCALE = 0.6;
+/* uniform medallion radius for 'icons' mode: half the widest glyph box
+ * (moon: 12 * 0.6 * 1.5) plus ~2 px padding -- every condition gets the
+ * same coin, only the glyph varies */
+const STRIP_DISC_RADIUS = 12.5;
 // a little precip in the static icon poses so rain/snow scenes read right
 const STRIP_PRECIP_INTENSITY = { rain: 2, snow: 2, sleet: 3, hail: 4, storm: 5 };
 
@@ -447,12 +451,12 @@ export function paintChart(cr, opts) {
                 });
             };
             if (onDisc) {
-                // capped so the biggest medallion (moon) keeps its rim on the
-                // canvas edge: stripCenterY is measured from the chart's top
-                const radius = Math.min(12 * scale + 3, stripCenterY - 0.5);
+                // uniform coins; capped only so the rim survives the canvas
+                // edge at the top strip position (stripCenterY == 13)
+                const radius = Math.min(STRIP_DISC_RADIUS, stripCenterY - 0.5);
                 cr.save();
                 cr.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-                cr.setSourceRGBA(16 / 255, 20 / 255, 28 / 255, 0.5);
+                cr.setSourceRGBA(16 / 255, 20 / 255, 28 / 255, 0.42);
                 cr.fillPreserve();
                 cr.setSourceRGBA(1, 1, 1, 0.16);
                 cr.setLineWidth(1);
