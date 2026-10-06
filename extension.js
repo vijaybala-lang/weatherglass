@@ -66,12 +66,15 @@ class SystemThemeWatcher {
             this._changedId = this._iface.connect('changed', (settings, key) => {
                 if (key === 'color-scheme' || key === 'gtk-application-prefer-dark-theme') {
                     this._dark = this._readIsDark();
-                    this._onChange?.({ type: 'dark', isDark: this._dark });
+                    if (this._onChange)
+                        this._onChange({ type: 'dark', isDark: this._dark });
                 } else if (key === 'accent-color') {
                     this._accent = this._readAccentColor();
-                    this._onChange?.({ type: 'accent', accent: this._accent });
+                    if (this._onChange)
+                        this._onChange({ type: 'accent', accent: this._accent });
                 } else if (key === 'clock-format') {
-                    this._onChange?.({ type: 'clock' });
+                    if (this._onChange)
+                        this._onChange({ type: 'clock' });
                 }
             });
         } catch {
@@ -90,15 +93,11 @@ class SystemThemeWatcher {
     _readIsDark() {
         if (!this._iface)
             return this._dark;
-        try {
-            const scheme = this._iface.get_string('color-scheme');
-            if (scheme === 'prefer-dark' || scheme === 'force-dark')
-                return true;
-            if (scheme === 'prefer-light' || scheme === 'force-light')
-                return false;
-        } catch {
-            // older schemas lack color-scheme; fall through to the boolean
-        }
+        const scheme = this._iface.get_string('color-scheme');
+        if (scheme === 'prefer-dark' || scheme === 'force-dark')
+            return true;
+        if (scheme === 'prefer-light' || scheme === 'force-light')
+            return false;
         return this._iface.get_boolean('gtk-application-prefer-dark-theme');
     }
 
@@ -159,7 +158,6 @@ class WeatherCoordinator {
         this._data = null;
         this._busy = false;
         this._refetchPending = false;
-        this._isDestroyed = false;
 
         this._onLoading = null;
         this._onData = null;
@@ -197,7 +195,8 @@ class WeatherCoordinator {
             return;
         }
         this._busy = true;
-        this._onLoading?.();
+        if (this._onLoading)
+            this._onLoading();
 
         try {
             const isAutoLocation = this._settings.get_boolean('auto-location');
@@ -206,20 +205,18 @@ class WeatherCoordinator {
                 latitude: this._settings.get_double('location-latitude'),
                 longitude: this._settings.get_double('location-longitude'),
             });
-            if (this._isDestroyed)
-                return;
             this._data = data;
             this._lastFetch = GLib.get_monotonic_time() / 1000000;
-            this._onData?.(data, isAutoLocation);
+            if (this._onData)
+                this._onData(data, isAutoLocation);
         } catch (err) {
-            if (this._isDestroyed)
-                return;
             logError(err, 'Weatherglass');
-            this._onError?.(err);
+            if (this._onError)
+                this._onError(err);
             this.scheduleRetry();
         } finally {
             this._busy = false;
-            if (this._refetchPending && !this._isDestroyed) {
+            if (this._refetchPending) {
                 this._refetchPending = false;
                 this.fetch(true);
             }
@@ -260,7 +257,6 @@ class WeatherCoordinator {
     }
 
     destroy() {
-        this._isDestroyed = true;
         if (this._refreshTimerId) {
             GLib.source_remove(this._refreshTimerId);
             this._refreshTimerId = 0;

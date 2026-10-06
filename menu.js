@@ -318,10 +318,16 @@ export class ForecastPanel {
         const btnRow = row('aw-btn-row');
         btnRow.x_align = Clutter.ActorAlign.END;
         this._refreshButton = this._iconButton('view-refresh-symbolic', _('Refresh now'),
-            () => this._onRefresh?.());
+            () => {
+                if (this._onRefresh)
+                    this._onRefresh();
+            });
         btnRow.add_child(this._refreshButton);
         btnRow.add_child(this._iconButton('emblem-system-symbolic', _('Preferences'),
-            () => this._onSettings?.(), 18));
+            () => {
+                if (this._onSettings)
+                    this._onSettings();
+            }, 18));
         right.add_child(btnRow);
         header.add_child(right);
         main.add_child(header);
@@ -650,8 +656,8 @@ export class ForecastPanel {
             this._syncScrim();
         }
         this._skyOpts.phase = Number.isFinite(state.phase) ? state.phase : null;
-        if (this._day === 0)
-            this._onSky?.(scene, night);
+        if (this._day === 0 && this._onSky)
+            this._onSky(scene, night);
         this._skyArea.queue_repaint();
     }
 

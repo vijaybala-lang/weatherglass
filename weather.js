@@ -365,9 +365,7 @@ export function precipProbFrom(amountMm, cloudPct = 0) {
 function localFromUtc(iso) {
     let dateTime = null;
     try {
-        dateTime = GLib.DateTime.new_from_iso8601
-            ? GLib.DateTime.new_from_iso8601(iso, null)
-            : GLib.DateTime.new_from_iso8601_string?.(iso) ?? null;
+        dateTime = GLib.DateTime.new_from_iso8601(iso, null);
     } catch (err) {
         dateTime = null;
     }
