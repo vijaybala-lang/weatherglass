@@ -128,11 +128,18 @@ function cloudPair(cr, centerX, centerY, scale, topColor, bottomColor, time) {
 
 /* Palette variants for light and dark backgrounds */
 let _light = false;
+/* luminance of the composited ground under the glyph (-1 = unknown),
+ * handed in by the strip referee and the tile icons */
+let _groundLum = -1;
 // water rides the SAME referee as the glyph palette (painter's dark
 // flag, chosen from the live ground under the icon): over bright sky a
 // deep navy that holds contrast against luminance ~0.55, over night a
 // light aqua that glows off the dark
-const INK_WATER = () => _light ? [0.05, 0.33, 0.68] : [0.38, 0.82, 1.00];
+/* water keeps deep navy down through mid-tone skies -- pale aqua on a
+ * 0.5-luminance overcast card is invisible, and such grounds are too
+ * bright for the glow-at-night palette to earn its keep */
+const INK_WATER = () =>
+    (_light || _groundLum >= 0.38) ? [0.05, 0.33, 0.68] : [0.38, 0.82, 1.00];
 const INK_FLAKE = () => _light ? [0.45, 0.56, 0.72] : [0.92, 0.96, 1.00];
 const INK_STONE = () => _light ? [0.55, 0.64, 0.76] : [0.91, 0.94, 0.97];
 const INK_STREAK = () => _light ? [0.24, 0.50, 0.78] : [0.50, 0.83, 1.00];
@@ -595,6 +602,7 @@ export function paintWeather(cr, opts) {
     } else
         particles = opts.particles || createParticles();
     _light = opts.dark === false;
+    _groundLum = opts.groundLum ?? -1;
     const currentTime = opts.time || 0;
     const ctx = {
         time: currentTime,
