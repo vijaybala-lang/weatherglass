@@ -79,6 +79,7 @@ export const WeatherIcon = GObject.registerClass(
                 dark: this._dark,
                 time: this._time,
                 particles: this._particles,
+                staticPose: !this._animate,
             });
             cr.$dispose();
         }

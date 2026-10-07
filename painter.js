@@ -53,6 +53,26 @@ function line(cr, x1, y1, x2, y2) {
     cr.lineTo(x2, y2);
 }
 
+/** Teardrop droplet: round bottom, pointed tip, always upright.
+ *  (x, y) is the centre of the round bottom; s the drop scale. */
+function teardrop(cr, x, y, s) {
+    cr.moveTo(x, y - 2.35 * s);
+    cr.curveTo(x + 0.62 * s, y - 1.35 * s, x + 0.95 * s, y - 0.72 * s,
+        x + 0.95 * s, y - 0.05 * s);
+    cr.arc(x, y - 0.05 * s, 0.95 * s, 0, Math.PI);
+    cr.curveTo(x - 0.95 * s, y - 0.72 * s, x - 0.62 * s, y - 1.35 * s,
+        x, y - 2.35 * s);
+    cr.closePath();
+}
+
+/** Even staggered grid (cols per row, column pitch dx) under the cloud --
+ *  the layout for static poses, whose random pools used to reshuffle on
+ *  every repaint and made the strip/tile glyphs shimmer between columns. */
+function staticSpot(i, cols, dx, y0, dy) {
+    const col = i % cols, row = Math.floor(i / cols);
+    return [4.3 + col * dx + (row % 2) * dx * 0.47, y0 + row * dy];
+}
+
 /** Puffy cloud made of three bumps over a flat base, one gradient fill. */
 function cloud(cr, centerX, centerY, scale, topColor, bottomColor, alpha = 1) {
     const gradient = new Cairo.LinearGradient(0, centerY - 5 * scale, 0, centerY + 2.4 * scale);
@@ -67,7 +87,7 @@ function cloud(cr, centerX, centerY, scale, topColor, bottomColor, alpha = 1) {
 }
 
 const CLOUD_LIGHT = [[0.76, 0.82, 0.87], [0.60, 0.68, 0.75]];
-const CLOUD_RAIN = [[0.56, 0.64, 0.71], [0.38, 0.47, 0.55]];
+const CLOUD_RAIN = [[0.52, 0.54, 0.58], [0.31, 0.34, 0.40]];
 const CLOUD_DARK = [[0.42, 0.48, 0.56], [0.25, 0.30, 0.38]];
 
 /* Palette variants for light and dark backgrounds */
@@ -108,26 +128,35 @@ function windStreaks(cr, time, alphaScale, count = 3) {
     }
 }
 
-/** Raindrops, advanced with the shared particle clock. */
+/** Raindrops. Animated falls ride the shared particle clock; static poses
+ *  (strip glyphs, day tiles) sit in an even staggered grid. Either way the
+ *  shape is a teardrop, and intensity decides the COUNT -- heavier rain,
+ *  more drops. */
 function rainDrops(cr, particles, time, count, slant, alpha) {
     const lastTime = particles.lastTime ?? particles.lastT;
     const dt = lastTime === null ? 0 : Math.min(0.06, time - lastTime);
-    cr.setLineCap(Cairo.LineCap.ROUND);
-    cr.setLineWidth(1.0);
     const waterColor = INK_WATER();
     cr.setSourceRGBA(waterColor[0], waterColor[1], waterColor[2], alpha);
-    for (let i = 0; i < count; i++) {
-        const drop = particles.drops[i];
-        const speed = drop.speed ?? drop.sp;
-        const length = drop.length ?? drop.len;
-        drop.y += speed * dt;
-        if (drop.y > 23.5) {
-            drop.y = rand(9.3, 11);
-            drop.x = rand(2.5, 21.5);
+    const total = Math.min(count, particles.drops.length);
+    for (let i = 0; i < total; i++) {
+        let x, y, s;
+        if (particles.static) {
+            [x, y] = staticSpot(i, 4, 4.5, 11.7, 3.15);
+            s = i % 3 === 1 ? 0.8 : 0.95;
+        } else {
+            const drop = particles.drops[i];
+            drop.y += (drop.speed ?? drop.sp) * dt;
+            if (drop.y > 23.5) {
+                drop.y = rand(9.3, 11);
+                drop.x = rand(2.5, 21.5);
+            }
+            x = drop.x;
+            y = drop.y;
+            s = Math.min(1.15, 0.6 + (drop.length ?? drop.len) * 0.18);
         }
-        line(cr, drop.x, drop.y, drop.x - slant * length, drop.y + length);
+        teardrop(cr, x - slant * (y - 10) * 0.18, y, s);
     }
-    cr.stroke();
+    cr.fill();
 }
 
 /** Snowflakes (six spokes), drifting side to side. */
@@ -136,20 +165,28 @@ function snowFlakes(cr, particles, time, count) {
     const dt = lastTime === null ? 0 : Math.min(0.06, time - lastTime);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineWidth(0.55);
-    for (let i = 0; i < count; i++) {
-        const flake = particles.flakes[i];
-        const speed = flake.speed ?? flake.sp;
-        const phase = flake.phase ?? flake.ph;
-        const radius = flake.radius ?? flake.r;
-        flake.y += speed * dt;
-        if (flake.y > 23.5) {
-            flake.y = rand(9.3, 11);
-            flake.x = rand(3, 21);
+    const total = Math.min(count, particles.flakes.length);
+    for (let i = 0; i < total; i++) {
+        let x, y, rot, radius;
+        if (particles.static) {
+            [x, y] = staticSpot(i, 3, 4.7, 11.4, 3.4);
+            radius = 1.05;
+            rot = i * 1.1;
+        } else {
+            const flake = particles.flakes[i];
+            const phase = flake.phase ?? flake.ph;
+            flake.y += (flake.speed ?? flake.sp) * dt;
+            if (flake.y > 23.5) {
+                flake.y = rand(9.3, 11);
+                flake.x = rand(3, 21);
+            }
+            x = flake.x + Math.sin(time * 1.4 + phase) * 1.1;
+            y = flake.y;
+            rot = time * 1.2 + phase;
+            radius = flake.radius ?? flake.r;
         }
-        const x = flake.x + Math.sin(time * 1.4 + phase) * 1.1;
-        const rot = time * 1.2 + phase;
         cr.save();
-        cr.translate(x, flake.y);
+        cr.translate(x, y);
         cr.rotate(rot);
         const flakeColor = INK_FLAKE();
         cr.setSourceRGBA(flakeColor[0], flakeColor[1], flakeColor[2], 0.95);
@@ -332,7 +369,7 @@ function sceneFog(cr, ctx) {
 function sceneRain(cr, ctx) {
     const { time, particles, intensity, windKmh, windy } = ctx;
     cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 7.5, 0.95, CLOUD_RAIN[0], CLOUD_RAIN[1]);
-    const dropCount = 7 + Math.min(9, Math.round(intensity * 2.2));
+    const dropCount = 4 + Math.min(12, Math.round(intensity * 2.4));
     const slant = Math.min(0.9, windKmh / 45);
     rainDrops(cr, particles, time, dropCount, slant, 0.9);
     if (windy)
@@ -377,13 +414,16 @@ const BOLTS = [
 function sceneStorm(cr, ctx) {
     const { time, particles, intensity, windKmh, windy } = ctx;
     cloud(cr, 12 + Math.sin(time * 0.4) * 0.5, 7.2, 1.0, CLOUD_DARK[0], CLOUD_DARK[1]);
-    rainDrops(cr, particles, time, 8 + Math.min(8, Math.round(intensity * 2)), Math.min(0.9, windKmh / 45), 0.85);
+    rainDrops(cr, particles, time, 3 + Math.min(9, Math.round(intensity * 1.6)), Math.min(0.9, windKmh / 45), 0.85);
 
-    // double-flick lightning every ~2.8 s, alternating bolt shape
+    // double-flick lightning every ~2.8 s, alternating bolt shape;
+    // static poses (tiles, strip glyphs) can't wait for the flicker
+    // window -- the bolt IS the scene, so it burns at full brightness
     const cycle = Math.floor(time / 2.8);
     const cycleFraction = time % 2.8;
     let flash = 0;
-    if (cycleFraction < 0.07) flash = cycleFraction / 0.07;
+    if (particles.static) flash = 1;
+    else if (cycleFraction < 0.07) flash = cycleFraction / 0.07;
     else if (cycleFraction < 0.14) flash = 1 - (cycleFraction - 0.07) / 0.07;
     else if (cycleFraction < 0.20) flash = 0.6 * (cycleFraction - 0.14) / 0.06;
     else if (cycleFraction < 0.28) flash = 0.6 * (1 - (cycleFraction - 0.20) / 0.08);
@@ -398,7 +438,7 @@ function sceneStorm(cr, ctx) {
         cr.save();
         cr.setLineJoin(Cairo.LineJoin.ROUND);
         cr.setLineCap(Cairo.LineCap.ROUND);
-        const bolt = BOLTS[cycle % BOLTS.length];
+        const bolt = BOLTS[particles.static ? 0 : cycle % BOLTS.length];
         cr.setSourceRGBA(1, 0.92, 0.23, flash);
         cr.setLineWidth(2.4);
         cr.moveTo(bolt[0][0], bolt[0][1]);
@@ -488,8 +528,16 @@ const SCENES = {
  *   intensity  0..10 precipitation mm, drives drop/flake count
  *   windKmh    wind speed in km/h, drives rain slant
  */
+let staticPool = null;   // one seeded pool for every static painter
+
 export function paintWeather(cr, opts) {
-    const particles = opts.particles || createParticles();
+    let particles;
+    if (opts.staticPose) {
+        if (!staticPool)
+            staticPool = Object.assign(createParticles(), { static: true });
+        particles = staticPool;
+    } else
+        particles = opts.particles || createParticles();
     _light = opts.dark === false;
     const currentTime = opts.time || 0;
     const ctx = {
