@@ -678,11 +678,6 @@ export class ForecastPanel {
                 hiLabel.set_text(fmtTemp(Math.max(...temps), units));
                 this._dayLowLabels[this._day]?.set_text(fmtTemp(Math.min(...temps), units));
             }
-            if (this._day === 0 && this._dayNameLabel) {
-                const crossesMidnight = times.length > 1 &&
-                    times[0].slice(0, 10) !== times[times.length - 1].slice(0, 10);
-                this._dayNameLabel.set_text(crossesMidnight ? _('Today · 24h') : _('Today'));
-            }
         }
         return hourlyIndices.map(i => state.hourly[field][i] ?? 0);
     }
@@ -737,7 +732,6 @@ export class ForecastPanel {
         this._dayLowLabels = [];
         this._dayHiLabels = [];
         this._tileIcons = [];
-        this._dayNameLabel = null;
         const count = Math.min(daily.length, 8);
         for (let r = 0; r < count; r += 4) {
             const rowTiles = row('aw-days');
@@ -758,8 +752,6 @@ export class ForecastPanel {
                     style_class: 'aw-day-name',
                     x_align: Clutter.ActorAlign.CENTER
                 }));
-                if (i === 0)
-                    this._dayNameLabel = col.get_last_child();
                 const icon = new WeatherIcon({
                     size: 26, animate: false,
                     time: STATIC_TIME,
