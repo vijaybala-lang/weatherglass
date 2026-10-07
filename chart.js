@@ -418,10 +418,14 @@ export function paintChart(cr, opts) {
         const [textWidth, textHeight] = textPx(cr, text, scaledFontSize, false, valueFontWeight);
         const [leftX, rightX] = lineEdges(textWidth,
             unitText ? textPx(cr, unitText, unitSize, false, 0)[0] : 0, labelX, anchor);
-        const curveCeiling = curveMin(leftX, rightX) - LINE_WIDTH / 2 - 2;
+        // the stroke must stay clear of the block's LOWEST line: for
+        // stacked units the 'mph' hangs below the number baseline, and a
+        // ceiling judged on the number alone parks the unit on the stroke
+        const blockBelow = unitText ? unitHeight + 1.5 : 0;
+        const curveCeiling = curveMin(leftX, rightX) - LINE_WIDTH / 2 - 2 - blockBelow;
         // below the stroke: glyph top clears the curve, baseline capped so
         // the label (unit line included) never crowds the hour band
-        const blockHeight = textHeight + (unitText ? unitHeight + 1.5 : 0);
+        const blockHeight = textHeight + blockBelow;
         const belowStrokeY = Math.min(
             curveMax(leftX, rightX) + LINE_WIDTH / 2 + 3 + blockHeight,
             height - 7 - hourTextHeight - blockHeight);
@@ -444,8 +448,9 @@ export function paintChart(cr, opts) {
         const [textWidth, textHeight] = textPx(cr, text, scaledFontSize, false, valueFontWeight);
         const [leftX, rightX] = lineEdges(textWidth,
             unitText ? textPx(cr, unitText, unitSize, false, 0)[0] : 0, labelX, anchor);
-        const labelY = Math.min(mapY(values[nowIndex]) - 22 + 1,
-            curveMin(leftX, rightX) - LINE_WIDTH / 2 - 2);
+        const nowBlockBelow = unitText ? unitHeight + 1.5 : 0;
+        const labelY = Math.min(mapY(values[nowIndex]) - 22 + 1 - nowBlockBelow,
+            curveMin(leftX, rightX) - LINE_WIDTH / 2 - 2 - nowBlockBelow);
         nowPlacement = { text, unitText, labelX, y: labelY, anchor };
         usedBoxes.push(boxOf(leftX, rightX - leftX, textHeight, labelY,
             unitText ? unitHeight + 1.5 : 0));
@@ -527,7 +532,8 @@ export function paintChart(cr, opts) {
         }
         const unitText = unitTextOf(i, values[i]);
         const placed = placeLabel(fmtValue(i, values[i]), labelX,
-            mapY(values[i]) - 12 + 1, anchor, unitText);
+            mapY(values[i]) - 12 + 1 - (unitText ? unitHeight + 1.5 : 0),
+            anchor, unitText);
         if (placed)
             drawValue(placed.text, unitText, labelX, placed.y, anchor,
                 [...inkAt(placed.y), 0.62]);
