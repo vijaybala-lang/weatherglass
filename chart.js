@@ -12,7 +12,6 @@ const STRIP_CENTER_Y = 13, STRIP_ICON_SCALE = 0.6;
 /* uniform medallion radius for 'icons' mode: half the widest glyph box
  * (moon: 12 * 0.6 * 1.5) plus ~2 px padding -- every condition gets the
  * same coin, only the glyph varies */
-const STRIP_DISC_RADIUS = 12.5;
 // a little precip in the static icon poses so rain/snow scenes read right
 /* canonical precip poses: same icon for the same scene everywhere
  * (chart strip + day tiles); tilt comes from the painter's calm default,
@@ -43,7 +42,7 @@ export const lumOf = rgb => {
     return 0.2126 * channelLum(rgb[0]) + 0.7152 * channelLum(rgb[1]) + 0.0722 * channelLum(rgb[2]);
 };
 
-export const ratio = (colorA, colorB) => {
+const ratio = (colorA, colorB) => {
     const lumA = lumOf(colorA), lumB = lumOf(colorB);
     return (Math.max(lumA, lumB) + 0.05) / (Math.min(lumA, lumB) + 0.05);
 };
@@ -65,7 +64,7 @@ export function contrastSafe(accent, bg) {
 }
 
 export const INK_DARK = [0.063, 0.094, 0.137];
-export const INK_LIGHT = [1, 1, 1];
+const INK_LIGHT = [1, 1, 1];
 
 export const pickInk = bg =>
     ratio(INK_DARK, bg) >= ratio(INK_LIGHT, bg) * 1.35 ? INK_DARK : INK_LIGHT;
@@ -301,11 +300,13 @@ export function paintChart(cr, opts) {
 
     // y window with the mockup's asymmetric padding (headroom for labels);
     // an enabled condition strip asks for noticeably more sky above the line
+    // the condition strip needs one scene per plotted point -- refuse
+    // mismatched data outright so a short feed can never phantom-paint
+    // icons past the last value (the 'missing 8 PM' failure mode)
     const conditionScenes = Array.isArray(opts.scenes) && opts.scenes.length === pointCount
         ? opts.scenes : null;
-    // disc icons center on the data x: hour/value labels join them there
-    // so slot columns read straight; the pills band centers its own icons
-    const stripAlignedX = !!conditionScenes && !opts.pills;
+    if (Array.isArray(opts.scenes) && !conditionScenes && opts.scenes.length)
+        log(`weatherglass: condition strip needs ${pointCount} scenes, got ${opts.scenes.length} -- strip disabled`);
     let minVal = Math.min(...values), maxVal = Math.max(...values);
     if (maxVal - minVal < 1e-6) { minVal -= 1; maxVal += 1; }
     const yPadding = (maxVal - minVal) * 0.35 + 1;
@@ -407,16 +408,59 @@ export function paintChart(cr, opts) {
         usedBoxes.push([0, width, bandCenterY - 13,
             Math.min(bandCenterY + 13, height - 7 - hourTextHeight)]);
     }
+    // icon-mode columns: computed BEFORE the label rows so hour text,
+    // glyphs and numbers all share one set of x positions. Slots whose
+    // widest tenant (number, hour text or glyph) would crowd its neighbor
+    // are dropped -- a dropped slot simply gets no number/glyph/hour, so
+    // the strip can never print the collision-prone '8' that the fixed
+    // label stride leaves behind next to the now bubble
+    const iconSlots = [];
+    let iconStep = 0;
+    if (conditionScenes && !opts.pills) {
+        const slotSpan = (plotEndX - plotStartX) / Math.max(1, pointCount - 1);
+        iconStep = labelInterval * Math.max(1, Math.ceil(30 / slotSpan / labelInterval));
+        const iconHalf = 8.5;
+        let lastSlotRight = -Infinity, lastIndex = -Infinity;
+        for (let i = firstLabelIndex; i < pointCount; i += iconStep) {
+            const anchorX = mapX(i);
+            if (anchorX > width - edgeGutter)
+                continue;
+            const hourText = fmtHour ? fmtHour(i) : '';
+            const valueText = fmtValue ? fmtValue(i, values[i]) : '';
+            const hourNeed = hourText
+                ? textPx(cr, hourText, scaledFontSize, false, hourFontWeight)[0] / 2 : 0;
+            let valueNeed = valueText
+                ? textPx(cr, valueText, scaledFontSize, false, valueFontWeight)[0] / 2 : 0;
+            for (let k = i; k < Math.min(i + labelInterval * 2, pointCount); k++)
+                valueNeed = Math.max(valueNeed,
+                    fmtValue ? textPx(cr, fmtValue(k, values[k]), scaledFontSize,
+                        false, valueFontWeight)[0] / 2 : 0);
+            const need = Math.max(iconHalf, hourNeed + 3, valueNeed + 3);
+            const labelX = Math.min(Math.max(anchorX, need), width - need);
+            const left = labelX - need, right = labelX + need;
+            if (left > lastSlotRight + 6 && i - lastIndex >= 2) {
+                iconSlots.push({
+                    i, labelX, iconX: Math.min(Math.max(anchorX, iconHalf), width - iconHalf),
+                });
+                lastSlotRight = right;
+                lastIndex = i;
+            }
+        }
+    }
+    const slotAt = index => iconSlots.find(slot => slot.i === index);
     for (let i = firstLabelIndex; fmtValue && i < pointCount; i += labelInterval) {
         if (i === nowIndex)
             continue;
         let anchorX = mapX(i);
         let anchor = anchorOf(anchorX), labelX = labelXOf(anchorX, anchor);
-        if (stripAlignedX) {
-            const valueText = fmtValue(i, values[i]);
-            const need = Math.max(STRIP_DISC_RADIUS + 2,
-                textPx(cr, valueText, scaledFontSize, false, valueFontWeight)[0] / 2 + 2);
-            labelX = Math.min(Math.max(anchorX, need), width - need);
+        if (iconSlots.length) {
+            // icon mode: numbers live on slot columns -- an hour without a
+            // slot (crowded neighbors, the 8 PM just after the now marker)
+            // shows no number, exactly like its hour label and glyph
+            const slot = slotAt(i);
+            if (!slot)
+                continue;
+            labelX = slot.labelX;
             anchor = 'middle';
         }
         const placed = placeLabel(fmtValue(i, values[i]), labelX,
@@ -433,11 +477,14 @@ export function paintChart(cr, opts) {
             continue;
         let anchorX = mapX(i);
         let anchor = anchorOf(anchorX), labelX = labelXOf(anchorX, anchor);
-        if (stripAlignedX) {
-            const need = Math.max(STRIP_DISC_RADIUS + 2,
-                textPx(cr, hourText, scaledFontSize, false, hourFontWeight)[0] / 2 + 2);
-            labelX = Math.min(Math.max(anchorX, need), width - need);
-            anchor = 'middle';
+        if (iconSlots.length) {
+            // icon mode: the hour rides its slot column, guaranteed room
+            const slot = slotAt(i);
+            if (!slot)
+                continue;
+            drawText(cr, hourText, slot.labelX, height - 5,
+                { size: scaledFontSize, weight: hourFontWeight, rgba: [...inkAt(height - 5), 0.62], anchor: 'middle' });
+            continue;
         }
         const box = boxAt(hourText, labelX, height - 5, anchor);
         if (!hitsAny(box, usedBoxes)) {
@@ -446,20 +493,20 @@ export function paintChart(cr, opts) {
         }
     }
 
-    // condition strip along the top -- the same flat vocabulary as the panel
-    // icon (painter.js), posed statically. Two modes:
-    //   'icons': one icon per stride slot (>=30 px apart), edge ones nudge in;
-    //            each rides a translucent medallion so the glyph always sits
-    //            on a dark-ish ground instead of raw sky (no outline fuzz)
-    //   'pills': consecutive same-condition hours merge into one rounded pill
-    //            spanning exactly their slice of the axis, icon centred
-    // dark=true paints for the dark sky; loose icons on bright sky fall back
-    // to dark painter glyphs + the outline stencil inside pills (light cards
-    // pass dark:false so pale glyphs (moon/snow/fog) use their INK_* twins).
+    // condition strip along the chart top -- the same flat vocabulary as
+    // the panel icon (painter.js), posed statically. Two modes:
+    //   'icons': loose glyphs, no backing plate. Each glyph judges the sky
+    //            under it (bgFn, like the label ink does): pale ground
+    //            (noon sun, white cloud banks) paints the dark-twin
+    //            painter glyphs, dark skies the pale ones -- the icon
+    //            carries its own contrast, which is what killed the
+    //            medallion discs and the stencil outlines
+    //   'pills': consecutive same-condition hours merge into one rounded
+    //            pill spanning exactly their slice of the axis, icon
+    //            centred (the band itself is the ground there)
     // pillGlass=true switches the pill fill from the accent tint to the
     // day-tile hover glass (same design language as the tiles).
     if (conditionScenes) {
-        const span = (plotEndX - plotStartX) / Math.max(1, pointCount - 1);
         const nights = Array.isArray(opts.nights) ? opts.nights : [];
         const isDark = opts.dark !== false;
         // band sits at the chart top, or docked above the hour labels when
@@ -468,108 +515,21 @@ export function paintChart(cr, opts) {
         // 5+ px clear of that, and even the lowest value label (floor
         // h-42) stays off the band top.
         const stripCenterY = opts.stripBottom ? height - 34 : STRIP_CENTER_Y;
-        const iconOutline = Array.isArray(opts.iconOutline) ? opts.iconOutline : null;
         const iconIntensities = Array.isArray(opts.iconIntensities) ? opts.iconIntensities : null;
-        // row tint: the strip's own backdrop averaged across its width --
-        // one darkened twin color for the whole coin row. Per-coin sampling
-        // made the row patchy near the sun (warm coins under the disc, cool
-        // ones away from it); the sky is a smooth gradient, so the average
-        // along the strip line is its dominant color
-        let rowTint = null;
-        if (bgFn) {
-            const acc = [0, 0, 0];
-            const TINT_SAMPLES = 9;
-            for (let k = 0; k < TINT_SAMPLES; k++) {
-                const sample = bgFn(stripCenterY,
-                    plotStartX + (k + 0.5) * (plotEndX - plotStartX) / TINT_SAMPLES);
-                acc[0] += sample[0]; acc[1] += sample[1]; acc[2] += sample[2];
-            }
-            rowTint = acc.map(channelSum => channelSum / TINT_SAMPLES * 0.22);
-        }
-        const paintSingleIcon = (scene, centerX, isNight, scale, centerY = stripCenterY, onDisc = false, intensity = null) => {
+        const paintSingleIcon = (scene, centerX, isNight, scale, centerY = stripCenterY, intensity = null) => {
             const iconIntensity = intensity ?? STRIP_PRECIP_INTENSITY[scene] ?? 0;
-            // the medallion composites to a dark ground everywhere (even over
-            // the noon sun), so its glyph can always pick the light palette;
-            // loose/stencil paths still judge the live background per icon
-            const isPaletteDark = onDisc ? false
-                : bgFn ? lumOf(bgFn(centerY)) >= 0.55 : isDark;
-            const poseIcon = ctx => {
-                ctx.translate(centerX - 12 * scale, centerY - 12 * scale);
-                ctx.scale(scale, scale);
-                paintWeather(ctx, {
-                    scene: scene ?? 'cloud', time: 4.1,
-                    night: !!isNight, dark: !isPaletteDark,
-                    intensity: iconIntensity
-                });
-            };
-            if (onDisc) {
-                // uniform coins; capped only so the rim survives the canvas
-                // edge at the top strip position (stripCenterY == 13)
-                const radius = Math.min(STRIP_DISC_RADIUS, stripCenterY - 0.5);
-                // the row-tinted ground (darkened twin of the strip's own
-                // backdrop) or the neutral fallback on un-sampled surfaces
-                const [fillR, fillG, fillB, fillA] = rowTint
-                    ? [...rowTint, 0.5]
-                    : [16 / 255, 20 / 255, 28 / 255, 0.34];
-                cr.save();
-                cr.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-                cr.setSourceRGBA(fillR, fillG, fillB, fillA);
-                cr.fillPreserve();
-                cr.setSourceRGBA(1, 1, 1, 0.16);
-                cr.setLineWidth(1);
-                cr.stroke();
-                // glyphs are clipped to the disc: the moon's glow halo stays
-                // inside the medallion instead of bleeding into the hour label
-                cr.newPath();
-                cr.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-                cr.clip();
-                poseIcon(cr);
-                cr.restore();
-                return;
-            }
-            const iconDiameter = Math.ceil(24 * scale) + 4, iconRadius = iconDiameter / 2;
-            // the glyph painted once to a surface: its alpha mask drives the
-            // emboss below (the real colored icon is re-used as the stamp)
-            const surfaceS = new Cairo.ImageSurface(Cairo.Format.ARGB32, iconDiameter, iconDiameter);
-            const ctxS = new Cairo.Context(surfaceS);
-            ctxS.translate(iconRadius - 12 * scale, iconRadius - 12 * scale);
-            ctxS.scale(scale, scale);
-            paintWeather(ctxS, {
-                scene: scene ?? 'cloud', time: 4.1, night: !!isNight,
-                dark: !isPaletteDark, intensity: iconIntensity
-            });
-            ctxS.$dispose();
-            // emboss (replaces the old 12-way halo fuzz, which read as edge
-            // noise): the icon carries its own light — a soft cast-shadow to
-            // the bottom-right and a catch-light rim to the top-left — so it
-            // lifts off ANY ground, bright or dark, with no plate behind it.
-            const silhouette = (r, g, b, a) => {
-                const s = new Cairo.ImageSurface(Cairo.Format.ARGB32, iconDiameter, iconDiameter);
-                const c = new Cairo.Context(s);
-                c.setSourceRGBA(r, g, b, a);
-                c.paint();
-                c.setOperator(Cairo.Operator.IN);
-                c.setSourceSurface(surfaceS, 0, 0);
-                c.paint();
-                c.$dispose();
-                return s;
-            };
-            const shadow = iconOutline ?? [0.04, 0.05, 0.09, 0.5];
-            const shadowS = silhouette(shadow[0], shadow[1], shadow[2],
-                Math.min(0.46, shadow[3]));
-            // white catch-light: bold on a dark sky, restrained on a pale one
-            // (where the dark shadow does the separation instead)
-            const lightS = silhouette(1, 1, 1, isPaletteDark ? 0.32 : 0.5);
-            const stamp = (surf, dx, dy) => {
-                cr.setSourceSurface(surf, centerX - iconRadius + dx, centerY - iconRadius + dy);
-                cr.paint();
-            };
-            for (const [dx, dy] of [[0.6, 0.7], [1.1, 1.2], [1.7, 1.9]])
-                stamp(shadowS, dx, dy);
-            for (const [dx, dy] of [[-0.6, -0.7], [-1.1, -1.2]])
-                stamp(lightS, dx, dy);
+            // judge the live backdrop under this glyph (same referee as
+            // the ink labels); un-sampled surfaces (accent style, preview)
+            // follow the card's theme instead
+            const isPaletteDark = bgFn ? lumOf(bgFn(centerY)) >= 0.55 : isDark;
             cr.save();
-            poseIcon(cr);
+            cr.translate(centerX - 12 * scale, centerY - 12 * scale);
+            cr.scale(scale, scale);
+            paintWeather(cr, {
+                scene: scene ?? 'cloud', time: 4.1,
+                night: !!isNight, dark: !isPaletteDark,
+                intensity: iconIntensity
+            });
             cr.restore();
         };
 
@@ -641,26 +601,16 @@ export function paintChart(cr, opts) {
             currX = isRtl ? plotEndX : plotStartX;
             for (const [k, run] of conditionRuns.entries()) {
                 paintSingleIcon(run.scene, currX + flowDir * pillWidths[k] / 2, run.night,
-                    PILL_ICON_SCALE * (ICON_FOOTPRINT_SCALE[run.scene] ?? 1), stripCenterY, false,
+                    PILL_ICON_SCALE * (ICON_FOOTPRINT_SCALE[run.scene] ?? 1), stripCenterY,
                     run.intensity);
                 currX += flowDir * pillWidths[k];
             }
             cr.restore();
         } else {
-            const step = labelInterval * Math.max(1, Math.ceil(30 / span / labelInterval));
-            // coins center on the DATA x, clamped whole-disc-in from the
-            // edges -- labels may shift or widen to dodge clipping, but the
-            // icon row must stay evenly spaced (edges clamp symmetrically)
-            const discHalf = STRIP_DISC_RADIUS + 2;
-            for (let i = firstLabelIndex; i < pointCount; i += step) {
-                const anchorX = mapX(i);
-                if (anchorX > width - edgeGutter)
-                    continue;
-                const iconX = Math.min(Math.max(anchorX, discHalf), width - discHalf);
-                paintSingleIcon(conditionScenes[i], iconX, nights[i],
-                    STRIP_ICON_SCALE * (ICON_FOOTPRINT_SCALE[conditionScenes[i]] ?? 1),
-                    stripCenterY, true, iconIntensities?.[i] ?? null);
-            }
+            for (const slot of iconSlots)
+                paintSingleIcon(conditionScenes[slot.i], slot.iconX, nights[slot.i],
+                    STRIP_ICON_SCALE * (ICON_FOOTPRINT_SCALE[conditionScenes[slot.i]] ?? 1),
+                    stripCenterY, iconIntensities?.[slot.i] ?? null);
         }
     }
 
