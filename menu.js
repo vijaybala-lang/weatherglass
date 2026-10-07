@@ -801,6 +801,11 @@ export class ForecastPanel {
     }
 
     _applyTileInk() {
+        // icons ride the same fresh verdict as the tile text: the sky
+        // (and thus the right glyph palette) can change between builds
+        for (const icon of this._tileIcons ?? [])
+            icon.setDark(this._iconDark());
+        this._placeholderIcon?.setDark(this._iconDark());
         for (const [i, btn] of (this._dayButtons ?? []).entries()) {
             const lowLabel = this._dayLowLabels?.[i];
             if (this._style === 'accent' || !this._state) {
