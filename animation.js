@@ -12,7 +12,7 @@ const FRAME_INTERVAL_MS = 50;
 
 export const WeatherIcon = GObject.registerClass(
     class WeatherIcon extends St.DrawingArea {
-        _init({ size = 22, animate = true, time = null, dark = true, seed = 7 } = {}) {
+        _init({ size = 22, animate = true, time = null, dark = true, seed = 7, groundLum = -1 } = {}) {
             super._init({
                 style_class: 'aw-icon',
                 reactive: false,
@@ -29,7 +29,7 @@ export const WeatherIcon = GObject.registerClass(
             this._dark = dark;
             this._opts = {
                 scene: 'loading', windy: false, night: false,
-                intensity: 0, windKmh: 0, phase: null, seed
+                intensity: 0, windKmh: 0, phase: null, seed, groundLum
             };
 
             this._clockId = 0;
