@@ -804,8 +804,13 @@ export class ForecastPanel {
     _applyTileInk() {
         // icons ride the same fresh verdict as the tile text: the sky
         // (and thus the right glyph palette) can change between builds
-        for (const icon of this._tileIcons ?? [])
+        const solidDark = this._style === 'solid' && this._dark;
+        for (const [i, icon] of (this._tileIcons ?? []).entries()) {
             icon.setDark(this._iconDark());
+            // the selected tile paints its glyph on the dark glass slab
+            // (and a dark solid card is all slab): claim the night glow
+            icon.setPale(i === this._day || solidDark);
+        }
         this._placeholderIcon?.setDark(this._iconDark());
         for (const [i, btn] of (this._dayButtons ?? []).entries()) {
             const lowLabel = this._dayLowLabels?.[i];

@@ -132,6 +132,7 @@ let _light = false;
  * handed in by the strip referee and the tile icons */
 let _groundLum = -1;
 let _night = false;
+let _pale = false;
 /* palette referee: the icon's OWN day/night flag decides whenever the
  * surface is sampled (any surface that passes groundLum also passes the
  * per-hour night flag it paints under). Pixel forensics over three
@@ -143,8 +144,11 @@ let _night = false;
  * measured a 0.40-0.90 mid-bright ground (even the storm card), so
  * day earns ink; night keeps the pale glow. The unsampled surfaces
  * (panel, accent style, preview) have no night flag in play and
- * follow the caller's light/dark chain as always. */
-const groundLight = () => _groundLum >= 0 ? !_night : _light;
+ * follow the caller's light/dark chain as always. `pale: true` is the
+ * caller's hand on the palette: the day-tile selection scrim is a
+ * deliberate dark slab no sky model sees, so the selected tile claims
+ * the night glow for its glyph (same for solid-style dark cards). */
+const groundLight = () => _pale ? false : _groundLum >= 0 ? !_night : _light;
 // water rides the SAME referee as the glyph palette (painter's dark
 // flag, chosen from the live ground under the icon): over bright sky a
 // deep navy that holds contrast against luminance ~0.55, over night a
@@ -621,6 +625,7 @@ export function paintWeather(cr, opts) {
     _light = opts.dark === false;
     _groundLum = opts.groundLum ?? -1;
     _night = !!opts.night;
+    _pale = !!opts.pale;
     const currentTime = opts.time || 0;
     const ctx = {
         time: currentTime,
