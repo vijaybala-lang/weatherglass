@@ -619,7 +619,9 @@ export class ForecastPanel {
     _chartValues() {
         const state = this._state;
         const field = { temp: 'temp', precip: 'precipProb', wind: 'wind' }[this._metric];
-        const hourlyIndices = state.hourly ? daySlice(state.hourly, state.daily, this._day, state.currentIso) : [];
+        const hourlyIndices = state.hourly
+            ? daySlice(state.hourly, state.daily, this._day, state.currentIso)
+            : [];
         const units = state.units;
         this._fmtValue = this._metric === 'temp'
             ? (i, v) => fmtTemp(v, units)
@@ -641,7 +643,8 @@ export class ForecastPanel {
             };
         }
         // today's window starts 2 h early: the now marker sits that far in
-        this._nowFrac = this._day === 0 ? nowFracIn(state.hourly, hourlyIndices, state.currentIso) : null;
+        this._nowFrac = this._day === 0
+            ? nowFracIn(state.hourly, hourlyIndices, state.currentIso) : null;
         return hourlyIndices.map(i => state.hourly[field][i] ?? 0);
     }
 
