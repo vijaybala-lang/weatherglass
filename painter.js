@@ -109,10 +109,10 @@ function cloud(cr, centerX, centerY, scale, topColor, bottomColor, alpha = 1) {
 
 const CLOUD_LIGHT = [[0.76, 0.82, 0.87], [0.60, 0.68, 0.75]];
 const CLOUD_RAIN = [[0.58, 0.60, 0.64], [0.40, 0.43, 0.48]];
-/* overcast on bright grounds sits a touch lighter than the rain bank --
-   deep enough to separate from a white sky, light enough to stay plain
-   'cloud', not 'about to rain' */
-const CLOUD_OVERCAST = [[0.66, 0.68, 0.71], [0.50, 0.53, 0.58]];
+/* overcast on bright grounds: pale enough to stay 'plain cloud' but
+   deep enough for tile-size legs against a milky sky -- the 0.66 top
+   vanished on the card's own background tone */
+const CLOUD_OVERCAST = [[0.58, 0.60, 0.65], [0.42, 0.45, 0.50]];
 const CLOUD_DARK = [[0.48, 0.52, 0.59], [0.32, 0.36, 0.43]];
 
 /** Precipitation clouds come as a pair: a smaller companion behind and
@@ -136,7 +136,7 @@ const INK_WATER = () => _light ? [0.05, 0.33, 0.68] : [0.38, 0.82, 1.00];
 const INK_FLAKE = () => _light ? [0.45, 0.56, 0.72] : [0.92, 0.96, 1.00];
 const INK_STONE = () => _light ? [0.55, 0.64, 0.76] : [0.91, 0.94, 0.97];
 const INK_STREAK = () => _light ? [0.24, 0.50, 0.78] : [0.50, 0.83, 1.00];
-const INK_FOG = () => _light ? [0.44, 0.52, 0.62] : [0.72, 0.76, 0.80];
+const INK_FOG = () => _light ? [0.36, 0.44, 0.54] : [0.72, 0.76, 0.80];
 const INK_STAR = () => _light ? [0.55, 0.62, 0.74] : [0.95, 0.97, 1.00];
 const INK_SPIN = () => _light ? [0.28, 0.33, 0.40] : [0.85, 0.88, 0.92];
 const INK_MOON_EDGE = () => _light ? [0.24, 0.30, 0.40, 0.85] : null;
@@ -409,10 +409,13 @@ function sceneCloud(cr, ctx) {
 
 function sceneFog(cr, ctx) {
     const { time } = ctx;
-    cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 8, 0.7, CLOUD_LIGHT[0], CLOUD_LIGHT[1], 0.8);
+    // the fog cloud keeps a pale body on night grounds and deepens to
+    // the overcast gray on bright ones -- and its bands carry more ink
+    const body = _light ? CLOUD_OVERCAST : CLOUD_LIGHT;
+    cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 8, 0.7, body[0], body[1], 0.85);
     for (let i = 0; i < 3; i++) {
         const fogColor = INK_FOG();
-        streak(cr, 14.5 + i * 3.2, 1.7, 0.40 - i * 0.06, 7, 3.5,
+        streak(cr, 14.5 + i * 3.2, 1.7, (_light ? 0.55 : 0.40) - i * 0.06, 7, 3.5,
             -(time * (2.4 + i)) % 10.5, fogColor);
     }
 }
