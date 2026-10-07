@@ -513,9 +513,11 @@ function drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight) {
  * and swaying wash line in front of it carry the motion. */
 function drawFogHills(cr, width, height, night) {
     const ridges = [
-        { base: 0.52, amp: 0.050, f1: 1.7, f2: 4.1, p1: 0.6, p2: 2.2,
+        // the far crown crests just above the metric tabs (~0.25 of the
+        // card), the near one below the chart; both feet drown in the wash
+        { base: 0.30, amp: 0.060, f1: 1.7, f2: 4.1, p1: 0.6, p2: 2.2,
             c: night ? [0.09, 0.11, 0.15] : [0.42, 0.45, 0.51] },
-        { base: 0.64, amp: 0.070, f1: 2.3, f2: 5.3, p1: 2.9, p2: 0.4,
+        { base: 0.44, amp: 0.075, f1: 2.3, f2: 5.3, p1: 2.9, p2: 0.4,
             c: night ? [0.05, 0.07, 0.10] : [0.28, 0.32, 0.39] },
     ];
     for (const r of ridges) {
@@ -534,12 +536,12 @@ function drawFogHills(cr, width, height, night) {
     }
     // the fog line: negligible over the crowns, total below the feet
     const washColor = night ? [0.50, 0.55, 0.64] : [0.82, 0.85, 0.88];
-    const wash = new Cairo.LinearGradient(0, 0.50 * height, 0, height);
+    const wash = new Cairo.LinearGradient(0, 0.34 * height, 0, height);
     wash.addColorStopRGBA(0, ...washColor, 0);
-    wash.addColorStopRGBA(0.36, ...washColor, night ? 0.30 : 0.45);
+    wash.addColorStopRGBA(0.30, ...washColor, night ? 0.30 : 0.45);
     wash.addColorStopRGBA(1, ...washColor, night ? 0.62 : 0.78);
     cr.setSource(wash);
-    cr.rectangle(0, 0.50 * height, width, height * 0.50);
+    cr.rectangle(0, 0.34 * height, width, height * 0.66);
     cr.fill();
 }
 
