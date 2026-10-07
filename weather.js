@@ -125,18 +125,21 @@ export function wallClockToEpoch(iso) {
 }
 
 /**
- * Hourly-array indices covering the chart's window. Today runs from NOW to
- * the city's next midnight -- the window never spills into another date, so
- * the tiles' high/low always belong to the hours drawn. It backfills an
- * hour or two before now (clamped at the day's first hour) so the curve has
- * history behind the marker instead of the marker glued to the left edge.
- * Other days run midnight to midnight. All day arithmetic reads the DATE
- * out of the provider's own stamps -- they are always the city's local
- * date -- so neither the viewer's timezone nor half-hour offsets can tip
- * an edge across a day boundary. nowIso is the city wall-clock anchor the
- * providers hand us.
+ * Hourly-array indices for the chart's window. Today is a ROLLING 24 HOURS:
+ * now through the next 24, backfilled before now (clamped at the array
+ * start) so the curve stays full at every hour of the day -- at 23:30 the
+ * tail is tomorrow's early hours, and just past midnight the window simply
+ * becomes the new day plus its 2-hour backfill. Today's tile hi/lo follows
+ * the window (menu recomputes it from the plotted hours), so tile, curve
+ * and the now marker always describe the same hours across the midnight
+ * boundary. Other days run exact calendar midnight-to-midnight slices. All
+ * day arithmetic reads the DATE out of the provider's own stamps -- they
+ * always carry the city's local date -- so neither the viewer's timezone
+ * nor half-hour offsets can tip an edge across a day boundary. nowIso is
+ * the city wall-clock anchor the providers hand us.
  */
 const NOW_BACKFILL_HOURS = 2;
+const TODAY_WINDOW_HOURS = 24;
 
 export function daySlice(hourly, daily, dayIndex, nowIso = '') {
     const times = hourly?.time ?? [];
@@ -147,12 +150,8 @@ export function daySlice(hourly, daily, dayIndex, nowIso = '') {
         const hourPrefix = nowIso.slice(0, 13);
         const nowIndex = times.findIndex(timeStr => timeStr.slice(0, 13) === hourPrefix);
         if (nowIndex >= 0) {
-            const dayKey = times[nowIndex].slice(0, 10);
-            let midnightIndex = nowIndex;
-            while (midnightIndex < count && times[midnightIndex].slice(0, 10) === dayKey)
-                midnightIndex++;
             const startIndex = Math.max(0, nowIndex - NOW_BACKFILL_HOURS);
-            const endIndex = Math.min(midnightIndex - 1, count - 1);
+            const endIndex = Math.min(nowIndex + TODAY_WINDOW_HOURS, count) - 1;
             const hourlyIndices = [];
             for (let i = startIndex; i <= endIndex; i++)
                 hourlyIndices.push(i);
