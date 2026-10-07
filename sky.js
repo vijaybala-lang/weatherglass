@@ -203,12 +203,12 @@ function rebuild(sky, width, height, scene) {
         width: rand(0.8, 2.2), w: rand(0.8, 2.2),
         opacity: rand(0.12, 0.4), o: rand(0.12, 0.4)
     }));
-    sky.fog = createParticleList(features.fog ? 10 : 0, () => ({
+    sky.fog = createParticleList(features.fog ? 15 : 0, () => ({
         x: rand(-width, width), y: rand(0.25 * height, 0.85 * height),
-        length: rand(0.45, 1.1) * width, len: rand(0.45, 1.1) * width,
-        speed: rand(10, 30), sp: rand(10, 30),
-        height: rand(34, 110), ht: rand(34, 110),
-        opacity: rand(0.12, 0.26), o: rand(0.12, 0.26),
+        length: rand(0.55, 1.2) * width, len: rand(0.55, 1.2) * width,
+        speed: rand(12, 34), sp: rand(12, 34),
+        height: rand(40, 130), ht: rand(40, 130),
+        opacity: rand(0.22, 0.42), o: rand(0.22, 0.42),
         // lit mist vs shadowed mist: a single bright tone over a mist-
         // gray sky cancels out; alternating light/shadow clumps gives
         // the drift real texture the eye can actually track
