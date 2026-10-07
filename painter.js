@@ -131,20 +131,20 @@ let _light = false;
 /* luminance of the composited ground under the glyph (-1 = unknown),
  * handed in by the strip referee and the tile icons */
 let _groundLum = -1;
-/* the sampled ground decides the palette whenever it is known -- it is
- * a measured number, while the dark flag is a chain of caller decisions
- * that once misjudged mid-tone overcast skies and hid every cloud.
- * The flag only serves surfaces nobody samples (accent style, preview).
- * The crossovers sit LOW (0.23/0.25) on purpose: the gradient model
- * runs ~0.2 darker than the composited screen -- popup glass and blur
- * whiten the card the eye actually sees. Pixel forensics caught a rain
- * card (model 0.446) rendering 0.64 on screen. Gates here are the
- * wanted on-screen crossovers (ink from ~0.45, glow below) pulled back
- * through that +0.2 wash: every day scene earns ink -- storm (0.25)
- * sits right at the line and keeps its moody glow -- while every night
- * (<=0.21) keeps the glow, blur or no blur. */
-const groundLight = (crossover = 0.25) =>
-    _groundLum >= 0 ? _groundLum >= crossover : _light;
+let _night = false;
+/* palette referee: the icon's OWN day/night flag decides whenever the
+ * surface is sampled (any surface that passes groundLum also passes the
+ * per-hour night flag it paints under). Pixel forensics over three
+ * full days proved luminance sampling useless here: the ground under
+ * a glyph is sky + glass + blur + chart fill composited, and no gate
+ * survived contact with it -- rain passed while clouds failed on the
+ * SAME pixels at [0.23,0.25), storm day at [0.248] flipped one gate
+ * per scene drift. What never lies is time of day: every day icon
+ * measured a 0.40-0.90 mid-bright ground (even the storm card), so
+ * day earns ink; night keeps the pale glow. The unsampled surfaces
+ * (panel, accent style, preview) have no night flag in play and
+ * follow the caller's light/dark chain as always. */
+const groundLight = () => _groundLum >= 0 ? !_night : _light;
 // water rides the SAME referee as the glyph palette (painter's dark
 // flag, chosen from the live ground under the icon): over bright sky a
 // deep navy that holds contrast against luminance ~0.55, over night a
@@ -153,10 +153,10 @@ const groundLight = (crossover = 0.25) =>
  * 0.5-luminance overcast card is invisible, and such grounds are too
  * bright for the glow-at-night palette to earn its keep */
 const INK_WATER = () =>
-    groundLight(0.23) ? [0.05, 0.33, 0.68] : [0.38, 0.82, 1.00];
+    groundLight() ? [0.05, 0.33, 0.68] : [0.38, 0.82, 1.00];
 const INK_FLAKE = () => groundLight() ? [0.45, 0.56, 0.72] : [0.92, 0.96, 1.00];
 const INK_STONE = () => groundLight() ? [0.55, 0.64, 0.76] : [0.91, 0.94, 0.97];
-const INK_STREAK = () => _light ? [0.24, 0.50, 0.78] : [0.50, 0.83, 1.00];
+const INK_STREAK = () => groundLight() ? [0.24, 0.50, 0.78] : [0.50, 0.83, 1.00];
 const INK_FOG = () => groundLight() ? [0.36, 0.44, 0.54] : [0.72, 0.76, 0.80];
 const INK_STAR = () => _light ? [0.55, 0.62, 0.74] : [0.95, 0.97, 1.00];
 const INK_SPIN = () => _light ? [0.28, 0.33, 0.40] : [0.85, 0.88, 0.92];
@@ -620,6 +620,7 @@ export function paintWeather(cr, opts) {
         particles = opts.particles || createParticles();
     _light = opts.dark === false;
     _groundLum = opts.groundLum ?? -1;
+    _night = !!opts.night;
     const currentTime = opts.time || 0;
     const ctx = {
         time: currentTime,
