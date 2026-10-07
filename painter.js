@@ -141,8 +141,8 @@ function rainDrops(cr, particles, time, count, slant, alpha) {
     for (let i = 0; i < total; i++) {
         let x, y, s;
         if (particles.static) {
-            [x, y] = staticSpot(i, 4, 4.5, 11.7, 3.15);
-            s = i % 3 === 1 ? 0.8 : 0.95;
+            [x, y] = staticSpot(i, 3, 5.2, 12.2, 3.7);
+            s = i % 2 ? 1.05 : 1.25;
         } else {
             const drop = particles.drops[i];
             drop.y += (drop.speed ?? drop.sp) * dt;
@@ -152,7 +152,7 @@ function rainDrops(cr, particles, time, count, slant, alpha) {
             }
             x = drop.x;
             y = drop.y;
-            s = Math.min(1.15, 0.6 + (drop.length ?? drop.len) * 0.18);
+            s = Math.min(1.4, 0.75 + (drop.length ?? drop.len) * 0.22);
         }
         teardrop(cr, x - slant * (y - 10) * 0.18, y, s);
     }
@@ -369,7 +369,7 @@ function sceneFog(cr, ctx) {
 function sceneRain(cr, ctx) {
     const { time, particles, intensity, windKmh, windy } = ctx;
     cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 7.5, 0.95, CLOUD_RAIN[0], CLOUD_RAIN[1]);
-    const dropCount = 4 + Math.min(12, Math.round(intensity * 2.4));
+    const dropCount = Math.max(2, Math.ceil((4 + Math.min(12, intensity * 2.4)) / 3));
     const slant = Math.min(0.9, windKmh / 45);
     rainDrops(cr, particles, time, dropCount, slant, 0.9);
     if (windy)
@@ -389,9 +389,9 @@ function sceneSnow(cr, ctx) {
 function sceneSleet(cr, ctx) {
     const { time, particles, intensity, windKmh, windy } = ctx;
     cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 7.5, 0.92, CLOUD_RAIN[0], CLOUD_RAIN[1]);
-    const count = 5 + Math.min(5, Math.round(intensity * 1.4));
+    const count = Math.max(2, Math.ceil((5 + Math.min(5, intensity * 1.4)) / 3));
     rainDrops(cr, particles, time, count, Math.min(1.1, windKmh / 36 + 0.25), 0.8);
-    snowFlakes(cr, particles, time, Math.max(4, count - 2));
+    snowFlakes(cr, particles, time, Math.max(3, count));
     if (windy)
         windStreaks(cr, time, 0.35, 2);
 }
@@ -400,7 +400,7 @@ function sceneSleet(cr, ctx) {
 function sceneHail(cr, ctx) {
     const { time, particles, windKmh, windy } = ctx;
     cloud(cr, 12 + Math.sin(time * 0.45) * 0.5, 7.2, 0.98, CLOUD_DARK[0], CLOUD_DARK[1]);
-    rainDrops(cr, particles, time, 5, Math.min(0.9, windKmh / 45), 0.5);
+    rainDrops(cr, particles, time, 2, Math.min(0.9, windKmh / 45), 0.5);
     hailStones(cr, particles, time, particles.hail.length);
     if (windy)
         windStreaks(cr, time, 0.35, 2);
@@ -414,7 +414,7 @@ const BOLTS = [
 function sceneStorm(cr, ctx) {
     const { time, particles, intensity, windKmh, windy } = ctx;
     cloud(cr, 12 + Math.sin(time * 0.4) * 0.5, 7.2, 1.0, CLOUD_DARK[0], CLOUD_DARK[1]);
-    rainDrops(cr, particles, time, 3 + Math.min(9, Math.round(intensity * 1.6)), Math.min(0.9, windKmh / 45), 0.85);
+    rainDrops(cr, particles, time, Math.max(2, Math.ceil((3 + Math.min(9, intensity * 1.6)) / 3)), Math.min(0.9, windKmh / 45), 0.85);
 
     // double-flick lightning every ~2.8 s, alternating bolt shape;
     // static poses (tiles, strip glyphs) can't wait for the flicker
