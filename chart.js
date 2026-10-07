@@ -597,7 +597,7 @@ export function paintChart(cr, opts) {
             paintWeather(cr, {
                 scene: scene ?? 'cloud', time: 4.1,
                 night: !!isNight, dark: !isPaletteDark,
-                intensity: iconIntensity
+                intensity: iconIntensity, staticPose: true
             });
             cr.restore();
         };
