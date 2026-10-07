@@ -109,6 +109,10 @@ function cloud(cr, centerX, centerY, scale, topColor, bottomColor, alpha = 1) {
 
 const CLOUD_LIGHT = [[0.76, 0.82, 0.87], [0.60, 0.68, 0.75]];
 const CLOUD_RAIN = [[0.58, 0.60, 0.64], [0.40, 0.43, 0.48]];
+/* overcast on bright grounds sits a touch lighter than the rain bank --
+   deep enough to separate from a white sky, light enough to stay plain
+   'cloud', not 'about to rain' */
+const CLOUD_OVERCAST = [[0.66, 0.68, 0.71], [0.50, 0.53, 0.58]];
 const CLOUD_DARK = [[0.48, 0.52, 0.59], [0.32, 0.36, 0.43]];
 
 /** Precipitation clouds come as a pair: a smaller companion behind and
@@ -393,20 +397,44 @@ function scenePartly(cr, ctx) {
 
 function sceneCloud(cr, ctx) {
     const { time, windy } = ctx;
-    cloud(cr, 9.5 - Math.sin(time * 0.5) * 0.8, 8.5, 0.62, CLOUD_LIGHT[0], CLOUD_LIGHT[1], 0.65);
-    cloud(cr, 13 + Math.sin(time * 0.6) * 0.7, 14, 0.95, CLOUD_LIGHT[0], CLOUD_LIGHT[1]);
+    // overcast earns its silhouette: mid-gray over bright skies (the pale
+    // cloud vanished into overcast white), pale body over night skies --
+    // same light/dark referee as the INK_* family
+    const overcast = _light ? CLOUD_OVERCAST : CLOUD_LIGHT;
+    cloud(cr, 9.5 - Math.sin(time * 0.5) * 0.8, 8.5, 0.62, overcast[0], overcast[1], 0.65);
+    cloud(cr, 13 + Math.sin(time * 0.6) * 0.7, 14, 0.95, overcast[0], overcast[1]);
     if (windy)
         windStreaks(cr, time, 0.4, 2);
 }
 
+/* Fog: a hill rising OUT of a rolling fog valley. The hill's crown is
+ * the clearly-visible upper element, the drifting fog eats its base --
+ * a silhouette reads at stamp size, where the old cloud+lines icon
+ * dissolved into any bright backdrop. (A bridge or skyscraper would
+ * collapse to noise at these sizes.) */
 function sceneFog(cr, ctx) {
     const { time } = ctx;
-    cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 8, 0.7, CLOUD_LIGHT[0], CLOUD_LIGHT[1], 0.8);
-    for (let i = 0; i < 3; i++) {
-        const fogColor = INK_FOG();
-        streak(cr, 14.5 + i * 3.2, 1.7, 0.40 - i * 0.06, 7, 3.5,
+    const fogColor = INK_FOG();
+    const hill = _light ? [0.34, 0.40, 0.48] : [0.86, 0.90, 0.95];
+    cr.setSourceRGBA(hill[0], hill[1], hill[2], 0.95);
+    cr.moveTo(1.6, 23);
+    cr.curveTo(3.4, 15.5, 6.8, 7.6, 9.6, 7.4);
+    cr.curveTo(11.6, 7.3, 12.4, 10.5, 13.2, 13.5);
+    cr.curveTo(14.1, 11.2, 15.6, 9.6, 17.4, 10.2);
+    cr.curveTo(19.9, 11.0, 21.6, 16.8, 22.6, 23);
+    cr.closePath();
+    cr.fill();
+    // the valley fog: a soft rising wash, then the drifting bands
+    // crossing IN FRONT of the hill's feet keep its base obscured
+    const veil = new Cairo.LinearGradient(0, 12.2, 0, 23);
+    veil.addColorStopRGBA(0, ...fogColor, 0);
+    veil.addColorStopRGBA(1, ...fogColor, 0.55);
+    cr.setSource(veil);
+    cr.rectangle(0, 12.2, 24, 11.8);
+    cr.fill();
+    for (let i = 0; i < 3; i++)
+        streak(cr, 15.2 + i * 3.0, 2.1, 0.50 - i * 0.08, 7, 3.5,
             -(time * (2.4 + i)) % 10.5, fogColor);
-    }
 }
 
 function sceneRain(cr, ctx) {
