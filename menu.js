@@ -755,7 +755,7 @@ export class ForecastPanel {
                 const icon = new WeatherIcon({
                     size: 26, animate: false,
                     time: STATIC_TIME,
-                    dark: this._iconDark()
+                    dark: this._iconDark(), seed: i * 13 + 5
                 });
                 this._tileIcons.push(icon);
                 // canonical pose (shared with the chart strip): the WMO code

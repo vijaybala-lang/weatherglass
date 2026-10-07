@@ -65,11 +65,33 @@ function teardrop(cr, x, y, s) {
     cr.closePath();
 }
 
-/** Even staggered grid (cols per row, column pitch dx) under the cloud --
- *  the layout for static poses, whose random pools used to reshuffle on
- *  every repaint and made the strip/tile glyphs shimmer between columns. */
-function staticSpot(i, cols, x0, dx, y0, dy) {
-    return [x0 + (i % cols) * dx, y0 + Math.floor(i / cols) * dy];
+/** Organic-but-safe scatter under the cloud for static poses. Golden-
+ *  ratio steps land every drop at a fresh, never-repeating spot --
+ *  naturally uneven, yet spread with no clumps and no ruler-straight
+ *  columns -- and a hard distance check keeps neighbours from ever
+ *  touching. Seeded per glyph, so each icon paints identically across
+ *  repaints (no shimmer) while neighbouring icons differ. */
+function seededSpots(count, seed, x0, x1, y0, y1, minDx, minDy) {
+    const golden = 0.6180339887;
+    let u = (seed % 977) * golden;
+    const spots = [];
+    for (let i = 0; i < count; i++) {
+        let x = x0, y = y0, ok = false;
+        for (let k = 0; k < 24 && !ok; k++) {
+            u += golden;
+            x = x0 + (u % 1) * (x1 - x0);
+            u += golden;
+            y = y0 + (u % 1) * (y1 - y0);
+            ok = spots.every(([ox, oy]) =>
+                Math.abs(ox - x) >= minDx || Math.abs(oy - y) >= minDy);
+        }
+        if (!ok) {
+            x = x0 + (i % 3) * ((x1 - x0) / 2);
+            y = y0 + Math.floor(i / 3) * minDy;
+        }
+        spots.push([x, y]);
+    }
+    return spots;
 }
 
 /** Puffy cloud made of three bumps over a flat base, one gradient fill. */
@@ -146,16 +168,19 @@ function windStreaks(cr, time, alphaScale, count = 3) {
  *  (strip glyphs, day tiles) sit in an even staggered grid. Either way the
  *  shape is a teardrop, and intensity decides the COUNT -- heavier rain,
  *  more drops. */
-function rainDrops(cr, particles, time, count, slant, alpha) {
+function rainDrops(cr, particles, time, count, slant, alpha, band = [13.4, 22.3]) {
     const lastTime = particles.lastTime ?? particles.lastT;
     const dt = lastTime === null ? 0 : Math.min(0.06, time - lastTime);
     const waterColor = INK_WATER();
     cr.setSourceRGBA(waterColor[0], waterColor[1], waterColor[2], alpha);
     const total = Math.min(count, particles.drops.length);
+    const spots = particles.static
+        ? seededSpots(total, particles.seed ?? 7, 7.3, 16.6, band[0], band[1], 2.6, 4.4)
+        : null;
     for (let i = 0; i < total; i++) {
         let x, y, s;
         if (particles.static) {
-            [x, y] = staticSpot(i, 3, 7.7, 4.3, 12.8, 3.8);
+            [x, y] = spots[i];
             s = i % 2 ? 1.05 : 1.25;
         } else {
             const drop = particles.drops[i];
@@ -174,16 +199,20 @@ function rainDrops(cr, particles, time, count, slant, alpha) {
 }
 
 /** Snowflakes (six spokes), drifting side to side. */
-function snowFlakes(cr, particles, time, count) {
+function snowFlakes(cr, particles, time, count, flakeBand = [13.4, 22.3]) {
     const lastTime = particles.lastTime ?? particles.lastT;
     const dt = lastTime === null ? 0 : Math.min(0.06, time - lastTime);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineWidth(0.55);
     const total = Math.min(count, particles.flakes.length);
+    const flakeSpots = particles.static
+        ? seededSpots(total, (particles.seed ?? 7) + 37, 6.6, 17.2,
+            flakeBand[0], flakeBand[1], 2.5, 2.9)
+        : null;
     for (let i = 0; i < total; i++) {
         let x, y, rot, radius;
         if (particles.static) {
-            [x, y] = staticSpot(i, 3, 6.7, 4.6, 12.2, 3.6);
+            [x, y] = flakeSpots[i];
             radius = 1.05;
             rot = i * 1.1;
         } else {
@@ -404,8 +433,9 @@ function sceneSleet(cr, ctx) {
     const { time, particles, intensity, windKmh, windy } = ctx;
     cloudPair(cr, 11.5, 7.5, 0.88, CLOUD_RAIN[0], CLOUD_RAIN[1], time);
     const count = Math.max(2, Math.ceil((5 + Math.min(5, intensity * 1.4)) / 3));
-    rainDrops(cr, particles, time, count, Math.min(1.1, windKmh / 36 + 0.25), 0.8);
-    snowFlakes(cr, particles, time, Math.max(3, count));
+    rainDrops(cr, particles, time, count, Math.min(1.1, windKmh / 36 + 0.25), 0.8,
+        [13.4, 17.1]);
+    snowFlakes(cr, particles, time, Math.max(3, count), [17.9, 22.3]);
     if (windy)
         windStreaks(cr, time, 0.35, 2);
 }
@@ -550,6 +580,7 @@ export function paintWeather(cr, opts) {
         if (!staticPool)
             staticPool = Object.assign(createParticles(), { static: true });
         particles = staticPool;
+        particles.seed = opts.seed ?? 7;   // per-glyph layout variety
     } else
         particles = opts.particles || createParticles();
     _light = opts.dark === false;
