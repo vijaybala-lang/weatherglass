@@ -204,7 +204,9 @@ function rebuild(sky, width, height, scene) {
         opacity: rand(0.12, 0.4), o: rand(0.12, 0.4)
     }));
     sky.fog = createParticleList(features.fog ? 15 : 0, () => ({
-        x: rand(-width, width), y: rand(0.25 * height, 0.85 * height),
+        // the roll lives in the valleys and lower slopes -- crowns stay
+        // clear air, so the band starts below the ridge bases
+        x: rand(-width, width), y: rand(0.44 * height, 0.93 * height),
         length: rand(0.55, 1.2) * width, len: rand(0.55, 1.2) * width,
         speed: rand(12, 34), sp: rand(12, 34),
         height: rand(40, 130), ht: rand(40, 130),
