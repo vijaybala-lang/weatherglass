@@ -29,7 +29,7 @@ export const WeatherIcon = GObject.registerClass(
             this._dark = dark;
             this._opts = {
                 scene: 'loading', windy: false, night: false,
-                intensity: 0, windKmh: 0, phase: null, seed, groundLum
+                intensity: 0, windKmh: 0, phase: null, seed, groundLum, pale: false
             };
 
             this._clockId = 0;
@@ -43,6 +43,13 @@ export const WeatherIcon = GObject.registerClass(
             Object.assign(this._opts, { scene, windy, night, intensity, windKmh, phase });
             if (dark !== undefined)
                 this._dark = dark;
+            this.queue_repaint();
+        }
+
+        setPale(pale) {
+            if (this._opts.pale === !!pale)
+                return;
+            this._opts.pale = !!pale;
             this.queue_repaint();
         }
 
