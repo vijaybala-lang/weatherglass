@@ -12,7 +12,7 @@ const N_ = s => s;
 import { WeatherIcon } from './animation.js';
 import { paintSky, createSky, sampleSky, bodyOf } from './sky.js';
 import {
-    paintChart, ease, lerp, contrastSafe, pickInk,
+    paintChart, ease, lerp, contrastSafe, lumOf, pickInk,
     judgeInk, INK_DARK, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
 } from './chart.js';
 import { sceneFor, fmtTemp, dayName, daySlice, nowFracIn } from './weather.js';
@@ -755,7 +755,7 @@ export class ForecastPanel {
                 const icon = new WeatherIcon({
                     size: 26, animate: false,
                     time: STATIC_TIME,
-                    dark: this._paintDark()
+                    dark: this._iconDark()
                 });
                 this._tileIcons.push(icon);
                 // canonical pose (shared with the chart strip): the WMO code
@@ -909,6 +909,18 @@ export class ForecastPanel {
         return this._style === 'animated' || this._dark;
     }
 
+    /* day-tile + placeholder icons paint over the live sky but have no
+     * backdrop sampler of their own -- _paintDark() is the THEME's mood,
+     * which in animated style always says 'dark' and parks pale water
+     * on a noon sky. Judge their palette from the composited ground
+     * where they actually sit (sky + scrim + tile glass), same threshold
+     * the chart strip uses: bright ground earns the dark-twin glyphs */
+    _iconDark() {
+        if (this._style === 'accent')
+            return this._paintDark();
+        return lumOf(this._bgAt(0.8)) < 0.55;
+    }
+
     _theme() {
         return this._paintDark() ? THEME_CONFIG.dark : THEME_CONFIG.light;
     }
@@ -921,8 +933,8 @@ export class ForecastPanel {
         // day-tile + placeholder icons paint their own weather scenes; tell
         // them the new background so pale glyphs (moon/snow/fog) stay visible
         for (const icon of this._tileIcons ?? [])
-            icon.setDark(this._paintDark());
-        this._placeholderIcon?.setDark(this._paintDark());
+            icon.setDark(this._iconDark());
+        this._placeholderIcon?.setDark(this._iconDark());
         this._applyTileInk();          // selected-tile glass differs per theme
         this._skyArea.queue_repaint();
         this._chart.queue_repaint();
