@@ -80,12 +80,15 @@ function spacer() {
     return new St.Widget({ x_expand: true, x_align: ACTOR_FILL });
 }
 
-/** '2026-09-25T15:00' -> '3PM' (or '15') for the chart axis. */
-function hourLabel(isoString, is24Hour) {
+/** '2026-09-25T15:00' -> '3PM' (or '15') for the chart axis. The next
+ *  calendar day gets a one-letter flag (rolling windows run past midnight
+ *  after 10 PM); the exact next date only, so stale data never mislabels. */
+function hourLabel(isoString, is24Hour, nextDayKey = '') {
     const hour = +isoString.slice(11, 13);
+    const dayFlag = nextDayKey && isoString.slice(0, 10) > nextDayKey ? '*' : '';
     if (is24Hour)
-        return `${hour}`;
-    return `${hour % 12 === 0 ? 12 : hour % 12}${hour < 12 ? 'AM' : 'PM'}`;
+        return `${dayFlag}${hour}`;
+    return `${dayFlag}${hour % 12 === 0 ? 12 : hour % 12}${hour < 12 ? 'AM' : 'PM'}`;
 }
 
 const SkyArea = GObject.registerClass(
@@ -548,8 +551,8 @@ export class ForecastPanel {
         this._buildDayTiles();
         if (this._day >= daily.length)
             this._day = 0;
-        this._markTiles();
         this._applySelection();
+        this._markTiles();
     }
 
     destroy() {
@@ -629,7 +632,12 @@ export class ForecastPanel {
                 ? (i, v) => `${Math.round(v)}%`
                 : (i, v) => fmtWind(v, units);
         const times = state.hourly ? hourlyIndices.map(i => state.hourly.time[i]) : [];
-        this._fmtHour = i => hourLabel(times[i] ?? 'T00', this._is24Hour);
+        // rolling windows run past midnight after 10 PM: flag tomorrow's
+        // labels with '*' so '5' can never be misread as 5 this morning
+        const nextDayKey = times.length &&
+            times[0].slice(0, 10) !== times[times.length - 1].slice(0, 10)
+            ? times[times.length - 1].slice(0, 10) : '';
+        this._fmtHour = i => hourLabel(times[i] ?? 'T00', this._is24Hour, nextDayKey);
         this._strip = null;
         if (state.hourly && hourlyIndices.length) {
             const days = times.map((t, k) => state.hourly.isDay?.[hourlyIndices[k]] ?? (() => {
@@ -645,6 +653,26 @@ export class ForecastPanel {
         // today's window starts 2 h early: the now marker sits that far in
         this._nowFrac = this._day === 0
             ? nowFracIn(state.hourly, hourlyIndices, state.currentIso) : null;
+        // each tile quotes the same hours its chart draw shows: today is
+        // the rolling 24 h (recomputed here, window crosses midnight after
+        // 10 PM), other days the exact calendar slice -- providers bucket
+        // their daily max/min over that same midnight-to-midnight window,
+        // so those tiles agree with their curves by construction
+        const hiLabel = this._dayHiLabels[this._day];
+        if (hiLabel && hourlyIndices.length) {
+            const temps = hourlyIndices
+                .map(i => state.hourly.temp[i])
+                .filter(Number.isFinite);
+            if (temps.length) {
+                hiLabel.set_text(fmtTemp(Math.max(...temps), units));
+                this._dayLowLabels[this._day]?.set_text(fmtTemp(Math.min(...temps), units));
+            }
+            if (this._day === 0 && this._dayNameLabel) {
+                const crossesMidnight = times.length > 1 &&
+                    times[0].slice(0, 10) !== times[times.length - 1].slice(0, 10);
+                this._dayNameLabel.set_text(crossesMidnight ? _('Today · 24h') : _('Today'));
+            }
+        }
         return hourlyIndices.map(i => state.hourly[field][i] ?? 0);
     }
 
@@ -696,7 +724,9 @@ export class ForecastPanel {
         this._daysGrid.destroy_all_children();
         this._dayButtons = [];
         this._dayLowLabels = [];
+        this._dayHiLabels = [];
         this._tileIcons = [];
+        this._dayNameLabel = null;
         const count = Math.min(daily.length, 8);
         for (let r = 0; r < count; r += 4) {
             const rowTiles = row('aw-days');
@@ -717,6 +747,8 @@ export class ForecastPanel {
                     style_class: 'aw-day-name',
                     x_align: Clutter.ActorAlign.CENTER
                 }));
+                if (i === 0)
+                    this._dayNameLabel = col.get_last_child();
                 const icon = new WeatherIcon({
                     size: 26, animate: false,
                     time: STATIC_TIME,
@@ -732,10 +764,13 @@ export class ForecastPanel {
                     style_class: 'aw-day-hl',
                     x_align: Clutter.ActorAlign.CENTER
                 });
-                hl.add_child(new St.Label({
+                const hiLabel = new St.Label({
                     text: fmtTemp(dayItem.tmax, units),
                     style_class: 'aw-day-hi'
-                }));
+                });
+                if (i === 0)
+                    this._dayHiLabels[i] = hiLabel;   // chart-window stats land here
+                hl.add_child(hiLabel);
                 const lowLabel = new St.Label({
                     text: fmtTemp(dayItem.tmin, units),
                     style_class: 'aw-day-lo'
