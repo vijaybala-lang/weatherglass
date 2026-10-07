@@ -338,6 +338,33 @@ export function paintChart(cr, opts) {
     const pointSpacing = (width - PADDING_X * 2) / (pointCount - 1);
     let firstLabelIndex = Math.ceil((edgeGutter - PADDING_X) / pointSpacing);
     if (firstLabelIndex < 0) firstLabelIndex = 0;
+    // optional two-line values: the digit on the number baseline, the unit
+    // stacked below it at a smaller, lighter step (wind metrics). Stacking
+    // keeps a column ~two glyphs wide -- '12 mph' side-wide would push the
+    // whole row to a coarser stride and re-flow it between calm and gusty
+    // days, which is exactly what the stride engine exists to prevent
+    const fmtUnit = typeof opts.fmtValueUnit === 'function' ? opts.fmtValueUnit : null;
+    const unitSize = scaledFontSize * 0.74;
+    const unitTextOf = (index, value) => (fmtUnit ? fmtUnit(index, value) || '' : '');
+    const unitHeight = fmtUnit ? textPx(cr, '0', unitSize, false, 0)[1] : 0;
+    const drawValue = (text, unitText, labelX, y, anchor, rgba) => {
+        drawText(cr, text, labelX, y,
+            { size: scaledFontSize, weight: valueFontWeight, rgba, anchor });
+        if (unitText)
+            drawText(cr, unitText, labelX, y + unitHeight + 1.5,
+                { size: unitSize, weight: 0,
+                    rgba: [rgba[0], rgba[1], rgba[2], rgba[3] * 0.78], anchor });
+    };
+    // left/right extent of the two-line block under one anchor
+    const lineEdges = (mainWidth, unitWidth, labelX, anchor) => {
+        const place = w => anchor === 'start' ? [labelX, labelX + w]
+            : anchor === 'end' ? [labelX - w, labelX] : [labelX - w / 2, labelX + w / 2];
+        const [left1, right1] = place(mainWidth);
+        if (!unitWidth)
+            return [left1, right1];
+        const [left2, right2] = place(unitWidth);
+        return [Math.min(left1, left2), Math.max(right1, right2)];
+    };
     if (opts.labelEvery === undefined && fmtHour && pointCount > 8) {
         let widestTextWidth = 0;
         // the stride is judged from the widest label this METRIC can
@@ -348,6 +375,9 @@ export function paintChart(cr, opts) {
         // Day-only measurement is the fallback for unsampled callers.
         const samples = Array.isArray(opts.valueSamples) && opts.valueSamples.length
             ? [...new Set(opts.valueSamples)] : null;
+        if (fmtUnit)
+            widestTextWidth = Math.max(widestTextWidth,
+                textPx(cr, fmtUnit(0, values[0]), unitSize, false, 0)[0]);
         for (let i = firstLabelIndex; i < pointCount; i++) {
             const hourText = fmtHour(i);
             if (hourText)
@@ -380,21 +410,24 @@ export function paintChart(cr, opts) {
     };
     const hitsAny = (box, boxList) =>
         boxList.some(other => box[0] < other[1] && other[0] < box[1] && box[2] < other[3] && other[2] < box[3]);
-    const boxOf = (leftX, textWidth, textHeight, baselineY) =>
-        [leftX - 1.5, leftX + textWidth + 1.5, baselineY - textHeight - 1, baselineY + 1];
+    const boxOf = (leftX, textWidth, textHeight, baselineY, below = 0) =>
+        [leftX - 1.5, leftX + textWidth + 1.5, baselineY - textHeight - 1, baselineY + 1 + below];
     const usedBoxes = [];
     const hourTextHeight = textPx(cr, '0', scaledFontSize, false, hourFontWeight)[1];
-    const placeLabel = (text, labelX, preferredY, anchor) => {
+    const placeLabel = (text, labelX, preferredY, anchor, unitText = '') => {
         const [textWidth, textHeight] = textPx(cr, text, scaledFontSize, false, valueFontWeight);
-        const leftX = anchor === 'start' ? labelX : anchor === 'end' ? labelX - textWidth : labelX - textWidth / 2;
-        const curveCeiling = curveMin(leftX, leftX + textWidth) - LINE_WIDTH / 2 - 2;
+        const [leftX, rightX] = lineEdges(textWidth,
+            unitText ? textPx(cr, unitText, unitSize, false, 0)[0] : 0, labelX, anchor);
+        const curveCeiling = curveMin(leftX, rightX) - LINE_WIDTH / 2 - 2;
         // below the stroke: glyph top clears the curve, baseline capped so
-        // the label never crowds the hour band at the chart foot
+        // the label (unit line included) never crowds the hour band
+        const blockHeight = textHeight + (unitText ? unitHeight + 1.5 : 0);
         const belowStrokeY = Math.min(
-            curveMax(leftX, leftX + textWidth) + LINE_WIDTH / 2 + 3 + textHeight,
-            height - 7 - hourTextHeight - textHeight);
+            curveMax(leftX, rightX) + LINE_WIDTH / 2 + 3 + blockHeight,
+            height - 7 - hourTextHeight - blockHeight);
         for (const candidateY of [...new Set([Math.min(preferredY, curveCeiling), belowStrokeY])]) {
-            const box = boxOf(leftX, textWidth, textHeight, candidateY);
+            const box = boxOf(leftX, rightX - leftX, textHeight, candidateY,
+                unitText ? unitHeight + 1.5 : 0);
             if (box[2] < 2 || box[3] > height - 2 || hitsAny(box, usedBoxes))
                 continue;
             usedBoxes.push(box);
@@ -407,12 +440,15 @@ export function paintChart(cr, opts) {
         const anchorX = mapX(nowIndex);
         const anchor = anchorOf(anchorX), labelX = labelXOf(anchorX, anchor);
         const text = fmtValue(nowIndex, values[nowIndex]);
+        const unitText = unitTextOf(nowIndex, values[nowIndex]);
         const [textWidth, textHeight] = textPx(cr, text, scaledFontSize, false, valueFontWeight);
-        const leftX = anchor === 'start' ? labelX : anchor === 'end' ? labelX - textWidth : labelX - textWidth / 2;
+        const [leftX, rightX] = lineEdges(textWidth,
+            unitText ? textPx(cr, unitText, unitSize, false, 0)[0] : 0, labelX, anchor);
         const labelY = Math.min(mapY(values[nowIndex]) - 22 + 1,
-            curveMin(leftX, leftX + textWidth) - LINE_WIDTH / 2 - 2);
-        nowPlacement = { text, labelX, y: labelY, anchor };
-        usedBoxes.push(boxOf(leftX, textWidth, textHeight, labelY));
+            curveMin(leftX, rightX) - LINE_WIDTH / 2 - 2);
+        nowPlacement = { text, unitText, labelX, y: labelY, anchor };
+        usedBoxes.push(boxOf(leftX, rightX - leftX, textHeight, labelY,
+            unitText ? unitHeight + 1.5 : 0));
     }
     if (conditionScenes) {
         const bandCenterY = opts.stripBottom ? height - 34 : STRIP_CENTER_Y;
@@ -443,6 +479,9 @@ export function paintChart(cr, opts) {
             for (const sample of new Set(opts.valueSamples))
                 globalValueNeed = Math.max(globalValueNeed,
                     textPx(cr, sample, scaledFontSize, false, valueFontWeight)[0] / 2);
+        if (fmtUnit)
+            globalValueNeed = Math.max(globalValueNeed,
+                textPx(cr, fmtUnit(0, values[0]), unitSize, false, 0)[0] / 2);
         let lastSlotRight = -Infinity, lastIndex = -Infinity;
         for (let i = firstLabelIndex; i < pointCount; i += iconStep) {
             const anchorX = mapX(i);
@@ -486,11 +525,12 @@ export function paintChart(cr, opts) {
             labelX = slot.labelX;
             anchor = 'middle';
         }
+        const unitText = unitTextOf(i, values[i]);
         const placed = placeLabel(fmtValue(i, values[i]), labelX,
-            mapY(values[i]) - 12 + 1, anchor);
+            mapY(values[i]) - 12 + 1, anchor, unitText);
         if (placed)
-            drawText(cr, placed.text, labelX, placed.y,
-                { size: scaledFontSize, weight: valueFontWeight, rgba: [...inkAt(placed.y), 0.62], anchor });
+            drawValue(placed.text, unitText, labelX, placed.y, anchor,
+                [...inkAt(placed.y), 0.62]);
     }
     // hour labels stay flat on their baseline -- a clash drops the label
     // instead of staggering the row
@@ -652,13 +692,10 @@ export function paintChart(cr, opts) {
     // flow near the edges) so nothing ever lands under it. With a bgFn the
     // accent is re-safened against the backdrop at ITS y, not the chart mid.
     if (nowPlacement)
-        drawText(cr, nowPlacement.text, nowPlacement.labelX, nowPlacement.y,
-            {
-                size: scaledFontSize, weight: valueFontWeight,
-                rgba: [...(bgFn ? contrastSafe(accent, bgFn(nowPlacement.y))
-                    : (opts.nowLabel ?? [accentR, accentG, accentB])), 1],
-                anchor: nowPlacement.anchor
-            });
+        drawValue(nowPlacement.text, nowPlacement.unitText, nowPlacement.labelX,
+            nowPlacement.y, nowPlacement.anchor,
+            [...(bgFn ? contrastSafe(accent, bgFn(nowPlacement.y))
+                : (opts.nowLabel ?? [accentR, accentG, accentB])), 1]);
 }
 
 /** ease-out cubic, 0..1 */
