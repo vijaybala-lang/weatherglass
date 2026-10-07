@@ -168,6 +168,7 @@ const ChartArea = GObject.registerClass(
                 values: panel._shown,
                 fmtValue: panel._fmtValue ?? (() => ''),
                 fmtHour: panel._fmtHour ?? (() => ''),
+                valueSamples: panel._valueSamples?.length ? panel._valueSamples : null,
                 accent,
                 ink: panel._theme().ink,
                 nowFrac: panel._day === 0 ? (panel._nowFrac ?? 0) : null,
@@ -623,6 +624,16 @@ export class ForecastPanel {
             : this._metric === 'precip'
                 ? (i, v) => `${Math.round(v)}%`
                 : (i, v) => fmtWind(v, units);
+        // day-stable label stride: every day's window spans all 24 hours,
+        // so only the VALUE widths drift between days (a calm day of
+        // single-digit mph vs a gusty double-digit one). Handing the chart
+        // the whole forecast's formatted values keeps one rhythm per
+        // metric -- the columns stop re-flowing as the user tabs days.
+        const metricSeries = state.hourly?.[field];
+        this._valueSamples = metricSeries
+            ? [...new Set(metricSeries.filter(Number.isFinite)
+                .map(v => this._fmtValue(0, v)))]
+            : [];
         const times = state.hourly ? hourlyIndices.map(i => state.hourly.time[i]) : [];
         // rolling windows run past midnight after 10 PM: flag tomorrow's
         // labels with '*' so '5' can never be misread as 5 this morning

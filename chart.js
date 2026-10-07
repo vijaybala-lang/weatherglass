@@ -340,16 +340,30 @@ export function paintChart(cr, opts) {
     if (firstLabelIndex < 0) firstLabelIndex = 0;
     if (opts.labelEvery === undefined && fmtHour && pointCount > 8) {
         let widestTextWidth = 0;
+        // the stride is judged from the widest label this METRIC can
+        // produce on any day (the caller feeds formatted samples for the
+        // whole forecast), otherwise a calm wind day ('7 mph') packs its
+        // columns twice as dense as a breezy one ('12 mph') and the
+        // rhythm changes under the cursor as the user tabs across days.
+        // Day-only measurement is the fallback for unsampled callers.
+        const samples = Array.isArray(opts.valueSamples) && opts.valueSamples.length
+            ? [...new Set(opts.valueSamples)] : null;
         for (let i = firstLabelIndex; i < pointCount; i++) {
             const hourText = fmtHour(i);
             if (hourText)
                 widestTextWidth = Math.max(widestTextWidth, textPx(cr, hourText, scaledFontSize, false, hourFontWeight)[0]);
-            if (fmtValue)
+            if (fmtValue && !samples)
                 widestTextWidth = Math.max(widestTextWidth,
                     textPx(cr, fmtValue(i, values[i]), scaledFontSize, false, valueFontWeight)[0]);
         }
+        for (const sample of samples ?? [])
+            widestTextWidth = Math.max(widestTextWidth,
+                textPx(cr, sample, scaledFontSize, false, valueFontWeight)[0]);
         for (const candidateInterval of [3, 4, 6, 8, 12])
-            if (candidateInterval >= labelInterval && pointSpacing * candidateInterval >= widestTextWidth + 9) {
+            // 30 px floor: the condition glyph row shares this stride, so
+            // the interval must also breathe for an icon, not just text
+            if (candidateInterval >= labelInterval &&
+                pointSpacing * candidateInterval >= Math.max(widestTextWidth + 9, 30)) {
                 labelInterval = candidateInterval;
                 break;
             }
@@ -420,6 +434,15 @@ export function paintChart(cr, opts) {
         const slotSpan = (plotEndX - plotStartX) / Math.max(1, pointCount - 1);
         iconStep = labelInterval * Math.max(1, Math.ceil(30 / slotSpan / labelInterval));
         const iconHalf = 8.5;
+        // floor every slot's number-width on the metric's widest sample
+        // (whole forecast), so slot geometry is identical on every day --
+        // per-window widths alone shift the first column when a gusty
+        // day replaces a calm one
+        let globalValueNeed = 0;
+        if (Array.isArray(opts.valueSamples) && opts.valueSamples.length)
+            for (const sample of new Set(opts.valueSamples))
+                globalValueNeed = Math.max(globalValueNeed,
+                    textPx(cr, sample, scaledFontSize, false, valueFontWeight)[0] / 2);
         let lastSlotRight = -Infinity, lastIndex = -Infinity;
         for (let i = firstLabelIndex; i < pointCount; i += iconStep) {
             const anchorX = mapX(i);
@@ -435,7 +458,7 @@ export function paintChart(cr, opts) {
                 valueNeed = Math.max(valueNeed,
                     fmtValue ? textPx(cr, fmtValue(k, values[k]), scaledFontSize,
                         false, valueFontWeight)[0] / 2 : 0);
-            const need = Math.max(iconHalf, hourNeed + 3, valueNeed + 3);
+            const need = Math.max(iconHalf, hourNeed + 3, valueNeed + 3, globalValueNeed + 3);
             const labelX = Math.min(Math.max(anchorX, need), width - need);
             const left = labelX - need, right = labelX + need;
             if (left > lastSlotRight + 6 && i - lastIndex >= 2) {
