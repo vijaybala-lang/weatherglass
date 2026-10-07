@@ -68,9 +68,8 @@ function teardrop(cr, x, y, s) {
 /** Even staggered grid (cols per row, column pitch dx) under the cloud --
  *  the layout for static poses, whose random pools used to reshuffle on
  *  every repaint and made the strip/tile glyphs shimmer between columns. */
-function staticSpot(i, cols, dx, y0, dy) {
-    const col = i % cols, row = Math.floor(i / cols);
-    return [4.3 + col * dx + (row % 2) * dx * 0.47, y0 + row * dy];
+function staticSpot(i, cols, x0, dx, y0, dy) {
+    return [x0 + (i % cols) * dx, y0 + Math.floor(i / cols) * dy];
 }
 
 /** Puffy cloud made of three bumps over a flat base, one gradient fill. */
@@ -89,6 +88,17 @@ function cloud(cr, centerX, centerY, scale, topColor, bottomColor, alpha = 1) {
 const CLOUD_LIGHT = [[0.76, 0.82, 0.87], [0.60, 0.68, 0.75]];
 const CLOUD_RAIN = [[0.52, 0.54, 0.58], [0.31, 0.34, 0.40]];
 const CLOUD_DARK = [[0.42, 0.48, 0.56], [0.25, 0.30, 0.38]];
+
+/** Precipitation clouds come as a pair: a smaller companion behind and
+ *  right of the main cloud, dimmer and lower, so the icon reads as a
+ *  bank rather than a single blob. Drift is shared but softer on the
+ *  companion -- a parallax whisper between the layers. */
+function cloudPair(cr, centerX, centerY, scale, topColor, bottomColor, time) {
+    const drift = Math.sin(time * 0.5) * 0.5;
+    cloud(cr, centerX + 3.6 * scale + drift * 0.6, centerY + 0.9 * scale,
+        scale * 0.66, topColor[0], bottomColor[1], 0.8);
+    cloud(cr, centerX + drift, centerY, scale, topColor[0], bottomColor[1]);
+}
 
 /* Palette variants for light and dark backgrounds */
 let _light = false;
@@ -145,7 +155,7 @@ function rainDrops(cr, particles, time, count, slant, alpha) {
     for (let i = 0; i < total; i++) {
         let x, y, s;
         if (particles.static) {
-            [x, y] = staticSpot(i, 3, 5.2, 12.2, 3.7);
+            [x, y] = staticSpot(i, 3, 7.7, 4.3, 12.8, 3.8);
             s = i % 2 ? 1.05 : 1.25;
         } else {
             const drop = particles.drops[i];
@@ -173,7 +183,7 @@ function snowFlakes(cr, particles, time, count) {
     for (let i = 0; i < total; i++) {
         let x, y, rot, radius;
         if (particles.static) {
-            [x, y] = staticSpot(i, 3, 4.7, 11.4, 3.4);
+            [x, y] = staticSpot(i, 3, 6.7, 4.6, 12.2, 3.6);
             radius = 1.05;
             rot = i * 1.1;
         } else {
@@ -372,7 +382,7 @@ function sceneFog(cr, ctx) {
 
 function sceneRain(cr, ctx) {
     const { time, particles, intensity, windKmh, windy } = ctx;
-    cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 7.5, 0.95, CLOUD_RAIN[0], CLOUD_RAIN[1]);
+    cloudPair(cr, 11.5, 7.5, 0.9, CLOUD_RAIN[0], CLOUD_RAIN[1], time);
     const dropCount = Math.max(2, Math.ceil((4 + Math.min(12, intensity * 2.4)) / 3));
     const slant = Math.min(0.9, windKmh / 45);
     rainDrops(cr, particles, time, dropCount, slant, 0.9);
@@ -382,7 +392,7 @@ function sceneRain(cr, ctx) {
 
 function sceneSnow(cr, ctx) {
     const { time, particles, intensity, windy } = ctx;
-    cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 7.5, 0.92, CLOUD_RAIN[0], CLOUD_RAIN[1]);
+    cloudPair(cr, 11.5, 7.5, 0.88, CLOUD_RAIN[0], CLOUD_RAIN[1], time);
     const flakeCount = 6 + Math.min(6, Math.round(intensity * 1.8));
     snowFlakes(cr, particles, time, flakeCount);
     if (windy)
@@ -392,7 +402,7 @@ function sceneSnow(cr, ctx) {
 /** Sleet / freezing rain: half drops, half flakes, extra slant. */
 function sceneSleet(cr, ctx) {
     const { time, particles, intensity, windKmh, windy } = ctx;
-    cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 7.5, 0.92, CLOUD_RAIN[0], CLOUD_RAIN[1]);
+    cloudPair(cr, 11.5, 7.5, 0.88, CLOUD_RAIN[0], CLOUD_RAIN[1], time);
     const count = Math.max(2, Math.ceil((5 + Math.min(5, intensity * 1.4)) / 3));
     rainDrops(cr, particles, time, count, Math.min(1.1, windKmh / 36 + 0.25), 0.8);
     snowFlakes(cr, particles, time, Math.max(3, count));
@@ -403,7 +413,7 @@ function sceneSleet(cr, ctx) {
 /** Hail: dark storm cloud, a few hard rain streaks, bouncing ice stones. */
 function sceneHail(cr, ctx) {
     const { time, particles, windKmh, windy } = ctx;
-    cloud(cr, 12 + Math.sin(time * 0.45) * 0.5, 7.2, 0.98, CLOUD_DARK[0], CLOUD_DARK[1]);
+    cloudPair(cr, 11.5, 7.2, 0.9, CLOUD_DARK[0], CLOUD_DARK[1], time);
     rainDrops(cr, particles, time, 2, Math.min(0.9, windKmh / 45), 0.5);
     hailStones(cr, particles, time, particles.hail.length);
     if (windy)
@@ -417,7 +427,7 @@ const BOLTS = [
 
 function sceneStorm(cr, ctx) {
     const { time, particles, intensity, windKmh, windy } = ctx;
-    cloud(cr, 12 + Math.sin(time * 0.4) * 0.5, 7.2, 1.0, CLOUD_DARK[0], CLOUD_DARK[1]);
+    cloudPair(cr, 11.5, 7.2, 0.92, CLOUD_DARK[0], CLOUD_DARK[1], time);
     rainDrops(cr, particles, time, Math.max(2, Math.ceil((3 + Math.min(9, intensity * 1.6)) / 3)), Math.min(0.9, windKmh / 45), 0.85);
 
     // double-flick lightning every ~2.8 s, alternating bolt shape;
