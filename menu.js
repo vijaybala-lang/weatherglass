@@ -15,7 +15,7 @@ import {
     paintChart, ease, lerp, contrastSafe, pickInk,
     judgeInk, INK_DARK, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
 } from './chart.js';
-import { sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn } from './weather.js';
+import { sceneFor, fmtTemp, dayName, daySlice, nowFracIn } from './weather.js';
 
 const SKY_FRAME_INTERVAL_MS = 50;         // sky: 20 fps is plenty
 const STATIC_TIME = 1.1;                  // frame that makes static mini icons look lively
@@ -167,6 +167,7 @@ const ChartArea = GObject.registerClass(
                 w: surfaceWidth, h: surfaceHeight,
                 values: panel._shown,
                 fmtValue: panel._fmtValue ?? (() => ''),
+                fmtValueUnit: panel._fmtValueUnit ?? null,
                 fmtHour: panel._fmtHour ?? (() => ''),
                 valueSamples: panel._valueSamples?.length ? panel._valueSamples : null,
                 accent,
@@ -232,6 +233,7 @@ export class ForecastPanel {
         this._cityBaseTime = 0;
         this._desc = '';
         this._fmtValue = null;
+        this._fmtValueUnit = null;
         this._fmtHour = null;
         this._is24Hour = false;          // chart hours + city clock (setter drives)
         this._textScale = 1;           // 'data-text' emphasis (setter drives)
@@ -623,7 +625,13 @@ export class ForecastPanel {
             ? (i, v) => fmtTemp(v, units)
             : this._metric === 'precip'
                 ? (i, v) => `${Math.round(v)}%`
-                : (i, v) => fmtWind(v, units);
+                : (i, v) => `${Math.round(units === 'imperial' ? v * 0.621371 : v)}`;
+        // wind stacks its unit under the digit (see chart.js two-line
+        // values); temp/precip keep inline units -- '°'/'%' barely widen
+        // a label and would only add vertical noise stacked
+        this._fmtValueUnit = this._metric === 'wind'
+            ? () => (units === 'imperial' ? 'mph' : 'km/h')
+            : null;
         // day-stable label stride: every day's window spans all 24 hours,
         // so only the VALUE widths drift between days (a calm day of
         // single-digit mph vs a gusty double-digit one). Handing the chart
