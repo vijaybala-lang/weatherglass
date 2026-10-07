@@ -407,34 +407,14 @@ function sceneCloud(cr, ctx) {
         windStreaks(cr, time, 0.4, 2);
 }
 
-/* Fog: a hill rising OUT of a rolling fog valley. The hill's crown is
- * the clearly-visible upper element, the drifting fog eats its base --
- * a silhouette reads at stamp size, where the old cloud+lines icon
- * dissolved into any bright backdrop. (A bridge or skyscraper would
- * collapse to noise at these sizes.) */
 function sceneFog(cr, ctx) {
     const { time } = ctx;
-    const fogColor = INK_FOG();
-    const hill = _light ? [0.34, 0.40, 0.48] : [0.86, 0.90, 0.95];
-    cr.setSourceRGBA(hill[0], hill[1], hill[2], 0.95);
-    cr.moveTo(1.6, 23);
-    cr.curveTo(3.4, 15.5, 6.8, 7.6, 9.6, 7.4);
-    cr.curveTo(11.6, 7.3, 12.4, 10.5, 13.2, 13.5);
-    cr.curveTo(14.1, 11.2, 15.6, 9.6, 17.4, 10.2);
-    cr.curveTo(19.9, 11.0, 21.6, 16.8, 22.6, 23);
-    cr.closePath();
-    cr.fill();
-    // the valley fog: a soft rising wash, then the drifting bands
-    // crossing IN FRONT of the hill's feet keep its base obscured
-    const veil = new Cairo.LinearGradient(0, 12.2, 0, 23);
-    veil.addColorStopRGBA(0, ...fogColor, 0);
-    veil.addColorStopRGBA(1, ...fogColor, 0.55);
-    cr.setSource(veil);
-    cr.rectangle(0, 12.2, 24, 11.8);
-    cr.fill();
-    for (let i = 0; i < 3; i++)
-        streak(cr, 15.2 + i * 3.0, 2.1, 0.50 - i * 0.08, 7, 3.5,
+    cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 8, 0.7, CLOUD_LIGHT[0], CLOUD_LIGHT[1], 0.8);
+    for (let i = 0; i < 3; i++) {
+        const fogColor = INK_FOG();
+        streak(cr, 14.5 + i * 3.2, 1.7, 0.40 - i * 0.06, 7, 3.5,
             -(time * (2.4 + i)) % 10.5, fogColor);
+    }
 }
 
 function sceneRain(cr, ctx) {

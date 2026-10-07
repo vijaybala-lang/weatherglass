@@ -203,12 +203,16 @@ function rebuild(sky, width, height, scene) {
         width: rand(0.8, 2.2), w: rand(0.8, 2.2),
         opacity: rand(0.12, 0.4), o: rand(0.12, 0.4)
     }));
-    sky.fog = createParticleList(features.fog ? 8 : 0, () => ({
+    sky.fog = createParticleList(features.fog ? 10 : 0, () => ({
         x: rand(-width, width), y: rand(0.25 * height, 0.85 * height),
-        length: rand(0.35, 0.9) * width, len: rand(0.35, 0.9) * width,
-        speed: rand(12, 40), sp: rand(12, 40),
-        height: rand(26, 90), ht: rand(26, 90),
-        opacity: rand(0.05, 0.16), o: rand(0.05, 0.16)
+        length: rand(0.45, 1.1) * width, len: rand(0.45, 1.1) * width,
+        speed: rand(10, 30), sp: rand(10, 30),
+        height: rand(34, 110), ht: rand(34, 110),
+        opacity: rand(0.12, 0.26), o: rand(0.12, 0.26),
+        // lit mist vs shadowed mist: a single bright tone over a mist-
+        // gray sky cancels out; alternating light/shadow clumps gives
+        // the drift real texture the eye can actually track
+        tone: rand(0, 1) < 0.5 ? 1 : 0, t: rand(0, 1) < 0.5 ? 1 : 0
     }));
     sky.stars = createParticleList(features.stars ? 70 : 0, () => {
         const isTwinkle = rand(0, 1) < 0.22;
@@ -497,22 +501,35 @@ function drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight) {
     }
 }
 
-function drawFog(cr, sky, width, dt) {
+function drawFog(cr, sky, width, dt, time, night) {
+    // light clumps glow over the mist, shadow clumps carve depth into it
+    const litColor = night ? [0.55, 0.60, 0.70] : [0.93, 0.95, 0.97];
+    const shadeColor = night ? [0.07, 0.09, 0.14] : [0.40, 0.44, 0.50];
     for (const fogItem of sky.fog) {
         const fogSpeed = fogItem.speed ?? fogItem.sp;
         const fogLength = fogItem.length ?? fogItem.len;
         const fogHeight = fogItem.height ?? fogItem.ht;
         const fogOpacity = fogItem.opacity ?? fogItem.o;
+        const isLit = fogItem.tone ?? fogItem.t;
         fogItem.x += fogSpeed * dt;
         if (fogItem.x > width + fogLength)
             fogItem.x = -fogLength;
-        const gradient = new Cairo.LinearGradient(0, fogItem.y - fogHeight, 0, fogItem.y + fogHeight);
-        gradient.addColorStopRGBA(0, 0.90, 0.92, 0.93, 0);
-        gradient.addColorStopRGBA(0.5, 0.90, 0.92, 0.93, fogOpacity);
-        gradient.addColorStopRGBA(1, 0.90, 0.92, 0.93, 0);
+        const y = fogItem.y +
+            Math.sin(time * 0.35 + (fogItem.x + width) * 0.01) * 4;
+        const tint = isLit ? litColor : shadeColor;
+        // elliptical puff: a radial fade stretched wide, so the clump has
+        // no edges anywhere -- rectangles read as boxes on a soft scene
+        cr.save();
+        cr.translate(fogItem.x + fogLength / 2, y);
+        cr.scale(fogLength / (fogHeight * 2), 1);
+        const gradient = new Cairo.RadialGradient(0, 0, 0, 0, 0, fogHeight);
+        gradient.addColorStopRGBA(0, ...tint, fogOpacity);
+        gradient.addColorStopRGBA(0.6, ...tint, fogOpacity * 0.65);
+        gradient.addColorStopRGBA(1, ...tint, 0);
         cr.setSource(gradient);
-        cr.rectangle(fogItem.x, fogItem.y - fogHeight, fogLength, fogHeight * 2);
+        cr.arc(0, 0, fogHeight, 0, Math.PI * 2);
         cr.fill();
+        cr.restore();
     }
 }
 
@@ -649,7 +666,7 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky, scr
     drawCelestial(cr, width, height, scale, features, sky, time, night, phase, twilight,
         solar, noon);
     drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight);
-    drawFog(cr, sky, width, dt);
+    drawFog(cr, sky, width, dt, time, night);
     drawRain(cr, sky, width, height, scale, dt, scene);
     drawSnow(cr, sky, width, height, scale, dt, time);
     drawHail(cr, sky, width, height, dt);
