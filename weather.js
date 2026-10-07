@@ -99,45 +99,90 @@ export function dayName(iso) {
 }
 
 /**
- * Hourly-array indices covering ~24 points for the chart. Today starts at
- * the CURRENT hour and runs a full 24h ROLLING WINDOW into tomorrow (like
- * the mockup's slice(16, 40)) -- a mere "rest of today" slice would leave a
- * 6-point flat line in the evening. Today's window backfills 2 h before now
- * (clamped at midnight, whose hourly data the API always returns) so the
- * "now" marker isn't glued to the chart's left edge. Other days run
- * midnight to midnight.
- * Comparison is on ISO strings (zero-padded) -- no Date parsing, no tz traps.
+ * Anchor instant for the city clock from a provider timestamp. Forms seen
+ * in the pipeline: offset-stamped ('...T10:08-07:00', NOAA), explicit UTC
+ * ('...Z', MET), and naive digits ('...T10:08', Open-Meteo -- the city's
+ * wall clock). The offset is taken from the string when present (hand-
+ * rolled because glib's ISO parser rejects '-hh:mm' suffixes); naive
+ * digit-strings are treated as the viewer's zone: exact for the usual
+ * same-zone case, off by the zone gap for a remote location, where the
+ * hourly chart is equally viewer-anchored -- consistent, never a crash.
+ */
+export function wallClockToEpoch(iso) {
+    if (!iso)
+        return 0;
+    const wall = `${iso.slice(0, 16)}:00`;
+    const dateTime = GLib.DateTime.new_from_iso8601(`${wall}Z`, null);
+    if (!dateTime)
+        return 0;
+    const instant = dateTime.to_unix() * 1000;
+    const offset = /([+-])(\d{2}):?(\d{2})$/.exec(iso);
+    if (!offset)
+        return instant;                     // naive or 'Z': it IS UTC here
+    const offsetSec = (Number(offset[2]) * 3600 + Number(offset[3]) * 60) *
+        (offset[1] === '-' ? -1 : 1);
+    return instant - offsetSec * 1000;        // wall digits carry the zone
+}
+
+/**
+ * Hourly-array indices covering the chart's window. Today runs from NOW to
+ * the city's next midnight -- the window never spills into another date, so
+ * the tiles' high/low always belong to the hours drawn. It backfills an
+ * hour or two before now (clamped at the day's first hour) so the curve has
+ * history behind the marker instead of the marker glued to the left edge.
+ * Other days run midnight to midnight. All day arithmetic reads the DATE
+ * out of the provider's own stamps -- they are always the city's local
+ * date -- so neither the viewer's timezone nor half-hour offsets can tip
+ * an edge across a day boundary. nowIso is the city wall-clock anchor the
+ * providers hand us.
  */
 const NOW_BACKFILL_HOURS = 2;
 
-export function daySlice(hourly, daily, dayIndex, nowIso) {
+export function daySlice(hourly, daily, dayIndex, nowIso = '') {
+    const times = hourly?.time ?? [];
+    const count = times.length;
+    if (!count)
+        return [];
     if (dayIndex === 0 && nowIso) {
-        const currentHourPrefix = nowIso.slice(0, 13);                     // 'YYYY-MM-DDTHH'
-        const matchIndex = hourly.time.findIndex(timeStr => timeStr.slice(0, 13) === currentHourPrefix);
-        if (matchIndex >= 0) {
-            const startIndex = Math.max(0, matchIndex - NOW_BACKFILL_HOURS);
+        const hourPrefix = nowIso.slice(0, 13);
+        const nowIndex = times.findIndex(timeStr => timeStr.slice(0, 13) === hourPrefix);
+        if (nowIndex >= 0) {
+            const dayKey = times[nowIndex].slice(0, 10);
+            let midnightIndex = nowIndex;
+            while (midnightIndex < count && times[midnightIndex].slice(0, 10) === dayKey)
+                midnightIndex++;
+            const startIndex = Math.max(0, nowIndex - NOW_BACKFILL_HOURS);
+            const endIndex = Math.min(midnightIndex - 1, count - 1);
             const hourlyIndices = [];
-            for (let i = startIndex; i < Math.min(startIndex + 24, hourly.time.length); i++)
+            for (let i = startIndex; i <= endIndex; i++)
                 hourlyIndices.push(i);
             return hourlyIndices;
         }
     }
-    const dayKey = daily[dayIndex]?.date ?? '';
+    const dayKey = daily?.[dayIndex]?.date ?? '';
     const hourlyIndices = [];
-    for (let i = 0; i < hourly.time.length; i++)
-        if (hourly.time[i].startsWith(dayKey))
+    if (!dayKey)
+        return hourlyIndices;
+    for (let i = 0; i < count; i++)
+        if (times[i].startsWith(dayKey))
             hourlyIndices.push(i);
     return hourlyIndices.slice(0, 24);
 }
 
-/** Where the current hour sits inside a daySlice as a 0..1 fraction of the
- *  chart's x axis (matches chart.js X(i) = i/(n-1)); null if outside. */
-export function nowFracIn(hourly, hourlyIndices, nowIso) {
+/** Where the anchor instant sits inside a daySlice as a 0..1 fraction of
+ *  the chart's x axis (matches chart.js X(i) = i/(n-1)), minute-precise;
+ *  null outside the window. */
+export function nowFracIn(hourly, hourlyIndices, nowIso = '') {
     if (!nowIso || !hourlyIndices || hourlyIndices.length < 2)
         return null;
-    const currentHourPrefix = nowIso.slice(0, 13);
-    const matchIndex = hourlyIndices.indexOf(hourly.time.findIndex(timeStr => timeStr.slice(0, 13) === currentHourPrefix));
-    return matchIndex < 0 ? null : matchIndex / (hourlyIndices.length - 1);
+    const hourPrefix = nowIso.slice(0, 13);
+    const absolute = hourly.time.findIndex(timeStr => timeStr.slice(0, 13) === hourPrefix);
+    if (absolute < 0)
+        return null;
+    const position = absolute - hourlyIndices[0] + (Number(nowIso.slice(14, 16)) || 0) / 60;
+    if (position < 0 || position > hourlyIndices.length - 1)
+        return null;
+    return position / (hourlyIndices.length - 1);
 }
 
 /* -- HTTP ------------------------------------------------------------------ */
