@@ -86,8 +86,8 @@ function cloud(cr, centerX, centerY, scale, topColor, bottomColor, alpha = 1) {
 }
 
 const CLOUD_LIGHT = [[0.76, 0.82, 0.87], [0.60, 0.68, 0.75]];
-const CLOUD_RAIN = [[0.52, 0.54, 0.58], [0.31, 0.34, 0.40]];
-const CLOUD_DARK = [[0.42, 0.48, 0.56], [0.25, 0.30, 0.38]];
+const CLOUD_RAIN = [[0.58, 0.60, 0.64], [0.40, 0.43, 0.48]];
+const CLOUD_DARK = [[0.48, 0.52, 0.59], [0.32, 0.36, 0.43]];
 
 /** Precipitation clouds come as a pair: a smaller companion behind and
  *  right of the main cloud, dimmer and lower, so the icon reads as a
@@ -96,8 +96,8 @@ const CLOUD_DARK = [[0.42, 0.48, 0.56], [0.25, 0.30, 0.38]];
 function cloudPair(cr, centerX, centerY, scale, topColor, bottomColor, time) {
     const drift = Math.sin(time * 0.5) * 0.5;
     cloud(cr, centerX + 3.6 * scale + drift * 0.6, centerY + 0.9 * scale,
-        scale * 0.66, topColor[0], bottomColor[1], 0.8);
-    cloud(cr, centerX + drift, centerY, scale, topColor[0], bottomColor[1]);
+        scale * 0.66, topColor, bottomColor, 0.8);
+    cloud(cr, centerX + drift, centerY, scale, topColor, bottomColor);
 }
 
 /* Palette variants for light and dark backgrounds */
