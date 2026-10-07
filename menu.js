@@ -12,8 +12,8 @@ const N_ = s => s;
 import { WeatherIcon } from './animation.js';
 import { paintSky, createSky, sampleSky, bodyOf } from './sky.js';
 import {
-    paintChart, ease, lerp, contrastSafe, lumOf, pickInk, ratio,
-    judgeInk, INK_DARK, INK_LIGHT, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
+    paintChart, ease, lerp, contrastSafe, pickInk,
+    judgeInk, INK_DARK, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
 } from './chart.js';
 import { sceneFor, fmtTemp, fmtWind, dayName, daySlice, nowFracIn } from './weather.js';
 
@@ -203,9 +203,6 @@ const ChartArea = GObject.registerClass(
                     const fx = Math.min(1, Math.max(0, (chartX + xPx - cardX) / (cardW || 1)));
                     return panel._bgAt(fy, { f: fy, x: fx });
                 },
-                // strip icons get a hairline silhouette ring when the backdrop
-                // under the chart is mid/bright (overcast days swallow flat icons)
-                iconOutline: panel._iconOutline(),
                 fontSize: surfaceWidth < 480 ? 8 : 8.5,
                 // 'Data text' emphasis: values + hours bigger and/or heavier
                 textScale: panel._textScale,
@@ -509,11 +506,6 @@ export class ForecastPanel {
 
     _bgUnderChart() {
         return this._bgAt(0.62);
-    }
-
-    _iconOutline() {
-        return lumOf(this._bgUnderChart()) >= 0.38
-            ? [0.04, 0.05, 0.09, 0.62] : null;
     }
 
     /** state = {current, daily, hourly, currentIso, units, windy, effective,
