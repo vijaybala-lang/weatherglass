@@ -501,6 +501,48 @@ function drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight) {
     }
 }
 
+/* Card-scale fog: rolling hills standing above the valley mist with
+ * their feet lost in it. Fixed sine-ridge geometry -- terrain must not
+ * wander -- while the drifting puffs and the rising wash in front of
+ * it keep the fog line alive. */
+/* Card-scale fog: rolling hills standing above the valley mist. The
+ * illusion lives at the FOG LINE -- ridge crowns must rise clear of a
+ * wash that starts low and thickens fast, or the wash (tinted like the
+ * sky) flattens the whole lower card and the hills vanish into it.
+ * Fixed sine-ridge geometry: terrain never wanders; the drifting puffs
+ * and swaying wash line in front of it carry the motion. */
+function drawFogHills(cr, width, height, night) {
+    const ridges = [
+        { base: 0.52, amp: 0.050, f1: 1.7, f2: 4.1, p1: 0.6, p2: 2.2,
+            c: night ? [0.09, 0.11, 0.15] : [0.42, 0.45, 0.51] },
+        { base: 0.64, amp: 0.070, f1: 2.3, f2: 5.3, p1: 2.9, p2: 0.4,
+            c: night ? [0.05, 0.07, 0.10] : [0.28, 0.32, 0.39] },
+    ];
+    for (const r of ridges) {
+        cr.setSourceRGBA(r.c[0], r.c[1], r.c[2], 1);
+        cr.moveTo(0, height);
+        for (let x = 0; x <= width; x += 8) {
+            const u = x / width;
+            const y = height * (r.base
+                - r.amp * Math.sin(u * Math.PI * r.f1 + r.p1)
+                - r.amp * 0.5 * Math.sin(u * Math.PI * r.f2 + r.p2));
+            cr.lineTo(x, y);
+        }
+        cr.lineTo(width, height);
+        cr.closePath();
+        cr.fill();
+    }
+    // the fog line: negligible over the crowns, total below the feet
+    const washColor = night ? [0.50, 0.55, 0.64] : [0.82, 0.85, 0.88];
+    const wash = new Cairo.LinearGradient(0, 0.50 * height, 0, height);
+    wash.addColorStopRGBA(0, ...washColor, 0);
+    wash.addColorStopRGBA(0.36, ...washColor, night ? 0.30 : 0.45);
+    wash.addColorStopRGBA(1, ...washColor, night ? 0.62 : 0.78);
+    cr.setSource(wash);
+    cr.rectangle(0, 0.50 * height, width, height * 0.50);
+    cr.fill();
+}
+
 function drawFog(cr, sky, width, dt, time, night) {
     // light clumps glow over the mist, shadow clumps carve depth into it
     const litColor = night ? [0.55, 0.60, 0.70] : [0.93, 0.95, 0.97];
@@ -666,6 +708,8 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky, scr
     drawCelestial(cr, width, height, scale, features, sky, time, night, phase, twilight,
         solar, noon);
     drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight);
+    if (scene === 'fog')
+        drawFogHills(cr, width, height, night);
     drawFog(cr, sky, width, dt, time, night);
     drawRain(cr, sky, width, height, scale, dt, scene);
     drawSnow(cr, sky, width, height, scale, dt, time);
