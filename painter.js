@@ -135,13 +135,15 @@ let _groundLum = -1;
  * a measured number, while the dark flag is a chain of caller decisions
  * that once misjudged mid-tone overcast skies and hid every cloud.
  * The flag only serves surfaces nobody samples (accent style, preview).
- * The crossovers sit LOW (0.32/0.34) on purpose: the gradient model
- * runs 0.15-0.25 darker than the composited screen (sun glow, drifting
- * clouds and glass over the wallpaper all brighten what the eye sees),
- * and pixel forensics dated a card's ground at [0.38,0.44) while it
- * looked 0.64 to that eye. Only genuine night models (<=0.32) keep the
- * pale glow; storm/hail nights are 0.20 and under. */
-const groundLight = (crossover = 0.34) =>
+ * The crossovers sit LOW (0.23/0.25) on purpose: the gradient model
+ * runs ~0.2 darker than the composited screen -- popup glass and blur
+ * whiten the card the eye actually sees. Pixel forensics caught a rain
+ * card (model 0.446) rendering 0.64 on screen. Gates here are the
+ * wanted on-screen crossovers (ink from ~0.45, glow below) pulled back
+ * through that +0.2 wash: every day scene earns ink -- storm (0.25)
+ * sits right at the line and keeps its moody glow -- while every night
+ * (<=0.21) keeps the glow, blur or no blur. */
+const groundLight = (crossover = 0.25) =>
     _groundLum >= 0 ? _groundLum >= crossover : _light;
 // water rides the SAME referee as the glyph palette (painter's dark
 // flag, chosen from the live ground under the icon): over bright sky a
@@ -151,7 +153,7 @@ const groundLight = (crossover = 0.34) =>
  * 0.5-luminance overcast card is invisible, and such grounds are too
  * bright for the glow-at-night palette to earn its keep */
 const INK_WATER = () =>
-    groundLight(0.32) ? [0.05, 0.33, 0.68] : [0.38, 0.82, 1.00];
+    groundLight(0.23) ? [0.05, 0.33, 0.68] : [0.38, 0.82, 1.00];
 const INK_FLAKE = () => groundLight() ? [0.45, 0.56, 0.72] : [0.92, 0.96, 1.00];
 const INK_STONE = () => groundLight() ? [0.55, 0.64, 0.76] : [0.91, 0.94, 0.97];
 const INK_STREAK = () => _light ? [0.24, 0.50, 0.78] : [0.50, 0.83, 1.00];
