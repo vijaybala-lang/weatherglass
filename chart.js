@@ -590,7 +590,8 @@ export function paintChart(cr, opts) {
             // judge the live backdrop under this glyph (same referee as
             // the ink labels); un-sampled surfaces (accent style, preview)
             // follow the card's theme instead
-            const isPaletteDark = bgFn ? lumOf(bgFn(centerY)) >= 0.55 : isDark;
+            const bgLum = bgFn ? lumOf(bgFn(centerY)) : -1;
+            const isPaletteDark = bgFn ? bgLum >= 0.55 : isDark;
             cr.save();
             cr.translate(centerX - 12 * scale, centerY - 12 * scale);
             cr.scale(scale, scale);
@@ -599,7 +600,8 @@ export function paintChart(cr, opts) {
                 night: !!isNight, dark: !isPaletteDark,
                 intensity: iconIntensity, staticPose: true,
                 // per-column layout variety that stays put across repaints
-                seed: Math.round(centerX * 3)
+                seed: Math.round(centerX * 3),
+                groundLum: bgLum
             });
             cr.restore();
         };
