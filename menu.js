@@ -890,15 +890,16 @@ export class ForecastPanel {
             // went light because the composited ground under this tile
             // is dark (night, rain paint, glass), the whole glyph joins
             // the glow family -- one verdict, drawn twice, never apart.
-            // One glyph-only bar on top: the hover slab is a deterministic
-            // darkening and a glyph needs more room than a hairline --
-            // dark text stays legible at ~0.5 luminance while a gray
-            // rain cloud (0.40) sinks into a slab at 0.52 and loses its
-            // outline. Whenever the slab drops the tile ground under
-            // 0.62, cloud and drops join the glow (pale body, light aqua)
-            // even while the label's verdict stays ink.
-            const slabGlow = hovered && lumOf(bg) < 0.62;
-            icon?.setPale(selected || solidDark || slabGlow || ink !== INK_DARK);
+            // One glyph-only bar on top, hover or not: a soft glyph needs
+            // more room than a hairline -- dark text stays legible at
+            // ~0.5 luminance while a gray rain cloud (0.40) sinks into a
+            // ground at 0.52 and loses its outline (measured on a
+            // sunset-drizzle card and on the hover slab). The bar is the
+            // midpoint of the glyph's two candidate tones -- pale body
+            // ~0.76 vs ink body ~0.44 -- so the glyph always wears the
+            // higher-contrast of the two; labels keep their own verdict.
+            icon?.setPale(selected || solidDark || ink !== INK_DARK ||
+                lumOf(bg) < 0.62);
         }
     }
 
