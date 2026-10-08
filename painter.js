@@ -109,6 +109,10 @@ function cloud(cr, centerX, centerY, scale, topColor, bottomColor, alpha = 1) {
 
 const CLOUD_LIGHT = [[0.76, 0.82, 0.87], [0.60, 0.68, 0.75]];
 const CLOUD_RAIN = [[0.58, 0.60, 0.64], [0.40, 0.43, 0.48]];
+/* very bright grounds (luminance >= the 0.62 glyph bar -- an overcast
+   card foot at 0.66): the 0.58 rain-cloud top measured only 0.07 of
+   separation there, so grounds this pale earn the deepest cloud ink */
+const CLOUD_DEEP = [[0.44, 0.49, 0.57], [0.26, 0.30, 0.38]];
 /* overcast on bright grounds: pale enough to stay 'plain cloud' but
    deep enough for tile-size legs against a milky sky -- the 0.66 top
    vanished on the card's own background tone */
@@ -118,8 +122,11 @@ const CLOUD_DARK = [[0.48, 0.52, 0.59], [0.32, 0.36, 0.43]];
  * gray while the glyph stands on bright ground, and joins the glow
  * family over dark ones (night tiles, hover/selected slabs) instead of
  * sinking into them -- it was the last hardcoded pale-blind cloud */
-const precipCloud = () => groundLight() ? CLOUD_RAIN : CLOUD_LIGHT;
+const precipCloud = () => groundLight() ? (paleGround() ? CLOUD_DEEP : CLOUD_RAIN) : CLOUD_LIGHT;
 const stormCloud = () => groundLight() ? CLOUD_DARK : CLOUD_LIGHT;
+/* the overcast/cloud body shared by the cloud, partly and fog poses */
+const overcastBody = () =>
+    !groundLight() ? CLOUD_LIGHT : paleGround() ? CLOUD_DEEP : CLOUD_OVERCAST;
 
 /** Precipitation clouds come as a pair: a smaller companion behind and
  *  right of the main cloud, dimmer and lower, so the icon reads as a
@@ -155,6 +162,10 @@ let _pale = false;
  * deliberate dark slab no sky model sees, so the selected tile claims
  * the night glow for its glyph (same for solid-style dark cards). */
 const groundLight = () => _pale ? false : _groundLum >= 0 ? !_night : _light;
+/* same bar as the day-tile glyph legibility rule, mirrored: grounds
+ * darker than it push the glyph to the pale glow, grounds paler than it
+ * can afford the deepest ink without the outline sinking */
+const paleGround = () => _groundLum >= 0.62;
 // water rides the SAME referee as the glyph palette (painter's dark
 // flag, chosen from the live ground under the icon): over bright sky a
 // deep navy that holds contrast against luminance ~0.55, over night a
@@ -162,11 +173,14 @@ const groundLight = () => _pale ? false : _groundLum >= 0 ? !_night : _light;
 /* water keeps deep navy down through mid-tone skies -- pale aqua on a
  * 0.5-luminance overcast card is invisible, and such grounds are too
  * bright for the glow-at-night palette to earn its keep */
-const INK_WATER = () =>
-    groundLight() ? [0.05, 0.33, 0.68] : [0.38, 0.82, 1.00];
+const INK_WATER = () => groundLight()
+    ? (paleGround() ? [0.02, 0.24, 0.55] : [0.05, 0.33, 0.68])
+    : [0.38, 0.82, 1.00];
 const INK_FLAKE = () => groundLight() ? [0.45, 0.56, 0.72] : [0.92, 0.96, 1.00];
 const INK_STONE = () => groundLight() ? [0.55, 0.64, 0.76] : [0.91, 0.94, 0.97];
-const INK_STREAK = () => groundLight() ? [0.24, 0.50, 0.78] : [0.50, 0.83, 1.00];
+const INK_STREAK = () => groundLight()
+    ? (paleGround() ? [0.13, 0.39, 0.68] : [0.24, 0.50, 0.78])
+    : [0.50, 0.83, 1.00];
 const INK_FOG = () => groundLight() ? [0.36, 0.44, 0.54] : [0.72, 0.76, 0.80];
 const INK_STAR = () => _light ? [0.55, 0.62, 0.74] : [0.95, 0.97, 1.00];
 const INK_SPIN = () => _light ? [0.28, 0.33, 0.40] : [0.85, 0.88, 0.92];
@@ -423,7 +437,7 @@ function scenePartly(cr, ctx) {
     const dx = Math.sin(time * 0.7) * 0.7;
     // the partly-cloudy cloud follows the same ground rule: it was the
     // one cloud body still hardcoded to the always-pale palette
-    const body = groundLight() ? CLOUD_OVERCAST : CLOUD_LIGHT;
+    const body = overcastBody();
     cloud(cr, 13.5 + dx, 15, 0.85, body[0], body[1]);
     if (windy)
         windStreaks(cr, time, 0.4, 2);
@@ -434,7 +448,7 @@ function sceneCloud(cr, ctx) {
     // overcast earns its silhouette: mid-gray over bright skies (the pale
     // cloud vanished into overcast white), pale body over night skies --
     // same light/dark referee as the INK_* family
-    const overcast = groundLight() ? CLOUD_OVERCAST : CLOUD_LIGHT;
+    const overcast = overcastBody();
     cloud(cr, 9.5 - Math.sin(time * 0.5) * 0.8, 8.5, 0.62, overcast[0], overcast[1], 0.65);
     cloud(cr, 13 + Math.sin(time * 0.6) * 0.7, 14, 0.95, overcast[0], overcast[1]);
     if (windy)
@@ -445,7 +459,7 @@ function sceneFog(cr, ctx) {
     const { time } = ctx;
     // the fog cloud keeps a pale body on night grounds and deepens to
     // the overcast gray on bright ones -- and its bands carry more ink
-    const body = groundLight() ? CLOUD_OVERCAST : CLOUD_LIGHT;
+    const body = overcastBody();
     cloud(cr, 12 + Math.sin(time * 0.5) * 0.5, 8, 0.7, body[0], body[1], 0.85);
     for (let i = 0; i < 3; i++) {
         const fogColor = INK_FOG();
