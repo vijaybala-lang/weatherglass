@@ -382,7 +382,7 @@ class OpenMeteoProvider extends WeatherProvider {
  * families with _day/_night; intensity uses light_/moderate_/heavy_ and
  * _showers/_periods modifiers.
  */
-export function agnosToWmo(symbol) {
+function agnosToWmo(symbol) {
     const cleanSymbol = (symbol || '').replace(/_(?:day|night|polartwilight)$/, '');
     if (!cleanSymbol)
         return 3;
