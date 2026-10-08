@@ -544,7 +544,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         });
         const MODEL_IDS = ['best_match', 'ecmwf_ifs025', 'icon_seamless', 'gfs_seamless'];
         const selectedModelIndex = MODEL_IDS.indexOf(settings.get_string('om-model'));
-        modelRow.set_selected(selectedModelIndex < 0 ? 1 : selectedModelIndex);
+        modelRow.set_selected(Math.max(selectedModelIndex, 0));
         modelRow.connect('notify::selected', () =>
             settings.set_string('om-model', MODEL_IDS[modelRow.get_selected()] ?? 'best_match'));
         const syncModelRow = () =>

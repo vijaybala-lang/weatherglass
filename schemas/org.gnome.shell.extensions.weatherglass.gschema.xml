@@ -80,13 +80,14 @@ for current conditions)</description>
         <choice value="icon_seamless"/>
         <choice value="gfs_seamless"/>
       </choices>
-      <default>'ecmwf_ifs025'</default>
+      <default>'best_match'</default>
       <summary>Open-Meteo forecast model</summary>
       <description>Which forecast model Open-Meteo routes to.
-best_match = Open-Meteo's regional pick (often the US GFS, which
-frequently over-forecasts coastal heat); ecmwf_ifs025 = ECMWF IFS,
-generally the most accurate global model and what most premium apps
-lean on (default); icon_seamless = German DWD ICON (~7-day range);
+best_match = Open-Meteo's regional pick, the default: it routes to
+whichever national model runs best over the location (ECMWF hybrid in
+Europe, GFS/HRRR in the US); ecmwf_ifs025 = ECMWF IFS 0.25°, generally
+the most accurate global model and what most premium apps lean on;
+icon_seamless = German DWD ICON (~7-day range);
 gfs_seamless = US NOAA GFS. Ignored by other providers. Out to a week
 the models genuinely disagree — if the weekend forecast looks off,
 try another model before doubting the provider</description>
