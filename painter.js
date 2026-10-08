@@ -114,6 +114,12 @@ const CLOUD_RAIN = [[0.58, 0.60, 0.64], [0.40, 0.43, 0.48]];
    vanished on the card's own background tone */
 const CLOUD_OVERCAST = [[0.58, 0.60, 0.65], [0.42, 0.45, 0.50]];
 const CLOUD_DARK = [[0.48, 0.52, 0.59], [0.32, 0.36, 0.43]];
+/* the precipitation clouds follow the referee too: rain keeps its deep
+ * gray while the glyph stands on bright ground, and joins the glow
+ * family over dark ones (night tiles, hover/selected slabs) instead of
+ * sinking into them -- it was the last hardcoded pale-blind cloud */
+const precipCloud = () => groundLight() ? CLOUD_RAIN : CLOUD_LIGHT;
+const stormCloud = () => groundLight() ? CLOUD_DARK : CLOUD_LIGHT;
 
 /** Precipitation clouds come as a pair: a smaller companion behind and
  *  right of the main cloud, dimmer and lower, so the icon reads as a
@@ -450,7 +456,7 @@ function sceneFog(cr, ctx) {
 
 function sceneRain(cr, ctx) {
     const { time, particles, intensity, windKmh, windy } = ctx;
-    cloudPair(cr, 11.5, 7.5, 0.9, CLOUD_RAIN[0], CLOUD_RAIN[1], time);
+    cloudPair(cr, 11.5, 7.5, 0.9, precipCloud()[0], precipCloud()[1], time);
     const dropCount = Math.max(2, Math.ceil((4 + Math.min(12, intensity * 2.4)) / 3));
     const slant = Math.min(0.9, windKmh / 45);
     rainDrops(cr, particles, time, dropCount, slant, 0.9);
@@ -460,7 +466,7 @@ function sceneRain(cr, ctx) {
 
 function sceneSnow(cr, ctx) {
     const { time, particles, intensity, windy } = ctx;
-    cloudPair(cr, 11.5, 7.5, 0.88, CLOUD_RAIN[0], CLOUD_RAIN[1], time);
+    cloudPair(cr, 11.5, 7.5, 0.88, precipCloud()[0], precipCloud()[1], time);
     const flakeCount = 6 + Math.min(6, Math.round(intensity * 1.8));
     snowFlakes(cr, particles, time, flakeCount);
     if (windy)
@@ -470,7 +476,7 @@ function sceneSnow(cr, ctx) {
 /** Sleet / freezing rain: half drops, half flakes, extra slant. */
 function sceneSleet(cr, ctx) {
     const { time, particles, intensity, windKmh, windy } = ctx;
-    cloudPair(cr, 11.5, 7.5, 0.88, CLOUD_RAIN[0], CLOUD_RAIN[1], time);
+    cloudPair(cr, 11.5, 7.5, 0.88, precipCloud()[0], precipCloud()[1], time);
     const count = Math.max(2, Math.ceil((5 + Math.min(5, intensity * 1.4)) / 3));
     rainDrops(cr, particles, time, count, Math.min(1.1, windKmh / 36 + 0.25), 0.8,
         [13.4, 17.1]);
@@ -482,7 +488,7 @@ function sceneSleet(cr, ctx) {
 /** Hail: dark storm cloud, a few hard rain streaks, bouncing ice stones. */
 function sceneHail(cr, ctx) {
     const { time, particles, windKmh, windy } = ctx;
-    cloudPair(cr, 11.5, 7.2, 0.9, CLOUD_DARK[0], CLOUD_DARK[1], time);
+    cloudPair(cr, 11.5, 7.2, 0.9, stormCloud()[0], stormCloud()[1], time);
     rainDrops(cr, particles, time, 2, Math.min(0.9, windKmh / 45), 0.5);
     hailStones(cr, particles, time, particles.hail.length);
     if (windy)
@@ -496,7 +502,7 @@ const BOLTS = [
 
 function sceneStorm(cr, ctx) {
     const { time, particles, intensity, windKmh, windy } = ctx;
-    cloudPair(cr, 11.5, 7.2, 0.92, CLOUD_DARK[0], CLOUD_DARK[1], time);
+    cloudPair(cr, 11.5, 7.2, 0.92, stormCloud()[0], stormCloud()[1], time);
     rainDrops(cr, particles, time, Math.max(2, Math.ceil((3 + Math.min(9, intensity * 1.6)) / 3)), Math.min(0.9, windKmh / 45), 0.85);
 
     // double-flick lightning every ~2.8 s, alternating bolt shape;
