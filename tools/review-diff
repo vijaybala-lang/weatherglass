@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# tools/review-diff -- release-review diff viewer: Meld GUI when present,
+# vimdiff otherwise. The human half of the AGENTS.md pre-upload
+# walkthrough: review `v5..v6` (or any range) hunk by hunk, side by
+# side, one pane per changed file.
+#
+#   tools/review-diff                 # previous tag .. HEAD
+#   tools/review-diff v5 v6           # release review
+#   tools/review-diff HEAD~3 HEAD
+#   tools/review-diff --vi  v5 v6     # force vimdiff (:tabn walks files)
+#   tools/review-diff --meld v5 v6    # force Meld (folder-diff tree)
+#   tools/review-diff --all v5 v6     # EVERY changed path, incl. binaries
+#
+# Default scope is the SHIPPING SURFACE: the paths inside
+# dist/<uuid>.zip (asked of the zip itself, so package.sh remains the
+# single source of truth for what EGO will host), minus binary blobs
+# (.mo/.png/.gif) which no diff viewer can render -- their churn is
+# reported as a count instead. --all widens to every changed file,
+# tools/, tests/, docs included: everything that lands in the repo but
+# is NOT uploaded stays visible there, never here.
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+VI="${REVIEW_DIFF_VIM:-vi}"
+ALL=0
+MODE=auto
+for a in "$@"; do
+    case "$a" in
+        --vi) MODE=vi ;;
+        --meld) MODE=meld ;;
+        --all) ALL=1 ;;
+    esac
+done
+ARGS=(); for a in "$@"; do [ "$a" = "--vi" ] || [ "$a" = "--meld" ] || [ "$a" = "--all" ] || ARGS+=("$a"); done
+set -- "${ARGS[@]:-}"
+
+[ $# -le 2 ] || { echo "usage: review-diff [--vi|--meld] [--all] [rev1 [rev2]]" >&2; exit 2; }
+REV1="${1:-$(git describe --tags --abbrev=0)}"
+REV2="${2:-HEAD}"
+
+# -- ship surface: ask the built zip what ships (it exists precisely to
+# encode that decision); fall back to --all before the first package run
+UUID=$(python3 -c "import json;print(json.load(open('metadata.json'))['uuid'])")
+SCOPE=()
+if [ "$ALL" -eq 0 ] && [ -f "dist/$UUID.zip" ]; then
+    while IFS= read -r p; do
+        # package.sh zips flat (EGO rejects nested archives), so zip
+        # paths are already repo-relative; only directory entries end in /
+        [ -z "$p" ] && continue
+        case "$p" in */) continue ;; esac
+        SCOPE+=("$p")
+    done < <(unzip -Z1 "dist/$UUID.zip")
+    SCOPE+=(':!*.mo' ':!*.png' ':!*.gif' ':!*.jar' ':!*.pdf')
+    SCOPE_NOTE="ship surface (dist/$UUID.zip, binaries as counts)"
+elif [ "$ALL" -eq 0 ]; then
+    echo "review-diff: dist/$UUID.zip missing -- run tools/package.sh for ship-scope, or --all" >&2
+    exit 1
+else
+    SCOPE_NOTE="all changed paths"
+fi
+
+have_meld() {
+    command -v meld >/dev/null 2>&1 && return 0
+    flatpak list --app --columns=application 2>/dev/null | grep -qx org.gnome.meld
+}
+[ "$MODE" = auto ] && { have_meld && MODE=meld || MODE=vi; }
+
+if [ "${#SCOPE[@]}" -gt 0 ]; then
+    mapfile -t FILES < <(git diff --name-only "$REV1" "$REV2" -- "${SCOPE[@]}")
+else
+    mapfile -t FILES < <(git diff --name-only "$REV1" "$REV2")
+fi
+[ "${#FILES[@]}" -gt 0 ] || { echo "review-diff: no text changes in scope ($REV1..$REV2)"; exit 0; }
+if [ "$ALL" -eq 0 ] && [ "${#SCOPE[@]}" -gt 0 ]; then
+    BINCOUNT=$(git diff --name-only "$REV1" "$REV2" -- 'locale' 'assets' | grep -cE '\.(mo|png|gif)$' || true)
+    [ "$BINCOUNT" -gt 0 ] && echo "  (+$BINCOUNT binary locale/asset blobs changed -- --all to list)"
+fi
+echo "review-diff: $REV1..$REV2 -- ${#FILES[@]} files [$SCOPE_NOTE], viewer=$MODE"
+
+if [ "$MODE" = meld ]; then
+    # the flatpak sandbox sees $HOME but not /tmp, so snapshot under cache
+    CACHE="$HOME/.cache/weatherglass/review"
+    L="$CACHE/$(git rev-parse --short "$REV1")-left"
+    R="$CACHE/$(git rev-parse --short "$REV2")-right"
+    rm -rf "$L" "$R"; mkdir -p "$L" "$R"
+    for f in "${FILES[@]}"; do
+        # git cat-file streams the blob (empty for added/deleted files)
+        mkdir -p "$L/$(dirname "$f")" "$R/$(dirname "$f")"
+        git cat-file blob "$REV1:$f" > "$L/$f" 2>/dev/null || : > "$L/$f"
+        git cat-file blob "$REV2:$f" > "$R/$f" 2>/dev/null || : > "$R/$f"
+    done
+    echo "  snapshots: $L  vs  $R   (kept for the session; reruns refresh)"
+    exec ${MELD_CMD:-flatpak run org.gnome.meld} "$L" "$R"
+fi
+
+# vimdiff: one tab per file, left|right split, :tabn to walk the release
+L="$(mktemp -d)" R="$(mktemp -d)"
+trap 'rm -rf "$L" "$R"' EXIT
+git -C "$(git rev-parse --show-toplevel)" archive "$REV1" | tar -xC "$L"
+git archive "$REV2" | tar -xC "$R"
+for f in "${FILES[@]}"; do
+    [ -f "$L/$f" ] || { mkdir -p "$L/$(dirname "$f")"; : > "$L/$f"; }
+    [ -f "$R/$f" ] || { mkdir -p "$R/$(dirname "$f")"; : > "$R/$f"; }
+done
+VIMARGS=(-d "$L/${FILES[0]}" "$R/${FILES[0]}")
+for f in "${FILES[@]:1}"; do
+    VIMARGS+=(-c "tabedit $R/$f" -c "cd $L" -c "vert diffsplit $f")
+done
+echo "  :tabn walks files, :qa leaves"
+exec "$VI" "${VIMARGS[@]}"
