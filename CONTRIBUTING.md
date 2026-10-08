@@ -28,6 +28,10 @@ git push origin topic/short-description   # open a PR against master
 
 - Commit author email must stay the GitHub noreply address; no personal
   emails anywhere in the tree or history.
+- PRs land via **squash merge** (`gh pr merge --squash`): GitHub stamps
+  a plain merge commit with the account's primary email as author,
+  which leaks into history even when every commit is clean; a squash
+  commit keeps the commits' own (noreply) author instead.
 - Match the existing code style; keep comments factual and specific.
 - Bump `version` in `metadata.json` (integer) with every packaged
   upload to extensions.gnome.org.
