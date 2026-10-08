@@ -49,6 +49,16 @@ const compGlass = (backgroundColor, isDark) => {
     return backgroundColor.map((channelVal, idx) => channelVal * (1 - glassFilter[3]) + glassFilter[idx] * glassFilter[3]);
 };
 
+/* stylesheet mirror: .aw-day:hover is 28% dark glass in the dark card,
+ * 40% white glass in the light one -- the ink judge has to see the
+ * ground the label and glyph actually get when the cursor rests there */
+const hoverGlass = (backgroundColor, isDark) => {
+    const [r, g, b] = [16 / 255, 20 / 255, 28 / 255];
+    const [tintR, tintG, tintB, alpha] = isDark ? [r, g, b, 0.28] : [1, 1, 1, 0.4];
+    return backgroundColor.map((channelVal, idx) =>
+        channelVal * (1 - alpha) + [tintR, tintG, tintB][idx] * alpha);
+};
+
 const inkCss = (inkRgb, alpha = 1) => {
     const toChannel255 = channelVal => Math.round(channelVal * 255);
     return alpha < 1
@@ -824,6 +834,8 @@ export class ForecastPanel {
             let bg = this._bgAt(0.9);              // tiles live at card foot
             if (i === this._day)                   // selected: + tile glass
                 bg = compGlass(bg, this._paintDark());
+            else if (btn.hovered)                  // hovered: + hover glass
+                bg = hoverGlass(bg, this._paintDark());
             const ink = pickInk(bg);
             lightInk[i] = ink !== INK_DARK;
             btn.set_style(inkCss(ink));
