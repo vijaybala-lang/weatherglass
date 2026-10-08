@@ -555,7 +555,7 @@ export class ForecastPanel {
     }
 
     /** state = {current, daily, hourly, currentIso, units, windy, effective,
-     *           windKmh, updated, dark} */
+     *           windKmh, updated, dark, latitude, longitude} */
     render(state) {
         this._state = state;
         if (state.dark !== undefined)
