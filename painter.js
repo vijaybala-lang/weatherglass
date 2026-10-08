@@ -109,9 +109,10 @@ function cloud(cr, centerX, centerY, scale, topColor, bottomColor, alpha = 1) {
 
 const CLOUD_LIGHT = [[0.76, 0.82, 0.87], [0.60, 0.68, 0.75]];
 const CLOUD_RAIN = [[0.58, 0.60, 0.64], [0.40, 0.43, 0.48]];
-/* very bright grounds (luminance >= the 0.62 glyph bar -- an overcast
-   card foot at 0.66): the 0.58 rain-cloud top measured only 0.07 of
-   separation there, so grounds this pale earn the deepest cloud ink */
+/* grounds at or above the 0.30 tile bar (WCAG luminance -- an overcast
+   card foot at plain 0.66 / WCAG 0.39): the 0.58 rain-cloud top measured
+   only 0.07 of separation there, so grounds this pale earn the deepest
+   cloud ink. Unsampled surfaces never tier: _groundLum stays -1 */
 const CLOUD_DEEP = [[0.44, 0.49, 0.57], [0.26, 0.30, 0.38]];
 /* overcast on bright grounds: pale enough to stay 'plain cloud' but
    deep enough for tile-size legs against a milky sky -- the 0.66 top
@@ -162,10 +163,11 @@ let _pale = false;
  * deliberate dark slab no sky model sees, so the selected tile claims
  * the night glow for its glyph (same for solid-style dark cards). */
 const groundLight = () => _pale ? false : _groundLum >= 0 ? !_night : _light;
-/* same bar as the day-tile glyph legibility rule, mirrored: grounds
- * darker than it push the glyph to the pale glow, grounds paler than it
- * can afford the deepest ink without the outline sinking */
-const paleGround = () => _groundLum >= 0.62;
+/* same bar as the day-tile glyph legibility rule, mirrored: WCAG-space
+ * grounds below it push the glyph to the pale glow (menu's setPale),
+ * grounds at or above it can afford the deepest ink. lumOf is
+ * gamma-corrected, so "0.30" here means an ordinary daylight ground */
+const paleGround = () => _groundLum >= 0.30;
 // water rides the SAME referee as the glyph palette (painter's dark
 // flag, chosen from the live ground under the icon): over bright sky a
 // deep navy that holds contrast against luminance ~0.55, over night a

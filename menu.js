@@ -894,19 +894,20 @@ export class ForecastPanel {
             // is dark (night, rain paint, glass), the whole glyph joins
             // the glow family -- one verdict, drawn twice, never apart.
             // One glyph-only bar on top, hover or not: a soft glyph needs
-            // more room than a hairline -- dark text stays legible at
-            // ~0.5 luminance while a gray rain cloud (0.40) sinks into a
-            // ground at 0.52 and loses its outline (measured on a
-            // sunset-drizzle card and on the hover slab). The bar is the
-            // midpoint of the glyph's two candidate tones -- pale body
-            // ~0.76 vs ink body ~0.44 -- so the glyph always wears the
-            // higher-contrast of the two; labels keep their own verdict.
-            // The bar also feeds the painter directly: at or above it the
-            // tile sits on a bright card foot, where the cloud and water
-            // palettes deepen a tier (CLOUD_DEEP) instead of the 0.58 gray
-            // that measured only 0.07 off an overcast ground's 0.66.
+            // more room than a hairline -- the glow body (WCAG ~0.62) and
+            // the deep ink body (WCAG ~0.20) cross over around the
+            // geometric middle of the grounds measured live: approved
+            // pale scenes (hover slabs, dusk cards) sit at 0.18-0.23,
+            // daytime overcast grounds at 0.39+. The bar is their
+            // geometric mean, 0.30 -- NOTE lumOf is WCAG (gamma-corrected)
+            // luminance, NOT a plain channel mean: an overcast foot at
+            // rgb(155,170,186) reads 0.66 plain but only 0.39 here, and
+            // a 0.62 threshold in this space silently kept every day
+            // tile on the pale family (shipped v6 regression). Labels
+            // keep their own verdict via pickInk. At or above the bar
+            // the painter deepens clouds/water a tier (CLOUD_DEEP).
             icon?.setPale(selected || solidDark || ink !== INK_DARK ||
-                lumOf(bg) < 0.62);
+                lumOf(bg) < 0.30);
             icon?.setGroundLum(lumOf(bg));
         }
     }
@@ -1007,12 +1008,15 @@ export class ForecastPanel {
      * backdrop sampler of their own -- _paintDark() is the THEME's mood,
      * which in animated style always says 'dark' and parks pale water
      * on a noon sky. Judge their palette from the composited ground
-     * where they actually sit (sky + scrim + tile glass), same threshold
-     * the chart strip uses: bright ground earns the dark-twin glyphs */
+     * where they actually sit (sky + scrim + tile glass), with the very
+     * verdict the labels get: lumOf is WCAG, and a plain-mean threshold
+     * like 0.55 can never be reached by ordinary daylight, so every day
+     * card counted as night and the glyphs stayed pale all afternoon.
+     * Bright ground earns the dark-twin glyphs */
     _iconDark() {
         if (this._style === 'accent')
             return this._paintDark();
-        return lumOf(this._bgAt(0.8)) < 0.55;
+        return pickInk(this._bgAt(0.8)) !== INK_DARK;
     }
 
     _theme() {
