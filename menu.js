@@ -784,6 +784,9 @@ export class ForecastPanel {
                 col.add_child(hl);
                 btn.set_child(col);
                 btn.connect('clicked', () => this._selectDay(i));
+                // hover glass darkens the tile: re-run the ink pass so a
+                // hovered glyph glows exactly where its labels already do
+                btn.connect('notify::hovered', () => this._applyTileInk());
                 rowTiles.add_child(btn);
                 this._dayButtons.push(btn);
             }
@@ -802,16 +805,15 @@ export class ForecastPanel {
     }
 
     _applyTileInk() {
-        // icons ride the same fresh verdict as the tile text: the sky
-        // (and thus the right glyph palette) can change between builds
+        // tiles decide their text ink from the composited ground under
+        // each of them (sky + selection slab); icons ride the same fresh
+        // verdict -- the sky (and thus the right glyph palette) can
+        // change between builds. The glow overrides: the selected tile
+        // always wears the dark glass slab, and so does a hovered tile
+        // whose labels already went light -- the hover glass is
+        // dark-tinted, and ink glyphs sink into it on such cards.
         const solidDark = this._style === 'solid' && this._dark;
-        for (const [i, icon] of (this._tileIcons ?? []).entries()) {
-            icon.setDark(this._iconDark());
-            // the selected tile paints its glyph on the dark glass slab
-            // (and a dark solid card is all slab): claim the night glow
-            icon.setPale(i === this._day || solidDark);
-        }
-        this._placeholderIcon?.setDark(this._iconDark());
+        const lightInk = [];
         for (const [i, btn] of (this._dayButtons ?? []).entries()) {
             const lowLabel = this._dayLowLabels?.[i];
             if (this._style === 'accent' || !this._state) {
@@ -823,9 +825,16 @@ export class ForecastPanel {
             if (i === this._day)                   // selected: + tile glass
                 bg = compGlass(bg, this._paintDark());
             const ink = pickInk(bg);
+            lightInk[i] = ink !== INK_DARK;
             btn.set_style(inkCss(ink));
             lowLabel?.set_style(inkCss(ink, 0.82));
         }
+        for (const [i, icon] of (this._tileIcons ?? []).entries()) {
+            icon.setDark(this._iconDark());
+            icon.setPale(i === this._day || solidDark
+                || (lightInk[i] && this._dayButtons?.[i]?.hovered === true));
+        }
+        this._placeholderIcon?.setDark(this._iconDark());
     }
 
     _applyTextInk() {
