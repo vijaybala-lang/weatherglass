@@ -81,11 +81,13 @@ function noonOf(scene, night, solar) {
     return clamp01(solar) ** 2 * (NOON_CLARITY[scene] ?? 0);
 }
 
-/* Sun's spot on the card: it rides the corner, climbing toward the top
- * edge at noon and settling lower toward sunrise/sunset. */
+/* Sun's spot on the card: the disc RISES with the real sun -- it peeks up
+ * from the card's foot at sunrise, settles back there at dusk, and only
+ * reaches its corner perch at solar noon (solar: 0..1 climb). */
 function sunSpot(width, height, night, solar) {
-    const y = !night && Number.isFinite(solar) ? 0.21 - 0.09 * clamp01(solar) : 0.16;
-    return [width * 0.82, height * y];
+    const y = !night && Number.isFinite(solar)
+        ? height * (0.80 - 0.64 * clamp01(solar)) : height * 0.16;
+    return [width * 0.82, y];
 }
 
 /* [offset, rgb] gradient stops; with no twilight or noon the inner stops
