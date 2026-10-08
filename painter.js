@@ -166,8 +166,11 @@ const groundLight = () => _pale ? false : _groundLum >= 0 ? !_night : _light;
 /* same bar as the day-tile glyph legibility rule, mirrored: WCAG-space
  * grounds below it push the glyph to the pale glow (menu's setPale),
  * grounds at or above it can afford the deepest ink. lumOf is
- * gamma-corrected, so "0.30" here means an ordinary daylight ground */
-const paleGround = () => _groundLum >= 0.30;
+ * gamma-corrected, so "0.30" here means an ordinary daylight ground.
+ * Exported (chart.js re-exports as GLYPH_BAR) so the tile verdict, the
+ * strip gate, this tier and the certification matrix share one number */
+export const GLYPH_INK_BAR = 0.30;
+const paleGround = () => _groundLum >= GLYPH_INK_BAR;
 // water rides the SAME referee as the glyph palette (painter's dark
 // flag, chosen from the live ground under the icon): over bright sky a
 // deep navy that holds contrast against luminance ~0.55, over night a

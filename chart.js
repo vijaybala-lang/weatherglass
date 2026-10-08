@@ -69,6 +69,26 @@ const INK_LIGHT = [1, 1, 1];
 export const pickInk = bg =>
     ratio(INK_DARK, bg) >= ratio(INK_LIGHT, bg) * 1.35 ? INK_DARK : INK_LIGHT;
 
+/* glyph-only legibility bar, WCAG space (see lumOf): grounds below it
+ * send the soft glyph to the pale glow family, grounds at or above it
+ * earn ink + the painter's CLOUD_DEEP tier. The number is geometric
+ * mean of grounds measured live on shipped cards: approved pale looks
+ * sit at 0.18-0.23 (hover slabs, dusk), daytime overcast at 0.39+.
+ * The v6 regression shipped a bar calibrated in plain-mean space --
+ * which lumOf never reaches in daylight -- so every day card glowed.
+ * One shared number keeps the tile verdict, the strip gate, the painter
+ * tier and the certification matrix from ever drifting apart again. */
+export { GLYPH_INK_BAR as GLYPH_BAR } from './painter.js';
+import { GLYPH_INK_BAR } from './painter.js';
+
+/* the day-tile glyph verdict, exported so certification can exercise it
+ * over the full ground matrix without booting a shell: selected and
+ * solid-dark cards chose their glow slab deliberately; otherwise the
+ * label verdict wins unless the soft-glyph bar pulls the glyph */
+export const tileGlyphPale = (bg, { selected = false, solidDark = false } = {}) =>
+    selected || solidDark || pickInk(bg) !== INK_DARK ||
+    lumOf(bg) < GLYPH_INK_BAR;
+
 export const judgeInk = bgs => {
     bgs = bgs.filter(b => Number.isFinite(b[0] + b[1] + b[2]));
     if (!bgs.length)
@@ -512,7 +532,12 @@ export function paintChart(cr, opts) {
             const need = Math.max(own, globalValueNeed + 3);
             const labelX = Math.min(Math.max(anchorX, need), width - need);
             const left = labelX - own, right = labelX + own;
-            if (left > lastSlotRight + 6 && i - lastIndex >= 2) {
+            // slotsProbe: test-only observer (tools/../tests) -- the
+            // keep/drop rule is the certification target for the
+            // plateau regression; production callers never pass it
+            const slotKeep = left > lastSlotRight + 6 && i - lastIndex >= 2;
+            opts.slotsProbe?.({ i, keep: slotKeep, left, own, lastSlotRight });
+            if (slotKeep) {
                 iconSlots.push({
                     i, labelX, iconX: Math.min(Math.max(anchorX, iconHalf), width - iconHalf),
                 });
