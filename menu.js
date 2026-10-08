@@ -15,7 +15,7 @@ import {
     paintChart, ease, lerp, contrastSafe, lumOf, pickInk,
     judgeInk, INK_DARK, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
 } from './chart.js';
-import { sceneFor, fmtTemp, dayName, daySlice, nowFracIn } from './weather.js';
+import { sceneFor, fmtTemp, dayName, daySlice, nowFracIn, sunGeometry } from './weather.js';
 
 const SKY_FRAME_INTERVAL_MS = 50;         // sky: 20 fps is plenty
 const STATIC_TIME = 1.1;                  // frame that makes static mini icons look lively
@@ -122,7 +122,8 @@ const SkyArea = GObject.registerClass(
                 paintSky(cr, {
                     w: surfaceWidth, h: surfaceHeight, time: this._time,
                     scene: skyOptions.scene, night: skyOptions.night, scrim: skyOptions.scrim,
-                    sky: skyOptions.sky, radius: skyOptions.radius ?? 0, phase: skyOptions.phase ?? null
+                    sky: skyOptions.sky, radius: skyOptions.radius ?? 0, phase: skyOptions.phase ?? null,
+                    glow: skyOptions.glow, solar: skyOptions.solar
                 });
             // 'accent' style paints NOTHING: the surface stays transparent and
             // the shell theme's own popup background becomes the menu surface --
@@ -252,7 +253,7 @@ export class ForecastPanel {
         // radius 18 matches the shell's polished-popup corner radius
         this._skyOpts = {
             scene: 'loading', night: false, scrim: null,
-            sky: this._sky, radius: 18
+            sky: this._sky, radius: 18, glow: 0, solar: null
         };
         this._nowFrac = null;
         this._style = 'animated';                 // animated | solid | accent
@@ -495,7 +496,8 @@ export class ForecastPanel {
     _bgAt(heightFraction, samplePoint) {
         if (this._style === 'accent')
             return this._dark ? [0.185, 0.185, 0.19] : [0.96, 0.96, 0.97];
-        const skyRgb = sampleSky(this._skyOpts.scene, this._skyOpts.night, heightFraction);
+        const skyRgb = sampleSky(this._skyOpts.scene, this._skyOpts.night, heightFraction,
+            this._skyOpts.glow, this._skyOpts.solar);
         const scrim = this._skyOpts.scrim;
         const background = scrim
             ? skyRgb.map((channelVal, i) => channelVal * (1 - scrim[3]) + scrim[i] * scrim[3])
@@ -503,7 +505,7 @@ export class ForecastPanel {
         if (samplePoint) {
             const [cardWidth, cardHeight] = this._content.get_size();
             const celestialBody = bodyOf(this._skyOpts.scene, this._skyOpts.night,
-                cardWidth || 330, cardHeight || 430);
+                cardWidth || 330, cardHeight || 430, this._skyOpts.glow, this._skyOpts.solar);
             if (celestialBody) {
                 const distance = Math.hypot(samplePoint.x * (cardWidth || 330) - celestialBody.x,
                     samplePoint.f * (cardHeight || 430) - celestialBody.y);
@@ -706,6 +708,25 @@ export class ForecastPanel {
         this._skyOpts.scene = scene;
         this._skyOpts.night = night;
         this._skyOpts.phase = Number.isFinite(state.phase) ? state.phase : null;
+        // sun-height shading: altitude from the almanac (minute-accurate,
+        // every provider) -> glow peaks at the horizon crossing, solar is
+        // the 0..1 climb from sunrise through noon to sunset
+        let glow = 0;
+        let solar = null;
+        const lat = state.latitude, lon = state.longitude;
+        if (this._day === 0 && Number.isFinite(lat) && Number.isFinite(lon)) {
+            const sun = sunGeometry(lat, lon, Date.now());
+            if (sun.altitude > -9 && sun.altitude < 9) {
+                const near = 1 - Math.abs(sun.altitude) / 9;   // ±9 deg civil-ish band
+                glow = near * near * (3 - 2 * near);           // smoothstep
+            }
+            if (sun.sunrise !== null && sun.altitude > 0) {
+                const f = (Date.now() - sun.sunrise) / (sun.sunset - sun.sunrise);
+                solar = Math.sin(Math.PI * Math.min(1, Math.max(0, f)));
+            }
+        }
+        this._skyOpts.glow = glow;
+        this._skyOpts.solar = solar;
         if (this._day === 0 && this._onSky)
             this._onSky(scene, night);
         this._skyArea.queue_repaint();

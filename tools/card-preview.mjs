@@ -83,6 +83,9 @@ const DATA = {
 const CASES = [
     {scene: 'fog',   night: false, values: DATA.hourly.temperature_2m.slice(16, 40), accent: [0.96, 0.65, 0.14], nowFrac: 2 / 23, strip: 'pills', scrim: [0.03, 0.045, 0.08, 0.78]},
     {scene: 'clear', night: false, values: DATA.hourly.wind_speed_10m.slice(16, 40), accent: [0.24, 0.81, 0.56]},
+    // golden hour + afterglow: sun-height shading from the almanac feed
+    {scene: 'clear', night: false, live: true, glow: 0.95, solar: 0.04, values: DATA.hourly.temperature_2m.slice(64, 88), accent: [0.96, 0.65, 0.14], strip: 'icons', nowFrac: 2 / 23},
+    {scene: 'clear', night: true, live: true, glow: 0.45, values: DATA.hourly.temperature_2m.slice(40, 64), accent: [0.835, 0.38, 0.60], strip: 'icons', nowFrac: 2 / 23},
     {scene: 'storm', night: true,  values: DATA.hourly.precipitation_probability.slice(16, 40).map((v, i) => v + i * 2), accent: [0.30, 0.64, 1.0]},
     {scene: 'rain',  night: false, values: DATA.hourly.temperature_2m.slice(40, 64), accent: [0.96, 0.65, 0.14]},
     {scene: 'snow',  night: false, values: DATA.hourly.temperature_2m.slice(64, 88), accent: [0.96, 0.65, 0.14]},
@@ -115,7 +118,8 @@ for (const [i, c] of CASES.entries()) {
                         radius: 18});
     else
         paintSky(cr, {w: CARD.w, h: CARD.h, time: 2.9, scene: c.scene,
-                      night: c.night, sky: pool, radius: 18, scrim: c.scrim});
+                      night: c.night, sky: pool, radius: 18, scrim: c.scrim,
+                      glow: c.glow ?? 0, solar: c.solar ?? null});
 
     // real chart over the animated backdrop (header uses St.Label in the
     // actual menu, so we don't simulate it here)
@@ -154,16 +158,17 @@ for (const [i, c] of CASES.entries()) {
         // 'live' cards mirror the menu's real geometry sampler so the
         // smart curve ink + per-position label referee behave identically
         bgFn: c.live ? yPx => sampleSky(c.scene, c.night,
-            Math.min(1, Math.max(0, (CHART.y + yPx) / CARD.h))) : null,
+            Math.min(1, Math.max(0, (CHART.y + yPx) / CARD.h)),
+            c.glow ?? 0, c.solar ?? null) : null,
         // real menu passes its theme ink; plain light card needs dark ink too
         ink: c.plain && !c.night ? [0.10, 0.13, 0.19] : undefined,
         // "now" label: contrast-safe variant of the accent over the actual
         // backdrop (themed card bg, or the sampled sky mid-chart + scrim)
         nowLabel: contrastSafe(c.accent, c.plain
             ? (c.night ? [0.185, 0.185, 0.19] : [0.96, 0.96, 0.97])
-            : (c.scrim ? sampleSky(c.scene, c.night, 0.62)
+            : (c.scrim ? sampleSky(c.scene, c.night, 0.62, c.glow ?? 0, c.solar ?? null)
                 .map((v, i) => v * (1 - c.scrim[3]) + c.scrim[i] * c.scrim[3])
-                : sampleSky(c.scene, c.night, 0.62))),
+                : sampleSky(c.scene, c.night, 0.62, c.glow ?? 0, c.solar ?? null))),
         fontSize: 8,
     });
     cr.restore();
