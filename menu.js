@@ -198,10 +198,6 @@ const ChartArea = GObject.registerClass(
                 // glass; the accent style keeps the accent tint on its calm
                 // backdrop
                 pillGlass: panel._style !== 'accent',
-                // when the card itself paints night, every strip glyph
-                // joins the glow family -- daytime hours on a dark card
-                // would otherwise ink rain clouds into it
-                cardNight: panel._skyOpts.night === true,
                 // the "now" value label rides the sky, not the ink theme: hand
                 // it a contrast-safe variant of the accent (no-op when the
                 // accent already clears ~3:1 against the composited backdrop)
@@ -833,11 +829,6 @@ export class ForecastPanel {
 
     _applyTileInk() {
         const solidDark = this._style === 'solid' && this._dark;
-        // a night-painted card is dark everywhere: day tiles and daytime
-        // forecast hours must not ink their glyph into their own night
-        // sky -- the card's night flag, the one that painted the ground,
-        // sends every glyph on it to the glow family
-        const cardNight = this._style !== 'accent' && this._skyOpts?.night === true;
         for (const icon of this._tileIcons ?? [])
             icon.setDark(this._iconDark());
         this._placeholderIcon?.setDark(this._iconDark());
@@ -847,7 +838,7 @@ export class ForecastPanel {
             if (this._style === 'accent' || !this._state) {
                 btn.set_style('');
                 lowLabel?.set_style('');
-                icon?.setPale(i === this._day || solidDark || cardNight);
+                icon?.setPale(i === this._day || solidDark);
                 continue;
             }
             let bg = this._bgAt(0.9);              // tiles live at card foot
@@ -860,9 +851,11 @@ export class ForecastPanel {
             const ink = pickInk(bg);
             btn.set_style(inkCss(ink));
             lowLabel?.set_style(inkCss(ink, 0.82));
-            // label and glyph must never disagree: the glow answer is
-            // this very verdict, taken on this very composited ground
-            icon?.setPale(selected || solidDark || (hovered && ink !== INK_DARK));
+            // the glyph mirrors its label: wherever the tile's text
+            // went light because the composited ground under this tile
+            // is dark (night, rain paint, glass), the whole glyph joins
+            // the glow family -- one verdict, drawn twice, never apart
+            icon?.setPale(selected || solidDark || ink !== INK_DARK);
         }
     }
 

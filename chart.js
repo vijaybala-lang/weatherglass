@@ -602,7 +602,9 @@ export function paintChart(cr, opts) {
                 // per-column layout variety that stays put across repaints
                 seed: Math.round(centerX * 3),
                 groundLum: bgLum,
-                pale: !!opts.cardNight
+                // strip glyph mirrors its labels too: when the sampled
+                // band ground is too dark for ink text, the glyph glows
+                pale: !!bgFn && !isPaletteDark
             });
             cr.restore();
         };
