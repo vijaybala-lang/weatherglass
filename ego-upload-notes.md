@@ -39,16 +39,33 @@ https://github.com/vijaybala-lang/weatherglass/releases/download/v6/weatherglass
 
 ## Description text (for the EGO page)
 
-Weatherglass puts a live forecast in the top panel. The panel icon animates
-with the current conditions, and the dropdown shows an animated sky, an
-hourly chart of temperature, precipitation or wind, and a seven-day outlook
-with per-day weather. Forecasts come from NOAA NWS, Met.no or Open-Meteo;
-no API key or account is needed. Location is taken from GeoClue or set by
-hand.
+Weather that lives in your top bar.
 
-The menu follows the system light/dark style, adapts its ink and glyph
-glow to the background for readability, and supports metric or imperial
-units, 12/24 hour clocks and 20 languages.
+The panel icon animates with the sky outside - sun, drifting clouds,
+rain, snow, thunderstorms - beside a live temperature. Open the menu and
+the whole card is the sky: a live animated backdrop of drifting clouds,
+twinkling stars and falling precipitation, painted frame by frame.
+
+What's inside:
+- Animated menu backdrop with eleven scenes, from clear sun and moon to
+  fog, sleet, hail and lightning
+- Hourly chart: switch between temperature, precipitation and wind
+- The moon carries the real lunar phase at night; sunrise and sunset
+  bathe the card in golden-hour light
+- Eight days of forecast tiles, current conditions at a glance
+- 20 languages with full bidirectional support: the entire card mirrors
+  in Arabic, Hebrew, Persian and Urdu
+- Metric or imperial units, 12- or 24-hour clock, live scene previews in
+  preferences
+- Three backdrop styles: animated sky, solid, or theme background with
+  accent charts
+
+Weather data from Open-Meteo (global), Met.no (ECMWF) and NOAA NWS -
+choose your favourite forecaster, no API keys needed. Location is
+automatic or a city you pick.
+
+No accounts, no tracking, no analytics: requests go straight from your
+machine to the weather provider, and nothing is cached on disk.
 
 Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v6/weatherglass-demo-card.mp4
 
