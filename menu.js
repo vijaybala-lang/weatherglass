@@ -511,9 +511,9 @@ export class ForecastPanel {
             const sun = sunGeometry(lat, lon, minute * 60000);
             let glow = 0;
             let solar = null;
-            if (sun.altitude > -9 && sun.altitude < 9) {
-                const near = 1 - Math.abs(sun.altitude) / 9;   // ±9 deg civil-ish band
-                glow = near * near * (3 - 2 * near);           // smoothstep
+            if (sun.altitude > -12 && sun.altitude < 12) {
+                const near = 1 - Math.abs(sun.altitude) / 12;   // ±12 deg: nautical-ish band,
+                glow = near * near * (3 - 2 * near);            // golden hues ~1 h each side
             }
             if (sun.sunrise !== null && sun.altitude > 0) {
                 const f = (minute * 60000 - sun.sunrise) / (sun.sunset - sun.sunrise);
