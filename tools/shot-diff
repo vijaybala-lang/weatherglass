@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""tools/shot-diff -- visual regression between two screenshots.
+
+certify-pixels.py grades single images in absolute terms (is the glyph
+paler than its ground?). This tool answers the other question: what
+actually changed BETWEEN two captures -- an old screenshot vs a reshoot,
+or a card-preview render before vs after a code change.
+
+  tools/shot-diff old.png new.png            # verdict only
+  tools/shot-diff old.png new.png --out d.png
+  tools/shot-diff a.png b.png --max-changed 0.5   # percent budget
+
+Sizes may differ; the comparison happens on the overlap, so a shifted
+capture still aligns at the top-left. Exit code: 0 same, 1 changed,
+2 error. --out writes a three-panel sheet (old | new | amplified diff)
+for eyeballing where the churn lives.
+
+Live desktop shots can never be pixel-identical (the sky is animating,
+the clock advances); use --max-changed to set a sane budget, or pair
+deterministic renders: tools/card-preview.mjs before vs after a patch.
+"""
+
+import argparse
+import sys
+
+try:
+    from PIL import Image, ImageChops, ImageStat
+except ImportError:
+    sys.exit("shot-diff: needs python3-pillow (tools/certify-pixels.py uses it too)")
+
+
+def main():
+    ap = argparse.ArgumentParser(description="diff two screenshots")
+    ap.add_argument("left")
+    ap.add_argument("right")
+    ap.add_argument("--out", help="write a side-by-side diff sheet here")
+    ap.add_argument("--threshold", type=int, default=8,
+                    help="channel delta that counts as a changed pixel (0-255)")
+    ap.add_argument("--max-changed", type=float, default=0.0,
+                    help="percent of pixels allowed to change before CHANGED "
+                         "(default 0: any delta fails; set e.g. 0.5 for live shots)")
+    ap.add_argument("--grid", type=int, default=6,
+                    help="cells per axis for the hot-region report")
+    args = ap.parse_args()
+
+    try:
+        a = Image.open(args.left).convert("RGB")
+        b = Image.open(args.right).convert("RGB")
+    except Exception as e:
+        sys.exit(f"shot-diff: {e}")
+
+    if a.size != b.size:
+        print(f"sizes differ: {a.size[0]}x{a.size[1]} vs {b.size[0]}x{b.size[1]} "
+              f"-- comparing the {min(a.width, b.width)}x{min(a.height, b.height)} overlap")
+    w, h = min(a.width, b.width), min(a.height, b.height)
+    a = a.crop((0, 0, w, h))
+    b = b.crop((0, 0, w, h))
+
+    diff = ImageChops.difference(a, b)
+    gray = diff.convert("L")
+    # max channel delta per pixel: lighter() across the split bands
+    bands = diff.split()
+    maxc = bands[0]
+    for band in bands[1:]:
+        maxc = ImageChops.lighter(maxc, band)
+    changed_map = maxc.point(lambda v: 255 if v > args.threshold else 0)
+
+    total = w * h
+    hist = changed_map.histogram()
+    changed_px = hist[255]
+    pct = 100.0 * changed_px / total
+    mean_delta = sum(ImageStat.Stat(gray).mean) / 3.0
+    max_delta = max(maxc.getextrema()[1], 0)
+
+    name = "SAME" if pct <= args.max_changed else "CHANGED"
+    print(f"{name}: {changed_px}/{total} px ({pct:.2f}%) beyond delta {args.threshold}; "
+          f"mean delta {mean_delta:.2f}, max {max_delta}")
+
+    if changed_px and args.grid > 0:
+        cw, ch = max(w // args.grid, 1), max(h // args.grid, 1)
+        hot = []
+        for gy in range(args.grid):
+            for gx in range(args.grid):
+                box = (gx * cw, gy * ch,
+                       (gx + 1) * cw if gx < args.grid - 1 else w,
+                       (gy + 1) * ch if gy < args.grid - 1 else h)
+                cell = changed_map.crop(box)
+                n = sum(cell.histogram()[128:])  # only 255s matter, 128+ is safe
+                share = 100.0 * n / max((box[2] - box[0]) * (box[3] - box[1]), 1)
+                if share > 1.0:
+                    hot.append((share, gx, gy))
+        hot.sort(reverse=True)
+        for share, gx, gy in hot[:6]:
+            print(f"  hot cell ({gx},{gy}) of {args.grid}x{args.grid}: {share:.1f}% changed")
+
+    if args.out:
+        gap = 8
+        sheet = Image.new("RGB", (w * 3 + gap * 2, h), (32, 32, 32))
+        sheet.paste(a, (0, 0))
+        sheet.paste(b, (w + gap, 0))
+        amp = maxc.point(lambda v: min(255, v * 12)).convert("RGB")
+        sheet.paste(amp, (2 * (w + gap), 0))
+        sheet.save(args.out)
+        print(f"sheet: {args.out}  (old | new | diff x12)")
+
+    sys.exit(0 if name == "SAME" else 1)
+
+
+if __name__ == "__main__":
+    main()
