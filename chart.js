@@ -475,10 +475,11 @@ export function paintChart(cr, opts) {
         const slotSpan = (plotEndX - plotStartX) / Math.max(1, pointCount - 1);
         iconStep = labelInterval * Math.max(1, Math.ceil(30 / slotSpan / labelInterval));
         const iconHalf = 8.5;
-        // floor every slot's number-width on the metric's widest sample
-        // (whole forecast), so slot geometry is identical on every day --
-        // per-window widths alone shift the first column when a gusty
-        // day replaces a calm one
+        // clamp every slot's column on the metric's widest sample (whole
+        // forecast), so slot geometry is identical on every day -- per-day
+        // widths alone shift the first column when a gusty day replaces
+        // a calm one. The floor guards the gutters only: collisions test
+        // the text a slot actually draws (see `own` below).
         let globalValueNeed = 0;
         if (Array.isArray(opts.valueSamples) && opts.valueSamples.length)
             for (const sample of new Set(opts.valueSamples))
@@ -498,13 +499,19 @@ export function paintChart(cr, opts) {
                 ? textPx(cr, hourText, scaledFontSize, false, hourFontWeight)[0] / 2 : 0;
             let valueNeed = valueText
                 ? textPx(cr, valueText, scaledFontSize, false, valueFontWeight)[0] / 2 : 0;
-            for (let k = i; k < Math.min(i + labelInterval * 2, pointCount); k++)
+            if (fmtUnit)
                 valueNeed = Math.max(valueNeed,
-                    fmtValue ? textPx(cr, fmtValue(k, values[k]), scaledFontSize,
-                        false, valueFontWeight)[0] / 2 : 0);
-            const need = Math.max(iconHalf, hourNeed + 3, valueNeed + 3, globalValueNeed + 3);
+                    textPx(cr, fmtUnit(i, values[i]), unitSize, false, 0)[0] / 2);
+            // collision is measured on the ink this column actually draws;
+            // testing padded widest-sample envelopes instead dropped whole
+            // hours whose printed labels still stood ~20 px apart (a flat
+            // 100% precip plateau killed the 4 AM and 10 PM slots on a
+            // 400 px-wide card -- the widest floor then inflated every
+            // column and neighbours double-charged one another)
+            const own = Math.max(iconHalf, hourNeed + 3, valueNeed + 3);
+            const need = Math.max(own, globalValueNeed + 3);
             const labelX = Math.min(Math.max(anchorX, need), width - need);
-            const left = labelX - need, right = labelX + need;
+            const left = labelX - own, right = labelX + own;
             if (left > lastSlotRight + 6 && i - lastIndex >= 2) {
                 iconSlots.push({
                     i, labelX, iconX: Math.min(Math.max(anchorX, iconHalf), width - iconHalf),
