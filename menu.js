@@ -44,20 +44,19 @@ const THEME_CONFIG = {
 
 const ACTOR_FILL = Clutter.ActorAlign.FILL;
 
-const compGlass = (backgroundColor, isDark) => {
-    const glassFilter = isDark ? [16 / 255, 20 / 255, 28 / 255, 0.45] : [1, 1, 1, 0.68];
-    return backgroundColor.map((channelVal, idx) => channelVal * (1 - glassFilter[3]) + glassFilter[idx] * glassFilter[3]);
-};
+const glassOver = (backgroundColor, tintRgb, alpha) =>
+    backgroundColor.map((channelVal, idx) =>
+        channelVal * (1 - alpha) + tintRgb[idx] * alpha);
+const SLAB_DARK = [16 / 255, 20 / 255, 28 / 255];
+const SLAB_LIGHT = [1, 1, 1];
 
-/* stylesheet mirror: .aw-day:hover is 28% dark glass in the dark card,
- * 40% white glass in the light one -- the ink judge has to see the
- * ground the label and glyph actually get when the cursor rests there */
-const hoverGlass = (backgroundColor, isDark) => {
-    const [r, g, b] = [16 / 255, 20 / 255, 28 / 255];
-    const [tintR, tintG, tintB, alpha] = isDark ? [r, g, b, 0.28] : [1, 1, 1, 0.4];
-    return backgroundColor.map((channelVal, idx) =>
-        channelVal * (1 - alpha) + [tintR, tintG, tintB][idx] * alpha);
-};
+const compGlass = (backgroundColor, isDark) =>
+    glassOver(backgroundColor, isDark ? SLAB_DARK : SLAB_LIGHT, isDark ? 0.45 : 0.68);
+
+/* .aw-day:hover: 28% dark glass in the dark card, 40% white in the
+ * light one -- the ink judge must see the ground the cursor brings */
+const hoverGlass = (backgroundColor, isDark) =>
+    glassOver(backgroundColor, isDark ? SLAB_DARK : SLAB_LIGHT, isDark ? 0.28 : 0.4);
 
 const inkCss = (inkRgb, alpha = 1) => {
     const toChannel255 = channelVal => Math.round(channelVal * 255);

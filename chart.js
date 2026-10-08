@@ -95,7 +95,7 @@ const deepen = baseRgb => {
     return toRgb;
 };
 
-export const lineInk = (baseColor, bgColors) => {
+const lineInk = (baseColor, bgColors) => {
     if (!bgColors.length)
         return baseColor;
     const worstRatio = c => Math.min(...bgColors.map(bg => ratio(c, bg)));
