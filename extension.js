@@ -428,6 +428,8 @@ const WeatherIndicator = GObject.registerClass(
                 windKmh: current.wind,
                 dark: this._themeWatcher.isDark,
                 phase,
+                latitude: data.latitude,
+                longitude: data.longitude,
                 updated: GLib.DateTime.new_now_local(),
             });
         }

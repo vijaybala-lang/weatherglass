@@ -118,13 +118,15 @@ const SkyArea = GObject.registerClass(
                 return;
             const cr = this.get_context();
             const skyOptions = this._panel._skyOpts;
-            if (this._panel._style !== 'accent')
+            if (this._panel._style !== 'accent') {
+                const { glow, solar } = this._panel._sunShade();
                 paintSky(cr, {
                     w: surfaceWidth, h: surfaceHeight, time: this._time,
                     scene: skyOptions.scene, night: skyOptions.night, scrim: skyOptions.scrim,
                     sky: skyOptions.sky, radius: skyOptions.radius ?? 0, phase: skyOptions.phase ?? null,
-                    glow: skyOptions.glow, solar: skyOptions.solar
+                    glow, solar
                 });
+            }
             // 'accent' style paints NOTHING: the surface stays transparent and
             // the shell theme's own popup background becomes the menu surface --
             // the theme's specified solid colour, any theme, auto-contrast.
@@ -253,7 +255,7 @@ export class ForecastPanel {
         // radius 18 matches the shell's polished-popup corner radius
         this._skyOpts = {
             scene: 'loading', night: false, scrim: null,
-            sky: this._sky, radius: 18, glow: 0, solar: null
+            sky: this._sky, radius: 18
         };
         this._nowFrac = null;
         this._style = 'animated';                 // animated | solid | accent
@@ -493,11 +495,41 @@ export class ForecastPanel {
             this._content.add_style_class_name('aw-flat');
     }
 
+    /** Live sun shading for the current instant: altitude from the almanac
+     *  (minute-accurate, every provider) -> glow peaks at the horizon
+     *  crossing, solar is the 0..1 climb from sunrise through noon.
+     *  Computed at PAINT time, not at fetch time: a menu opened a half-hour
+     *  after the last refresh must still show where the sun actually is.
+     *  Cached per minute -- the almanac's trig is cheap but per-frame
+     *  re-solving is pointless when the sun moves 0.25 degrees a minute. */
+    _sunShade() {
+        if (this._day !== 0 || !this._sunCoords)
+            return { glow: 0, solar: null };
+        const minute = Math.floor(Date.now() / 60000);
+        if (this._shadeCache?.minute !== minute) {
+            const [lat, lon] = this._sunCoords;
+            const sun = sunGeometry(lat, lon, minute * 60000);
+            let glow = 0;
+            let solar = null;
+            if (sun.altitude > -12 && sun.altitude < 12) {
+                const near = 1 - Math.abs(sun.altitude) / 12;   // ±12 deg: nautical-ish band,
+                glow = near * near * (3 - 2 * near);            // golden hues ~1 h each side
+            }
+            if (sun.sunrise !== null && sun.altitude > 0) {
+                const f = (minute * 60000 - sun.sunrise) / (sun.sunset - sun.sunrise);
+                solar = Math.sin(Math.PI * Math.min(1, Math.max(0, f)));
+            }
+            this._shadeCache = { minute, glow, solar };
+        }
+        return { glow: this._shadeCache.glow, solar: this._shadeCache.solar };
+    }
+
     _bgAt(heightFraction, samplePoint) {
         if (this._style === 'accent')
             return this._dark ? [0.185, 0.185, 0.19] : [0.96, 0.96, 0.97];
+        const { glow, solar } = this._sunShade();
         const skyRgb = sampleSky(this._skyOpts.scene, this._skyOpts.night, heightFraction,
-            this._skyOpts.glow, this._skyOpts.solar);
+            glow, solar);
         const scrim = this._skyOpts.scrim;
         const background = scrim
             ? skyRgb.map((channelVal, i) => channelVal * (1 - scrim[3]) + scrim[i] * scrim[3])
@@ -505,7 +537,7 @@ export class ForecastPanel {
         if (samplePoint) {
             const [cardWidth, cardHeight] = this._content.get_size();
             const celestialBody = bodyOf(this._skyOpts.scene, this._skyOpts.night,
-                cardWidth || 330, cardHeight || 430, this._skyOpts.glow, this._skyOpts.solar);
+                cardWidth || 330, cardHeight || 430, glow, solar);
             if (celestialBody) {
                 const distance = Math.hypot(samplePoint.x * (cardWidth || 330) - celestialBody.x,
                     samplePoint.f * (cardHeight || 430) - celestialBody.y);
@@ -523,7 +555,7 @@ export class ForecastPanel {
     }
 
     /** state = {current, daily, hourly, currentIso, units, windy, effective,
-     *           windKmh, updated, dark} */
+     *           windKmh, updated, dark, latitude, longitude} */
     render(state) {
         this._state = state;
         if (state.dark !== undefined)
@@ -708,25 +740,8 @@ export class ForecastPanel {
         this._skyOpts.scene = scene;
         this._skyOpts.night = night;
         this._skyOpts.phase = Number.isFinite(state.phase) ? state.phase : null;
-        // sun-height shading: altitude from the almanac (minute-accurate,
-        // every provider) -> glow peaks at the horizon crossing, solar is
-        // the 0..1 climb from sunrise through noon to sunset
-        let glow = 0;
-        let solar = null;
-        const lat = state.latitude, lon = state.longitude;
-        if (this._day === 0 && Number.isFinite(lat) && Number.isFinite(lon)) {
-            const sun = sunGeometry(lat, lon, Date.now());
-            if (sun.altitude > -9 && sun.altitude < 9) {
-                const near = 1 - Math.abs(sun.altitude) / 9;   // ±9 deg civil-ish band
-                glow = near * near * (3 - 2 * near);           // smoothstep
-            }
-            if (sun.sunrise !== null && sun.altitude > 0) {
-                const f = (Date.now() - sun.sunrise) / (sun.sunset - sun.sunrise);
-                solar = Math.sin(Math.PI * Math.min(1, Math.max(0, f)));
-            }
-        }
-        this._skyOpts.glow = glow;
-        this._skyOpts.solar = solar;
+        this._sunCoords = Number.isFinite(state.latitude) && Number.isFinite(state.longitude)
+            ? [state.latitude, state.longitude] : null;
         if (this._day === 0 && this._onSky)
             this._onSky(scene, night);
         this._skyArea.queue_repaint();

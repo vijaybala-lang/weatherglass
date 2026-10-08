@@ -40,15 +40,18 @@ const SCENE_FEATURES = {
 };
 
 /* Twilight tints, [zenith, mid, low, horizon]: golden hour while the sun
- * is still up, a violet-to-ember afterglow (or pre-dawn) once it is down. */
+ * is still up -- violet zenith, magenta rose mid-deck, burnt amber and
+ * full gold at the horizon; a violet-to-ember afterglow (or pre-dawn)
+ * once it is down. */
 const TWILIGHT_PALETTES = {
-    d: [[0.33, 0.36, 0.64], [0.80, 0.56, 0.62], [0.99, 0.66, 0.46], [1.00, 0.76, 0.44]],
-    n: [[0.09, 0.10, 0.26], [0.30, 0.23, 0.45], [0.74, 0.39, 0.42], [0.96, 0.56, 0.34]],
+    d: [[0.30, 0.33, 0.66], [0.86, 0.50, 0.62], [1.00, 0.58, 0.30], [1.00, 0.72, 0.28]],
+    n: [[0.08, 0.09, 0.24], [0.36, 0.22, 0.48], [0.78, 0.34, 0.30], [0.96, 0.50, 0.26]],
 };
 const TWILIGHT_STOPS = [0, 0.45, 0.8, 1];
-/* per-stop [strength, easing exponent]: the horizon warms first and the
- * zenith follows, so mid-twilight never passes through a muddy grey */
-const TWILIGHT_EASE = [[0.75, 1.6], [0.88, 1.1], [0.88, 0.7], [0.9, 0.55]];
+/* per-stop [strength, easing exponent]: the warm stops saturate almost
+ * fully at peak twilight, the zenith follows on a slow leash so mid-twilight
+ * never passes through a muddy grey */
+const TWILIGHT_EASE = [[0.85, 1.5], [0.95, 1.0], [0.97, 0.6], [1.0, 0.45]];
 
 /* how much twilight colour shows through each scene's cloud deck */
 const TWILIGHT_CLARITY = {
