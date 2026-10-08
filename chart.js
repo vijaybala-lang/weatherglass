@@ -597,21 +597,27 @@ export function paintChart(cr, opts) {
             // judge the live backdrop under this glyph (same referee as
             // the ink labels); un-sampled surfaces (accent style, preview)
             // follow the card's theme instead
-            const bgLum = bgFn ? lumOf(bgFn(centerY)) : -1;
-            const isPaletteDark = bgFn ? bgLum >= 0.55 : isDark;
+            const bgRgb = bgFn ? bgFn(centerY) : null;
+            const bgLum = bgRgb ? lumOf(bgRgb) : -1;
+            // one verdict with the ink labels above: wherever ink text
+            // survives on this band the glyph wears ink, else it joins
+            // the glow family. (A luminance gate here used to read 0.55
+            // -- but lumOf is WCAG, and no ordinary daylight ground
+            // reaches that, so day strip glyphs were permanently pale.)
+            const inkHere = bgRgb ? pickInk(bgRgb) === INK_DARK : !isDark;
             cr.save();
             cr.translate(centerX - 12 * scale, centerY - 12 * scale);
             cr.scale(scale, scale);
             paintWeather(cr, {
                 scene: scene ?? 'cloud', time: 4.1,
-                night: !!isNight, dark: !isPaletteDark,
+                night: !!isNight, dark: !inkHere,
                 intensity: iconIntensity, staticPose: true,
                 // per-column layout variety that stays put across repaints
                 seed: Math.round(centerX * 3),
                 groundLum: bgLum,
                 // strip glyph mirrors its labels too: when the sampled
                 // band ground is too dark for ink text, the glyph glows
-                pale: !!bgFn && !isPaletteDark
+                pale: !!bgRgb && !inkHere
             });
             cr.restore();
         };
