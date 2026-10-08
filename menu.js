@@ -874,6 +874,9 @@ export class ForecastPanel {
                 btn.set_style('');
                 lowLabel?.set_style('');
                 icon?.setPale(i === this._day || solidDark);
+                // plain/accent card: no sampled sky, hand the referee back
+                // its unsampled fallback (the light/dark chain setDark drives)
+                icon?.setGroundLum(-1);
                 continue;
             }
             let bg = this._bgAt(0.9);              // tiles live at card foot
@@ -898,8 +901,13 @@ export class ForecastPanel {
             // midpoint of the glyph's two candidate tones -- pale body
             // ~0.76 vs ink body ~0.44 -- so the glyph always wears the
             // higher-contrast of the two; labels keep their own verdict.
+            // The bar also feeds the painter directly: at or above it the
+            // tile sits on a bright card foot, where the cloud and water
+            // palettes deepen a tier (CLOUD_DEEP) instead of the 0.58 gray
+            // that measured only 0.07 off an overcast ground's 0.66.
             icon?.setPale(selected || solidDark || ink !== INK_DARK ||
                 lumOf(bg) < 0.62);
+            icon?.setGroundLum(lumOf(bg));
         }
     }
 

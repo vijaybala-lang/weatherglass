@@ -6,7 +6,14 @@ Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 6, ~184K, zipcheck PASS
 ## Before uploading (manual verification gate)
 
 1. Install the exact artifact: `gnome-extensions install --force
-   dist/weatherglass@vijaybala.dev.zip`
+   dist/weatherglass@vijaybala.dev.zip`, then compile the shipped
+   schema: `glib-compile-schemas
+   ~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev/schemas`
+   -- EGO compiles server-side, but a local zip ships only the XML and
+   the extension dies at first `_init` with `GLib.FileError:
+   gschemas.compiled: No such file or directory` (and the ERROR state
+   latches until the next session). From a checkout, `./install.sh`
+   already does this step.
 2. One logout/login (GJS caches modules per process).
 3. Walk the surface: panel + menu in dark and light theme, animated /
    solid / accent menu styles, hover + selected tiles (glow-family

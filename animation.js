@@ -53,6 +53,16 @@ export const WeatherIcon = GObject.registerClass(
             this.queue_repaint();
         }
 
+        // the referee reads luminance only to tier ink depth, so tiles
+        // must refresh it as the sky (or another location's card) shifts
+        // under them -- a build-time snapshot mis-tiers the cloud tones
+        setGroundLum(lum) {
+            if (this._opts.groundLum === lum)
+                return;
+            this._opts.groundLum = lum;
+            this.queue_repaint();
+        }
+
         setDark(dark) {
             if (dark === this._dark)
                 return;
