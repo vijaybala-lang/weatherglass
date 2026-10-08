@@ -601,7 +601,8 @@ export function paintChart(cr, opts) {
                 intensity: iconIntensity, staticPose: true,
                 // per-column layout variety that stays put across repaints
                 seed: Math.round(centerX * 3),
-                groundLum: bgLum
+                groundLum: bgLum,
+                pale: !!opts.cardNight
             });
             cr.restore();
         };
