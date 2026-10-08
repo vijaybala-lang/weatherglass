@@ -13,7 +13,7 @@ import { WeatherIcon } from './animation.js';
 import { paintSky, createSky, sampleSky, bodyOf } from './sky.js';
 import {
     paintChart, ease, lerp, contrastSafe, lumOf, pickInk,
-    judgeInk, INK_DARK, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
+    judgeInk, INK_DARK, tileGlyphPale, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
 } from './chart.js';
 import { sceneFor, fmtTemp, dayName, daySlice, nowFracIn, sunGeometry } from './weather.js';
 
@@ -906,8 +906,7 @@ export class ForecastPanel {
             // tile on the pale family (shipped v6 regression). Labels
             // keep their own verdict via pickInk. At or above the bar
             // the painter deepens clouds/water a tier (CLOUD_DEEP).
-            icon?.setPale(selected || solidDark || ink !== INK_DARK ||
-                lumOf(bg) < 0.30);
+            icon?.setPale(tileGlyphPale(bg, { selected, solidDark }));
             icon?.setGroundLum(lumOf(bg));
         }
     }
