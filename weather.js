@@ -81,12 +81,6 @@ export function fmtTemp(celsiusTemp, units) {
     return `${Math.round(convertedTemp)}°`;
 }
 
-export function fmtWind(windKmh, units) {
-    if (units === 'imperial')
-        return `${Math.round(windKmh * 0.621371)} mph`;
-    return `${Math.round(windKmh)} km/h`;
-}
-
 const DAYS = [N_('Sun'), N_('Mon'), N_('Tue'), N_('Wed'),
               N_('Thu'), N_('Fri'), N_('Sat')];
 
@@ -98,31 +92,6 @@ export function dayName(iso) {
     return DAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
 }
 
-/**
- * Anchor instant for the city clock from a provider timestamp. Forms seen
- * in the pipeline: offset-stamped ('...T10:08-07:00', NOAA), explicit UTC
- * ('...Z', MET), and naive digits ('...T10:08', Open-Meteo -- the city's
- * wall clock). The offset is taken from the string when present (hand-
- * rolled because glib's ISO parser rejects '-hh:mm' suffixes); naive
- * digit-strings are treated as the viewer's zone: exact for the usual
- * same-zone case, off by the zone gap for a remote location, where the
- * hourly chart is equally viewer-anchored -- consistent, never a crash.
- */
-export function wallClockToEpoch(iso) {
-    if (!iso)
-        return 0;
-    const wall = `${iso.slice(0, 16)}:00`;
-    const dateTime = GLib.DateTime.new_from_iso8601(`${wall}Z`, null);
-    if (!dateTime)
-        return 0;
-    const instant = dateTime.to_unix() * 1000;
-    const offset = /([+-])(\d{2}):?(\d{2})$/.exec(iso);
-    if (!offset)
-        return instant;                     // naive or 'Z': it IS UTC here
-    const offsetSec = (Number(offset[2]) * 3600 + Number(offset[3]) * 60) *
-        (offset[1] === '-' ? -1 : 1);
-    return instant - offsetSec * 1000;        // wall digits carry the zone
-}
 
 /**
  * Hourly-array indices for the chart's window. Today is a ROLLING 24 HOURS:
@@ -270,7 +239,7 @@ class WeatherProvider {
 
 /* -- Open-Meteo (default) -------------------------------------------------- */
 
-export class OpenMeteoProvider extends WeatherProvider {
+class OpenMeteoProvider extends WeatherProvider {
     constructor() {
         super('open-meteo', 'Open-Meteo', ' Forecast by Open-Meteo.com (CC BY 4.0)');
     }
@@ -396,7 +365,7 @@ export function agnosToWmo(symbol) {
  * proxy: any measurable mm starts the curve high (it IS raining in the
  * forecast), saturation ~2 mm/h; dry hours fall back to cloud cover/4.
  */
-export function precipProbFrom(amountMm, cloudPct = 0) {
+function precipProbFrom(amountMm, cloudPct = 0) {
     const mm = Number(amountMm) || 0;
     if (mm >= 0.05)
         return Math.min(100, Math.round(40 + 60 * (1 - Math.exp(-mm))));
@@ -425,7 +394,7 @@ function isDayFromSymbol(symbol, hourLocal) {
     return hourLocal >= 6 && hourLocal < 21;
 }
 
-export class MetNorwayProvider extends WeatherProvider {
+class MetNorwayProvider extends WeatherProvider {
     constructor() {
         super('met-norway', 'MET Norway',
               'Forecast: MET Norway (CC BY-SA 4.0)');
@@ -529,7 +498,7 @@ export class MetNorwayProvider extends WeatherProvider {
  * family-first logic as agnosToWmo above. Null on empty input so callers
  * can fall back to sky cover.
  */
-export function nwsTextToWmo(text) {
+function nwsTextToWmo(text) {
     const lowerText = (text || '').toLowerCase();
     if (!lowerText)
         return null;
@@ -586,7 +555,7 @@ function nwsWindKmh(text) {
 const nwsTempC = (val, unit) =>
     val === null ? null : (String(unit).toUpperCase() === 'F' ? (val - 32) * 5 / 9 : val);
 
-export class NoaaNwsProvider extends WeatherProvider {
+class NoaaNwsProvider extends WeatherProvider {
     constructor() {
         super('noaa-nws', 'NOAA NWS',
               'Forecast: National Weather Service (US public data)');
@@ -717,7 +686,7 @@ const REGISTRY = new Map([
 ]);
 
 /** Unknown ids fall back to the default provider, never crash. */
-export function providerFor(id) {
+function providerFor(id) {
     return REGISTRY.get(id) ?? REGISTRY.get('open-meteo');
 }
 

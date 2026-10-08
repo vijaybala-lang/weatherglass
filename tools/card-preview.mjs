@@ -7,7 +7,27 @@
 
 import Cairo from 'gi://cairo';
 import GLib from 'gi://GLib';
-import {paintSky, paintPlain, createSky, sampleSky} from '../sky.js';
+import {paintSky, createSky, sampleSky} from '../sky.js';
+
+// solid/accent card mirror for previews only (the real card is CSS-painted)
+function paintPlain(cr, {w: width, h: height, accent = [0.19, 0.19, 0.19], radius = 0}) {
+    const shade = (factor) => [...accent.map((c) => Math.min(1, Math.max(0, c * factor))), 1];
+    cr.save();
+    const r = Math.min(radius, width / 2, height / 2);
+    cr.newSubPath();
+    cr.arc(width - r, r, r, -Math.PI / 2, 0);
+    cr.arc(width - r, height - r, r, 0, Math.PI / 2);
+    cr.arc(r, height - r, r, Math.PI / 2, Math.PI);
+    cr.arc(r, r, r, Math.PI, 3 * Math.PI / 2);
+    cr.closePath();
+    cr.clip();
+    const gradient = new Cairo.LinearGradient(0, 0, 0, height);
+    gradient.addColorStopRGBA(0, ...shade(1.08));
+    gradient.addColorStopRGBA(1, ...shade(0.9));
+    cr.setSource(gradient);
+    cr.paint();
+    cr.restore();
+}
 import {paintChart} from '../chart.js';
 import {sceneFor} from '../weather.js';
 
@@ -92,7 +112,7 @@ for (const [i, c] of CASES.entries()) {
     const cr = new Cairo.Context(surf);
     if (c.plain)
         paintPlain(cr, {w: CARD.w, h: CARD.h, accent: c.bgAccent,
-                        dark: c.night, radius: 18});
+                        radius: 18});
     else
         paintSky(cr, {w: CARD.w, h: CARD.h, time: 2.9, scene: c.scene,
                       night: c.night, sky: pool, radius: 18, scrim: c.scrim});

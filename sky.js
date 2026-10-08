@@ -283,20 +283,6 @@ function roundClip(cr, width, height, radius) {
     }
 }
 
-/** Render solid / accent background */
-export function paintPlain(cr, { w: width, h: height, accent = [0.19, 0.19, 0.19],
-    dark = true, radius = 0 }) {
-    const shade = (factor) => [...accent.map(c => Math.min(1, Math.max(0, c * factor))), 1];
-    cr.save();
-    roundClip(cr, width, height, radius);
-    cr.clip();
-    const gradient = new Cairo.LinearGradient(0, 0, 0, height);
-    gradient.addColorStopRGBA(0, ...shade(1.08));
-    gradient.addColorStopRGBA(1, ...shade(0.9));
-    cr.setSource(gradient);
-    cr.paint();
-    cr.restore();
-}
 
 function drawBackdrop(cr, height, stops) {
     const gradient = new Cairo.LinearGradient(0, 0, 0, height);
