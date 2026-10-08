@@ -92,6 +92,55 @@ export function dayName(iso) {
     return DAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
 }
 
+/**
+ * NOAA low-precision solar almanac for the sky painter: sun altitude in
+ * degrees plus the day's sunrise/sunset epochs (ms, null at the poles
+ * where the sun never crosses the horizon). Julian century -> mean
+ * anomaly -> equation of time -> declination -> hour angle at zenith
+ * 90.833 degrees (refraction-corrected). Minute-accurate — golden-hour
+ * shading, not navigation. Computed from coordinates instead of
+ * provider strings so all three providers get one continuous path.
+ */
+export function sunGeometry(lat, lon, ms) {
+    const rad = Math.PI / 180;
+    const jd = ms / 86400000 + 2440587.5;
+    const T = (jd - 2451545.0) / 36525.0;
+    const L0 = 280.46646 + T * (36000.76983 + 0.0003032 * T);
+    const M = 357.52911 + T * (35999.05029 - 0.0001537 * T);
+    const e = 0.016708634 - T * (0.000042037 + 0.0000001250 * T);
+    const C = Math.sin(M * rad) * (1.914602 - T * (0.004817 + 0.00000014 * T)) +
+        Math.sin(2 * M * rad) * (0.019993 - 0.000101 * T) +
+        Math.sin(3 * M * rad) * 0.000289;
+    const omega = 125.04 - 1934.136 * T;
+    const lambda = L0 + C - 0.00569 - 0.00478 * Math.sin(omega * rad);
+    const eps = 23 + (26 + (21.448 - T * (46.815 + T * (0.00059 - T * 0.001813))) / 60) / 60 +
+        0.00256 * Math.cos(omega * rad);
+    const decl = Math.asin(Math.sin(eps * rad) * Math.sin(lambda * rad));
+    const varY = Math.tan(eps * rad / 2) ** 2;
+    const eqTime = 4 * (180 / Math.PI) * (
+        varY * Math.sin(2 * L0 * rad) -
+        2 * e * Math.sin(M * rad) +
+        4 * e * varY * Math.sin(M * rad) * Math.cos(2 * L0 * rad) -
+        0.5 * varY * varY * Math.sin(4 * L0 * rad) -
+        1.25 * e * e * Math.sin(2 * M * rad));                 // minutes
+    const dayStart = Math.floor(ms / 86400000) * 86400000;
+    const solarNoonMin = 720 - 4 * lon - eqTime;               // UTC minutes
+    const cosH = Math.cos(90.833 * rad) / Math.cos(lat * rad) -
+        Math.tan(lat * rad) * Math.tan(decl);
+    let sunrise = null;
+    let sunset = null;
+    if (Math.abs(cosH) <= 1) {
+        const ha = Math.acos(cosH) / rad;                      // degrees
+        sunrise = dayStart + (solarNoonMin - 4 * ha) * 60000;
+        sunset = dayStart + (solarNoonMin + 4 * ha) * 60000;
+    }
+    const solarTimeMin = (ms - dayStart) / 60000 + eqTime + 4 * lon;
+    const hourAngle = (solarTimeMin / 4 - 180) * rad;         // cos is 360-deg periodic
+    const altitude = Math.asin(Math.sin(lat * rad) * Math.sin(decl) +
+        Math.cos(lat * rad) * Math.cos(decl) * Math.cos(hourAngle)) / rad;
+    return {altitude, sunrise, sunset};
+}
+
 
 /**
  * Hourly-array indices for the chart's window. Today is a ROLLING 24 HOURS:
