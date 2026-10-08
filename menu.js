@@ -739,6 +739,7 @@ export class ForecastPanel {
         const { daily, units } = this._state;
         this._daysGrid.destroy_all_children();
         this._dayButtons = [];
+        this._hoverDay = -1;                       // old crossings are stale
         this._dayLowLabels = [];
         this._dayHiLabels = [];
         this._tileIcons = [];
@@ -794,9 +795,21 @@ export class ForecastPanel {
                 col.add_child(hl);
                 btn.set_child(col);
                 btn.connect('clicked', () => this._selectDay(i));
-                // hover glass darkens the tile: re-run the ink pass so a
-                // hovered glyph glows exactly where its labels already do
-                btn.connect('notify::hovered', () => this._applyTileInk());
+                // St.Button has no 'hovered' property -- hover is a
+                // Clutter state flag CSS sees but JS notify never fires
+                // for. Track the crossing events directly and re-run the
+                // ink pass so a hovered glyph glows with its labels.
+                btn.connect('event', (actor, event) => {
+                    const type = event.type();
+                    if (type === Clutter.EventType.ENTER)
+                        this._hoverDay = i;
+                    else if (type === Clutter.EventType.LEAVE && this._hoverDay === i)
+                        this._hoverDay = -1;
+                    else
+                        return Clutter.EVENT_PROPAGATE;
+                    this._applyTileInk();
+                    return Clutter.EVENT_PROPAGATE;
+                });
                 rowTiles.add_child(btn);
                 this._dayButtons.push(btn);
             }
@@ -830,17 +843,17 @@ export class ForecastPanel {
             }
             let bg = this._bgAt(0.9);              // tiles live at card foot
             const selected = i === this._day;      // selected: + tile glass
+            const hovered = i === this._hoverDay;  // hovered: + hover glass
             if (selected)
                 bg = compGlass(bg, this._paintDark());
-            else if (btn.hovered)                  // hovered: + hover glass
+            else if (hovered)
                 bg = hoverGlass(bg, this._paintDark());
             const ink = pickInk(bg);
             btn.set_style(inkCss(ink));
             lowLabel?.set_style(inkCss(ink, 0.82));
             // label and glyph must never disagree: the glow answer is
             // this very verdict, taken on this very composited ground
-            icon?.setPale(selected || solidDark
-                || (ink !== INK_DARK && btn.hovered === true));
+            icon?.setPale(selected || solidDark || (hovered && ink !== INK_DARK));
         }
     }
 
