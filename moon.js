@@ -21,7 +21,12 @@ export function illumOf(phase) {
 }
 
 /** {phase 0..1, illum 0..1, waxing bool, name} for the given date (default now). */
-export function moonPhase(date = new Date()) {
+// NB: `new Date(Date.now())`, not `new Date()`: the bare constructor
+// reads the engine's internal clock and BYPASSES a pinned Date.now --
+// the render lock in tools/harness/ pins the clock, and a bare default
+// let the live moon bleed two AA pixels into blessed night cards hours
+// after a bless. Same runtime value, one testable door.
+export function moonPhase(date = new Date(Date.now())) {
     const daysSinceEpoch = (date.getTime() - NEW_MOON_EPOCH) / MILLISECONDS_PER_DAY;
     let phase = (daysSinceEpoch % SYNODIC_MONTH_DAYS) / SYNODIC_MONTH_DAYS;
     if (phase < 0)
