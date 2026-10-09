@@ -1,7 +1,9 @@
 # EGO upload kit -- v6
 
 Upload at: https://extensions.gnome.org/upload/
-Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 6, ~184K, zipcheck PASS)
+Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 6, ~192K, zipcheck
+PASS). Rebuilt from fccf2e4, the review-guidelines-clean tree (#39): a
+same-version re-upload replaces EGO's needs-work v6, no number bump.
 
 ## Before uploading (manual verification gate)
 
