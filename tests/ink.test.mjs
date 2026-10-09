@@ -5,6 +5,8 @@
  * pin the space itself and the verdicts it drives.
  */
 import { lumOf, pickInk, INK_DARK, tileGlyphPale, GLYPH_BAR } from '../chart.js';
+import { bodyOf } from '../sky.js';
+import { chromeVerdicts } from '../ink-policy.js';
 import { file, test, ok, near, report, lumOfPlain } from './harness.mjs';
 
 file('ink');
@@ -72,6 +74,37 @@ test('labels and glyph agree on the bright side', () => {
     // over a ground with dark labels the glyph must not be pale
     ok(pickInk(overcast) === INK_DARK);
     ok(!tileGlyphPale(overcast));
+});
+
+test('the judge-visible sun disc matches the painted core', () => {
+    // the Tokyo incident: white city text sat ON the drawn disc because
+    // bodyOf modelled a small blob (0.45r) the judge sampled around.
+    // The ink judge must be shown the SAME core radius drawCelestial
+    // paints: 64 * scale at the sunSpot position.
+    const body = bodyOf('sun', false, 330, 430, 0, 0.95);
+    near(body.r, 64 * 430 / 420, 0.01);
+    ok(body.max >= 0.85, 'the opaque core must read as near-total coverage');
+    near(body.x, 0.82 * 330, 0.01);
+    near(body.y, (0.21 - 0.09 * 0.95) * 430, 0.01);
+});
+
+test('chrome grouping: one verdict per judged group', () => {
+    // synthetic card: dark sky left, sun-disc bright right
+    const W = 330, H = 443;
+    const bgPoint = fx => (fx > 0.5 ? [0.98, 0.93, 0.8] : [0.12, 0.25, 0.45]);
+    const v = chromeVerdicts({
+        headerLeft: [[14, 14, 90, 40], [14, 60, 80, 12]],
+        headerRight: [[220, 16, 96, 16], [248, 36, 68, 12]],
+        tabActive: [14, 84, 110, 21],
+        tabsIdle: [[132, 84, 108, 21], [248, 84, 68, 21]],
+    }, W, H, bgPoint, bg => bg.map(c => c * 0.4));
+    ok(v.headerRight.ink === INK_DARK, 'disc behind city+clock inks BOTH');
+    ok(v.headerLeft.ink !== INK_DARK, 'the left pair on dark sky stays glow');
+    // the active tab sits over the SAME bright ground as headerRight,
+    // but judged through its glass (here 0.4x) it must stay glow --
+    // proof the compGlass pass is actually applied to that group
+    ok(v.tabActive.ink !== INK_DARK, 'glass-deepened ground keeps the glow seat');
+    ok(v.tabsIdle.ink === INK_DARK, 'a disc under ANY idle tab inks the row');
 });
 
 report('ink');

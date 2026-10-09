@@ -7,6 +7,18 @@
 
 import Cairo from 'gi://cairo';
 import GLib from 'gi://GLib';
+
+/* Determinism for golden artifacts: every star, cloud puff and particle
+ * in sky.js/painter.js flows through Math.random at paint time, so pin
+ * it to one LCG for THIS process -- production keeps real randomness,
+ * only this tool freezes it. Every render from here is byte-reproducible. */
+{
+    let s = 42 >>> 0;
+    Math.random = () => {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        return s / 4294967296;
+    };
+}
 import {paintSky, createSky, sampleSky} from '../sky.js';
 
 // solid/accent card mirror for previews only (the real card is CSS-painted)
@@ -106,11 +118,13 @@ const CASES = [
     {scene: 'clear', night: false, live: true, values: DATA.hourly.temperature_2m.slice(16, 40), accent: [0.96, 0.65, 0.14], nowFrac: 2 / 23, strip: 'icons', stripPos: 'bottom'},
 ];
 
-const outDir = GLib.build_filenamev([GLib.get_current_dir(), 'tools', 'out', 'cards']);
-GLib.mkdir_with_parents(outDir, 0o755);
+const ROOT = GLib.get_current_dir();
 
 let pool = createSky();
-for (const [i, c] of CASES.entries()) {
+
+/* renders one card spec; returns the cells stripProbe reported (grid mode
+ * grades them), writes <outDir>/<name>.png */
+function renderCard(c, outDir, name, extra = {}) {
     const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, CARD.w, CARD.h);
     const cr = new Cairo.Context(surf);
     if (c.plain)
@@ -119,10 +133,12 @@ for (const [i, c] of CASES.entries()) {
     else
         paintSky(cr, {w: CARD.w, h: CARD.h, time: 2.9, scene: c.scene,
                       night: c.night, sky: pool, radius: 18, scrim: c.scrim,
+                      phase: c.phase ?? 0.26,
                       glow: c.glow ?? 0, solar: c.solar ?? null});
 
     // real chart over the animated backdrop (header uses St.Label in the
     // actual menu, so we don't simulate it here)
+    const cells = [];
     cr.save();
     cr.translate(0, CHART.y);
     // condition strip for the demo cards (same mapping the menu uses). The
@@ -157,6 +173,9 @@ for (const [i, c] of CASES.entries()) {
         pillGlass: !c.plain,
         // 'live' cards mirror the menu's real geometry sampler so the
         // smart curve ink + per-position label referee behave identically
+        // fixed moon phase: tonight's real moon drifts daily -- goldens
+        // must not follow it (same value paintSky's moon uses)
+        phase: c.phase ?? 0.26,
         bgFn: c.live ? yPx => sampleSky(c.scene, c.night,
             Math.min(1, Math.max(0, (CHART.y + yPx) / CARD.h)),
             c.glow ?? 0, c.solar ?? null) : null,
@@ -170,10 +189,66 @@ for (const [i, c] of CASES.entries()) {
                 .map((v, i) => v * (1 - c.scrim[3]) + c.scrim[i] * c.scrim[3])
                 : sampleSky(c.scene, c.night, 0.62, c.glow ?? 0, c.solar ?? null))),
         fontSize: 8,
+        // grid mode: chart.js reports each strip glyph rect here (see
+        // chart.js stripProbe) so the pixel grader can find them
+        stripProbe: extra.stripProbe ? p => cells.push(p) : undefined,
     });
     cr.restore();
 
     surf.flush();
-    surf.writeToPNG(GLib.build_filenamev([outDir, `card_${i}-${c.scene}${c.night ? '-night' : ''}.png`]));
+    surf.writeToPNG(GLib.build_filenamev([outDir, name]));
+    return cells;
 }
-print(`cards -> ${outDir}`);
+
+if ((globalThis.ARGV ?? []).includes('--coverage')) {
+    /* coverage grid: every painter scene x {day, night, golden hour},
+     * full cards, deterministic (staticPose skies, fixed seeds). The cert
+     * grader (tools/certify-pixels.py --grid) re-derives each strip
+     * glyph's family from measured pixels and must agree. Pruned like the
+     * matrix: moon never paints in a day slot, sun never at night. */
+    const GRID_DIR = GLib.build_filenamev([ROOT, 'tools', 'out', 'grid']);
+    GLib.mkdir_with_parents(GRID_DIR, 0o755);
+    const SLOTS = {
+        day:    {night: false, glow: 0,    solar: null},
+        night:  {night: true,  glow: 0,    solar: null},
+        golden: {night: false, glow: 0.95, solar: 0.04},  // almanac sun-height
+    };
+    const ACCENTS = [[0.96, 0.65, 0.14], [0.24, 0.81, 0.56],
+                     [0.30, 0.64, 1.0], [0.835, 0.38, 0.60]];
+    const SLICES = [16, 40, 64];
+    const SCENES = ['sun', 'moon', 'partly', 'cloud', 'fog', 'rain',
+        'snow', 'sleet', 'hail', 'storm', 'wind'];
+    const manifest = [];
+    let n = 0;
+    for (const scene of SCENES) {
+        for (const [slot, p] of Object.entries(SLOTS)) {
+            if (scene === 'moon' && slot !== 'night') continue;      // pruned
+            if (scene === 'sun' && slot === 'night') continue;       // pruned
+            const name = `card_grid-${scene}-${slot}.png`;
+            const cells = renderCard({
+                scene, night: p.night, live: true, glow: p.glow, solar: p.solar,
+                values: DATA.hourly.temperature_2m.slice(SLICES[n % 3], SLICES[n % 3] + 24),
+                accent: ACCENTS[n % ACCENTS.length],
+                nowFrac: 2 / 23, strip: 'icons',
+            }, GRID_DIR, name, {stripProbe: true});
+            // where the now marker stands (chart margins: plotStart 24,
+            // plotEnd w-24 -- same as the label pass uses)
+            const markerX = 24 + (2 / 23) * (CARD.w - 48);
+            for (const cell of cells)
+                manifest.push({png: name, markerX, x: cell.x - cell.size / 2,
+                    y: CHART.y + cell.y - cell.size / 2, size: cell.size,
+                    scene: cell.scene, night: cell.night,
+                    ground: cell.ground});
+            n++;
+        }
+    }
+    GLib.file_set_contents(GLib.build_filenamev([GRID_DIR, 'manifest.json']),
+        JSON.stringify({grid: true, cells: manifest}, null, 1));
+    print(`grid: ${n} cards, ${manifest.length} strip glyphs -> ${GRID_DIR}`);
+} else {
+    const outDir = GLib.build_filenamev([ROOT, 'tools', 'out', 'cards']);
+    GLib.mkdir_with_parents(outDir, 0o755);
+    for (const [i, c] of CASES.entries())
+        renderCard(c, outDir, `card_${i}-${c.scene}${c.night ? '-night' : ''}.png`);
+    print(`cards -> ${outDir}`);
+}

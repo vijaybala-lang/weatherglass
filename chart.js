@@ -635,6 +635,7 @@ export function paintChart(cr, opts) {
             cr.scale(scale, scale);
             paintWeather(cr, {
                 scene: scene ?? 'cloud', time: 4.1,
+                phase: opts.phase ?? null,
                 night: !!isNight, dark: !inkHere,
                 intensity: iconIntensity, staticPose: true,
                 // per-column layout variety that stays put across repaints
@@ -721,10 +722,26 @@ export function paintChart(cr, opts) {
             }
             cr.restore();
         } else {
-            for (const slot of iconSlots)
+            for (const slot of iconSlots) {
+                const iconScale = STRIP_ICON_SCALE *
+                    (ICON_FOOTPRINT_SCALE[conditionScenes[slot.i]] ?? 1);
+                // stripProbe: test-only observer (tools/certify grid) --
+                // reports WHERE each glyph lands and WHICH family inputs it
+                // wears (scene/night), never the pale verdict: the grader
+                // must re-derive that from measured pixels, not trust ours
+                opts.stripProbe?.({
+                    i: slot.i, x: slot.iconX, y: stripCenterY,
+                    size: 24 * iconScale,
+                    scene: conditionScenes[slot.i], night: !!nights[slot.i],
+                    // the sampled ground the referee SAW -- an input like
+                    // the matrix manifest's swatch colors, so the grader's
+                    // expectation and its pixel evidence share one ground;
+                    // the pale/ink verdict itself is never sent
+                    ground: bgFn ? bgFn(stripCenterY) : null,
+                });
                 paintSingleIcon(conditionScenes[slot.i], slot.iconX, nights[slot.i],
-                    STRIP_ICON_SCALE * (ICON_FOOTPRINT_SCALE[conditionScenes[slot.i]] ?? 1),
-                    stripCenterY, iconIntensities?.[slot.i] ?? null);
+                    iconScale, stripCenterY, iconIntensities?.[slot.i] ?? null);
+            }
         }
     }
 

@@ -120,21 +120,31 @@ export function sampleSky(scene, night, heightFraction = 0.62, glow = 0, solar =
 
 const MOON_COVER = 0.5;
 
+/* The disc the INK judge must believe exists: same position AND core
+ * radius as drawCelestial paints (64 * scale). The judge sees only what
+ * this reports, so a shrunken body here once left white city text
+ * sitting on a full sun disc -- the verdict must sample the ground the
+ * eye reads. The vast aura is deliberately NOT modelled: its ~0.3 alpha
+ * tints the ground but never flips a family on its own; the opaque core
+ * is what legibility is judged against. Moon coverage scales with
+ * illumination: a new moon is not a light source and must not drag the
+ * header to ink over a night sky. */
 export function bodyOf(scene, night, width, height, glow = 0, solar = null) {
     const features = SCENE_FEATURES[scene] ?? {};
     const baseRadius = 64 * height / 420;
     const [sunX, sunY] = sunSpot(width, height, night, solar);
     if ((features.sun || features.moon) && !night)
         return {
-            x: sunX, y: sunY, r: baseRadius * 0.45, soft: 10,
-            col: mix([1, 0.8, 0.4], SUNSET_CORE, twilightOf(scene, glow)), max: 0.75
+            x: sunX, y: sunY, r: baseRadius, soft: 12,
+            col: mix([1, 0.8, 0.4], SUNSET_CORE, twilightOf(scene, glow)), max: 0.9
         };
     if (features.moon && night) {
-        const currentPhase = moonPhase().phase;
-        if (illumOf(currentPhase) < 0.12)
+        const illum = illumOf(moonPhase().phase);
+        const max = 0.85 * illum;
+        if (max > 0.02)
             return {
-                x: width * 0.82, y: height * 0.16, r: baseRadius * 0.85, soft: 14,
-                col: [0.93, 0.94, 0.96], max: MOON_COVER
+                x: width * 0.82, y: height * 0.16, r: baseRadius * 0.85, soft: 12,
+                col: [0.93, 0.94, 0.96], max
             };
     }
     return null;

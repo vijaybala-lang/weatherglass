@@ -11,6 +11,9 @@
 #      rendered offscreen, then PIXEL-GRADED for the contrast each
 #      ground was promised (tests/scenarios.mjs + tools/certify-pixels.py)
 #   4. full-card previews for human eyes   (tools/card-preview.mjs)
+#   4b. coverage grid: every scene x day/night/golden-hour as a full card,
+#       each strip glyph's family re-derived from measured ring pixels
+#       (card-preview --coverage + certify-pixels.py --grid)
 #   5. zip build + headless nested-shell boot & menu paint (package.sh
 #      -> zipcheck.sh: installs the real dist zip the EGO way)
 #
@@ -44,6 +47,9 @@ done || true
 stage "scenario render"   gjs -m tests/scenarios.mjs
 stage "pixel certify"     python3 tools/certify-pixels.py
 stage "card previews"     gjs -m tools/card-preview.mjs
+stage "demo cards render" gjs -m tools/card-demo.mjs
+stage "demo coverage"     gjs -m tools/card-demo.mjs --coverage
+stage "grid certify"      python3 tools/certify-pixels.py --grid tools/out/demo
 stage "package + zipcheck" bash tools/package.sh
 
 git checkout -- po/ 2>/dev/null   # packaging stamps po/ mtimes; keep the tree clean
