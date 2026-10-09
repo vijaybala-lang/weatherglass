@@ -34,7 +34,9 @@ git push origin topic/short-description   # open a PR against master
   commit keeps the commits' own (noreply) author instead.
 - Match the existing code style; keep comments factual and specific.
 - Bump `version` in `metadata.json` (integer) with every packaged
-  upload to extensions.gnome.org.
+  upload to extensions.gnome.org — except a needs-work resubmission,
+  which re-uploads the same version number (it replaces the pending
+  package rather than stranding the flagged one in review).
 
 ## Ideas and bugs
 
