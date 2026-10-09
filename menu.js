@@ -11,6 +11,7 @@ import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.j
 const N_ = s => s;
 import { WeatherIcon } from './animation.js';
 import { paintSky, createSky, sampleSky, bodyOf } from './sky.js';
+import { chromeVerdicts, boxSampleFractions } from './ink-policy.js';
 import {
     paintChart, ease, lerp, contrastSafe, lumOf, pickInk,
     judgeInk, INK_DARK, tileGlyphPale, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
@@ -930,15 +931,44 @@ export class ForecastPanel {
             return;
         }
         const halo = inkJudgeResult => this._emboss ? haloCss(inkJudgeResult) : '';
-        const inkGroup = actors => {
-            const list = actors ?? [];
-            const result = judgeInk([].concat(...list.map(actor => this._bgsOf(actor))));
+        const actorBox = actor => {
+            try {
+                const [cardX, cardY] = this._content.get_transformed_position();
+                const [cardWidth, cardHeight] = this._content.get_size();
+                const [actorX, actorY] = actor.get_transformed_position();
+                const [actorWidth, actorHeight] = actor.get_size();
+                if (!cardWidth || !cardHeight || !actorWidth || !actorHeight ||
+                    !Number.isFinite(actorX + actorY + cardX + cardY))
+                    return null;
+                return [actorX - cardX, actorY - cardY, actorWidth, actorHeight];
+            } catch {
+                return null;   // stale allocation between relayouts
+            }
+        };
+        const [cardWidth, cardHeight] = this._content.get_size();
+        const idleTabs = Object.entries(this._tabButtons ?? {})
+            .filter(([key]) => key !== this._metric);
+        /* the grouping lives in ink-policy -- card-demo renders the SAME
+         * verdicts into the goldens */
+        const verdicts = chromeVerdicts({
+            headerLeft: [this._temperatureLabel, this._descriptionLabel].map(actorBox),
+            headerRight: [this._cityLabel, this._clockLabel].map(actorBox),
+            tabActive: this._tabButtons
+                ? actorBox(this._tabButtons[this._metric]) : null,
+            tabsIdle: idleTabs.map(([, btn]) => actorBox(btn)),
+        }, cardWidth, cardHeight,
+            (fx, fy) => this._bgAt(fy, { f: fy, x: fx }),
+            bg => compGlass(bg, this._paintDark()));
+        const applyGroup = (result, actors) => {
+            if (!result)
+                return;
             const css = inkCss(result.ink) + halo(result);
-            for (const actor of list)
+            for (const actor of actors)
                 setActorStyle(actor, css);
         };
-        inkGroup([this._temperatureLabel, this._descriptionLabel]);   // left column pair
-        inkGroup([this._cityLabel, this._clockLabel]);
+        applyGroup(verdicts.headerLeft,
+            [this._temperatureLabel, this._descriptionLabel]);
+        applyGroup(verdicts.headerRight, [this._cityLabel, this._clockLabel]);
         const ghostJudgeResult = judgeInk(
             [].concat(...(this._ghostIcons ?? []).map(icon => this._bgsOf(icon))));
         const glow = !this._emboss ? ''
@@ -947,22 +977,9 @@ export class ForecastPanel {
                 : ' icon-shadow: 0 1px 4px rgba(0,0,10,0.7);';
         for (const icon of this._ghostIcons ?? [])
             setActorStyle(icon, inkCss(ghostJudgeResult.ink) + glow);
-        const rowBgList = [];
-        for (const [key, btn] of Object.entries(this._tabButtons ?? {})) {
-            const list = this._bgsOf(btn);
-            if (key === this._metric) {
-                const result = judgeInk(list.map(bg => compGlass(bg, this._paintDark())));
-                setActorStyle(btn, inkCss(result.ink) + halo(result));
-            } else
-                rowBgList.push(...list);
-        }
-        if (rowBgList.length) {
-            const result = judgeInk(rowBgList);
-            const css = inkCss(result.ink) + halo(result);
-            for (const [key, btn] of Object.entries(this._tabButtons ?? {}))
-                if (key !== this._metric)
-                    setActorStyle(btn, css);
-        }
+        if (this._tabButtons)
+            applyGroup(verdicts.tabActive, [this._tabButtons[this._metric]]);
+        applyGroup(verdicts.tabsIdle, idleTabs.map(([, btn]) => btn));
     }
 
     _groupInk(bgs) {
@@ -981,14 +998,10 @@ export class ForecastPanel {
             if (!cardWidth || !cardHeight || !actorWidth || !actorHeight ||
                 !Number.isFinite(actorX + actorY + cardX + cardY))
                 return out;   // unmapped/NaN allocation: nothing to judge
-            for (const [relX, relY] of [[0.5, 0.5], [0.15, 0.5], [0.85, 0.5],
-            [0.5, 0.25], [0.5, 0.75]]) {
-                const fractionY = Math.min(1, Math.max(0,
-                    (actorY + actorHeight * relY - cardY) / cardHeight));
-                const fractionX = (actorX + actorWidth * relX - cardX) / cardWidth;
-                if (Number.isFinite(fractionY + fractionX))
-                    out.push(this._bgAt(fractionY, { f: fractionY, x: fractionX }));
-            }
+            for (const [fx, fy] of boxSampleFractions(
+                [actorX - cardX, actorY - cardY, actorWidth, actorHeight],
+                cardWidth, cardHeight))
+                out.push(this._bgAt(fy, { f: fy, x: fx }));
         } catch {
             // stale allocation between relayouts: judge with what we have
         }
