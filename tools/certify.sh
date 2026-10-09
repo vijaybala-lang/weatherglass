@@ -14,6 +14,14 @@
 #   4b. coverage grid: every scene x day/night/golden-hour as a full card,
 #       each strip glyph's family re-derived from measured ring pixels
 #       (card-preview --coverage + certify-pixels.py --grid)
+#   4c. golden lock, tier 2 (the ONLY golden lock): every golden-named
+#       fixture rendered as REAL St widgets inside a disposable headless
+#       gnome-shell, byte-diffed against BLESSED RENDERED TRUTH
+#       (tools/golden/shell/, one boot for all 47). Same engine, no
+#       cross-rasterizer floor, no boot noise: the lock is byte-exact.
+#       bless = deliberate ceremony (tools/shell-golden.sh card bless).
+#       Host-gated: SKIPs (not fails) without gnome-shell.
+#       (tools/shell-golden.sh card check all)
 #   5. zip build + headless nested-shell boot & menu paint (package.sh
 #      -> zipcheck.sh: installs the real dist zip the EGO way)
 #
@@ -50,6 +58,7 @@ stage "card previews"     gjs -m tools/card-preview.mjs
 stage "demo cards render" gjs -m tools/card-demo.mjs
 stage "demo coverage"     gjs -m tools/card-demo.mjs --coverage
 stage "grid certify"      python3 tools/certify-pixels.py --grid tools/out/demo
+stage "golden lock (shell)" bash tools/shell-golden.sh card check all
 stage "package + zipcheck" bash tools/package.sh
 
 git checkout -- po/ 2>/dev/null   # packaging stamps po/ mtimes; keep the tree clean
@@ -57,7 +66,7 @@ git checkout -- po/ 2>/dev/null   # packaging stamps po/ mtimes; keep the tree c
 printf '\n────────────────────────────────────────\n'
 if [ "$FAILED" -eq 0 ]; then
     printf 'CERTIFIED: all stages green -- safe to upload dist/\n'
-    printf 'artifacts: dist/*.zip, tools/out/certify/, tools/out/cards/\n'
+    printf 'artifacts: dist/*.zip, tools/out/certify/, tools/out/demo/\n'
 else
     printf 'NOT CERTIFIED: %d stage(s) failed -- do not upload\n' "$FAILED"
 fi
