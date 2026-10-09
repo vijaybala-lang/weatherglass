@@ -69,12 +69,14 @@ const COFFEE_URL = 'https://buymeacoffee.com/vbala';
 function openUri(parent, uri) {
     try {
         const launcher = new Gtk.UriLauncher({ uri });
-        const launchPromise = launcher.launch(parent, null);
-        launchPromise.catch(() => { });
+        launcher.launch(parent, null)
+            .catch(err => logError(err, 'Weatherglass prefs'));
     } catch (err) {
         try {
             Gio.AppInfo.launch_default_for_uri(uri, null);
-        } catch (fallbackErr) { }
+        } catch (fallbackErr) {
+            logError(fallbackErr, 'Weatherglass prefs');
+        }
     }
 }
 
@@ -589,9 +591,11 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
         let barArea, skyArea, glyphArea;
         const tick = () => {
-            skyArea?.queue_draw();
-            barArea?.queue_draw();
-            glyphArea?.queue_draw();
+            // tick only ever runs from the controller's timeout, which the
+            // loop cannot fire before this function returned its page
+            skyArea.queue_draw();
+            barArea.queue_draw();
+            glyphArea.queue_draw();
             return GLib.SOURCE_CONTINUE;
         };
 
@@ -778,11 +782,10 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             icon_name: 'help-about-symbolic',
         });
 
-        const metadata = this.metadata;
         const infoGroup = new Adw.PreferencesGroup({ title: _('Weatherglass') });
         infoGroup.add(new Adw.ActionRow({
             title: _('Version'),
-            subtitle: String(metadata?.version ?? 'dev'),
+            subtitle: String(this.metadata.version),
         }));
         infoGroup.add(new Adw.ActionRow({
             title: _('Contact'),

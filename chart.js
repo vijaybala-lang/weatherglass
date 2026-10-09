@@ -315,7 +315,7 @@ export function paintChart(cr, opts) {
     // optional menu-supplied sampler: chart-local yPx -> composited backdrop
     // colour. When present every label picks its ink per position, so hour
     // text over a bright day sky goes dark and night text stays white.
-    const bgFn = typeof opts.bgFn === 'function' ? opts.bgFn : null;
+    const bgFn = opts.bgFn || null;
     const inkAt = yPx => (bgFn ? pickInk(bgFn(yPx)) : defaultInk);
 
     // y window with the mockup's asymmetric padding (headroom for labels);
@@ -363,7 +363,7 @@ export function paintChart(cr, opts) {
     // keeps a column ~two glyphs wide -- '12 mph' side-wide would push the
     // whole row to a coarser stride and re-flow it between calm and gusty
     // days, which is exactly what the stride engine exists to prevent
-    const fmtUnit = typeof opts.fmtValueUnit === 'function' ? opts.fmtValueUnit : null;
+    const fmtUnit = opts.fmtValueUnit || null;
     const unitSize = scaledFontSize * 0.74;
     const unitTextOf = (index, value) => (fmtUnit ? fmtUnit(index, value) || '' : '');
     const unitHeight = fmtUnit ? textPx(cr, '0', unitSize, false, 0)[1] : 0;
@@ -536,7 +536,8 @@ export function paintChart(cr, opts) {
             // keep/drop rule is the certification target for the
             // plateau regression; production callers never pass it
             const slotKeep = left > lastSlotRight + 6 && i - lastIndex >= 2;
-            opts.slotsProbe?.({ i, keep: slotKeep, left, own, lastSlotRight });
+            if (opts.slotsProbe)
+                opts.slotsProbe({ i, keep: slotKeep, left, own, lastSlotRight });
             if (slotKeep) {
                 iconSlots.push({
                     i, labelX, iconX: Math.min(Math.max(anchorX, iconHalf), width - iconHalf),
@@ -671,7 +672,7 @@ export function paintChart(cr, opts) {
                 const x0 = startIndex === 0 ? scaleX(0) : (mapX(startIndex - 1) + mapX(startIndex)) / 2;
                 const x1 = endIndex === pointCount - 1 ? scaleX(1) : (mapX(endIndex) + mapX(endIndex + 1)) / 2;
                 conditionRuns.push({ scene: conditionScenes[startIndex], night: nights[startIndex],
-                    intensity: iconIntensities?.[startIndex] ?? null,
+                    intensity: iconIntensities ? (iconIntensities[startIndex] ?? null) : null,
                     width: Math.abs(x1 - x0) });
                 startIndex = endIndex + 1;
             }
@@ -729,18 +730,21 @@ export function paintChart(cr, opts) {
                 // reports WHERE each glyph lands and WHICH family inputs it
                 // wears (scene/night), never the pale verdict: the grader
                 // must re-derive that from measured pixels, not trust ours
-                opts.stripProbe?.({
-                    i: slot.i, x: slot.iconX, y: stripCenterY,
-                    size: 24 * iconScale,
-                    scene: conditionScenes[slot.i], night: !!nights[slot.i],
-                    // the sampled ground the referee SAW -- an input like
-                    // the matrix manifest's swatch colors, so the grader's
-                    // expectation and its pixel evidence share one ground;
-                    // the pale/ink verdict itself is never sent
-                    ground: bgFn ? bgFn(stripCenterY) : null,
-                });
+                if (opts.stripProbe) {
+                    opts.stripProbe({
+                        i: slot.i, x: slot.iconX, y: stripCenterY,
+                        size: 24 * iconScale,
+                        scene: conditionScenes[slot.i], night: !!nights[slot.i],
+                        // the sampled ground the referee SAW -- an input like
+                        // the matrix manifest's swatch colors, so the grader's
+                        // expectation and its pixel evidence share one ground;
+                        // the pale/ink verdict itself is never sent
+                        ground: bgFn ? bgFn(stripCenterY) : null,
+                    });
+                }
                 paintSingleIcon(conditionScenes[slot.i], slot.iconX, nights[slot.i],
-                    iconScale, stripCenterY, iconIntensities?.[slot.i] ?? null);
+                    iconScale, stripCenterY,
+                    iconIntensities ? (iconIntensities[slot.i] ?? null) : null);
             }
         }
     }

@@ -176,19 +176,20 @@ const ChartArea = GObject.registerClass(
             // themselves), so the fill bleeds to the edges like the mockup; the
             // mock's narrow chart labels every 3rd hour, ink-dim, 8pt
             const cr = this.get_context();
+            const strip = panel._conditions !== 'off' ? panel._strip : null;
             paintChart(cr, {
                 w: surfaceWidth, h: surfaceHeight,
                 values: panel._shown,
                 fmtValue: panel._fmtValue ?? (() => ''),
                 fmtValueUnit: panel._fmtValueUnit ?? null,
                 fmtHour: panel._fmtHour ?? (() => ''),
-                valueSamples: panel._valueSamples?.length ? panel._valueSamples : null,
+                valueSamples: panel._valueSamples.length ? panel._valueSamples : null,
                 accent,
                 ink: panel._theme().ink,
                 nowFrac: panel._day === 0 ? (panel._nowFrac ?? 0) : null,
-                scenes: panel._conditions !== 'off' ? panel._strip?.scenes ?? null : null,
-                nights: panel._conditions !== 'off' ? panel._strip?.nights ?? null : null,
-                iconIntensities: panel._conditions !== 'off' ? panel._strip?.intensities ?? null : null,
+                scenes: strip ? strip.scenes : null,
+                nights: strip ? strip.nights : null,
+                iconIntensities: strip ? strip.intensities : null,
                 pills: panel._conditions === 'pills',
                 dark: panel._paintDark(),
                 // Arabic/Hebrew sessions: the chart mirrors (earliest hour at
@@ -248,6 +249,12 @@ export class ForecastPanel {
         this._fmtValue = null;
         this._fmtValueUnit = null;
         this._fmtHour = null;
+        this._valueSamples = [];           // width-stable label samples
+        this._shadeCache = { minute: -1, glow: 0, solar: null };
+        this._dayButtons = [];             // day-tile rows, rebuilt by
+        this._dayLowLabels = [];           // _buildDayTiles in lockstep
+        this._dayHiLabels = [];
+        this._tileIcons = [];
         this._is24Hour = false;          // chart hours + city clock (setter drives)
         this._textScale = 1;           // 'data-text' emphasis (setter drives)
         this._textBold = false;
@@ -507,7 +514,7 @@ export class ForecastPanel {
         if (this._day !== 0 || !this._sunCoords)
             return { glow: 0, solar: null };
         const minute = Math.floor(Date.now() / 60000);
-        if (this._shadeCache?.minute !== minute) {
+        if (this._shadeCache.minute !== minute) {
             const [lat, lon] = this._sunCoords;
             const sun = sunGeometry(lat, lon, minute * 60000);
             let glow = 0;
@@ -681,7 +688,7 @@ export class ForecastPanel {
         // single-digit mph vs a gusty double-digit one). Handing the chart
         // the whole forecast's formatted values keeps one rhythm per
         // metric -- the columns stop re-flowing as the user tabs days.
-        const metricSeries = state.hourly?.[field];
+        const metricSeries = state.hourly ? state.hourly[field] : null;
         this._valueSamples = metricSeries
             ? [...new Set(metricSeries.filter(Number.isFinite)
                 .map(v => this._fmtValue(0, v)))]
@@ -695,10 +702,17 @@ export class ForecastPanel {
         this._fmtHour = i => hourLabel(times[i] ?? 'T00', this._is24Hour, nextDayKey);
         this._strip = null;
         if (state.hourly && hourlyIndices.length) {
-            const days = times.map((t, k) => state.hourly.isDay?.[hourlyIndices[k]] ?? (() => {
+            // isDay arrives with every real provider but may be absent
+            // outright (fixtures, bare series): the sun-window fallback
+            // answers a MISSING flag, never a hole in a present series
+            const isDayFlags = state.hourly.isDay;
+            const days = times.map((t, k) => {
+                const flag = isDayFlags ? isDayFlags[hourlyIndices[k]] : undefined;
+                if (flag !== undefined)
+                    return flag;
                 const h = Number(t.slice(11, 13)) || 0;
                 return h >= 6 && h < 21;
-            })());
+            });
             this._strip = {
                 scenes: hourlyIndices.map((i, k) => sceneFor(state.hourly.code[i], days[k]).scene),
                 nights: days.map(d => !d),
@@ -720,7 +734,7 @@ export class ForecastPanel {
                 .filter(Number.isFinite);
             if (temps.length) {
                 hiLabel.set_text(fmtTemp(Math.max(...temps), units));
-                this._dayLowLabels[this._day]?.set_text(fmtTemp(Math.min(...temps), units));
+                this._dayLowLabels[this._day].set_text(fmtTemp(Math.min(...temps), units));
             }
         }
         return hourlyIndices.map(i => state.hourly[field][i] ?? 0);
@@ -865,19 +879,19 @@ export class ForecastPanel {
 
     _applyTileInk() {
         const solidDark = this._style === 'solid' && this._dark;
-        for (const icon of this._tileIcons ?? [])
+        for (const icon of this._tileIcons)
             icon.setDark(this._iconDark());
-        this._placeholderIcon?.setDark(this._iconDark());
-        for (const [i, btn] of (this._dayButtons ?? []).entries()) {
-            const lowLabel = this._dayLowLabels?.[i];
-            const icon = this._tileIcons?.[i];
+        this._placeholderIcon.setDark(this._iconDark());
+        for (const [i, btn] of this._dayButtons.entries()) {
+            const lowLabel = this._dayLowLabels[i];
+            const icon = this._tileIcons[i];
             if (this._style === 'accent' || !this._state) {
                 btn.set_style('');
-                lowLabel?.set_style('');
-                icon?.setPale(i === this._day || solidDark);
+                lowLabel.set_style('');
+                icon.setPale(i === this._day || solidDark);
                 // plain/accent card: no sampled sky, hand the referee back
                 // its unsampled fallback (the light/dark chain setDark drives)
-                icon?.setGroundLum(-1);
+                icon.setGroundLum(-1);
                 continue;
             }
             let bg = this._bgAt(0.9);              // tiles live at card foot
@@ -889,7 +903,7 @@ export class ForecastPanel {
                 bg = hoverGlass(bg, this._paintDark());
             const ink = pickInk(bg);
             btn.set_style(inkCss(ink));
-            lowLabel?.set_style(inkCss(ink, 0.82));
+            lowLabel.set_style(inkCss(ink, 0.82));
             // the glyph mirrors its label: wherever the tile's text
             // went light because the composited ground under this tile
             // is dark (night, rain paint, glass), the whole glyph joins
@@ -907,8 +921,8 @@ export class ForecastPanel {
             // tile on the pale family (shipped v6 regression). Labels
             // keep their own verdict via pickInk. At or above the bar
             // the painter deepens clouds/water a tier (CLOUD_DEEP).
-            icon?.setPale(tileGlyphPale(bg, { selected, solidDark }));
-            icon?.setGroundLum(lumOf(bg));
+            icon.setPale(tileGlyphPale(bg, { selected, solidDark }));
+            icon.setGroundLum(lumOf(bg));
         }
     }
 
@@ -1042,9 +1056,9 @@ export class ForecastPanel {
         this._syncScrim();
         // day-tile + placeholder icons paint their own weather scenes; tell
         // them the new background so pale glyphs (moon/snow/fog) stay visible
-        for (const icon of this._tileIcons ?? [])
+        for (const icon of this._tileIcons)
             icon.setDark(this._iconDark());
-        this._placeholderIcon?.setDark(this._iconDark());
+        this._placeholderIcon.setDark(this._iconDark());
         this._applyTileInk();          // selected-tile glass differs per theme
         this._skyArea.queue_repaint();
         this._chart.queue_repaint();

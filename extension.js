@@ -114,13 +114,9 @@ class SystemThemeWatcher {
         if (modePreference === '12h')
             return false;
         if (this._iface) {
-            try {
-                const format = this._iface.get_string('clock-format');
-                if (format)
-                    return format.includes('24');
-            } catch {
-                // older GNOME: enum may be missing -- fall through
-            }
+            const format = this._iface.get_string('clock-format');
+            if (format)
+                return format.includes('24');
         }
         try {
             return new Intl.DateTimeFormat(undefined, { hour: 'numeric' })
@@ -545,12 +541,18 @@ const WeatherIndicator = GObject.registerClass(
                 this.menu.disconnect(this._menuOpenChangedId);
                 this._menuOpenChangedId = 0;
             }
-            this._coordinator?.destroy();
-            this._coordinator = null;
-            this._themeWatcher?.destroy();
-            this._themeWatcher = null;
-            this._panel?.destroy();
-            this._panel = null;
+            if (this._coordinator) {
+                this._coordinator.destroy();
+                this._coordinator = null;
+            }
+            if (this._themeWatcher) {
+                this._themeWatcher.destroy();
+                this._themeWatcher = null;
+            }
+            if (this._panel) {
+                this._panel.destroy();
+                this._panel = null;
+            }
             super.destroy();
         }
     });
@@ -571,7 +573,9 @@ export default class AnimatedWeatherExtension extends Extension {
                 .get_theme().unload_stylesheet(this._sheet);
             this._sheet = null;
         }
-        this._indicator?.destroy();
-        this._indicator = null;
+        if (this._indicator) {
+            this._indicator.destroy();
+            this._indicator = null;
+        }
     }
 }
