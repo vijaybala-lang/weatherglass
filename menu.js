@@ -702,10 +702,12 @@ export class ForecastPanel {
         this._fmtHour = i => hourLabel(times[i] ?? 'T00', this._is24Hour, nextDayKey);
         this._strip = null;
         if (state.hourly && hourlyIndices.length) {
+            // isDay arrives with every real provider but may be absent
+            // outright (fixtures, bare series): the sun-window fallback
+            // answers a MISSING flag, never a hole in a present series
+            const isDayFlags = state.hourly.isDay;
             const days = times.map((t, k) => {
-                // providers build isDay in lockstep with time; the sun-window
-                // fallback only answers a short series, never a hole in a full one
-                const flag = state.hourly.isDay[hourlyIndices[k]];
+                const flag = isDayFlags ? isDayFlags[hourlyIndices[k]] : undefined;
                 if (flag !== undefined)
                     return flag;
                 const h = Number(t.slice(11, 13)) || 0;

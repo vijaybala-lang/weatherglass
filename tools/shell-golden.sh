@@ -169,9 +169,22 @@ fi
 echo "==> probe report:"
 python3 -m json.tool "${OUT}.final"
 
+# a fatal report means the probe died mid-pipeline: everything downstream
+# (registry, PNGs) is missing, and a lock that checks nothing must never
+# report PASS on emptiness -- that is exactly how the isDay crash hid
+if python3 -c "import json,sys;sys.exit(0 if 'fatal' in json.load(open('${OUT}.final')) else 1)"; then
+    echo "FAIL: probe reported a fatal error -- this golden run is void"
+    exit 1
+fi
+
 if [ "$MODE" = card ] && [ -n "$ALL_SET" ]; then
     mapfile -t SLUGS < <(python3 -c "import json;print('\n'.join(json.load(open('${OUT}.final'))['cards'].keys()))")
     echo "==> expanded 'all' to ${#SLUGS[@]} slugs from the probe registry"
+fi
+
+if [ "$MODE" = card ] && [ "${#SLUGS[@]}" -eq 0 ]; then
+    echo "FAIL: no slugs to $VERB -- refusing an empty lock"
+    exit 1
 fi
 
 if [ "$MODE" = card ]; then
