@@ -541,18 +541,12 @@ const WeatherIndicator = GObject.registerClass(
                 this.menu.disconnect(this._menuOpenChangedId);
                 this._menuOpenChangedId = 0;
             }
-            if (this._coordinator) {
-                this._coordinator.destroy();
-                this._coordinator = null;
-            }
-            if (this._themeWatcher) {
-                this._themeWatcher.destroy();
-                this._themeWatcher = null;
-            }
-            if (this._panel) {
-                this._panel.destroy();
-                this._panel = null;
-            }
+            this._coordinator.destroy();
+            this._coordinator = null;
+            this._themeWatcher.destroy();
+            this._themeWatcher = null;
+            this._panel.destroy();
+            this._panel = null;
             super.destroy();
         }
     });
@@ -568,14 +562,13 @@ export default class AnimatedWeatherExtension extends Extension {
     }
 
     disable() {
-        if (this._sheet) {
-            St.ThemeContext.get_for_stage(global.stage)
-                .get_theme().unload_stylesheet(this._sheet);
-            this._sheet = null;
-        }
-        if (this._indicator) {
-            this._indicator.destroy();
-            this._indicator = null;
-        }
+        // enable() assigns both unconditionally and is paired by the
+        // extension system, so a running disable() always sees them set;
+        // nulling is the disabled state, the next enable() resets it
+        St.ThemeContext.get_for_stage(global.stage)
+            .get_theme().unload_stylesheet(this._sheet);
+        this._sheet = null;
+        this._indicator.destroy();
+        this._indicator = null;
     }
 }
