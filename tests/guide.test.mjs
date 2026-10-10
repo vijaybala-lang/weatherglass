@@ -93,6 +93,15 @@ test('no runtime function-type checks', () => {
     silence(scan(/typeof\s[\w.$\[\]'"]+\s*[=!]==?\s*['"]function['"]|['"]function['"]\s*[=!]==?\s*typeof/));
 });
 
+test('no cross-version feature detection', () => {
+    // the call(obj,'setFoo','set_foo') shim species: typeof probes on
+    // MEMBERS and 'method' in obj -- the guide's remedy is one targeted
+    // Shell version. Data-field !== undefined checks are deliberately
+    // NOT flagged: no regex separates provider-JSON fields from API
+    // methods, and that half stays the semantic audit's
+    silence(scan(/typeof\s+\w+[.\[]|['"][\w.]+['"]\s+in\s+\w/));
+});
+
 test('no boolean lifecycle flags', () => {
     silence(scan(/this\._(?:is?)?(?:destroyed|disposed|enabled)\s*=\s*(?:true|false)/));
 });
