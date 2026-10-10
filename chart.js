@@ -30,13 +30,6 @@ export const CODE_PRECIP_INTENSITY = {
     95: 5, 96: 6, 99: 6,
 };
 
-/* GJS Pango bindings are snake_case on some releases and camelCase on newer
- * ones -- feature-detect once per call rather than betting on one. */
-function call(obj, camel, snake, ...args) {
-    const fn = obj[camel] ?? obj[snake];
-    return fn.call(obj, ...args);
-}
-
 export const lumOf = rgb => {
     const channelLum = v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
     return 0.2126 * channelLum(rgb[0]) + 0.7152 * channelLum(rgb[1]) + 0.0722 * channelLum(rgb[2]);
@@ -65,6 +58,11 @@ export function contrastSafe(accent, bg) {
 
 export const INK_DARK = [0.063, 0.094, 0.137];
 const INK_LIGHT = [1, 1, 1];
+
+// default observer for the layout probe hooks documented in paintChart's
+// opts: production callers omit the probes and the calls below stay
+// unconditional -- the painted result never depends on what they return
+const NOOP_OBSERVER = () => {};
 
 export const pickInk = bg =>
     ratio(INK_DARK, bg) >= ratio(INK_LIGHT, bg) * 1.35 ? INK_DARK : INK_LIGHT;
@@ -134,17 +132,17 @@ const lineInk = (baseColor, bgColors) => {
  *  drawText, so icon placement can centre on printed text, not data points). */
 function textPx(cr, text, size, bold, weight = 0) {
     const layout = PangoCairo.create_layout(cr);
-    const desc = Pango.FontDescription.new();
+    const desc = new Pango.FontDescription();
     desc.set_family('Cantarell');
     desc.set_size(Math.round(size * Pango.SCALE));
     if (weight)
         desc.set_weight(weight);
     else if (bold)
         desc.set_weight(Pango.Weight.MEDIUM);
-    call(layout, 'setFontDescription', 'set_font_description', desc);
-    call(layout, 'setText', 'set_text', text, -1);
-    const px = call(layout, 'getPixelSize', 'get_pixel_size');
-    return Array.isArray(px) ? [px[0], px[1], layout] : [px.width, px.height, layout];
+    layout.set_font_description(desc);
+    layout.set_text(text, -1);
+    const [width, height] = layout.get_pixel_size();
+    return [width, height, layout];
 }
 
 export function drawText(cr, text, x, y, { size = 10, bold = false, weight = 0,
@@ -194,6 +192,15 @@ function tracePath(cr, pts) {
  *                    the per-scene base pose
  *   labelEvery:      label stride (default 3; narrow cards pass a bigger one)
  *   fontSize:        label font size in pt (default 8.5)
+ *   slotsProbe:      fn({i, keep, left, own, lastSlotRight}) -- layout
+ *                    observer reporting each hour column's keep/drop
+ *                    verdict (tests/chart slot-plateau regression lock);
+ *                    production omits it, the no-op default answers
+ *   stripProbe:      fn({i, x, y, size, scene, night, ground}) -- reports
+ *                    where each strip glyph lands and which referee inputs
+ *                    it wears, so the pixel graders re-derive the verdict
+ *                    from measured pixels (tools/certify); production
+ *                    omits it, the no-op default answers
  * }
  */
 
@@ -316,6 +323,8 @@ export function paintChart(cr, opts) {
     // colour. When present every label picks its ink per position, so hour
     // text over a bright day sky goes dark and night text stays white.
     const bgFn = opts.bgFn || null;
+    const slotsProbe = opts.slotsProbe || NOOP_OBSERVER;
+    const stripProbe = opts.stripProbe || NOOP_OBSERVER;
     const inkAt = yPx => (bgFn ? pickInk(bgFn(yPx)) : defaultInk);
 
     // y window with the mockup's asymmetric padding (headroom for labels);
@@ -532,12 +541,10 @@ export function paintChart(cr, opts) {
             const need = Math.max(own, globalValueNeed + 3);
             const labelX = Math.min(Math.max(anchorX, need), width - need);
             const left = labelX - own, right = labelX + own;
-            // slotsProbe: test-only observer (tools/../tests) -- the
-            // keep/drop rule is the certification target for the
-            // plateau regression; production callers never pass it
+            // the keep/drop rule is the certification target for the
+            // plateau regression (see opts.slotsProbe)
             const slotKeep = left > lastSlotRight + 6 && i - lastIndex >= 2;
-            if (opts.slotsProbe)
-                opts.slotsProbe({ i, keep: slotKeep, left, own, lastSlotRight });
+            slotsProbe({ i, keep: slotKeep, left, own, lastSlotRight });
             if (slotKeep) {
                 iconSlots.push({
                     i, labelX, iconX: Math.min(Math.max(anchorX, iconHalf), width - iconHalf),
@@ -617,7 +624,10 @@ export function paintChart(cr, opts) {
         // 5+ px clear of that, and even the lowest value label (floor
         // h-42) stays off the band top.
         const stripCenterY = opts.stripBottom ? height - 34 : STRIP_CENTER_Y;
-        const iconIntensities = Array.isArray(opts.iconIntensities) ? opts.iconIntensities : null;
+        // per-slot severity overrides (opts: int[] | null); the empty-array
+        // default reads "no overrides", so every lookup below is branch-free
+        const iconIntensities = opts.iconIntensities ?? [];
+        const intensityAt = index => iconIntensities[index] ?? null;
         const paintSingleIcon = (scene, centerX, isNight, scale, centerY = stripCenterY, intensity = null) => {
             const iconIntensity = intensity ?? STRIP_PRECIP_INTENSITY[scene] ?? 0;
             // judge the live backdrop under this glyph (same referee as
@@ -672,7 +682,7 @@ export function paintChart(cr, opts) {
                 const x0 = startIndex === 0 ? scaleX(0) : (mapX(startIndex - 1) + mapX(startIndex)) / 2;
                 const x1 = endIndex === pointCount - 1 ? scaleX(1) : (mapX(endIndex) + mapX(endIndex + 1)) / 2;
                 conditionRuns.push({ scene: conditionScenes[startIndex], night: nights[startIndex],
-                    intensity: iconIntensities ? (iconIntensities[startIndex] ?? null) : null,
+                    intensity: intensityAt(startIndex),
                     width: Math.abs(x1 - x0) });
                 startIndex = endIndex + 1;
             }
@@ -726,25 +736,21 @@ export function paintChart(cr, opts) {
             for (const slot of iconSlots) {
                 const iconScale = STRIP_ICON_SCALE *
                     (ICON_FOOTPRINT_SCALE[conditionScenes[slot.i]] ?? 1);
-                // stripProbe: test-only observer (tools/certify grid) --
-                // reports WHERE each glyph lands and WHICH family inputs it
-                // wears (scene/night), never the pale verdict: the grader
-                // must re-derive that from measured pixels, not trust ours
-                if (opts.stripProbe) {
-                    opts.stripProbe({
-                        i: slot.i, x: slot.iconX, y: stripCenterY,
-                        size: 24 * iconScale,
-                        scene: conditionScenes[slot.i], night: !!nights[slot.i],
-                        // the sampled ground the referee SAW -- an input like
-                        // the matrix manifest's swatch colors, so the grader's
-                        // expectation and its pixel evidence share one ground;
-                        // the pale/ink verdict itself is never sent
-                        ground: bgFn ? bgFn(stripCenterY) : null,
-                    });
-                }
+                // WHERE each glyph lands and WHICH family inputs it wears
+                // (scene/night), never the pale verdict: the grader must
+                // re-derive that from measured pixels, not trust ours
+                stripProbe({
+                    i: slot.i, x: slot.iconX, y: stripCenterY,
+                    size: 24 * iconScale,
+                    scene: conditionScenes[slot.i], night: !!nights[slot.i],
+                    // the sampled ground the referee SAW -- an input like
+                    // the matrix manifest's swatch colors, so the grader's
+                    // expectation and its pixel evidence share one ground;
+                    // the pale/ink verdict itself is never sent
+                    ground: bgFn ? bgFn(stripCenterY) : null,
+                });
                 paintSingleIcon(conditionScenes[slot.i], slot.iconX, nights[slot.i],
-                    iconScale, stripCenterY,
-                    iconIntensities ? (iconIntensities[slot.i] ?? null) : null);
+                    iconScale, stripCenterY, intensityAt(slot.i));
             }
         }
     }
