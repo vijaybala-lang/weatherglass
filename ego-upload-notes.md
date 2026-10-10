@@ -1,9 +1,9 @@
 # EGO upload kit -- v6
 
 Upload at: https://extensions.gnome.org/upload/
-Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 6, ~192K, zipcheck
-PASS). Rebuilt from fccf2e4, the review-guidelines-clean tree (#39): a
-same-version re-upload replaces EGO's needs-work v6, no number bump.
+Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 6; rebuilt from
+master after every landed change -- record `sha256sum` at upload time and
+verify the identical bytes live; zipcheck PASS is part of the rebuild).
 
 ## Before uploading (manual verification gate)
 
@@ -41,33 +41,29 @@ https://github.com/vijaybala-lang/weatherglass/releases/download/v6/weatherglass
 
 ## Description text (for the EGO page)
 
+**Canonical source: the `description` field in `metadata.json`.** EGO
+renders the extension page from the uploaded zip's manifest, so every
+upload replaces the site copy with the manifest's text -- the old
+upload-form textarea is gone. Edit the pitch in the manifest (a PR, so
+it stays reviewed); the mirror below is generated from the manifest and
+must equal it verbatim.
+
 Weather that lives in your top bar.
 
-The panel icon animates with the sky outside - sun, drifting clouds,
-rain, snow, thunderstorms - beside a live temperature. Open the menu and
-the whole card is the sky: a live animated backdrop of drifting clouds,
-twinkling stars and falling precipitation, painted frame by frame.
+The panel icon animates with the sky outside - sun, drifting clouds, rain, snow, thunderstorms - beside a live temperature. Open the menu and the whole card is the sky: a live animated backdrop of drifting clouds, twinkling stars and falling precipitation, painted frame by frame.
 
 What's inside:
-- Animated menu backdrop with eleven scenes, from clear sun and moon to
-  fog, sleet, hail and lightning
-- Hourly chart: switch between temperature, precipitation and wind
-- The moon carries the real lunar phase at night; sunrise and sunset
-  bathe the card in golden-hour light
-- Eight days of forecast tiles, current conditions at a glance
-- 20 languages with full bidirectional support: the entire card mirrors
-  in Arabic, Hebrew, Persian and Urdu
-- Metric or imperial units, 12- or 24-hour clock, live scene previews in
-  preferences
-- Three backdrop styles: animated sky, solid, or theme background with
-  accent charts
+* Animated menu backdrop with eleven scenes, from clear sun and moon to fog, sleet, hail and lightning
+* Hourly chart: switch between temperature, precipitation or wind
+* The moon carries the real lunar phase at night; sunrise and sunset bathe the card in golden-hour light
+* Eight days of forecast tiles, current conditions at a glance
+* 20 languages with full bidirectional support: the entire card mirrors in Arabic, Hebrew, Persian and Urdu
+* Metric or imperial units, 12- or 24-hour clock, live scene previews in preferences
+* Three backdrop styles: animated sky, solid, or theme background with accent charts
 
-Weather data from Open-Meteo (global), Met.no (ECMWF) and NOAA NWS -
-choose your favourite forecaster, no API keys needed. Location is
-automatic or a city you pick.
+Weather data from Open-Meteo (global), Met.no (ECMWF) and NOAA NWS - choose your favourite forecaster, no API keys needed. Location is automatic or a city you pick.
 
-No accounts, no tracking, no analytics: requests go straight from your
-machine to the weather provider, and nothing is cached on disk.
+No accounts, no tracking, no analytics: requests go straight from your machine to the weather provider, and nothing is cached on disk.
 
 Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v6/weatherglass-demo-card.mp4
 
