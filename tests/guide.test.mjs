@@ -140,6 +140,17 @@ test('schema id comes from metadata, not call sites', () => {
     silence(scan(/getSettings\(\s*['"]/));
 });
 
+// the site copy is rendered from the manifest at upload time, so the
+// kit's human-readable mirror must never drift from it (v6 saw the
+// old upload-form text go stale twice, wording included)
+test('upload kit mirrors the manifest description', () => {
+    const meta = JSON.parse(read(`${ROOT}/metadata.json`));
+    ok(typeof meta.description === 'string' && meta.description.length > 80,
+        'manifest description must be the full pitch');
+    ok(read(`${ROOT}/ego-upload-notes.md`).includes(meta.description),
+        'ego-upload-notes.md must contain the manifest description verbatim');
+});
+
 /* -- enable/disable stay neighbours in the entry point ------------------ */
 
 test('enable() and disable() are adjacent', () => {
