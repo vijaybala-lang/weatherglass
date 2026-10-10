@@ -30,13 +30,6 @@ export const CODE_PRECIP_INTENSITY = {
     95: 5, 96: 6, 99: 6,
 };
 
-/* GJS Pango bindings are snake_case on some releases and camelCase on newer
- * ones -- feature-detect once per call rather than betting on one. */
-function call(obj, camel, snake, ...args) {
-    const fn = obj[camel] ?? obj[snake];
-    return fn.call(obj, ...args);
-}
-
 export const lumOf = rgb => {
     const channelLum = v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
     return 0.2126 * channelLum(rgb[0]) + 0.7152 * channelLum(rgb[1]) + 0.0722 * channelLum(rgb[2]);
@@ -139,17 +132,17 @@ const lineInk = (baseColor, bgColors) => {
  *  drawText, so icon placement can centre on printed text, not data points). */
 function textPx(cr, text, size, bold, weight = 0) {
     const layout = PangoCairo.create_layout(cr);
-    const desc = Pango.FontDescription.new();
+    const desc = new Pango.FontDescription();
     desc.set_family('Cantarell');
     desc.set_size(Math.round(size * Pango.SCALE));
     if (weight)
         desc.set_weight(weight);
     else if (bold)
         desc.set_weight(Pango.Weight.MEDIUM);
-    call(layout, 'setFontDescription', 'set_font_description', desc);
-    call(layout, 'setText', 'set_text', text, -1);
-    const px = call(layout, 'getPixelSize', 'get_pixel_size');
-    return Array.isArray(px) ? [px[0], px[1], layout] : [px.width, px.height, layout];
+    layout.set_font_description(desc);
+    layout.set_text(text, -1);
+    const [width, height] = layout.get_pixel_size();
+    return [width, height, layout];
 }
 
 export function drawText(cr, text, x, y, { size = 10, bold = false, weight = 0,

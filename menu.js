@@ -255,6 +255,8 @@ export class ForecastPanel {
         this._dayLowLabels = [];           // _buildDayTiles in lockstep
         this._dayHiLabels = [];
         this._tileIcons = [];
+        this._ghostIcons = [];
+        this._tabButtons = {};
         this._is24Hour = false;          // chart hours + city clock (setter drives)
         this._textScale = 1;           // 'data-text' emphasis (setter drives)
         this._textBold = false;
@@ -402,7 +404,7 @@ export class ForecastPanel {
             y_align: Clutter.ActorAlign.CENTER,
             child: icon,
         });
-        (this._ghostIcons ??= []).push(icon);   // _applyTextInk samples these
+        this._ghostIcons.push(icon);   // _applyTextInk samples these
         btn.set_accessible_name(name);   // no tooltips in GNOME 50; name for AT
         btn.connect('clicked', () => callback());
         return btn;
@@ -938,9 +940,9 @@ export class ForecastPanel {
             for (const actor of [this._temperatureLabel, this._descriptionLabel, this._cityLabel,
             this._clockLabel])
                 setActorStyle(actor, '');
-            for (const icon of this._ghostIcons ?? [])
+            for (const icon of this._ghostIcons)
                 setActorStyle(icon, '');
-            for (const btn of Object.values(this._tabButtons ?? {}))
+            for (const btn of Object.values(this._tabButtons))
                 setActorStyle(btn, '');
             return;
         }
@@ -960,15 +962,14 @@ export class ForecastPanel {
             }
         };
         const [cardWidth, cardHeight] = this._content.get_size();
-        const idleTabs = Object.entries(this._tabButtons ?? {})
+        const idleTabs = Object.entries(this._tabButtons)
             .filter(([key]) => key !== this._metric);
         /* the grouping lives in ink-policy -- card-demo renders the SAME
          * verdicts into the goldens */
         const verdicts = chromeVerdicts({
             headerLeft: [this._temperatureLabel, this._descriptionLabel].map(actorBox),
             headerRight: [this._cityLabel, this._clockLabel].map(actorBox),
-            tabActive: this._tabButtons
-                ? actorBox(this._tabButtons[this._metric]) : null,
+            tabActive: actorBox(this._tabButtons[this._metric]),
             tabsIdle: idleTabs.map(([, btn]) => actorBox(btn)),
         }, cardWidth, cardHeight,
             (fx, fy) => this._bgAt(fy, { f: fy, x: fx }),
@@ -984,12 +985,12 @@ export class ForecastPanel {
             [this._temperatureLabel, this._descriptionLabel]);
         applyGroup(verdicts.headerRight, [this._cityLabel, this._clockLabel]);
         const ghostJudgeResult = judgeInk(
-            [].concat(...(this._ghostIcons ?? []).map(icon => this._bgsOf(icon))));
+            [].concat(...this._ghostIcons.map(icon => this._bgsOf(icon))));
         const glow = !this._emboss ? ''
             : ghostJudgeResult.ink === INK_DARK
                 ? ' icon-shadow: 0 1px 3px rgba(255,255,255,0.7);'
                 : ' icon-shadow: 0 1px 4px rgba(0,0,10,0.7);';
-        for (const icon of this._ghostIcons ?? [])
+        for (const icon of this._ghostIcons)
             setActorStyle(icon, inkCss(ghostJudgeResult.ink) + glow);
         if (this._tabButtons)
             applyGroup(verdicts.tabActive, [this._tabButtons[this._metric]]);

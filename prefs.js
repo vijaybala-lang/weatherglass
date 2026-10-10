@@ -88,7 +88,7 @@ const ResultRow = GObject.registerClass(class ResultRow extends Adw.ActionRow {
     _init(title, onActivated) {
         super._init({ title, activatable: true });
         const iconImage = new Gtk.Image({ pixel_size: 16 });
-        (iconImage.setFromIconName ?? iconImage.set_from_icon_name).call(iconImage, 'go-next-symbolic');
+        iconImage.set_from_icon_name('go-next-symbolic');
         this.add_suffix(iconImage);
         this.connect('activated', () => onActivated());
     }
