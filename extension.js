@@ -14,7 +14,8 @@ import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/
 
 import { WeatherIcon } from './animation.js';
 import { ForecastPanel } from './menu.js';
-import { WeatherClient, sceneFor, deriveScene, fmtTemp } from './weather.js';
+import { WeatherClient, sceneFor, deriveScene, fmtTemp,
+         ensureDesktopEntry, removeDesktopEntry } from './weather.js';
 import { moonPhase } from './moon.js';
 
 /* Adwaita accent swatches (org.gnome.desktop.interface accent-color) */
@@ -356,6 +357,9 @@ const WeatherIndicator = GObject.registerClass(
             this._settingsChangedId = this._settings.connect('changed', (settings, key) =>
                 this._onSetting(key));
 
+            if (this._settings.get_boolean('auto-location'))
+                ensureDesktopEntry();
+
             this._coordinator.fetch(true);
             this._coordinator.restartTimer();
         }
@@ -433,6 +437,13 @@ const WeatherIndicator = GObject.registerClass(
         _onSetting(key) {
             switch (key) {
                 case 'auto-location':
+                    if (this._settings.get_boolean('auto-location'))
+                        ensureDesktopEntry();
+                    else
+                        removeDesktopEntry();
+                    this._panel.setPlaceName(this._placeName());
+                    this._coordinator.scheduleLocationFetch();
+                    break;
                 case 'location-latitude':
                 case 'location-longitude':
                 case 'location-name':
@@ -529,6 +540,8 @@ const WeatherIndicator = GObject.registerClass(
         }
 
         destroy() {
+            if (this._settings.get_boolean('auto-location'))
+                removeDesktopEntry();
             if (this._previewTimeoutId) {
                 GLib.source_remove(this._previewTimeoutId);
                 this._previewTimeoutId = 0;

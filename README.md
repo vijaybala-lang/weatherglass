@@ -131,10 +131,15 @@ sky rarely shows.
 
 No accounts, no tracking, no analytics. Weather requests go straight from
 your machine to the chosen provider's public API (api.open-meteo.com,
-api.met.no, or api.weather.gov). With *Detect location automatically* via
-IP, the request includes your public IP (that's how Open-Meteo geolocates);
-pick a city in prefs if you'd rather not. The optional GeoClue path uses
-GNOME's own location service, which you control from system settings.
+api.met.no, or api.weather.gov). With *Detect location automatically*,
+IP detection sends your public IP to the geolocation endpoint (that is
+how the lookup works); pick a city in prefs if you'd rather not. The
+preferred GeoClue path uses GNOME's own location service, which you
+control from system settings: while automatic detection is on, the
+extension registers a hidden (NoDisplay) "Weatherglass" app entry in
+your session so the standard "Allow location access" prompt can name
+this extension honestly, and removes it again when you turn automatic
+detection off or disable the extension.
 No forecasts are cached on disk; settings and preferences stay local.
 
 ## Contact

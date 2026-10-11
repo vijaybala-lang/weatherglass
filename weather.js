@@ -1,6 +1,7 @@
 /* weather.js -- Open-Meteo client (no API key) + WMO code mapping. */
 
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import Soup from 'gi://Soup';
 
 const N_ = s => s;
@@ -829,6 +830,53 @@ export function cityFromTimezone(tz) {
 /** Retry window after `failures` consecutive GeoClue failures (locked). */
 export function geoRetryDelaySec(failures) {
     return Math.min(GEOCLUE_RETRY_SEC * 4 ** failures, GEOCLUE_RETRY_MAX_SEC);
+}
+
+/* The GNOME consent agent only prompts for apps it can resolve to a
+ * desktop file (gnome-shell js/ui/status/location.js looks the id up in
+ * its app system, and silently denies unknown ones). Installing this
+ * NoDisplay entry while auto-location is on is what turns our GeoClue
+ * requests into the standard "Allow location access" dialog. */
+
+export function desktopEntryName() {
+    return `${GEOCLUE_DESKTOP_ID}.desktop`;
+}
+
+export function desktopEntryText() {
+    return ['[Desktop Entry]', 'Type=Application', 'Name=Weatherglass',
+            'Comment=Weather for the GNOME panel', 'Icon=weather-overcast',
+            'NoDisplay=true', 'Terminal=false',
+            'X-Geoclue-Reason=Show the weather for where you are', ''].join('\n');
+}
+
+/** Create missing parent dirs (glib removed File.make_parents). */
+function makeDirectoryPath(dir) {
+    const missing = [];
+    for (let d = dir; d && !d.query_exists(null); d = d.get_parent())
+        missing.push(d);
+    for (const d of missing.reverse())
+        d.make_directory(null);
+}
+
+/** Idempotent: writes only when absent or stale. */
+export function ensureDesktopEntry() {
+    const file = Gio.File.new_for_path(GLib.build_filenamev(
+        [GLib.get_user_data_dir(), 'applications', desktopEntryName()]));
+    const text = desktopEntryText();
+    if (file.query_exists(null)) {
+        const [, bytes] = file.load_contents(null);
+        if (new TextDecoder().decode(bytes) === text)
+            return;
+    }
+    makeDirectoryPath(file.get_parent());
+    file.replace_contents(text, null, false, Gio.FileCreateFlags.NONE, null);
+}
+
+export function removeDesktopEntry() {
+    const file = Gio.File.new_for_path(GLib.build_filenamev(
+        [GLib.get_user_data_dir(), 'applications', desktopEntryName()]));
+    if (file.query_exists(null))
+        file.delete(null);
 }
 
 /* -- client ---------------------------------------------------------------- */
