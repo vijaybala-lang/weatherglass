@@ -262,6 +262,7 @@ class WeatherCoordinator {
             GLib.source_remove(this._locationTimerId);
             this._locationTimerId = 0;
         }
+        this._client.destroy();
         this._onLoading = null;
         this._onData = null;
         this._onError = null;

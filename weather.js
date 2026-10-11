@@ -771,7 +771,7 @@ const DETECT_TTL_SEC = 1800;
  * a denied client, or silence past the timeout; callers treat every
  * rejection as "use the IP lookup".
  */
-async function detectViaGeoClue() {
+async function detectViaGeoClue(client) {
     const {default: Geoclue} = await import('gi://Geoclue');
     const simple = new Geoclue.Simple({
         desktopId: GEOCLUE_DESKTOP_ID,
@@ -780,13 +780,16 @@ async function detectViaGeoClue() {
     return new Promise((resolve, reject) => {
         let timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT,
             GEOCLUE_TIMEOUT_SEC, () => {
+                client._detectTimers.delete(timerId);
                 timerId = 0;
                 reject(new Error(`no fix within ${GEOCLUE_TIMEOUT_SEC}s`));
                 return GLib.SOURCE_REMOVE;
             });
+        client._detectTimers.add(timerId);
         const settle = fn => {
             if (timerId) {
                 GLib.source_remove(timerId);
+                client._detectTimers.delete(timerId);
                 timerId = 0;
             }
             fn();
@@ -878,25 +881,39 @@ function makeDirectoryPath(dir) {
         d.make_directory(null);
 }
 
+/** Where the consent entry lives. */
+function desktopEntryFile() {
+    return Gio.File.new_for_path(GLib.build_filenamev(
+        [GLib.get_user_data_dir(), 'applications', desktopEntryName()]));
+}
+
 /** Idempotent: writes only when absent or stale. */
 export function ensureDesktopEntry() {
-    const file = Gio.File.new_for_path(GLib.build_filenamev(
-        [GLib.get_user_data_dir(), 'applications', desktopEntryName()]));
+    const file = desktopEntryFile();
     const text = desktopEntryText();
-    if (file.query_exists(null)) {
-        const [, bytes] = file.load_contents(null);
-        if (new TextDecoder().decode(bytes) === text)
-            return;
+    try {
+        if (file.query_exists(null)) {
+            const [, bytes] = file.load_contents(null);
+            if (new TextDecoder().decode(bytes) === text)
+                return;
+        }
+        makeDirectoryPath(file.get_parent());
+        file.replace_contents(text, null, false, Gio.FileCreateFlags.NONE, null);
+    } catch (err) {
+        // concrete failure mode: unwritable home; the consent prompt then
+        // never appears and detection falls back to the IP chain anyway
+        logError(err, 'Weatherglass: consent entry not installed');
     }
-    makeDirectoryPath(file.get_parent());
-    file.replace_contents(text, null, false, Gio.FileCreateFlags.NONE, null);
 }
 
 export function removeDesktopEntry() {
-    const file = Gio.File.new_for_path(GLib.build_filenamev(
-        [GLib.get_user_data_dir(), 'applications', desktopEntryName()]));
-    if (file.query_exists(null))
-        file.delete(null);
+    const file = desktopEntryFile();
+    try {
+        if (file.query_exists(null))
+            file.delete(null);
+    } catch (err) {
+        logError(err, 'Weatherglass: consent entry not removable');
+    }
 }
 
 /* -- client ---------------------------------------------------------------- */
@@ -908,6 +925,14 @@ export class WeatherClient {
         this._fix = null;       // cached {latitude, longitude, name, at}
         this._geoRetryAt = 0;   // monotonic seconds; 0 = GeoClue eligible now
         this._geoFailures = 0;
+        this._detectTimers = new Set(); // live GeoClue probe caps
+    }
+
+    /** Drop in-flight detection sources (coordinator owns this call). */
+    destroy() {
+        for (const id of this._detectTimers)
+            GLib.source_remove(id);
+        this._detectTimers.clear();
     }
 
     get provider() {
@@ -927,7 +952,7 @@ export class WeatherClient {
         let fix = null;
         if (nowSec >= this._geoRetryAt) {
             try {
-                fix = await detectViaGeoClue();
+                fix = await detectViaGeoClue(this);
                 this._geoFailures = 0;
                 this._geoRetryAt = 0;
             } catch (err) {
@@ -939,7 +964,7 @@ export class WeatherClient {
         if (!fix) {
             try {
                 fix = fixFromIp(await get(IPINFO_API));
-            } catch (err) {
+            } catch {
                 fix = fixFromIp(await get(IPAPI_API));
             }
         }
@@ -952,8 +977,9 @@ export class WeatherClient {
     /**
      * Full forecast for the card + animation engine, via the active
      * provider adapter. auto=true -> coordinates come from the
-     * auto-location chain (GeoClue first). Values always come back in canonical metric units
-     * (degC, km/h, mm/h); callers convert for display.
+     * auto-location chain (GeoClue first). Values always come back in
+     * canonical metric units (degC, km/h, mm/h); callers convert for
+     * display.
      */
     async fetch({latitude, longitude, auto, days = 8}) {
         let lat = latitude;
