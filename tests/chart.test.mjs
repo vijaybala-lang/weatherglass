@@ -5,7 +5,7 @@
  * columns on a 400 px card.
  */
 import Cairo from 'gi://cairo';
-import { paintChart, ease, lerp } from '../chart.js';
+import { paintChart, ease, lerp, morphPair } from '../chart.js';
 import { file, test, ok, near, eq, report } from './harness.mjs';
 
 file('chart');
@@ -102,6 +102,29 @@ test('ease and lerp pin the animation ends', () => {
     const mid = lerp([0.2, 0.4], [0.6, 0.8], 0.5);
     near(mid[0], 0.4, 1e-9); near(mid[1], 0.6, 1e-9);
     eq(lerp(null, [0.7, 0.1], 0.3).join(), [0.7, 0.1].join(), 'cold start snaps to target');
+});
+
+test('Today\'s rolling window morphs into a calendar day (length-mismatched pair)', () => {
+    // the reported incident: today is the 2 h-backfilled rolling window
+    // (26 points), every other day the exact calendar slice (24) -- the
+    // old equal-length guard in menu._morphTo snapped instead of morphing
+    const today = Array.from({ length: 26 }, (_, i) => 60 + Math.sin(i / 3) * 5);
+    const day = Array.from({ length: 24 }, (_, i) => 55 + i * 0.5);
+    const pair = morphPair(today, day);
+    ok(pair, 'length-mismatched pair must still morph');
+    const [fromAligned, to] = pair;
+    eq(fromAligned.length, 24, 'from resampled onto the target grid');
+    eq(to.join(), day.join(), 'target passes through untouched');
+    near(fromAligned[0], today[0], 1e-9, 'window start pinned');
+    near(fromAligned[23], today[25], 1e-9, 'window end pinned');
+    const lo = Math.min(today[11], today[12]), hi = Math.max(today[11], today[12]);
+    ok(fromAligned[11] >= lo - 1e-9 && fromAligned[11] <= hi + 1e-9,
+        'interior samples interpolate between neighbours');
+    eq(lerp(fromAligned, to, 1).join(), day.join(), 'morph lands exactly on target');
+    eq(morphPair(day, day)[0], day, 'equal-length pair passes through');
+    eq(morphPair([], day), null, 'empty source snaps');
+    eq(morphPair([5], day), null, 'single-point source snaps');
+    eq(morphPair(today, []), null, 'empty target snaps');
 });
 
 report('chart');

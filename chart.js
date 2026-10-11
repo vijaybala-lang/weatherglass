@@ -786,3 +786,27 @@ export function lerp(from, to, progress) {
         return to.slice();
     return to.map((v, i) => from[i] + (v - from[i]) * progress);
 }
+
+/** Align a day-switch morph pair. Equal-length series pass through; a
+ * length-mismatched pair resamples `from` proportionally onto the
+ * target's grid so Today's rolling 24 h window (2 h backfill, 26
+ * points) can MORPH into a calendar slice (24 points) instead of
+ * snapping -- the mismatch was every other day morphing and Today
+ * not. Endpoints pin; interior samples interpolate between their
+ * neighbours. Too few points to interpolate (or an empty end) yields
+ * null: the caller snaps. */
+export function morphPair(from, target) {
+    if (!from || !from.length || !target || !target.length)
+        return null;
+    if (from.length === target.length)
+        return [from, target];
+    if (from.length < 2 || target.length < 2)
+        return null;
+    const aligned = target.map((_, i) => {
+        const pos = i * (from.length - 1) / (target.length - 1);
+        const k = Math.floor(pos);
+        const frac = pos - k;
+        return frac === 0 ? from[k] : from[k] + (from[k + 1] - from[k]) * frac;
+    });
+    return [aligned, target];
+}

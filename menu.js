@@ -13,7 +13,7 @@ import { WeatherIcon } from './animation.js';
 import { paintSky, createSky, sampleSky, bodyOf } from './sky.js';
 import { chromeVerdicts, boxSampleFractions } from './ink-policy.js';
 import {
-    paintChart, ease, lerp, contrastSafe, lumOf, pickInk,
+    paintChart, ease, lerp, morphPair, contrastSafe, lumOf, pickInk,
     judgeInk, INK_DARK, tileGlyphPale, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
 } from './chart.js';
 import { sceneFor, fmtTemp, dayName, daySlice, nowFracIn, sunGeometry } from './weather.js';
@@ -769,15 +769,21 @@ export class ForecastPanel {
             GLib.source_remove(this._morphId);
             this._morphId = 0;
         }
-        const from = this._shown;
-        if (!this._animate || from.length !== targetValues.length) {
+        // today's chart is the rolling 24 h window (2 h backfill, so up to
+        // 26 points); every other day is the exact calendar slice (24).
+        // morphPair resamples the old series onto the new grid so Today
+        // morphs like its neighbours instead of snapping (the old
+        // equal-length guard was the whole difference the users saw).
+        const pair = this._animate ? morphPair(this._shown, targetValues) : null;
+        if (!pair) {
             this._shown = targetValues.slice();
             return;
         }
+        const [from, to] = pair;
         const startTime = GLib.get_monotonic_time();
         this._morphId = GLib.timeout_add(GLib.PRIORITY_LOW, CHART_MORPH_TICK_MS, () => {
             const progress = Math.min(1, (GLib.get_monotonic_time() - startTime) / (CHART_MORPH_DURATION_MS * 1000));
-            this._shown = lerp(from, targetValues, ease(progress));
+            this._shown = lerp(from, to, ease(progress));
             this._chart.queue_repaint();
             if (progress >= 1) {
                 this._morphId = 0;
