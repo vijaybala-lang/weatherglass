@@ -2,7 +2,7 @@
  * GeoClue zone labels, IP payload shapes, and the dead-GeoClue backoff.
  */
 import { file, test, eq, ok } from './harness.mjs';
-import { fixFromIp, geoRetryDelaySec,
+import { fixFromIp, geoRetryDelaySec, cityFromReverseGeocode,
          desktopEntryText, desktopEntryName } from '../weather.js';
 
 file('location');
@@ -16,6 +16,12 @@ test('ipinfo and ipapi payloads normalize to one fix shape', () => {
     eq(ipapi.latitude, ipinfo.latitude);
     eq(ipapi.longitude, ipinfo.longitude);
     eq(ipapi.name, ipinfo.name);
+});
+
+test('a reverse-geocode label prefers the city and never invents one', () => {
+    eq(cityFromReverseGeocode({city: 'San Francisco', locality: 'Hayward'}), 'San Francisco');
+    eq(cityFromReverseGeocode({city: '', locality: 'Hayward'}), 'Hayward');
+    eq(cityFromReverseGeocode({}), '');
 });
 
 test('an ip payload without coordinates throws instead of fixing at 0,0', () => {

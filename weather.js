@@ -11,6 +11,9 @@ const OPEN_METEO_GEOCODING_API = 'https://geocoding-api.open-meteo.com/v1/search
 const IPINFO_API = 'https://ipinfo.io/json';
 // second opinion when ipinfo is down or blocked (free tier is HTTPS)
 const IPAPI_API = 'https://ipapi.co/json/';
+// keyless client-side reverse geocoder: names a GeoClue fix (which knows
+// coordinates but no city) for the menu label
+const REVERSE_GEOCODE_API = 'https://api.bigdatacloud.net/data/reverse-geocode-client';
 // MET Norway (Norwegian Meteorological Institute), keyless, global;
 // strict about identifying User-Agents (403 otherwise)
 const MET_NORWAY_API = 'https://api.met.no/weatherapi/locationforecast/2.0/complete';
@@ -763,10 +766,10 @@ const GEOCLUE_RETRY_MAX_SEC = 86400;  // ... backing off to once a day
 const DETECT_TTL_SEC = 1800;
 
 /**
- * One GeoClue fix. Resolves {latitude, longitude, name} (name always '';
- * the menu keeps its honest 'My location'). Rejects on a missing
- * typelib, a denied client, or silence past the timeout; callers treat
- * every rejection as "use the IP lookup".
+ * One GeoClue fix, name still empty (the menu's fallback 'My location'
+ * stays honest until labelFix() names it). Rejects on a missing typelib,
+ * a denied client, or silence past the timeout; callers treat every
+ * rejection as "use the IP lookup".
  */
 async function detectViaGeoClue() {
     const {default: Geoclue} = await import('gi://Geoclue');
@@ -825,6 +828,28 @@ export function fixFromIp(raw) {
 /** Retry window after `failures` consecutive GeoClue failures (locked). */
 export function geoRetryDelaySec(failures) {
     return Math.min(GEOCLUE_RETRY_SEC * 4 ** failures, GEOCLUE_RETRY_MAX_SEC);
+}
+
+/** BigDataCloud payload: city first, locality only as its fallback. */
+export function cityFromReverseGeocode(raw) {
+    return raw.city || raw.locality || '';
+}
+
+/** Name a coordinate-only fix; the fix stays 'My location' if the
+ *  geocoder is down or has no label for the point. */
+async function labelFix(fix) {
+    if (fix.name)
+        return fix;
+    try {
+        const raw = await get(`${REVERSE_GEOCODE_API}?${buildQueryString({
+            latitude: fix.latitude.toFixed(4),
+            longitude: fix.longitude.toFixed(4),
+            localityLanguage: 'en',
+        })}`);
+        return {...fix, name: cityFromReverseGeocode(raw)};
+    } catch (err) {
+        return fix; // labeling is cosmetic: never fail a detection over it
+    }
 }
 
 /* The GNOME consent agent only prompts for apps it can resolve to a
@@ -891,7 +916,8 @@ export class WeatherClient {
 
     /**
      * Auto-location (see the auto-location section above): GeoClue while
-     * it is usable, public-IP lookup otherwise. The result is cached for
+     * it is usable, public-IP lookup otherwise, coordinate-only fixes
+     * named via reverse geocode. The result is cached for
      * DETECT_TTL_SEC; throws only when every source fails.
      */
     async detectLocation() {
@@ -917,6 +943,7 @@ export class WeatherClient {
                 fix = fixFromIp(await get(IPAPI_API));
             }
         }
+        fix = await labelFix(fix);
         this._fix = {latitude: fix.latitude, longitude: fix.longitude,
                      name: fix.name, at: nowSec};
         return this._fix;
