@@ -763,8 +763,8 @@ const GEOCLUE_RETRY_MAX_SEC = 86400;  // ... backing off to once a day
 const DETECT_TTL_SEC = 1800;
 
 /**
- * One GeoClue fix. Resolves {latitude, longitude, name} — the label comes
- * from the fix's IANA zone (GeoClue reports no city). Rejects on a missing
+ * One GeoClue fix. Resolves {latitude, longitude, name} (name always '';
+ * the menu keeps its honest 'My location'). Rejects on a missing
  * typelib, a denied client, or silence past the timeout; callers treat
  * every rejection as "use the IP lookup".
  */
@@ -800,7 +800,9 @@ async function detectViaGeoClue() {
             const take = loc => settle(() => resolve({
                 latitude: loc.latitude,
                 longitude: loc.longitude,
-                name: cityFromTimezone(loc.timezone),
+                // GeoClue reports no city; inventing one from the zone
+                // (LA for a Daly City fix) would lie in the menu label.
+                name: '',
             }));
             if (location)
                 take(location);
@@ -818,13 +820,6 @@ export function fixFromIp(raw) {
     if (!Number.isFinite(lat) || !Number.isFinite(lon))
         throw new Error('IP geolocation failed');
     return {latitude: lat, longitude: lon, name: raw.city || raw.country || ''};
-}
-
-/** 'America/Los_Angeles' -> 'Los Angeles'; bare zones ('UTC') give ''. */
-export function cityFromTimezone(tz) {
-    if (!tz || !tz.includes('/'))
-        return '';
-    return tz.split('/').pop().replace(/_/g, ' ');
 }
 
 /** Retry window after `failures` consecutive GeoClue failures (locked). */

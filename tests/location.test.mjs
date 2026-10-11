@@ -2,21 +2,10 @@
  * GeoClue zone labels, IP payload shapes, and the dead-GeoClue backoff.
  */
 import { file, test, eq, ok } from './harness.mjs';
-import { cityFromTimezone, fixFromIp, geoRetryDelaySec,
+import { fixFromIp, geoRetryDelaySec,
          desktopEntryText, desktopEntryName } from '../weather.js';
 
 file('location');
-
-test('a GeoClue label reads the city off its IANA zone', () => {
-    eq(cityFromTimezone('Europe/Berlin'), 'Berlin');
-    eq(cityFromTimezone('America/Los_Angeles'), 'Los Angeles');
-});
-
-test('bare zones and a missing timezone stay label-less', () => {
-    eq(cityFromTimezone('UTC'), '');
-    eq(cityFromTimezone(''), '');
-    eq(cityFromTimezone(null), '');
-});
 
 test('ipinfo and ipapi payloads normalize to one fix shape', () => {
     const ipinfo = fixFromIp({loc: '52.5300,13.3800', city: 'Berlin', country: 'DE'});
