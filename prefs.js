@@ -254,7 +254,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
     _buildAutoLocationGroup(settings) {
         const autoGroup = new Adw.PreferencesGroup({
             title: _('Automatic'),
-            description: _('Coordinates are detected from your public IP address'),
+            description: _('Uses system location when available, otherwise your public IP address'),
         });
         const autoRow = new Adw.SwitchRow({
             title: _('Detect location automatically'),

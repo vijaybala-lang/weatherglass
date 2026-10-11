@@ -8,6 +8,8 @@ const N_ = s => s;
 const OPEN_METEO_FORECAST_API = 'https://api.open-meteo.com/v1/forecast';
 const OPEN_METEO_GEOCODING_API = 'https://geocoding-api.open-meteo.com/v1/search';
 const IPINFO_API = 'https://ipinfo.io/json';
+// second opinion when ipinfo is down or blocked (free tier is HTTPS)
+const IPAPI_API = 'https://ipapi.co/json/';
 // MET Norway (Norwegian Meteorological Institute), keyless, global;
 // strict about identifying User-Agents (403 otherwise)
 const MET_NORWAY_API = 'https://api.met.no/weatherapi/locationforecast/2.0/complete';
@@ -739,35 +741,148 @@ function providerFor(id) {
     return REGISTRY.get(id) ?? REGISTRY.get('open-meteo');
 }
 
+/* -- auto-location ---------------------------------------------------------
+ *
+ * Detection prefers GeoClue, the system's own location service: Wi-Fi /
+ * cellular / GPS backends, street level where the user granted access.
+ * GeoClue stays best-effort by contract: gnome-shell's consent agent only
+ * prompts desktop apps, so an extension's request can be left unanswered
+ * outright (measured on the dev machine: init hangs to the D-Bus timeout).
+ * Every attempt is therefore capped at GEOCLUE_TIMEOUT_SEC, failures back
+ * off per geoRetryDelaySec(), and the public-IP lookup (city centroid,
+ * VPN-sensitive) serves as the fallback. A good fix is cached for
+ * DETECT_TTL_SEC so periodic refreshes never re-roll the dice, and while
+ * GeoClue keeps working no IP endpoint is contacted at all.
+ */
+
+const GEOCLUE_DESKTOP_ID = 'dev.vijaybala.weatherglass';
+const GEOCLUE_TIMEOUT_SEC = 5;
+const GEOCLUE_RETRY_SEC = 1800;       // first retry after 30 min, ...
+const GEOCLUE_RETRY_MAX_SEC = 86400;  // ... backing off to once a day
+const DETECT_TTL_SEC = 1800;
+
+/**
+ * One GeoClue fix. Resolves {latitude, longitude, name} — the label comes
+ * from the fix's IANA zone (GeoClue reports no city). Rejects on a missing
+ * typelib, a denied client, or silence past the timeout; callers treat
+ * every rejection as "use the IP lookup".
+ */
+async function detectViaGeoClue() {
+    const {default: Geoclue} = await import('gi://Geoclue');
+    const simple = new Geoclue.Simple({
+        desktopId: GEOCLUE_DESKTOP_ID,
+        accuracyLevel: Geoclue.AccuracyLevel.EXACT,
+    });
+    return new Promise((resolve, reject) => {
+        let timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT,
+            GEOCLUE_TIMEOUT_SEC, () => {
+                timerId = 0;
+                reject(new Error(`no fix within ${GEOCLUE_TIMEOUT_SEC}s`));
+                return GLib.SOURCE_REMOVE;
+            });
+        const settle = fn => {
+            if (timerId) {
+                GLib.source_remove(timerId);
+                timerId = 0;
+            }
+            fn();
+        };
+        simple.init_async(GLib.PRIORITY_DEFAULT, null, (client, res) => {
+            let location = null;
+            try {
+                client.init_finish(res);
+                location = client.get_location();
+            } catch (err) {
+                settle(() => reject(new Error(`access denied (${err.message})`)));
+                return;
+            }
+            const take = loc => settle(() => resolve({
+                latitude: loc.latitude,
+                longitude: loc.longitude,
+                name: cityFromTimezone(loc.timezone),
+            }));
+            if (location)
+                take(location);
+            else
+                client.connect('location-updated', (c, loc) => take(loc));
+        });
+    });
+}
+
+/** ipinfo.io ('loc: "lat,lon"') and ipapi.co (split fields) -> one shape. */
+export function fixFromIp(raw) {
+    const [lat, lon] = raw.loc
+        ? String(raw.loc).split(',').map(Number)
+        : [Number(raw.latitude), Number(raw.longitude)];
+    if (!Number.isFinite(lat) || !Number.isFinite(lon))
+        throw new Error('IP geolocation failed');
+    return {latitude: lat, longitude: lon, name: raw.city || raw.country || ''};
+}
+
+/** 'America/Los_Angeles' -> 'Los Angeles'; bare zones ('UTC') give ''. */
+export function cityFromTimezone(tz) {
+    if (!tz || !tz.includes('/'))
+        return '';
+    return tz.split('/').pop().replace(/_/g, ' ');
+}
+
+/** Retry window after `failures` consecutive GeoClue failures (locked). */
+export function geoRetryDelaySec(failures) {
+    return Math.min(GEOCLUE_RETRY_SEC * 4 ** failures, GEOCLUE_RETRY_MAX_SEC);
+}
+
 /* -- client ---------------------------------------------------------------- */
 
 export class WeatherClient {
     constructor(providerId = 'open-meteo', model = null) {
         this.providerId = providerId;
         this.model = model;
+        this._fix = null;       // cached {latitude, longitude, name, at}
+        this._geoRetryAt = 0;   // monotonic seconds; 0 = GeoClue eligible now
+        this._geoFailures = 0;
     }
 
     get provider() {
         return providerFor(this.providerId);
     }
 
-    /** IP-based approximate location (keyless, ~city accuracy). */
+    /**
+     * Auto-location (see the auto-location section above): GeoClue while
+     * it is usable, public-IP lookup otherwise. The result is cached for
+     * DETECT_TTL_SEC; throws only when every source fails.
+     */
     async detectLocation() {
-        const raw = await get(IPINFO_API);
-        const [lat, lon] = (raw.loc ?? '').split(',').map(Number);
-        if (!Number.isFinite(lat) || !Number.isFinite(lon))
-            throw new Error('IP geolocation failed');
-        return {
-            latitude: lat,
-            longitude: lon,
-            name: raw.city || raw.country || '',   // city only: menu space
-        };
+        const nowSec = GLib.get_monotonic_time() / 1000000;
+        if (this._fix && nowSec - this._fix.at < DETECT_TTL_SEC)
+            return this._fix;
+        let fix = null;
+        if (nowSec >= this._geoRetryAt) {
+            try {
+                fix = await detectViaGeoClue();
+                this._geoFailures = 0;
+                this._geoRetryAt = 0;
+            } catch (err) {
+                this._geoRetryAt = nowSec + geoRetryDelaySec(this._geoFailures);
+                this._geoFailures++;
+                log(`Weatherglass: GeoClue unusable (${err.message}); using IP lookup`);
+            }
+        }
+        if (!fix) {
+            try {
+                fix = fixFromIp(await get(IPINFO_API));
+            } catch (err) {
+                fix = fixFromIp(await get(IPAPI_API));
+            }
+        }
+        this._fix = {latitude: fix.latitude, longitude: fix.longitude,
+                     name: fix.name, at: nowSec};
+        return this._fix;
     }
 
     /**
      * Full forecast for the card + animation engine, via the active
-     * provider adapter. auto=true -> coordinates come from IP-based
-     * detection first. Values always come back in canonical metric units
+     * provider adapter. auto=true -> coordinates come from the
+     * auto-location chain (GeoClue first). Values always come back in canonical metric units
      * (degC, km/h, mm/h); callers convert for display.
      */
     async fetch({latitude, longitude, auto, days = 8}) {
