@@ -92,6 +92,15 @@ Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v7/weathe
   only prompts for apps resolvable to a desktop file -- can name this
   extension honestly. Removed on toggle-off and on extension disable.
   No other writes outside the extension directory.
+- Known limitation (consent agent): on our test platform (Fedora 44,
+  GNOME 50.5, geoclue 2.8.2) the shell's GeoClue consent agent does not
+  answer extension-originated requests at all -- not a deny, silence to
+  the D-Bus timeout -- even with the desktop entry installed; upstream
+  code says resolvable apps get the prompt, so this is a platform bug
+  we are reporting, not a workaround. Where the agent does answer, the
+  desktop entry yields the standard named prompt; where it does not,
+  the attempt is capped at 5 s, falls back to the IP lookup (the
+  pre-v7 behavior), and backs off -- never a hang, never a wrong label.
 
 ## After approval
 

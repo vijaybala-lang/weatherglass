@@ -139,7 +139,10 @@ control from system settings: while automatic detection is on, the
 extension registers a hidden (NoDisplay) "Weatherglass" app entry in
 your session so the standard "Allow location access" prompt can name
 this extension honestly, and removes it again when you turn automatic
-detection off or disable the extension. To label a GeoClue fix with a
+detection off or disable the extension. On distributions where the
+system location prompt never appears, the GeoClue attempt is time-boxed
+to a few seconds and detection falls back to the IP lookup on its own.
+To label a GeoClue fix with a
 city name, the fix's coordinates (not your IP) go to BigDataCloud's
 free reverse-geocode endpoint; if it declines, the menu simply says
 "My location".
