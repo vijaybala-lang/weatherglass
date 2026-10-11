@@ -1,7 +1,7 @@
-# EGO upload kit -- v6
+# EGO upload kit -- v7
 
 Upload at: https://extensions.gnome.org/upload/
-Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 6; rebuilt from
+Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 7; rebuilt from
 master after every landed change -- record `sha256sum` at upload time and
 verify the identical bytes live; zipcheck PASS is part of the rebuild).
 
@@ -21,7 +21,7 @@ verify the identical bytes live; zipcheck PASS is part of the rebuild).
    solid / accent menu styles, hover + selected tiles (glow-family
    glyphs), prefs dialog. Spot-check with pixel forensics.
 4. Reshoot the upload set + demo GIF from this verified build (see
-   file names below); rehost both on the v6 GitHub release.
+   file names below); rehost both on the v7 GitHub release.
 
 ## Screenshots (upload in this order; all ~566x780, prefs is window-sized)
 
@@ -35,7 +35,7 @@ verify the identical bytes live; zipcheck PASS is part of the rebuild).
 
 ## Video
 
-Rehost on the GitHub release (tag v6): ~/Videos/Screencasts/ego/
+Rehost on the GitHub release (tag v7): ~/Videos/Screencasts/ego/
 Direct link for the EGO description:
 https://github.com/vijaybala-lang/weatherglass/releases/download/v6/weatherglass-demo-card.mp4
 
@@ -61,11 +61,11 @@ What's inside:
 * Metric or imperial units, 12- or 24-hour clock, live scene previews in preferences
 * Three backdrop styles: animated sky, solid, or theme background with accent charts
 
-Weather data from Open-Meteo (global), Met.no (ECMWF) and NOAA NWS - choose your favourite forecaster, no API keys needed. Location is automatic or a city you pick.
+Weather data from Open-Meteo (global), Met.no (ECMWF) and NOAA NWS - choose your favourite forecaster, no API keys needed. Location: detected automatically through GNOME's own location service (IP lookup where none is available), or a city you pick.
 
-No accounts, no tracking, no analytics: requests go straight from your machine to the weather provider, and nothing is cached on disk.
+No accounts, no tracking, no analytics: weather requests go straight from your machine to the provider you choose. Automatic detection prefers the system location service, with the standard GNOME prompt naming this extension; its IP-lookup and city-label fallbacks each contact one free keyless endpoint and are used only when needed. Nothing is cached on disk.
 
-Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v6/weatherglass-demo-card.mp4
+Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v7/weatherglass-demo-card.mp4
 
 ## Standing answers for the reviewer
 
@@ -81,10 +81,21 @@ Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v6/weathe
 - Timer warning (EGO-L-004): false positive; the timeout is destroyed
   via the actor's destroy signal handler.
 - Schemas ship as XML only; gnome-extensions install compiles them.
+- Automatic location (new in v7): GeoClue first (system service, standard
+  GNOME consent prompt), public-IP lookup fallback with a second endpoint
+  on failure, reverse-geocode used only to label coordinate-only fixes.
+  One HTTP GET per detection (cached 30 min), all to documented keyless
+  endpoints; disclosed in the manifest pitch and README Privacy.
+- Desktop-entry registration: while automatic detection is ON, one
+  NoDisplay, Exec-less entry ("Weatherglass", with X-Geoclue-Reason) is
+  written to XDG data applications so the GNOME consent agent -- which
+  only prompts for apps resolvable to a desktop file -- can name this
+  extension honestly. Removed on toggle-off and on extension disable.
+  No other writes outside the extension directory.
 
 ## After approval
 
 - The metadata "url" points at the GitHub repo per the EGO review
   guidelines (must be a GitHub/GitLab project URL) -- keep it there even
   after approval; link the EGO page from the repo README instead.
-- Keep integer version bumps for every future upload (next: 7).
+- Keep integer version bumps for every future upload (next: 8).
