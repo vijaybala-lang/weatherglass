@@ -51,6 +51,9 @@ goldens (cards) cannot photograph:
 ## Video
 
 Rehost on the GitHub release (tag v8): ~/Videos/Screencasts/ego/
+(v8 publishes with the video pending -- film mode, issue #60, generates
+it; the URL is stable, so a later attach lights the EGO demo link with
+no zip re-upload. Attach well before approval is plausible.)
 Direct link for the EGO description:
 https://github.com/vijaybala-lang/weatherglass/releases/download/v8/weatherglass-demo-card.mp4
 
