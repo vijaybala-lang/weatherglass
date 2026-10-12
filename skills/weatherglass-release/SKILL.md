@@ -121,10 +121,12 @@ The install is mechanical -- the agent runs it, not the operator:
 gnome-extensions install --force dist/weatherglass@vijaybala.dev.zip
 ```
 
-Then stop touching the running session: the zip ships a compiled
-schema (v8+) so a runtime enable works, but GJS caches modules per
-process -- toggling here races destroy and wedges the state until
-login. The operator's share is exactly one logout/login (announce it:
+Then stop touching the running session: the zip ships schema XML only
+(EGO-P-006; GNOME 45+ compiles at login or inside the Extensions app,
+and a CLI install from a checkout compiles via ./install.sh), so the
+new code loads at the next login -- and do not try to rush it with a
+runtime toggle: GJS caches modules per process, and toggling races
+destroy and wedges the state until login. The operator's share is exactly one logout/login (announce it:
 it closes any earlier wedged state too) and the surface walk: panel +
 menu in dark and light themes, animated/solid/accent styles, hover +
 selected tiles, prefs, and this release's must-sees named in the
