@@ -94,7 +94,13 @@ byte-diffs against it. A mismatch at release time means the candidate
 drew something different than what was canonized -- that is either a
 visual regression (fix it, ship nothing) or a deliberate change whose
 bless ceremony was never done. Blessing (`bash tools/shell-golden.sh
-card bless <slug>`) is a deliberate act: it re-canonicalizes the
+card bless <slug>`) is a deliberate act requiring **operator approval**
+before the bless commit lands: goldens are the public
+imagery -- the EGO screenshots ARE the goldens and the README gallery
+promises them -- so re-canonicalizing pixels is publishing. The agent
+shows the changed PNGs (paths, or previews) with what changed and why,
+and waits for the human's yes, exactly like the live-session walk.
+Blessing re-canonicalizes the
 pixels, and its commit must carry the why, exactly like the
 `RE-CANONISED` commits in history. If a bless belongs in the release
 window, it lands as its own justified step-0 change before the final
@@ -242,8 +248,22 @@ until both land.
 
 ### 8. Upload
 
-Submit `dist/weatherglass@vijaybala.dev.zip` (the verified bytes) at
-https://extensions.gnome.org/upload/ . Standing answers for reviewer
+The upload artifact is ONE named file: **the release worktree's**
+`dist/weatherglass@vijaybala.dev.zip` -- never a bare relative
+`dist/`, which exists in every tree (a pre-commit rebuild in the main
+checkout nearly became "the newest zip" at the v8 resubmit), and never
+a download from the release page. Prove the bytes before the browser
+opens:
+
+```sh
+sha256sum <release-worktree>/dist/weatherglass@vijaybala.dev.zip  # must equal the step-2 sha recorded in the release body
+```
+
+Any copy whose sha differs: submit nothing until it matches. Then
+submit the verified zip at https://extensions.gnome.org/upload/ --
+the SAME version integer when resubmitting a needs-work round (EGO
+latches on the integer; a bump strands the flagged build in the
+queue). Standing answers for reviewer
 questions live in `ego-upload-notes.md` § Standing answers -- use them
 verbatim rather than re-explaining.
 

@@ -190,6 +190,21 @@ test('release ritual: skill owns commands, AGENTS points, kit stays prose', () =
         'ego-upload-notes.md must not carry command lines -- the skill owns those');
 });
 
+// v8 resubmit lessons, pinned: the upload artifact must be a named file
+// proven by sha (dist/ exists in every tree; a pre-commit rebuild nearly
+// shipped as "the newest zip"), and re-canonicalizing goldens publishes
+// the EGO screenshots + README gallery -- a human must approve those
+// pixels before the bless commit lands.
+test('release ritual: one proven artifact to upload, goldens need operator approval', () => {
+    const skill = read(`${ROOT}/skills/weatherglass-release/SKILL.md`);
+    ok(/release worktree/i.test(skill),
+        'the upload step must name the canonical artifact location (the ' +
+        'release worktree\'s dist/), not a bare relative dist/ path');
+    ok(/operator approval/i.test(skill),
+        'bless commits (new goldens = new public imagery) must require ' +
+        'operator approval inside the skill');
+});
+
 /* -- shexli findings from the v8 review (resubmit: same version) -------- */
 
 // EGO-X-004: a synchronous read stalls the UI thread -- one user action
