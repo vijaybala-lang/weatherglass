@@ -14,14 +14,15 @@ strip moons were still shipping. Never reuse any pre-v8 capture.
 ## Before uploading (manual verification gate)
 
 1. Install the exact artifact: `gnome-extensions install --force
-   dist/weatherglass@vijaybala.dev.zip`, then compile the shipped
-   schema: `glib-compile-schemas
+   dist/weatherglass@vijaybala.dev.zip`. Since v8 the zip itself carries
+   `schemas/gschemas.compiled` (#53), so a runtime enable works without
+   recompiling; from a checkout, `./install.sh` remains the normal path.
+   (A manual `glib-compile-schemas
    ~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev/schemas`
-   -- EGO compiles server-side, but a local zip ships only the XML and
-   the extension dies at first `_init` with `GLib.FileError:
-   gschemas.compiled: No such file or directory` (and the ERROR state
-   latches until the next session). From a checkout, `./install.sh`
-   already does this step.
+   is a harmless belt-and-braces -- pre-v8 zips shipped XML only and the
+   extension died at first `_init` in a live session until the next
+   login; that failure mode is closed, and its lesson is why the
+   package stage now asserts the compiled file inside the zip.)
 2. One logout/login (GJS caches modules per process).
 3. Walk the surface: panel + menu in dark and light theme, animated /
    solid / accent menu styles, hover + selected tiles (glow-family
@@ -99,7 +100,9 @@ Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v8/weathe
   (cr, sx/sy, R), mirroring cairo docs idiom.
 - Timer warning (EGO-L-004): false positive; the timeout is destroyed
   via the actor's destroy signal handler.
-- Schemas ship as XML only; gnome-extensions install compiles them.
+- Schemas: the zip ships both the XML source and the packaged-time
+  `gschemas.compiled` (v8+, #53) so runtime enable works on every
+  install path; EGO's server-side compile remains compatible.
 - Automatic location (new in v7): GeoClue first (system service, standard
   GNOME consent prompt), public-IP lookup fallback with a second endpoint
   on failure, reverse-geocode used only to label coordinate-only fixes.
