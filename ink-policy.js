@@ -35,7 +35,7 @@ export function boxSampleFractions(box, cardWidth, cardHeight) {
 /** Judge a group of boxes as ONE ground: whichever family survives the
  * worst sample of EVERY box wins for the whole group -- labels that
  * share a row must never split their verdict. */
-export function judgeBoxes(boxes, cardWidth, cardHeight, bgPoint,
+function judgeBoxes(boxes, cardWidth, cardHeight, bgPoint,
     comp = bg => bg) {
     const bgs = [];
     for (const box of boxes)
