@@ -166,6 +166,9 @@ test('release ritual: skill owns commands, AGENTS points, kit stays prose', () =
         'skill must carry the concrete commands (gh release, install, upload URL)');
     ok(/releases\/tag\//.test(skill) && /sha256sum/.test(skill),
         'skill must mandate the release-list/README link bump and the sha record');
+    ok(/golden/i.test(skill) && /bless/i.test(skill),
+        'skill must own the golden-lock meaning and bless discipline -- ' +
+        'a release that blesses away a mismatch ships a visual regression');
     ok(/AGENTS\.md/.test(skill), 'AGENTS.md must be in the skill\'s contract');
     const agents = read(`${ROOT}/AGENTS.md`);
     ok(/skills\/weatherglass-release\/SKILL\.md/.test(agents),

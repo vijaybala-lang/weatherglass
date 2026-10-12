@@ -38,6 +38,11 @@ git diff "$PREV..master" --stat
 tools/review-diff "$PREV" master    # read every hunk; justify or delete
 ```
 
+Every user-visible fix in that diff should trace to a named regression
+lock in `tests/` (a `*.test.mjs` for logic, a matrix cell for anything
+a screenshot could catch). A shipped fix with no lock is a gap to
+close before release, not after the next regression.
+
 ### 1. Version bump
 
 `metadata.json` version goes up by exactly one -- EGO latches on the
@@ -50,10 +55,28 @@ the reviewer queue).
 
 ```sh
 bash tools/certify.sh        # must end: CERTIFIED: all stages green
+git checkout -- po/ locale/  # packaging stamps build artifacts; keep the tree clean
 sha256sum dist/weatherglass@vijaybala.dev.zip
 ```
 
-The sha goes into the release body at step 3. Any rebuild re-runs both.
+`CERTIFIED` is the whole suite standing at attention on the release
+commit: unit locks, the scenario matrix pixel-graded against the
+contrast each ground was promised, the coverage grid, the golden lock,
+and a nested-shell boot of the real zip. The sha goes into the release
+body at step 3. Any rebuild re-runs both.
+
+**The golden lock and the bless ceremony.** The goldens
+(`tools/golden/shell/`) are blessed rendered truth: every
+golden-named fixture re-renders inside a disposable gnome-shell and
+byte-diffs against it. A mismatch at release time means the candidate
+drew something different than what was canonized -- that is either a
+visual regression (fix it, ship nothing) or a deliberate change whose
+bless ceremony was never done. Blessing (`bash tools/shell-golden.sh
+card bless <slug>`) is a deliberate act: it re-canonicalizes the
+pixels, and its commit must carry the why, exactly like the
+`RE-CANONISED` commits in history. If a bless belongs in the release
+window, it lands as its own justified step-0 change before the final
+build -- never bless the failing gate to make the gate pass.
 
 ### 3. GitHub release list: draft now, publish at step 6
 
