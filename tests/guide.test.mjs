@@ -151,6 +151,33 @@ test('upload kit mirrors the manifest description', () => {
         'ego-upload-notes.md must contain the manifest description verbatim');
 });
 
+// release HOW-TO lives in exactly one place: skills/weatherglass-release.
+// AGENTS.md keeps the principles and must point there; the ego kit keeps
+// only EGO-page material (description mirror, capture order, reviewer
+// answers) -- command lines drift (the stale glib-compile-schemas gate
+// outlived the bug that made it), and drift is cheap when one file owns
+// them. (The release ritual itself -- GitHub release list + README
+// link bump -- is the half an agent skipped at v7: this lock forces the
+// ritual text to exist where the commands live.)
+test('release ritual: skill owns commands, AGENTS points, kit stays prose', () => {
+    const skill = read(`${ROOT}/skills/weatherglass-release/SKILL.md`);
+    ok(/gh release create/.test(skill) && /gnome-extensions install/.test(skill) &&
+        /extensions\.gnome\.org\/upload/.test(skill),
+        'skill must carry the concrete commands (gh release, install, upload URL)');
+    ok(/releases\/tag\//.test(skill) && /sha256sum/.test(skill),
+        'skill must mandate the release-list/README link bump and the sha record');
+    ok(/AGENTS\.md/.test(skill), 'AGENTS.md must be in the skill\'s contract');
+    const agents = read(`${ROOT}/AGENTS.md`);
+    ok(/skills\/weatherglass-release\/SKILL\.md/.test(agents),
+        'AGENTS.md must reference the release skill');
+    const pre = agents.slice(agents.indexOf('## Pre-upload release review'));
+    ok(!/```sh/.test(pre),
+        'AGENTS pre-upload section keeps prose principles, not commands (they rot there)');
+    const kit = read(`${ROOT}/ego-upload-notes.md`);
+    ok(!/```sh|gnome-extensions install|gh release|glib-compile-schemas/.test(kit),
+        'ego-upload-notes.md must not carry command lines -- the skill owns those');
+});
+
 /* -- enable/disable stay neighbours in the entry point ------------------ */
 
 test('enable() and disable() are adjacent', () => {

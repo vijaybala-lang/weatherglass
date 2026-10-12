@@ -1,9 +1,15 @@
 # EGO upload kit -- v8
 
+The release ritual (every command, in order: review, bump, certify,
+GitHub release, live gate, captures, publish, README links, upload)
+lives in `skills/weatherglass-release/SKILL.md`. This kit holds only
+EGO-page material: the artifact identity, the capture list, the
+canonical description block, and the standing reviewer answers.
+
 Upload at: https://extensions.gnome.org/upload/
 Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 8; rebuilt from
-master after every landed change -- record `sha256sum` at upload time and
-verify the identical bytes live; zipcheck PASS is part of the rebuild).
+master after every landed change -- its `sha256sum` is recorded in the
+GitHub release body, and the EGO-served bytes must match).
 
 v8 ships the contrast fixes (#49) and the Today-morph fix (#50): night
 strip/tile glyphs on bright grounds wear ink twins, and the new-moon
@@ -13,31 +19,18 @@ strip moons were still shipping. Never reuse any pre-v8 capture.
 
 ## Before uploading (manual verification gate)
 
-1. Install the exact artifact: `gnome-extensions install --force
-   dist/weatherglass@vijaybala.dev.zip`. Since v8 the zip itself carries
-   `schemas/gschemas.compiled` (#53), so a runtime enable works without
-   recompiling; from a checkout, `./install.sh` remains the normal path.
-   (A manual `glib-compile-schemas
-   ~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev/schemas`
-   is a harmless belt-and-braces -- pre-v8 zips shipped XML only and the
-   extension died at first `_init` in a live session until the next
-   login; that failure mode is closed, and its lesson is why the
-   package stage now asserts the compiled file inside the zip.)
-2. One logout/login (GJS caches modules per process).
-3. Walk the surface: panel + menu in dark and light theme, animated /
-   solid / accent menu styles, hover + selected tiles (glow-family
-   glyphs), prefs dialog. Spot-check with pixel forensics.
-4. Reshoot the upload set + demo GIF from this verified build (see
-   file names below); rehost both on the v8 GitHub release.
-5. Bump `metadata.json` to version 8 BEFORE the final `bash
-   tools/certify.sh` + zip build -- the integer lives in the zip and
-   EGO latches on it.
+The full gate is skill steps 1-6; in short: bump the manifest integer
+before the final build, certify the release commit, install the exact
+artifact, one logout/login, walk panel + menu in dark/light theme, all
+three backdrop styles, hover + selected tiles and prefs, then reshoot
+the set below from the verified build and rehost it on the v8 GitHub
+release -- byte-identical zip verified = zip uploaded.
 
 ## Screenshots (upload in this order; all ~566x780, prefs is window-sized)
 
-All must be captured from the verified v8 build (see gate 4 above) --
-night cards changed with the ink-twin fix, so the v7 files under
-ego-ready/ are history, not inputs:
+All must be captured from the verified v8 build (gate above) --
+night cards changed with the ink-twin fix, so the old files under
+screenshots/ are history, not inputs:
 
 1. ego-ready/01-night-temperature.png  -- hero: night sky, moon, temp curve
 2. ego-ready/06-day-sunny.png          -- sunny day, animated sun

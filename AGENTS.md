@@ -108,13 +108,9 @@ never a silent PASS over emptiness.
 ## Pre-upload release review (mandatory before any EGO zip)
 
 Before building the ZIP for extensions.gnome.org, review the full diff
-since the last released version and simplify the code in its wake:
-
-```sh
-PREV=$(git tag --sort=-v:refname | head -1)        # e.g. v6
-git diff "$PREV..master" --stat                     # what grew since release
-tools/review-diff "$PREV" master                    # read every hunk (Meld or vimdiff)
-```
+since the last released version and simplify the code in its wake
+(`git diff` vs the previous tag, then read every hunk side-by-side —
+the commands are skill step 0):
 
 1. **Justify every hunk.** Each change must trace to a user-reported
    issue or a shipped PR description. Anything you cannot explain —
@@ -138,31 +134,17 @@ tools/review-diff "$PREV" master                    # read every hunk (Meld or v
    semantic half: what no regex can see. Fix findings in the same pass;
    escalate anything that contradicts how this extension works (e.g.
    the measured-ground referee) with a comment for the reviewer.
-4. **Verify & bump:** bump `metadata.json` version by exactly one —
-   unless EGO returned the SAME version as needs-work: a resubmission
-   re-uploads the same number (it replaces the pending package; a bump
-   would strand the flagged one in the reviewer's queue). Then run the
-   full gate **on the release commit itself**: `bash tools/certify.sh`
-   must print `CERTIFIED`. The upload kit (`ego-upload-notes.md`) and a
-   fresh demo GIF accompany the ZIP.
-5. **Manual install & live verification.** The automated gates prove
-   the ZIP boots and paints headless; only a live session proves the
-   card. Install the exact ZIP that will be uploaded and compile its
-   schema — EGO compiles server-side but a local install ships only
-   the XML, and the extension dies at first `_init` with a missing
-   `gschemas.compiled` (the ERROR state then latches until the next
-   session):
+4. **Verify & bump.** The version bump rules, the certify gate on the
+   release commit, the zip + sha record -- commands in the skill.
+5. **Live verification.** Headless gates prove the zip boots; only a
+   live session proves the card. The install/login/surface-walk
+   sequence and the byte-identity rule ("the verified zip IS the
+   uploaded zip") live in the skill.
 
-   ```sh
-   gnome-extensions install --force dist/weatherglass@vijaybala.dev.zip
-   glib-compile-schemas ~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev/schemas
-   ```
-
-   then ask the operator for one logout/login (module cache) and have
-   them walk the surface: panel + menu in dark and light theme, the
-   animated / solid / accent menu styles, hover and selected tiles
-   (glow family included), and the prefs dialog. Screenshot + pixel
-   forensics stay the ground truth. The ZIP that gets verified must be
-   byte-identical to the ZIP that gets uploaded — never verify a
-   rebuild and ship a different one.
+Every concrete release command -- review through upload to post-
+approval hygiene -- lives in
+[`skills/weatherglass-release/SKILL.md`](skills/weatherglass-release/SKILL.md),
+in one canonical order (a `guide` lock enforces this file staying
+command-free and the skill holding the ritual). Read the principles
+above as the *why*; the skill is the *how*.
 
