@@ -112,10 +112,12 @@ Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v8/weathe
   morph and city-clock timers are removed inline in destroy(). The
   local shexli stage (`tools/shexli-check.sh`) re-verifies this every
   certify.
-- Schemas: XML only in the zip, per EGO-P-006 (45+ packages: the shell
-  compiles at login, the Extensions app on install). The v8-first zip
-  also shipped `gschemas.compiled` (#53); the reviewer's own engine
-  flagged it, and the review policy wins over install-time robustness.
+- Schemas: XML only in the zip, per EGO-P-006. Delivery compiles what
+  it serves (EGO server-side; the Extensions app locally), so users get
+  a working schema without a blob in our package; CLI installs from a
+  checkout compile via ./install.sh. (An early v8 build shipped the
+  compiled blob for install robustness; the reviewer's engine flagged
+  it, and the policy won.)
 - Automatic location (new in v7): GeoClue first (system service, standard
   GNOME consent prompt), public-IP lookup fallback with a second endpoint
   on failure, reverse-geocode used only to label coordinate-only fixes.

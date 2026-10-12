@@ -96,8 +96,10 @@ Ship exactly what runs: `extension.js`, peer modules, `prefs.js`,
 `stylesheet.css`, `metadata.json`, schema XML, `locale/` binaries.
 Never ship: `.po`/`.pot`, `tools/`, `dist/` scratch, build scripts,
 screenshots/GIFs, unused icons or media -- and **no
-`gschemas.compiled`** (EGO-P-006: 45+ packages let the shell/Extensions
-app compile the schema; a shipped compiled blob is a review finding).
+`gschemas.compiled`** (EGO-P-006: EGO compiles schemas itself --
+server-side when serving, and the Extensions app compiles locally on
+install; a shipped compiled blob is a review finding. gnome-shell does
+NOT compile at login: CLI installs compile their own, see `install.sh`).
 
 ## Run the reviewer's engine: shexli
 

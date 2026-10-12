@@ -57,12 +57,12 @@ cp metadata.json extension.js prefs.js menu.js chart.js sky.js painter.js \
    weather.js moon.js animation.js stylesheet.css README.md LICENSE \
    "dist/$UUID/"
 cp schemas/"$SCHEMA".gschema.xml "dist/$UUID/schemas/"
-# EGO-P-006: ship XML ONLY. GNOME 45+ compiles extension schemas itself
-# (login and the Extensions app); a shipped gschemas.compiled is a review
-# warning. This supersedes #53's shipping decision: local checkouts still
-# compile via ./install.sh, and CLI installs compile at next login like
-# every other 45+ extension. The compile above still runs -- it validates
-# the XML, it just no longer ships its output.
+# EGO-P-006: ship XML ONLY. EGO compiles schemas itself (server-side at
+# serve time; the Extensions app compiles locally on install), so a shipped
+# gschemas.compiled is a review warning. This supersedes #53's shipping
+# decision: gnome-shell never compiles at login -- CLI installs compile via
+# ./install.sh (or the step in the release skill). The compile in package.sh
+# still runs: it validates the XML, it just no longer ships its output.
 cp -r locale "dist/$UUID/"
 
 echo "==> sanity checks"

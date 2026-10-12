@@ -121,12 +121,35 @@ The install is mechanical -- the agent runs it, not the operator:
 gnome-extensions install --force dist/weatherglass@vijaybala.dev.zip
 ```
 
-Then stop touching the running session: the zip ships schema XML only
-(EGO-P-006; GNOME 45+ compiles at login or inside the Extensions app,
-and a CLI install from a checkout compiles via ./install.sh), so the
-new code loads at the next login -- and do not try to rush it with a
-runtime toggle: GJS caches modules per process, and toggling races
-destroy and wedges the state until login. The operator's share is exactly one logout/login (announce it:
+Then stop touching the running session. The zip ships schema XML only
+(EGO-P-006), and **gnome-shell never compiles user-extension schemas at
+login** -- the CLI install must compile them itself, the same step
+`./install.sh` runs for checkouts. Real users never hit this: the
+Extensions app compiles on install, and EGO compiles SERVER-SIDE when
+serving (the delivered tree carries a blob the uploaded zip never had).
+
+```sh
+glib-compile-schemas ~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev/schemas
+```
+
+Skip it and login dies on `GLib.FileError: ... gschemas.compiled: No
+such file`, and the ERROR state wedges until the NEXT login. And on a
+host that ever received the website's build, GNOME 50's shell applies
+EGO-served updates at session start -- its own updater, NOT
+gnome-software (`org.gnome.software download-updates false` does not
+stop it), triggered purely by version comparison. A verification
+install must raise the INSTALLED metadata version above the served one
+(local routing only -- the zip keeps the real integer; EGO never sees
+installed metadata; check the served integer at
+https://extensions.gnome.org/api/v1/extensions/ before the last login):
+
+```sh
+sed -i 's/"version": 8/"version": 99/' ~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev/metadata.json
+```
+
+Do not try to rush the load with a runtime toggle either: GJS caches
+modules per process, and toggling races destroy and wedges the state
+until login. The operator's share is exactly one logout/login (announce it:
 it closes any earlier wedged state too) and the surface walk: panel +
 menu in dark and light themes, animated/solid/accent styles, hover +
 selected tiles, prefs, and this release's must-sees named in the
