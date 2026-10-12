@@ -93,9 +93,38 @@ Mechanics:
 ## ZIP contents
 
 Ship exactly what runs: `extension.js`, peer modules, `prefs.js`,
-`stylesheet.css`, `metadata.json`, schema XML (+ its `gschemas.compiled`),
-`locale/` binaries. Never ship: `.po`/`.pot`, `tools/`, `dist/`
-scratch, build scripts, screenshots/GIFs, unused icons or media.
+`stylesheet.css`, `metadata.json`, schema XML, `locale/` binaries.
+Never ship: `.po`/`.pot`, `tools/`, `dist/` scratch, build scripts,
+screenshots/GIFs, unused icons or media -- and **no
+`gschemas.compiled`** (EGO-P-006: 45+ packages let the shell/Extensions
+app compile the schema; a shipped compiled blob is a review finding).
+
+## Run the reviewer's engine: shexli
+
+The review bot on extensions.gnome.org is `shexli`, a static analyzer
+with numbered rules (EGO-X/P/L-NNN). We ran it locally only after the v8
+review returned four findings it would have caught pre-upload -- so it is
+now a certify stage (`tools/shexli-check.sh`, host-gated SKIP like the
+golden lock, run after `package.sh` over the real zip).
+
+Two traps: **its exit code is 0 whatever it finds** -- the gate parses
+`summary.status` from `--format json`; and its pip package (0.2.1) is a
+crashing stub -- the real engine is the Linux binary (^1.90) documented
+in the checker's header.
+
+Rules that bit us at v8 (fix the finding, never ship around it):
+
+- **EGO-X-004** no synchronous file IO in shell code
+  (`GLib.file_get_contents`, `Gio.File.load_contents` -- use the
+  `*_async` chain; a disk round-trip must never sit behind a UI action).
+- **EGO-P-006** no compiled GSettings schema in the zip (see above).
+- **EGO-L-001** no resource/GObject creation at module scope --
+  constructors live in `enable()` (or lazy factories); module import is
+  not a construction site.
+- **EGO-L-004** every `GLib.timeout_add` reachable from `enable()`
+  needs its `GLib.source_remove` in `disable()`/`destroy()` -- a destroy
+  *signal* handler does not satisfy the reader; the removal must be
+  written in the disposal method.
 
 ## Forbidden by policy
 

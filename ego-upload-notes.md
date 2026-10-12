@@ -96,11 +96,17 @@ Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v8/weathe
   locale typography); all decorative source glyphs are ASCII.
 - Sky-painter one-letter names are cairo-loop graphics notation
   (cr, sx/sy, R), mirroring cairo docs idiom.
-- Timer warning (EGO-L-004): false positive; the timeout is destroyed
-  via the actor's destroy signal handler.
-- Schemas: the zip ships both the XML source and the packaged-time
-  `gschemas.compiled` (v8+, #53) so runtime enable works on every
-  install path; EGO's server-side compile remains compatible.
+- Timer (formerly EGO-L-004): restructured after the v8 finding -- the
+  sky animation source is created in vfunc_map (menu actually mapped)
+  and removed in vfunc_unmap, with an inline safety remove in
+  vfunc_destroy; enable() itself creates no main-loop source. Chart
+  morph and city-clock timers are removed inline in destroy(). The
+  local shexli stage (`tools/shexli-check.sh`) re-verifies this every
+  certify.
+- Schemas: XML only in the zip, per EGO-P-006 (45+ packages: the shell
+  compiles at login, the Extensions app on install). The v8-first zip
+  also shipped `gschemas.compiled` (#53); the reviewer's own engine
+  flagged it, and the review policy wins over install-time robustness.
 - Automatic location (new in v7): GeoClue first (system service, standard
   GNOME consent prompt), public-IP lookup fallback with a second endpoint
   on failure, reverse-geocode used only to label coordinate-only fixes.

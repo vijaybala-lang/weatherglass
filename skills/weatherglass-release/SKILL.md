@@ -80,7 +80,11 @@ sha256sum dist/weatherglass@vijaybala.dev.zip
 `CERTIFIED` is the whole suite standing at attention on the release
 commit: unit locks, the scenario matrix pixel-graded against the
 contrast each ground was promised, the coverage grid, the golden lock,
-and a nested-shell boot of the real zip. The sha goes into the release
+a nested-shell boot of the real zip, and finally the EGO review
+engine itself -- shexli over the real zip (`tools/shexli-check.sh`;
+host-gated SKIP if the engine binary is absent, which is NOT a pass
+for step 8 purposes -- install it before uploading and run it green).
+The sha goes into the release
 body at step 3. Any rebuild re-runs both.
 
 **The golden lock and the bless ceremony.** The goldens

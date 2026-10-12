@@ -60,6 +60,7 @@ stage "demo coverage"     gjs -m tools/card-demo.mjs --coverage
 stage "grid certify"      python3 tools/certify-pixels.py --grid tools/out/demo
 stage "golden lock (shell)" bash tools/shell-golden.sh card check all
 stage "package + zipcheck" bash tools/package.sh
+stage "shexli (EGO engine)" tools/shexli-check.sh
 
 git checkout -- po/ locale/ 2>/dev/null   # packaging stamps po/ + locale/ mtimes; keep the tree clean
 

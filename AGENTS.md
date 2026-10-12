@@ -52,9 +52,10 @@ each ground was promised; card previews and the coverage grid
 from measured pixels); the ONLY golden lock — every golden-named
 fixture rendered as REAL St widgets inside a disposable headless
 gnome-shell, byte-diffed against blessed rendered truth
-(`tools/shell-golden.sh`, host-gated: SKIPs without gnome-shell); and
+(`tools/shell-golden.sh`, host-gated: SKIPs without gnome-shell);
 finally `package.sh` → `zipcheck.sh` (nested-shell boot proof of the
-real dist zip). Only `CERTIFIED` on its output counts as done — and
+real dist zip) and `shexli-check.sh` (the review engine EGO itself
+runs -- host-gated; its exit code is a lie, the gate reads its JSON). Only `CERTIFIED` on its output counts as done — and
 when the host-gated golden lock does run, it must have real fixtures:
 a fatal probe report or zero expanded slugs is a FAIL by design,
 never a silent PASS over emptiness.
