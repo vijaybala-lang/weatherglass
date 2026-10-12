@@ -169,6 +169,9 @@ test('release ritual: skill owns commands, AGENTS points, kit stays prose', () =
     ok(/golden/i.test(skill) && /bless/i.test(skill),
         'skill must own the golden-lock meaning and bless discipline -- ' +
         'a release that blesses away a mismatch ships a visual regression');
+    ok(/BEST-PRACTICES\.md/.test(skill) && /git diff --name-only/.test(skill),
+        'skill must run the release-vs-release diff against BEST-PRACTICES.md -- ' +
+        'the semantic EGO audit is exactly the scope between tags');
     ok(/AGENTS\.md/.test(skill), 'AGENTS.md must be in the skill\'s contract');
     const agents = read(`${ROOT}/AGENTS.md`);
     ok(/skills\/weatherglass-release\/SKILL\.md/.test(agents),

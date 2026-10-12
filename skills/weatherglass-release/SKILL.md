@@ -32,11 +32,29 @@ checkout. All commits carry
 
 ### 0. Pre-upload release review (principles: AGENTS.md)
 
+Audit the scope BETWEEN TAGS -- everything shipping is exactly the
+diff since the last release, so the best-practices validation runs
+over precisely that file set (the token rules are machine-enforced by
+the `guide` lock inside certify; this is the semantic half no regex
+can see):
+
 ```sh
 PREV=$(git tag --sort=-v:refname | head -1)
 git diff "$PREV..master" --stat
-tools/review-diff "$PREV" master    # read every hunk; justify or delete
+git diff --name-only "$PREV..master"          # the audit file set
+tools/review-diff "$PREV" master              # read every hunk (Meld or vimdiff)
 ```
+
+Then validate every changed file against `BEST-PRACTICES.md` -- our
+distillation of the EGO review guidelines and best-practices doc --
+by name, file by file: lifecycle cleanup (destroy what you create),
+process isolation, modern GJS idioms, clean-code rules, settings +
+metadata hygiene, and ZIP contents. Reviewer pet-peeve tokens get the
+zero-tolerance treatment (unjustified try/catch, non-ASCII in
+decorative strings, optional chaining on guaranteed APIs). Findings
+are fixed in this same pass; anything where a rule contradicts how
+this extension provably works (e.g. the measured-ground referee) gets
+escalated with a reviewer-facing comment, not quietly ignored.
 
 Every user-visible fix in that diff should trace to a named regression
 lock in `tests/` (a `*.test.mjs` for logic, a matrix cell for anything
