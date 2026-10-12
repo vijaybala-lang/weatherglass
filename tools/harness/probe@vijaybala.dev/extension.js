@@ -65,19 +65,16 @@ function probeEsmScreenshot() {
  * These are the methods ui/screenshot.js itself wraps; they carry no
  * policy check of their own (the DBus gate lives above them). rect =
  * [x, y, w, h] in buffer pixels, or null for the whole stage. Shared by
- * the stage self-test and card-mode's actor-region capture. */
-async function giCaptureTo(pngPath, rect) {
+ * the stage self-test, card-mode's actor-region capture and film-mode's
+ * frame loop. NO waits here: film mode captures at ~30 ms cadence and
+ * cannot pay a priming pause per frame -- giCaptureTo() owns the wait. */
+async function giCaptureCore(pngPath, rect) {
     const S = Shell.Screenshot;
     if (!S)
         return {result: 'no-Shell-namespace'};
     // ui/screenshot.js promisifies exactly these names; mirror it.
     Gio._promisify(S.prototype, 'screenshot_stage_to_content');
     Gio._promisify(S, 'composite_to_stream');
-
-    // One composited frame must exist before the readback has
-    // anything to show.
-    await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 300,
-        () => (r(), GLib.SOURCE_REMOVE)));
 
     const shooter = new S();
     const [content] = await shooter.screenshot_stage_to_content();
@@ -115,6 +112,14 @@ async function giCaptureTo(pngPath, rect) {
         stageRect: [x, y, w, h],
         bytes: GLib.file_get_contents(pngPath)[1].length,
     };
+}
+
+/* One composited frame must exist before the readback has anything to
+ * show; only the FIRST capture pays that priming pause. */
+async function giCaptureTo(pngPath, rect) {
+    await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 300,
+        () => (r(), GLib.SOURCE_REMOVE)));
+    return giCaptureCore(pngPath, rect);
 }
 
 /* The whole reason for stage 1: can we get pixels at all?
@@ -281,6 +286,33 @@ export default class WgProbe extends Extension {
                     (rect, pngPath) => giCaptureTo(pngPath, rect));
                 report({ ...globalProbe, phase: 'cards-done', slugs,
                     css: out.css, cards: out.cards, pngDir },
+                {final: true});
+                return;
+            }
+
+            const filmBeats = GLib.getenv('WG_PROBE_FILM');
+            if (filmBeats) {
+                // stage 3: shoot the demo film -- one PNG per ~33 ms while
+                // the scripted beats fire on the shell's own clock
+                const beats = JSON.parse(filmBeats);
+                if (!Array.isArray(beats) || beats.length === 0)
+                    throw new Error('film mode: beat sheet is empty');
+                const fixture = GLib.getenv('WG_PROBE_FILM_FIXTURE')
+                    ?? 'cov-clear-night';
+                const pngDir = PNG;   // film mode: PNG names a directory
+                report({ ...globalProbe, phase: 'film', fixture,
+                    beats: beats.length });
+                const {shootFilm} = await import('./film-mode.js');
+                GLib.mkdir_with_parents(pngDir, 0o755);
+                const out = await shootFilm({
+                    fixture, beats,
+                    cssPath: GLib.getenv('WG_PROBE_CSS'),
+                    pngFor: f => `${pngDir}/frame_${String(f).padStart(3, '0')}.png`,
+                    captureRegion: (rect, pngPath) => giCaptureCore(pngPath, rect),
+                });
+                report({ ...globalProbe, phase: 'film-done', css: out.css,
+                    fixture, rect: out.rect, endMs: out.endMs,
+                    frames: out.frames, wallMs: out.wallMs, pngDir },
                 {final: true});
                 return;
             }

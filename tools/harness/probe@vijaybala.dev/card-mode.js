@@ -205,7 +205,7 @@ function stamp(ms, wall) {
 }
 
 /* the state weather.js produces -- the panel's whole world */
-function buildState(weather, moon, fx) {
+export function buildState(weather, moon, fx) {
     const ms = fx.ms ?? Date.parse(fx.local);
     const wall = fx.tzMin !== undefined ? fx.tzMin * 60000 : wallClock(fx.local);
     // fixtures born from sun/moon math carry millisecond instants, not
@@ -246,7 +246,7 @@ function buildState(weather, moon, fx) {
 /* GNOME 50's St-18 exposes stylesheets as theme properties; the old
  * add_stylesheet_from_file API is gone. Try every reachable door and
  * report which one opened -- the first real-shell run answers this. */
-async function loadCss(cssPath, extraCss) {
+export async function loadCss(cssPath, extraCss) {
     const St = (await import('gi://St')).default;
     const theme = St.ThemeContext.get_for_stage(global.stage).get_theme();
     const cssBytes = Gio.File.new_for_path(cssPath).load_contents(null)[1];
