@@ -175,6 +175,9 @@ test('release ritual: skill owns commands, AGENTS points, kit stays prose', () =
     ok(/agent installs/i.test(skill) && /logout\/login/.test(skill),
         'skill must assign the live install to the agent (mechanical) and ' +
         'leave the operator exactly the logout/login + surface walk');
+    ok(/tools\/golden\/shell/.test(skill) && /screenshots are the goldens/i.test(skill),
+        'upload imagery is the golden lock itself -- a second capture set ' +
+        'is a second source of truth, and it rotted at v7');
     ok(/AGENTS\.md/.test(skill), 'AGENTS.md must be in the skill\'s contract');
     const agents = read(`${ROOT}/AGENTS.md`);
     ok(/skills\/weatherglass-release\/SKILL\.md/.test(agents),

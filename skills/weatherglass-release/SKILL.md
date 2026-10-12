@@ -128,14 +128,25 @@ release notes. Screenshot + pixel forensics after the walk are the
 proof, and the verified zip must be byte-identical to the uploaded
 one -- never verify a rebuild and ship a different build.
 
-### 5. Captures and demo, from the verified build only
+### 5. Upload imagery: screenshots are the goldens
 
-Reshoot the seven files under `screenshots/` (order and subjects:
-`ego-upload-notes.md` § Screenshots) and record the demo cast
-(`weatherglass-demo-card.mp4`, the menu tab-morph + night scenes).
-Captures from older builds are history, not inputs -- they photograph
-whatever bugs shipped then. Land them as one PR:
-`docs: refresh vN upload captures`.
+What EGO shows as the extension's screenshots are the byte-locked
+goldens in `tools/golden/shell/` (upload set and order:
+`ego-upload-notes.md` § Screenshots). A separate live-photo set once
+made sense; it became a second source of truth and rotted by
+construction -- v7's night heroes photographed the invisible-moon bug
+and every release since inherited the reshoot panic. Goldens cannot:
+they are the same bytes the golden lock diffs, they re-canonicalize
+only through bless commits carrying their why, so the upload set is
+automatically the current truth.
+
+The one image goldens cannot cover is the preferences window (a
+window, not a card): `screenshots/05-preferences.png` stays, replaced
+only when the prefs UI itself changes.
+
+The demo video remains a genuine capture -- the tab/tile morph is what
+a still cannot show. Record `weatherglass-demo-card.mp4` from the
+verified session of step 4.
 
 ### 6. Publish the release, then prove the demo URL alive
 

@@ -13,38 +13,40 @@ GitHub release body, and the EGO-served bytes must match).
 
 v8 ships the contrast fixes (#49) and the Today-morph fix (#50): night
 strip/tile glyphs on bright grounds wear ink twins, and the new-moon
-ghost is a visible slate disc. **The v7 screenshot set is stale by
-construction** -- its night heroes were captured while the invisible
-strip moons were still shipping. Never reuse any pre-v8 capture.
+ghost is a visible slate disc. The upload imagery is the goldens, so
+the v7-era lesson -- live-photo sets that "photograph whatever bugs
+shipped then" -- no longer applies: see skill step 5.
 
 ## Before uploading (manual verification gate)
 
 The full gate is skill steps 1-6; in short: bump the manifest integer
 before the final build, certify the release commit, install the exact
 artifact, one logout/login, walk panel + menu in dark/light theme, all
-three backdrop styles, hover + selected tiles and prefs, then reshoot
-the set below from the verified build and rehost it on the v8 GitHub
-release -- byte-identical zip verified = zip uploaded.
+three backdrop styles, hover + selected tiles and prefs, then record
+the demo video from this build and rehost it on the v8 GitHub release
+-- byte-identical zip verified = zip uploaded. Screenshots need no
+reshoot at all: they are the goldens below.
 
-## Screenshots (upload in this order; all ~566x780, prefs is window-sized)
+## Screenshots (upload in this order -- the goldens themselves, prefs last)
 
-All must be captured from the verified v8 build (gate above) --
-night cards changed with the ink-twin fix, so the old files under
-screenshots/ are history, not inputs:
+Upload imagery IS the golden lock (`tools/golden/shell/`, byte-diffed
+by CI; rationale in skill step 5). These replace the old live-photo
+set entirely -- the one honest exception is the prefs window, which
+goldens (cards) cannot photograph:
 
-1. ego-ready/01-night-temperature.png  -- hero: night sky, moon, temp curve
-2. ego-ready/06-day-sunny.png          -- sunny day, animated sun
-3. ego-ready/07-rainy-precip.png       -- rainy day, glow-family raindrops
-4. ego-ready/04-light-twilight.png     -- light-theme dusk wash
-5. ego-ready/08-themed-dark.png        -- themed style, dark + accent blue
-6. ego-ready/09-themed-light.png       -- themed style, light
-7. ego-ready/05-preferences.png        -- prefs window, Display tab
-
-Optional card-only extras if EGO accepts more images: the golden suite
-(`tools/golden/shell/`, byte-locked by CI) covers every scene day/night/
-golden-hour, all eight moon phases, styles and cities -- the same cards
-the repo README gallery shows. Prefer the live ego-ready set as the main
-row: it shows the panel icon, which goldens crop out.
+1. cov-clear-night.png       -- hero: night sky, moon, temperature curve
+2. cov-clear-day.png         -- clear day, ink glyphs on the bright foot
+3. cov-clear-descent-early.png   --} golden hour as a passage:
+4. cov-clear-golden.png          --}  same Berlin evening at four clock
+5. cov-clear-descent-afterglow.png --}  readings (night glyphs flip
+6. cov-clear-descent-twilight.png  --}  family mid-strip)
+7. cov-storm-night.png       -- lightning + glow-family rain at night
+8. cov-moon-new-day.png      -- the new moon as a visible dark disc
+9.  style-solid-dark.png     --} backdrop styles: solid and accent,
+10. style-solid-light.png    --}  each in dark and light themes
+11. style-accent-dark.png    --}
+12. style-accent-light.png   --}
+13. screenshots/05-preferences.png -- prefs window (window-sized)
 
 ## Video
 
