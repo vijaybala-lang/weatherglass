@@ -22,8 +22,9 @@ shipped then" -- no longer applies: see skill step 5.
 The full gate is skill steps 1-6; in short: bump the manifest integer
 before the final build, certify the release commit, install the exact
 artifact, one logout/login, walk panel + menu in dark/light theme, all
-three backdrop styles, hover + selected tiles and prefs, then record
-the demo video from this build and rehost it on the v8 GitHub release
+three backdrop styles, hover + selected tiles and prefs, then cast
+the demo video from this build with film mode (below) and rehost it
+on the v8 GitHub release
 -- byte-identical zip verified = zip uploaded. Screenshots need no
 reshoot at all: they are the goldens below.
 
@@ -50,10 +51,18 @@ goldens (cards) cannot photograph:
 
 ## Video
 
-Rehost on the GitHub release (tag v8): ~/Videos/Screencasts/ego/
-(v8 publishes with the video pending -- film mode, issue #60, generates
-it; the URL is stable, so a later attach lights the EGO demo link with
-no zip re-upload. Attach well before approval is plausible.)
+The demo video is GENERATED, not hand-recorded: film mode
+(`tools/film.sh`, #60) casts `weatherglass-demo-card.mp4` headlessly
+from a disposable nested gnome-shell -- the same engine and the real
+widgets the golden lock certifies, with only the scene fixture-forced
+(clock + weather, the hero card) and the timing real: chart morphs,
+the animated sky and the scripted beats run live on the nested frame
+clock (ritual: skill step 5; frames are not byte-diffable, so the
+goldens remain the pixel canon). Rehost on the GitHub release (tag
+v8). The video is pending only if the generating host lacks
+gnome-shell or an h264 encoder -- film mode then SKIPs the encode
+loudly; the URL is stable, so a later attach lights the EGO demo link
+with no zip re-upload (attach well before approval is plausible).
 Direct link for the EGO description:
 https://github.com/vijaybala-lang/weatherglass/releases/download/v8/weatherglass-demo-card.mp4
 
