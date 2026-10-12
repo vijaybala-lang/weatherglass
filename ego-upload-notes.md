@@ -1,9 +1,15 @@
-# EGO upload kit -- v7
+# EGO upload kit -- v8
 
 Upload at: https://extensions.gnome.org/upload/
-Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 7; rebuilt from
+Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 8; rebuilt from
 master after every landed change -- record `sha256sum` at upload time and
 verify the identical bytes live; zipcheck PASS is part of the rebuild).
+
+v8 ships the contrast fixes (#49) and the Today-morph fix (#50): night
+strip/tile glyphs on bright grounds wear ink twins, and the new-moon
+ghost is a visible slate disc. **The v7 screenshot set is stale by
+construction** -- its night heroes were captured while the invisible
+strip moons were still shipping. Never reuse any pre-v8 capture.
 
 ## Before uploading (manual verification gate)
 
@@ -21,9 +27,16 @@ verify the identical bytes live; zipcheck PASS is part of the rebuild).
    solid / accent menu styles, hover + selected tiles (glow-family
    glyphs), prefs dialog. Spot-check with pixel forensics.
 4. Reshoot the upload set + demo GIF from this verified build (see
-   file names below); rehost both on the v7 GitHub release.
+   file names below); rehost both on the v8 GitHub release.
+5. Bump `metadata.json` to version 8 BEFORE the final `bash
+   tools/certify.sh` + zip build -- the integer lives in the zip and
+   EGO latches on it.
 
 ## Screenshots (upload in this order; all ~566x780, prefs is window-sized)
+
+All must be captured from the verified v8 build (see gate 4 above) --
+night cards changed with the ink-twin fix, so the v7 files under
+ego-ready/ are history, not inputs:
 
 1. ego-ready/01-night-temperature.png  -- hero: night sky, moon, temp curve
 2. ego-ready/06-day-sunny.png          -- sunny day, animated sun
@@ -33,11 +46,17 @@ verify the identical bytes live; zipcheck PASS is part of the rebuild).
 6. ego-ready/09-themed-light.png       -- themed style, light
 7. ego-ready/05-preferences.png        -- prefs window, Display tab
 
+Optional card-only extras if EGO accepts more images: the golden suite
+(`tools/golden/shell/`, byte-locked by CI) covers every scene day/night/
+golden-hour, all eight moon phases, styles and cities -- the same cards
+the repo README gallery shows. Prefer the live ego-ready set as the main
+row: it shows the panel icon, which goldens crop out.
+
 ## Video
 
-Rehost on the GitHub release (tag v7): ~/Videos/Screencasts/ego/
+Rehost on the GitHub release (tag v8): ~/Videos/Screencasts/ego/
 Direct link for the EGO description:
-https://github.com/vijaybala-lang/weatherglass/releases/download/v6/weatherglass-demo-card.mp4
+https://github.com/vijaybala-lang/weatherglass/releases/download/v8/weatherglass-demo-card.mp4
 
 ## Description text (for the EGO page)
 
@@ -65,7 +84,7 @@ Weather data from Open-Meteo (global), Met.no (ECMWF) and NOAA NWS - choose your
 
 No accounts, no tracking, no analytics: weather requests go straight from your machine to the provider you choose. Automatic detection prefers the system location service, with the standard GNOME prompt naming this extension; its IP-lookup and city-label fallbacks each contact one free keyless endpoint and are used only when needed. Nothing is cached on disk.
 
-Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v7/weatherglass-demo-card.mp4
+Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v8/weatherglass-demo-card.mp4
 
 ## Standing answers for the reviewer
 
@@ -107,4 +126,4 @@ Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v7/weathe
 - The metadata "url" points at the GitHub repo per the EGO review
   guidelines (must be a GitHub/GitLab project URL) -- keep it there even
   after approval; link the EGO page from the repo README instead.
-- Keep integer version bumps for every future upload (next: 8).
+- Keep integer version bumps for every future upload (next: 9).
