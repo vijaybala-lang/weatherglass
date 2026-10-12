@@ -126,18 +126,21 @@ lighting and chart ink all follow the low sun:
 
 ### Backdrop styles
 
-Three backdrop styles, one chart language. *Solid* paints a flat sky-appropriate
-wash behind the card; *accent* (a.k.a. themed) lets the card take the system
-theme's colors and charts adopt the user's GNOME accent:
+Three backdrop styles, one chart language. *Sky* is the default: the card
+is a live animated sky (every card above this row uses it). *Solid* paints
+a flat sky-appropriate wash behind the card; *accent* (a.k.a. themed) lets
+the card take the system theme's colors and charts adopt the user's GNOME
+accent:
 
 <table>
 <tr>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-day.png" width="160" alt="Sky style (default)"></td>
 <td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/style-solid-dark.png" width="160" alt="Solid style, dark theme"></td>
 <td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/style-solid-light.png" width="160" alt="Solid style, light theme"></td>
 <td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/style-accent-dark.png" width="160" alt="Accent style, dark theme"></td>
 <td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/style-accent-light.png" width="160" alt="Accent style, light theme"></td>
 </tr>
-<tr><td align="middle"><b>Solid, dark theme</b></td><td align="middle"><b>Solid, light theme</b></td><td align="middle"><b>Accent, dark theme</b></td><td align="middle"><b>Accent, light theme</b></td></tr>
+<tr><td align="middle"><b>Sky, animated</b><br>(default)</td><td align="middle"><b>Solid, dark theme</b></td><td align="middle"><b>Solid, light theme</b></td><td align="middle"><b>Accent, dark theme</b></td><td align="middle"><b>Accent, light theme</b></td></tr>
 </table>
 
 ### Real cities
