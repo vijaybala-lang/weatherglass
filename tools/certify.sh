@@ -61,7 +61,7 @@ stage "grid certify"      python3 tools/certify-pixels.py --grid tools/out/demo
 stage "golden lock (shell)" bash tools/shell-golden.sh card check all
 stage "package + zipcheck" bash tools/package.sh
 
-git checkout -- po/ 2>/dev/null   # packaging stamps po/ mtimes; keep the tree clean
+git checkout -- po/ locale/ 2>/dev/null   # packaging stamps po/ + locale/ mtimes; keep the tree clean
 
 printf '\n────────────────────────────────────────\n'
 if [ "$FAILED" -eq 0 ]; then

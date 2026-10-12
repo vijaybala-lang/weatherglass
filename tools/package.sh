@@ -57,6 +57,11 @@ cp metadata.json extension.js prefs.js menu.js chart.js sky.js painter.js \
    weather.js moon.js animation.js stylesheet.css README.md LICENSE \
    "dist/$UUID/"
 cp schemas/"$SCHEMA".gschema.xml "dist/$UUID/schemas/"
+# Ship the compiled schema too: gnome-shell only compiles extension schemas
+# at login or via the Extensions app; a plain `gnome-extensions install` +
+# runtime enable hits a missing gschemas.compiled and the extension fails to
+# start until re-login (observed live on GNOME 50 during v8 install testing).
+cp schemas/gschemas.compiled "dist/$UUID/schemas/"
 cp -r locale "dist/$UUID/"
 
 echo "==> sanity checks"
@@ -66,7 +71,7 @@ if grep -rn "/home/\|/tmp/\|/usr/share" dist/"$UUID"/*.js \
         | grep -v "gnome-shell"; then
     fail 'absolute paths found in shipped JS'
 fi
-need=(metadata.json extension.js prefs.js stylesheet.css schemas/"$SCHEMA".gschema.xml LICENSE)
+need=(metadata.json extension.js prefs.js stylesheet.css schemas/"$SCHEMA".gschema.xml schemas/gschemas.compiled LICENSE)
 for f in "${need[@]}"; do
     [[ -f "dist/$UUID/$f" ]] || fail "missing $f"
 done
