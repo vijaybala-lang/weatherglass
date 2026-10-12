@@ -190,6 +190,21 @@ test('release ritual: skill owns commands, AGENTS points, kit stays prose', () =
         'ego-upload-notes.md must not carry command lines -- the skill owns those');
 });
 
+/* -- shexli findings from the v8 review (resubmit: same version) -------- */
+
+// EGO-X-004: a synchronous read stalls the UI thread -- one user action
+// can block the whole shell behind a disk. The consent-entry read moved
+// to load_contents_async; shipped code reads asynchronously or not at all.
+test('shipped modules stay off the synchronous file-read path', () => {
+    silence(scan(/load_contents\s*\(|GLib\.file_get_contents\s*\(/));
+});
+
+// EGO-L-001: module scope must not create shell-side resources -- the
+// providers live behind providerFor() as classes, instantiated lazily.
+test('providers are constructed lazily, not at module scope', () => {
+    silence(scan(/new (?:OpenMeteo|MetNorway|NoaaNws)Provider\s*\(/));
+});
+
 /* -- enable/disable stay neighbours in the entry point ------------------ */
 
 test('enable() and disable() are adjacent', () => {

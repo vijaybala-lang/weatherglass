@@ -269,7 +269,7 @@ function get(url) {
  *   }
  *
  * Adding a service = subclass WeatherProvider, implement forecast()/
- * parse(), register it in REGISTRY below, and add the id to the
+ * parse(), register it in PROVIDERS below, and add the id to the
  * gsettings 'provider' enum + the preferences combo. Nothing else
  * in the extension needs to know a provider exists.
  */
@@ -734,15 +734,26 @@ class NoaaNwsProvider extends WeatherProvider {
     }
 }
 
-const REGISTRY = new Map([
-    ['open-meteo', new OpenMeteoProvider()],
-    ['met-norway', new MetNorwayProvider()],
-    ['noaa-nws', new NoaaNwsProvider()],
-]);
+/* EGO-L-001: classes, not instances -- the module may not build
+ * shell-side resources before enable(). providerFor() constructs each
+ * singleton on first use (normalized id, unknown ids land on the
+ * default). */
+const PROVIDERS = {
+    'open-meteo': OpenMeteoProvider,
+    'met-norway': MetNorwayProvider,
+    'noaa-nws': NoaaNwsProvider,
+};
+const _liveProviders = new Map();
 
 /** Unknown ids fall back to the default provider, never crash. */
 function providerFor(id) {
-    return REGISTRY.get(id) ?? REGISTRY.get('open-meteo');
+    const key = PROVIDERS[id] ? id : 'open-meteo';
+    let provider = _liveProviders.get(key);
+    if (!provider) {
+        provider = new PROVIDERS[key]();
+        _liveProviders.set(key, provider);
+    }
+    return provider;
 }
 
 /* -- auto-location ---------------------------------------------------------
@@ -887,23 +898,37 @@ function desktopEntryFile() {
         [GLib.get_user_data_dir(), 'applications', desktopEntryName()]));
 }
 
-/** Idempotent: writes only when absent or stale. */
+/** Idempotent: writes only when absent or stale. The read is async
+ * (EGO-X-004): a synchronous load would stall the UI thread for a disk
+ * round-trip on every enable/toggle. The write is the rare path (only
+ * after a miss/stale) and replace_contents is not on the blocked list;
+ * callers fire-and-forget -- the entry is consulted later by the
+ * consent agent, never by this call stack. */
 export function ensureDesktopEntry() {
     const file = desktopEntryFile();
     const text = desktopEntryText();
-    try {
-        if (file.query_exists(null)) {
-            const [, bytes] = file.load_contents(null);
+    file.load_contents_async(null, (obj, res) => {
+        try {
+            const [, bytes] = obj.load_contents_finish(res);
             if (new TextDecoder().decode(bytes) === text)
                 return;
+        } catch (err) {
+            // concrete failure mode: entry absent (the common first
+            // run) -- falls through to the write below
+            if (!err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND))
+                logError(err, 'Weatherglass: consent entry unreadable');
         }
-        makeDirectoryPath(file.get_parent());
-        file.replace_contents(text, null, false, Gio.FileCreateFlags.NONE, null);
-    } catch (err) {
-        // concrete failure mode: unwritable home; the consent prompt then
-        // never appears and detection falls back to the IP chain anyway
-        logError(err, 'Weatherglass: consent entry not installed');
-    }
+        try {
+            makeDirectoryPath(file.get_parent());
+            file.replace_contents(text, null, false,
+                Gio.FileCreateFlags.NONE, null);
+        } catch (err) {
+            // concrete failure mode: unwritable home; the consent
+            // prompt then never appears and detection falls back to
+            // the IP chain anyway
+            logError(err, 'Weatherglass: consent entry not installed');
+        }
+    });
 }
 
 export function removeDesktopEntry() {
