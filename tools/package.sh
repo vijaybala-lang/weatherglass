@@ -57,11 +57,12 @@ cp metadata.json extension.js prefs.js menu.js chart.js sky.js painter.js \
    weather.js moon.js animation.js stylesheet.css README.md LICENSE \
    "dist/$UUID/"
 cp schemas/"$SCHEMA".gschema.xml "dist/$UUID/schemas/"
-# Ship the compiled schema too: gnome-shell only compiles extension schemas
-# at login or via the Extensions app; a plain `gnome-extensions install` +
-# runtime enable hits a missing gschemas.compiled and the extension fails to
-# start until re-login (observed live on GNOME 50 during v8 install testing).
-cp schemas/gschemas.compiled "dist/$UUID/schemas/"
+# EGO-P-006: ship XML ONLY. GNOME 45+ compiles extension schemas itself
+# (login and the Extensions app); a shipped gschemas.compiled is a review
+# warning. This supersedes #53's shipping decision: local checkouts still
+# compile via ./install.sh, and CLI installs compile at next login like
+# every other 45+ extension. The compile above still runs -- it validates
+# the XML, it just no longer ships its output.
 cp -r locale "dist/$UUID/"
 
 echo "==> sanity checks"
@@ -71,10 +72,13 @@ if grep -rn "/home/\|/tmp/\|/usr/share" dist/"$UUID"/*.js \
         | grep -v "gnome-shell"; then
     fail 'absolute paths found in shipped JS'
 fi
-need=(metadata.json extension.js prefs.js stylesheet.css schemas/"$SCHEMA".gschema.xml schemas/gschemas.compiled LICENSE)
+need=(metadata.json extension.js prefs.js stylesheet.css schemas/"$SCHEMA".gschema.xml LICENSE)
 for f in "${need[@]}"; do
     [[ -f "dist/$UUID/$f" ]] || fail "missing $f"
 done
+# EGO-P-006: a compiled schema in the zip is a review warning, full stop
+[[ -f "dist/$UUID/schemas/gschemas.compiled" ]] \
+    && fail 'ships gschemas.compiled (EGO-P-006: 45+ packages compile it themselves)'
 [[ -f "dist/$UUID/schemas/$SCHEMA.gschema.xml" ]] || fail 'schema xml name mismatch'
 missing=0
 while read -r lang; do
