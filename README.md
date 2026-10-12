@@ -31,19 +31,19 @@ Ten animated scenes, daytime cards, same city geometry per column:
 
 <table>
 <tr>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-day.png" width="200" alt="Clear sky"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-partly-day.png" width="200" alt="Partly cloudy"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-cloud-day.png" width="200" alt="Overcast"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-fog-day.png" width="200" alt="Fog"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-rain-day.png" width="200" alt="Rain"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-day.png" width="160" height="220" alt="Clear sky"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-partly-day.png" width="160" height="220" alt="Partly cloudy"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-cloud-day.png" width="160" height="220" alt="Overcast"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-fog-day.png" width="160" height="220" alt="Fog"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-rain-day.png" width="160" height="220" alt="Rain"></td>
 </tr>
 <tr><td align="middle"><b>Clear</b></td><td align="middle"><b>Partly cloudy</b></td><td align="middle"><b>Overcast</b></td><td align="middle"><b>Fog</b></td><td align="middle"><b>Rain</b></td></tr>
 <tr>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-snow-day.png" width="200" alt="Snow"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-sleet-day.png" width="200" alt="Sleet"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-storm-day.png" width="200" alt="Thunderstorm"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-hail-day.png" width="200" alt="Hail"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-wind-day.png" width="200" alt="Wind"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-snow-day.png" width="160" height="220" alt="Snow"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-sleet-day.png" width="160" height="220" alt="Sleet"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-storm-day.png" width="160" height="220" alt="Thunderstorm"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-hail-day.png" width="160" height="220" alt="Hail"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-wind-day.png" width="160" height="220" alt="Wind"></td>
 </tr>
 <tr><td align="middle"><b>Snow</b></td><td align="middle"><b>Sleet</b></td><td align="middle"><b>Thunderstorm</b></td><td align="middle"><b>Hail</b></td><td align="middle"><b>Wind</b></td></tr>
 </table>
@@ -53,19 +53,19 @@ keeping its night palette:
 
 <table>
 <tr>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-night.png" width="160" alt="Clear night"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-partly-night.png" width="160" alt="Partly cloudy night"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-cloud-night.png" width="160" alt="Overcast night"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-fog-night.png" width="160" alt="Fog at night"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-rain-night.png" width="160" alt="Rain at night"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-night.png" width="160" height="220" alt="Clear night"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-partly-night.png" width="160" height="220" alt="Partly cloudy night"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-cloud-night.png" width="160" height="220" alt="Overcast night"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-fog-night.png" width="160" height="220" alt="Fog at night"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-rain-night.png" width="160" height="220" alt="Rain at night"></td>
 </tr>
 <tr><td align="middle"><b>Clear</b></td><td align="middle"><b>Partly cloudy</b></td><td align="middle"><b>Overcast</b></td><td align="middle"><b>Fog</b></td><td align="middle"><b>Rain</b></td></tr>
 <tr>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-snow-night.png" width="160" alt="Snow at night"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-sleet-night.png" width="160" alt="Sleet at night"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-storm-night.png" width="160" alt="Thunderstorm at night"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-hail-night.png" width="160" alt="Hail at night"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-wind-night.png" width="160" alt="Wind at night"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-snow-night.png" width="160" height="220" alt="Snow at night"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-sleet-night.png" width="160" height="220" alt="Sleet at night"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-storm-night.png" width="160" height="220" alt="Thunderstorm at night"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-hail-night.png" width="160" height="220" alt="Hail at night"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-wind-night.png" width="160" height="220" alt="Wind at night"></td>
 </tr>
 <tr><td align="middle"><b>Snow</b></td><td align="middle"><b>Sleet</b></td><td align="middle"><b>Thunderstorm</b></td><td align="middle"><b>Hail</b></td><td align="middle"><b>Wind</b></td></tr>
 </table>
@@ -78,18 +78,18 @@ cardinal phases over real Berlin nights:
 
 <table>
 <tr>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-new.png" width="160" alt="New moon"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-waxing-crescent.png" width="160" alt="Waxing crescent"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-first-quarter.png" width="160" alt="First quarter"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-waxing-gibbous.png" width="160" alt="Waxing gibbous"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-full.png" width="160" alt="Full moon"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-new.png" width="160" height="220" alt="New moon"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-waxing-crescent.png" width="160" height="220" alt="Waxing crescent"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-first-quarter.png" width="160" height="220" alt="First quarter"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-waxing-gibbous.png" width="160" height="220" alt="Waxing gibbous"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-full.png" width="160" height="220" alt="Full moon"></td>
 </tr>
 <tr><td align="middle"><b>New moon</b></td><td align="middle"><b>Waxing crescent</b></td><td align="middle"><b>First quarter</b></td><td align="middle"><b>Waxing gibbous</b></td><td align="middle"><b>Full moon</b></td></tr>
 <tr>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-waning-gibbous.png" width="160" alt="Waning gibbous"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-last-quarter.png" width="160" alt="Last quarter"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-waning-crescent.png" width="160" alt="Waning crescent"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-new-day.png" width="160" alt="New moon in daylight"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-waning-gibbous.png" width="160" height="220" alt="Waning gibbous"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-last-quarter.png" width="160" height="220" alt="Last quarter"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-waning-crescent.png" width="160" height="220" alt="Waning crescent"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-moon-new-day.png" width="160" height="220" alt="New moon in daylight"></td>
 <td></td>
 </tr>
 <tr><td align="middle"><b>Waning gibbous</b></td><td align="middle"><b>Last quarter</b></td><td align="middle"><b>Waning crescent</b></td><td align="middle"><b>New moon, daylight</b></td><td></td></tr>
@@ -107,19 +107,19 @@ lighting and chart ink all follow the low sun:
 
 <table>
 <tr>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-golden.png" width="160" alt="Clear at golden hour"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-partly-golden.png" width="160" alt="Partly cloudy at golden hour"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-cloud-golden.png" width="160" alt="Overcast at golden hour"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-fog-golden.png" width="160" alt="Fog at golden hour"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-rain-golden.png" width="160" alt="Rain at golden hour"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-golden.png" width="160" height="220" alt="Clear at golden hour"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-partly-golden.png" width="160" height="220" alt="Partly cloudy at golden hour"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-cloud-golden.png" width="160" height="220" alt="Overcast at golden hour"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-fog-golden.png" width="160" height="220" alt="Fog at golden hour"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-rain-golden.png" width="160" height="220" alt="Rain at golden hour"></td>
 </tr>
 <tr><td align="middle"><b>Clear</b></td><td align="middle"><b>Partly cloudy</b></td><td align="middle"><b>Overcast</b></td><td align="middle"><b>Fog</b></td><td align="middle"><b>Rain</b></td></tr>
 <tr>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-snow-golden.png" width="160" alt="Snow at golden hour"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-sleet-golden.png" width="160" alt="Sleet at golden hour"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-storm-golden.png" width="160" alt="Thunderstorm at golden hour"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-hail-golden.png" width="160" alt="Hail at golden hour"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-wind-golden.png" width="160" alt="Wind at golden hour"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-snow-golden.png" width="160" height="220" alt="Snow at golden hour"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-sleet-golden.png" width="160" height="220" alt="Sleet at golden hour"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-storm-golden.png" width="160" height="220" alt="Thunderstorm at golden hour"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-hail-golden.png" width="160" height="220" alt="Hail at golden hour"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-wind-golden.png" width="160" height="220" alt="Wind at golden hour"></td>
 </tr>
 <tr><td align="middle"><b>Snow</b></td><td align="middle"><b>Sleet</b></td><td align="middle"><b>Thunderstorm</b></td><td align="middle"><b>Hail</b></td><td align="middle"><b>Wind</b></td></tr>
 </table>
@@ -134,11 +134,11 @@ accent:
 
 <table>
 <tr>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-day.png" width="160" alt="Sky style (default)"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/style-solid-dark.png" width="160" alt="Solid style, dark theme"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/style-solid-light.png" width="160" alt="Solid style, light theme"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/style-accent-dark.png" width="160" alt="Accent style, dark theme"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/style-accent-light.png" width="160" alt="Accent style, light theme"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-day.png" width="160" height="220" alt="Sky style (default)"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/style-solid-dark.png" width="160" height="220" alt="Solid style, dark theme"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/style-solid-light.png" width="160" height="220" alt="Solid style, light theme"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/style-accent-dark.png" width="160" height="220" alt="Accent style, dark theme"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/style-accent-light.png" width="160" height="220" alt="Accent style, light theme"></td>
 </tr>
 <tr><td align="middle"><b>Sky, animated</b><br>(default)</td><td align="middle"><b>Solid, dark theme</b></td><td align="middle"><b>Solid, light theme</b></td><td align="middle"><b>Accent, dark theme</b></td><td align="middle"><b>Accent, light theme</b></td></tr>
 </table>
@@ -147,11 +147,11 @@ accent:
 
 <table>
 <tr>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/sf-sunset.png" width="160" alt="San Francisco at sunset"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/tokyo-storm-night.png" width="160" alt="Tokyo thunderstorm at night"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/berlin-rain-day.png" width="160" alt="Berlin rain by day"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/ny-snow-day.png" width="160" alt="New York snow by day"></td>
-<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/kilimanjaro-clear-noon.png" width="160" alt="Kilimanjaro clear noon"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/sf-sunset.png" width="160" height="220" alt="San Francisco at sunset"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/tokyo-storm-night.png" width="160" height="220" alt="Tokyo thunderstorm at night"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/berlin-rain-day.png" width="160" height="220" alt="Berlin rain by day"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/ny-snow-day.png" width="160" height="220" alt="New York snow by day"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/kilimanjaro-clear-noon.png" width="160" height="220" alt="Kilimanjaro clear noon"></td>
 </tr>
 <tr><td align="middle"><b>San Francisco</b><br>sunset</td><td align="middle"><b>Tokyo</b><br>storm, night</td><td align="middle"><b>Berlin</b><br>rain, day</td><td align="middle"><b>New York</b><br>snow, day</td><td align="middle"><b>Kilimanjaro</b><br>clear, noon</td></tr>
 </table>
