@@ -2,6 +2,10 @@
 
 Thanks for your interest in Weatherglass!
 
+Before your first change, [`docs/onboarding.md`](docs/onboarding.md)
+explains the shape of the system — how the extension loads inside the
+shell and how data flows in, with diagrams.
+
 ## Branching policy
 
 `master` is protected: all changes must land on a feature branch and be
