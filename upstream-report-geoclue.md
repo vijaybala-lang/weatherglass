@@ -61,7 +61,10 @@ loop.run();
 
 - `init_async` neither succeeds nor errors; it dies at the D-Bus reply
   timeout: `INIT ERROR: Timeout was reached` at +25 s. (Reproduced both
-  with and without the desktop file installed.)
+  with and without the desktop file installed; re-verified clean after a
+  daemon restart with zero custom agents ever having run in the session:
+  identical +25.0 s, so the shell-side silence is not registration-order
+  dependent.)
 - No "Allow location access" dialog appears at any point.
 - `journalctl -u geoclue` logs **nothing** for the attempt — the daemon
   is waiting on the agent, and the agent (`AuthorizeAppAsync`,
@@ -115,57 +118,106 @@ clean fix belongs in the shell.
 
 ---
 
-## Report B — geoclue: [ip] network source can wedge silently, blocking
-## every client until the daemon is restarted
+## Report B — geoclue: a failed location query is dropped and waiting
+## clients are never notified -- one broken endpoint hangs clients
+## indefinitely, silently, with a deterministic reproducer
 
 Project: GNOME/geoclue
 
 ### Summary
 
-The default `[ip]` (ichnaea/beacondb) source can enter a state where it
-never completes its HTTP query **and logs nothing**, and because it is
-required for the combined fix, every client's `init_async` then hangs to
-the D-Bus timeout — including clients that are already allow-listed and
-therefore need no consent round-trip at all. Only
-`systemctl restart geoclue` recovers. Earlier in the same week the same
-source failed *cleanly* (`journalctl`: `Failed to query location: Could
-not connect to api.beacondb.net`), proving the failure itself isn't the
-novelty — the silent wedge is.
+A client that calls `Start` and is waiting for its first fix learns
+**nothing** when the underlying source query fails. `Start` replies
+successfully *before* the first query completes; the terminal query
+handler (`query_callback` in `gclue-web-source.c`, comment: `/* Ignore
+returned location */`) logs the failure and drops it -- no retry, no
+propagation, no error channel to the client. `GClueSimple` then waits
+for a `Location` property update that never arrives: the client hangs
+indefinitely, the daemon considers it in use (so it never idles out),
+and at default log levels the journal may show nothing at all. One
+broken or stalling backend endpoint therefore presents as a completely
+wedged location stack while the daemon is actually healthy-but-deaf.
 
-### Observed (excerpt)
+### Observed in the wild (Fedora 44, geoclue 2.8.2)
 
 ```text
 11:09:49 systemd[1]: Started geoclue.service - Location Lookup Service.
-   (two allow-listed client requests at 11:49 and 11:51: both time out
-    client-side; daemon logs nothing; systemd reports the service using
-    1.575 s CPU over the next 81 minutes and not auto-idling, i.e. it
-    held pending clients while doing nothing)
+   (two allow-listed client requests at 11:49 and 11:51 hang;
+    daemon logs NOTHING; over the next 81 minutes the service uses
+    1.6 s of CPU and does not auto-idle: pending clients, no progress)
 12:26:38 probe: INIT ERROR: Timeout was reached (+25.01s)
-12:31:12 systemctl restart geoclue   # operator action
+12:31:12 systemctl restart geoclue
 12:31:27 probe: INIT OK, location=37.6688,-122.081 acc=25000m (+1.09s)
 ```
 
-Direct `curl` POSTs to the same BeaconDB endpoint from the same machine
-succeed (≈0.7 s) while the daemon is wedged, so it is not network
-egress. Suspect a missing/stuck timeout or a serialized source-start
-queue in the 2.8 HTTP path (`libsoup` request that never resolves
-holds the single source loop).
+Direct `curl` to the same BeaconDB endpoint succeeds (~0.7 s) while
+the daemon is stuck, so this was egress-independent all along -- it was
+this dead-end, plus a stalled query holding things open
+(`soup_session_new()` sets no request deadline; libsoup's 60 s timeout
+is per-socket-I/O inactivity, not a request bound).
 
-### Reproduction
+### Deterministic reproduction (100%, no external service needed)
 
-Hard to force deterministically (observed 2×/week under repeated client
-churn); filing as an observation with journal + timings because the
-silent-forever wedge turns a backend hiccup into a total outage with no
-log trace. Minimum ask: apply a hard timeout to the network source's
-query (the client's accuracy expectation should time-shift, not stall),
-and log source-query start/finish at info level.
+1. Stall server -- accepts requests, reads them, never answers:
 
-### Secondary ask (same daemon version)
+```python
+# staller.py
+import socket, threading
+s = socket.socket()
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(('127.0.0.1', 8399)); s.listen(16)
+def hold(c):
+    try: c.recv(65536)
+    except Exception: pass
+    threading.Event().wait()
+while True:
+    c, _ = s.accept()
+    threading.Thread(target=hold, args=(c,), daemon=True).start()
+```
 
-Restore agent-state observability: with `Manager.Agent` removed in 2.8,
-a stuck consent round-trip (Report A) is undiagnosable from outside;
-one `journalctl` line per `AuthorizeApp` dispatch/answer would have
-saved days.
+2. Point the IP source at it and isolate it (`/etc/geoclue/conf.d/zz.conf`):
+```ini
+[ip]
+enable=true
+method=gmaps
+url=http://127.0.0.1:8399/geoip
+[wifi]
+enable=false
+```
+   (`systemctl restart geoclue`; use a client desktop-id you have
+   allow-listed so consent isn't a variable -- see Report A.)
+3. Run any `GClueSimple` client (gjs snippet in Report A).
+
+Expected per the API contract: the client learns of the failure.
+Actual: client hangs > 60 s (watchdog-killed) while the daemon logs
+`Failed to query location: ...` (or nothing at all in the stall case).
+
+Measured A/B on this setup:
+- stock 2.8.2: daemon logs the failure (+7 s for a transport abort);
+  client still hanging at +30 s; true stall variant logs nothing at
+  all for minutes.
+- with attached patch: typed failure
+  `Failed to query location: Query location timed out after 20 seconds`
+  at exactly +20 s, info-level; **client behavior unchanged** -- which
+  is the point of this report: the deadline alone does not fix the
+  dead-end. The client-notification gap is the bug; the patch bounds
+  the query and lifts the veil.
+
+### Asks
+
+1. **Decide how clients learn of query failure.** Options with
+   precedent: fail the pending `Start` late (the invocation may be
+   keepable), add an error/`none` transition on the `Location`
+   interface, or a new signal. Needs maintainer preference; happy to
+   implement once chosen.
+2. **Retry with backoff on failed sources** -- currently a failed
+   source only re-fires on network/connectivity change signals.
+3. Attached MR bounds queries (20 s deadline) and logs all query
+   failures at info level (endpoint URI + data class only, no
+   location data).
+4. Observability: `Manager.Agent` removal in 2.8 makes agent-side
+   dead-ends (Report A) undiagnosable from outside; one info-level
+   line per `AuthorizeApp` dispatch/answer would have saved days.
 
 ---
 
