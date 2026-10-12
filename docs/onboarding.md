@@ -191,28 +191,29 @@ preferences take effect live: `enable()` wires `settings.connect
 sequenceDiagram
     autonumber
     participant T as Timer / trigger
-    participant C as WeatherCoordinator<br/>(extension.js)
-    participant W as WeatherClient<br/>(weather.js)
+    participant C as WeatherCoordinator
+    participant W as WeatherClient
     participant P as Provider adapter
-    participant H as get() · libsoup
+    participant H as get helper in libsoup
 
-    Note over T: refresh-minutes timer · menu open when stale<br/>settings change · provider/model switch · 60 s error retry
+    Note over T: refresh-minutes timer, menu open when stale,<br/>settings change, provider switch, 60 s error retry
     T->>C: fetch(force)
     alt busy
-        C->>C: coalesce: refetchPending = true
+        C->>C: coalesce into refetchPending
     else idle
-        C->>W: fetch({auto, lat, lon})
+        C->>W: fetch auto, lat, lon
         opt auto-location
-            W->>W: detectLocation() (cached fix, TTL 30 min)
+            W->>W: detectLocation (cached fix, TTL 30 min)
         end
-        W->>P: provider.forecast({latitude, longitude, days, model})
-        P->>H: GET url (provider endpoint)
-        H-->>P: JSON (200 only; 15 s timeout)
-        P->>P: parse() — pure, unit-testable
-        P-->>W: normalized {current, daily, hourly}
-        W-->>C: + detectedName, latitude, longitude
-        C->>C: data, lastFetch
-        C-->>C: onData(data) → panel + icon repaint<br/>onError(err) → log + scheduleRetry()
+        W->>P: forecast(latitude, longitude, days, model)
+        P->>H: GET provider endpoint
+        H-->>P: JSON body, 200 only, 15 s timeout
+        P->>P: parse - pure, unit-testable
+        P-->>W: normalized current, daily, hourly
+        W-->>C: data plus detectedName and coords
+        C->>C: store data, stamp lastFetch
+        C->>C: onData to panel and icon
+        C->>C: onError logs and retries in 60 s
     end
 ```
 
