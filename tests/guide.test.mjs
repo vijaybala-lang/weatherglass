@@ -172,6 +172,9 @@ test('release ritual: skill owns commands, AGENTS points, kit stays prose', () =
     ok(/BEST-PRACTICES\.md/.test(skill) && /git diff --name-only/.test(skill),
         'skill must run the release-vs-release diff against BEST-PRACTICES.md -- ' +
         'the semantic EGO audit is exactly the scope between tags');
+    ok(/agent installs/i.test(skill) && /logout\/login/.test(skill),
+        'skill must assign the live install to the agent (mechanical) and ' +
+        'leave the operator exactly the logout/login + surface walk');
     ok(/AGENTS\.md/.test(skill), 'AGENTS.md must be in the skill\'s contract');
     const agents = read(`${ROOT}/AGENTS.md`);
     ok(/skills\/weatherglass-release\/SKILL\.md/.test(agents),

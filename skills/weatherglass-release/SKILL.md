@@ -109,17 +109,23 @@ without a GitHub release, say so in one line rather than pretending
 the list is complete. Include the step-2 sha. If the tag already
 exists as a draft, reuse it (`gh release view vN`).
 
-### 4. Live-session verification (the operator's eyes)
+### 4. Live-session verification (agent installs, operator sees)
+
+The install is mechanical -- the agent runs it, not the operator:
 
 ```sh
 gnome-extensions install --force dist/weatherglass@vijaybala.dev.zip
 ```
 
-The zip ships a compiled schema (v8+), so this installs cleanly in a
-running session; still ask the operator for ONE logout/login (GJS
-caches modules per process) and have them walk: panel + menu in dark
-and light themes, animated/solid/accent styles, hover + selected
-tiles, prefs. The verified zip must be byte-identical to the uploaded
+Then stop touching the running session: the zip ships a compiled
+schema (v8+) so a runtime enable works, but GJS caches modules per
+process -- toggling here races destroy and wedges the state until
+login. The operator's share is exactly one logout/login (announce it:
+it closes any earlier wedged state too) and the surface walk: panel +
+menu in dark and light themes, animated/solid/accent styles, hover +
+selected tiles, prefs, and this release's must-sees named in the
+release notes. Screenshot + pixel forensics after the walk are the
+proof, and the verified zip must be byte-identical to the uploaded
 one -- never verify a rebuild and ship a different build.
 
 ### 5. Captures and demo, from the verified build only
