@@ -763,6 +763,26 @@ function renderCoverage() {
                 manifest.push({png: dayInfo.name, markerX, ...cell});
         }
     }
+    /* descent trio -- mirror of the probe registry, same rule: the
+     * locked cov-clear-golden Berlin scene (sunset-12) at -72/+18/+54
+     * minutes. Golden hour as a passage for the README gallery strip;
+     * the grid certifies their glyphs like any other coverage card. */
+    if (berlin.tzMin !== 60)
+        throw new Error('Berlin preset moved off +01:00 -- re-derive the descent tz tag');
+    const sunB = sunGeometry(berlin.lat, berlin.lon,
+        Date.parse(`${berlin.date}T12:00+01:00`));
+    for (const [slug, dMin] of [['cov-clear-descent-early', -72],
+        ['cov-clear-descent-afterglow', 18],
+        ['cov-clear-descent-twilight', 54]]) {
+        const dCells = [];
+        const dInfo = renderCard({city: berlin.city, lat: berlin.lat,
+            lon: berlin.lon, ms: sunB.sunset + dMin * 60000,
+            tzMin: berlin.tzMin, condition: 'clear', units: 'metric',
+            slug}, outDir, dCells);
+        const dX = 24 + 0.02 * (W - 48);
+        for (const cell of dInfo.cells)
+            manifest.push({png: dInfo.name, markerX: dX, ...cell});
+    }
     if (!manifest.length)
         throw new Error('coverage produced zero graded glyphs');
     GLib.file_set_contents(GLib.build_filenamev([outDir, 'manifest.json']),

@@ -11,7 +11,7 @@
 #                                               #   lock: render each
 #                                               #   fixture and diff against
 #                                               #   its BLESSED shell golden
-#                                               #   ('all' = the 48-slug
+#                                               #   ('all' = the probe's full slug
 #                                               #   registry, one boot)
 #   tools/shell-golden.sh card bless [SLUG...|all]
 #                                               #   re-canonise the shell
@@ -61,7 +61,7 @@ if [ "$MODE" = card ] && { [ "${1:-}" = check ] || [ "${1:-}" = bless ]; }; then
 fi
 SLUGS=("$@")
 [ ${#SLUGS[@]} -gt 0 ] || SLUGS=(style-solid-dark)
-# 'all' = the probe's full 48-slug registry; the runner learns the list
+# 'all' = the probe's full slug registry; the runner learns the list
 # from the probe report (bless) or assumes the canonical set (check)
 ALL_SET="all"
 [ "${SLUGS[0]}" = all ] || ALL_SET=""

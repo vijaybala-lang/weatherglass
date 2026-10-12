@@ -124,6 +124,22 @@ lighting and chart ink all follow the low sun:
 <tr><td align="middle"><b>Snow</b></td><td align="middle"><b>Sleet</b></td><td align="middle"><b>Thunderstorm</b></td><td align="middle"><b>Hail</b></td><td align="middle"><b>Wind</b></td></tr>
 </table>
 
+**The descent.** Golden hour is a passage, not a moment: one clear Berlin
+evening, four clock readings, nothing retouched. The middle card is the
+locked golden above; the other three are the same scene at neighboring
+instants — the sky model carries the hue, the glyphs flip to their night
+family somewhere in the middle, and the chart language never changes:
+
+<table>
+<tr>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-descent-early.png" width="160" height="220" alt="Late afternoon, sunset minus 72 minutes"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-golden.png" width="160" height="220" alt="Golden hour, sunset minus 12 minutes"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-descent-afterglow.png" width="160" height="220" alt="Afterglow, sunset plus 18 minutes"></td>
+<td><img src="https://github.com/vijaybala-lang/weatherglass/raw/master/tools/golden/shell/cov-clear-descent-twilight.png" width="160" height="220" alt="Twilight, sunset plus 54 minutes"></td>
+</tr>
+<tr><td align="middle"><b>Late afternoon</b><br>sunset &minus; 72 min</td><td align="middle"><b>Golden hour</b><br>sunset &minus; 12 min</td><td align="middle"><b>Afterglow</b><br>sunset + 18 min</td><td align="middle"><b>Twilight</b><br>sunset + 54 min</td></tr>
+</table>
+
 ### Backdrop styles
 
 Three backdrop styles, one chart language. *Sky* is the default: the card

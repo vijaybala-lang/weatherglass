@@ -68,7 +68,7 @@ function slotFx(city, slot) {
 
 let weatherRef = null;   // module handles for the roster math (set at boot)
 
-/** slug -> fixture, the full 48-slug registry the goldens are named for */
+/** slug -> fixture, the full registry the blessed goldens are named for */
 export function allFixtures(weather, moon) {
     weatherRef = weather;
     const all = {...PRESETS, ...FIXTURES};
@@ -114,6 +114,23 @@ export function allFixtures(weather, moon) {
                 lat: berlin.lat, lon: berlin.lon, ms: best.ms - 8 * 3600000,
                 tzMin: berlin.tzMin, condition: 'clear'};
     }
+    /* The descent trio -- golden hour is a passage, not a moment. The
+     * locked cov-clear-golden card is Berlin 2026-11-03 clear at
+     * sunset-12; these three are the SAME city and condition at sunset
+     * minus 72 min (afternoon warming), plus 18 (afterglow) and plus 54
+     * (twilight, first stars). The README hangs its descent strip on
+     * the anchor plus these. Mirrored VERBATIM with renderCoverage() in
+     * tools/card-demo.mjs -- slugs are blessed golden names. */
+    if (berlin.tzMin !== 60)
+        throw new Error('Berlin preset moved off +01:00 -- re-derive the descent tz tag');
+    const sunB = weatherRef.sunGeometry(berlin.lat, berlin.lon,
+        Date.parse(`${berlin.date}T12:00+01:00`));
+    for (const [slug, dMin] of [['cov-clear-descent-early', -72],
+        ['cov-clear-descent-afterglow', 18],
+        ['cov-clear-descent-twilight', 54]])
+        all[slug] = {city: berlin.city, lat: berlin.lat, lon: berlin.lon,
+            ms: sunB.sunset + dMin * 60000, tzMin: berlin.tzMin,
+            condition: 'clear'};
     return all;
 }
 
