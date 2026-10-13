@@ -6,7 +6,7 @@
  * "is this check semantically necessary": a reviewer greps for the token,
  * not the intent, so shipped code stays token-free.
  */
-import { file, test, ok, report } from './harness.mjs';
+import { file, test, eq, ok, report } from './harness.mjs';
 import Gio from 'gi://Gio';
 
 file('guide');
@@ -138,6 +138,37 @@ test('schema id comes from metadata, not call sites', () => {
     const meta = JSON.parse(read(`${ROOT}/metadata.json`));
     ok(meta['settings-schema'], 'metadata.json must declare settings-schema');
     silence(scan(/getSettings\(\s*['"]/));
+});
+
+/* The prefs picker, the gschema choices and the gsettings default are
+ * three lists the user can desync by touching one: a model id in prefs
+ * but not gschema is a write the settings layer rejects (silent no-op),
+ * a choice in gschema but not prefs is unreachable. One lock, both
+ * directions, plus the label count so the ComboRow can never index a
+ * missing row (v9 widened the picker; drift here is invisible until a
+ * user hits it). */
+test('the forecast-model picker mirrors the schema choices', () => {
+    const prefs = read(`${ROOT}/prefs.js`);
+    const xml = read(`${ROOT}/schemas/org.gnome.shell.extensions.weatherglass.gschema.xml`);
+    const ids = [...prefs.matchAll(/const MODEL_IDS = \[([^\]]+)\]/g)][0][1]
+        .split(',').map(s => s.trim().replace(/'/g, ''));
+    const choices = [...xml.matchAll(/name="om-model"[\s\S]*?<choices>([\s\S]*?)<\/choices>/g)][0][1]
+        .match(/value="([^"]+)"/g).map(m => m.slice(7, -1));
+    eq(new Set(ids).size, ids.length);            // prefs list has no dupes
+    eq(new Set(choices).size, choices.length);    // schema has no dupes
+    for (const id of ids)
+        ok(choices.includes(id), `prefs offers ${id} but gschema rejects it`);
+    for (const c of choices)
+        ok(ids.includes(c), `gschema allows ${c} but the picker hides it`);
+    // every id needs a visible label at the same index
+    const labels = [...prefs.matchAll(
+        /title: _\('Forecast model'\)[\s\S]*?strings: \[([\s\S]*?)\]/g)][0][1]
+        .match(/_\('[^']*'\)/g);
+    eq(labels.length, ids.length);
+    // the wide picker is the v9 feature: these models must be present
+    for (const m of ['ecmwf_ifs', 'gem_global', 'jma_seamless',
+                     'ukmo_global_deterministic_10km'])
+        ok(ids.includes(m), `picker must expose ${m}`);
 });
 
 // the site copy is rendered from the manifest at upload time, so the

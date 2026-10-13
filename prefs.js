@@ -538,13 +538,19 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             model: new Gtk.StringList({
                 strings: [
                     _('Best match (Open-Meteo regional pick; US → GFS)'),
-                    _('ECMWF IFS (recommended)'),
+                    _('ECMWF IFS high-res (recommended)'),
+                    _('ECMWF IFS (0.25° grid)'),
                     _('DWD ICON (shorter range)'),
                     _('NOAA GFS'),
+                    _('GEM global (Canada)'),
+                    _('JMA (Japan · rain chance derived)'),
+                    _('UK Met Office global (10 km)'),
                 ],
             }),
         });
-        const MODEL_IDS = ['best_match', 'ecmwf_ifs025', 'icon_seamless', 'gfs_seamless'];
+        const MODEL_IDS = ['best_match', 'ecmwf_ifs', 'ecmwf_ifs025',
+                           'icon_seamless', 'gfs_seamless', 'gem_global',
+                           'jma_seamless', 'ukmo_global_deterministic_10km'];
         const selectedModelIndex = MODEL_IDS.indexOf(settings.get_string('om-model'));
         modelRow.set_selected(Math.max(selectedModelIndex, 0));
         modelRow.connect('notify::selected', () =>
