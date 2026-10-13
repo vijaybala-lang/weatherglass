@@ -355,7 +355,7 @@ class OpenMeteoProvider extends WeatherProvider {
             timeIso: rawCurrent.time ?? '',
         };
 
-        const daily = (rawDaily.time ?? []).map((date, i) => ({
+        const rawDailyDays = (rawDaily.time ?? []).map((date, i) => ({
             date,
             code: rawDaily.weather_code[i],
             tmax: rawDaily.temperature_2m_max[i],
@@ -367,14 +367,39 @@ class OpenMeteoProvider extends WeatherProvider {
             windMax: rawDaily.wind_speed_10m_max[i] ?? 0,
         }));
 
-        const hourly = {
-            time: rawHourly?.time ?? [],
-            temp: rawHourly?.temperature_2m ?? [],
-            precipProb: rawHourly?.precipitation_probability ?? [],
-            wind: rawHourly?.wind_speed_10m ?? [],
-            code: rawHourly?.weather_code ?? [],
-            isDay: (rawHourly?.is_day ?? []).map(val => !!val),
+        const preTrim = {
+            time: raw.hourly?.time ?? [],
+            temp: raw.hourly?.temperature_2m ?? [],
+            precipProb: raw.hourly?.precipitation_probability ?? [],
+            wind: raw.hourly?.wind_speed_10m ?? [],
+            code: raw.hourly?.weather_code ?? [],
+            isDay: (raw.hourly?.is_day ?? []).map(val => !!val),
         };
+
+        /* Model horizons end early (a 3-hourly global run answers ~10
+         * days; beyond it the API sends nulls). Nulls must never reach
+         * paintChart: Math.min coerces null to 0, so one null point
+         * fakes a 0-degree cliff AND skews the whole y-window. Trim
+         * every hourly array at the first missing core sample
+         * (temp/wind/code) -- interpolation would fabricate, and the
+         * chart's own condition-strip guard refuses mismatched lengths
+         * outright. Daily rows trim at their first missing code/max/min:
+         * the tile row honestly shows fewer days. */
+        let horizon = preTrim.time.length;
+        for (const arr of [preTrim.temp, preTrim.wind, preTrim.code]) {
+            const first = arr.findIndex(val => val === null || val === undefined);
+            if (first !== -1)
+                horizon = Math.min(horizon, first);
+        }
+        const hourly = {};
+        for (const key of Object.keys(preTrim))
+            hourly[key] = preTrim[key].slice(0, horizon);
+
+        const dayEnd = rawDailyDays.findIndex(d =>
+            d.code === null || d.code === undefined ||
+            d.tmax === null || d.tmax === undefined ||
+            d.tmin === null || d.tmin === undefined);
+        const daily = dayEnd === -1 ? rawDailyDays : rawDailyDays.slice(0, dayEnd);
 
         return {current, daily, hourly};
     }
