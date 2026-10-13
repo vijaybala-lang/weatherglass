@@ -262,6 +262,13 @@ test('providers are constructed lazily, not at module scope', () => {
     silence(scan(/new (?:OpenMeteo|MetNorway|NoaaNws)Provider\s*\(/));
 });
 
+// EGO reviewer lock: no vfunc_map, vfunc_unmap, or vfunc_destroy on custom
+// actor widgets. Actors react to visibility mapping via notify::mapped and
+// implement explicit destroy() methods chained up to super.destroy().
+test('no lifecycle virtual function overrides (vfunc_map/unmap/destroy)', () => {
+    silence(scan(/\bvfunc_(?:map|unmap|destroy)\s*\(/));
+});
+
 /* -- enable/disable stay neighbours in the entry point ------------------ */
 
 test('enable() and disable() are adjacent', () => {

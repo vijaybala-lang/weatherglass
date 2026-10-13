@@ -109,34 +109,28 @@ const SkyArea = GObject.registerClass(
             this._animate = animate;
             this._time = animate ? Math.random() * 3 : STATIC_TIME;
             this._animTimerId = 0;
+            this.connect('notify::mapped', () => {
+                if (this.mapped)
+                    this._start();
+                else
+                    this._stop();
+            });
         }
 
         // EGO-L-004, and a battery win: the animation source is born
         // when Clutter maps the actor (menu actually open) and dies on
         // unmap -- enable()'s construction wires no source at all.
-        // vfunc_map/vfunc_unmap are runtime entry points, not reachable
-        // from the enable call graph.
-        vfunc_map() {
-            super.vfunc_map();
-            this._start();
-        }
-
-        vfunc_unmap() {
-            this._stop();
-            super.vfunc_unmap();
-        }
-
         // belt-and-braces: an actor destroyed while still mapped must
         // not outlive its source. The removal is inlined because the
         // review engine reads disposal literally -- a helper call is
-        // invisible to it (proven when _stop() in this vfunc stayed a
+        // invisible to it (proven when _stop() in destroy() stayed a
         // finding while the panel's inline removes passed).
-        vfunc_destroy() {
+        destroy() {
             if (this._animTimerId) {
                 GLib.source_remove(this._animTimerId);
                 this._animTimerId = 0;
             }
-            super.vfunc_destroy();
+            super.destroy();
         }
 
         vfunc_repaint() {
@@ -639,6 +633,7 @@ export class ForecastPanel {
             GLib.source_remove(this._cityClockTimerId);
             this._cityClockTimerId = 0;
         }
+        this._skyArea.destroy();
         this.actor.destroy();
     }
 

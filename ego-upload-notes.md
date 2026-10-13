@@ -106,12 +106,11 @@ Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v8/weathe
 - Sky-painter one-letter names are cairo-loop graphics notation
   (cr, sx/sy, R), mirroring cairo docs idiom.
 - Timer (formerly EGO-L-004): restructured after the v8 finding -- the
-  sky animation source is created in vfunc_map (menu actually mapped)
-  and removed in vfunc_unmap, with an inline safety remove in
-  vfunc_destroy; enable() itself creates no main-loop source. Chart
-  morph and city-clock timers are removed inline in destroy(). The
-  local shexli stage (`tools/shexli-check.sh`) re-verifies this every
-  certify.
+  sky animation source is created on notify::mapped (menu actually mapped)
+  and removed on unmap, with an inline safety remove in SkyArea.destroy();
+  enable() itself creates no main-loop source. Chart morph and city-clock
+  timers are removed inline in destroy(). The local shexli stage
+  (`tools/shexli-check.sh`) re-verifies this every certify.
 - Schemas: XML only in the zip, per EGO-P-006. Delivery compiles what
   it serves (EGO server-side; the Extensions app locally), so users get
   a working schema without a blob in our package; CLI installs from a
