@@ -63,9 +63,12 @@ close before release, not after the next regression.
 
 ### 1. Version bump
 
-`metadata.json` version goes up by exactly one -- EGO latches on the
-integer, and it lives inside the zip, so the bump precedes the final
-build.
+`metadata.json` version goes up by exactly one -- the integer
+identifies the release to humans and the repo (EGO's page numbers are
+its own upload serials and its served metadata is re-stamped with
+them, so a "version 12" on the review page proves nothing about our
+integer; see ego-upload-notes.md). The integer lives inside the zip,
+so the bump precedes the final build.
 
 **Addressing reviewer comments or findings does NOT bump the
 version.** A review round -- needs-work returned, or comments arriving
@@ -77,6 +80,15 @@ opens a number that was never reviewed); the sha identifies the
 BUILD. New bytes are normal mid-review -- a new number is not.
 The only time to bump is a genuinely new release: EGO approved N,
 the next submission is N+1.
+
+**A shexli-clean build is not a reviewer-approved build.** Serial 11
+passed shexli and was still rejected on mechanism: "Don't use
+\`vfunc\`" -- the map/unmap lifecycle our own #63 fix had chosen. The
+reviewer prescribed the shape (plain \`destroy()\` chaining up,
+explicit child destroy); ship the shape they name, then encode the
+preference as a guide.test lock so no future round relearns it. The
+branch carrying an EGO answer must merge to master the moment review
+runs it -- master must always build the zip under review.
 
 ### 2. Certify the release commit itself
 
