@@ -311,6 +311,10 @@ class OpenMeteoProvider extends WeatherProvider {
             ].join(','),
             hourly: [
                 'temperature_2m', 'precipitation_probability',
+                // precipitation + cloud_cover: JMA/CMA report no
+                // probability and are only selectable because parse
+                // derives it from the amount (see below)
+                'precipitation', 'cloud_cover',
                 'wind_speed_10m', 'weather_code', 'is_day',
             ].join(','),
             daily: [
@@ -367,10 +371,20 @@ class OpenMeteoProvider extends WeatherProvider {
             windMax: rawDaily.wind_speed_10m_max[i] ?? 0,
         }));
 
+        /* JMA and CMA simply do not produce precipitation_probability;
+         * an all-null column would render the Rain tab as zeros. Fall
+         * back ELEMENTWISE to the same Met.no formula (precipProbFrom
+         * on the millimetre amount, cloud cover for dry hours) --
+         * wherever the model DID report a probability it is kept. */
+        const rawProb = raw.hourly?.precipitation_probability ?? [];
+        const rawPrecip = raw.hourly?.precipitation ?? [];
+        const rawCloud = raw.hourly?.cloud_cover ?? [];
         const preTrim = {
             time: raw.hourly?.time ?? [],
             temp: raw.hourly?.temperature_2m ?? [],
-            precipProb: raw.hourly?.precipitation_probability ?? [],
+            precipProb: (raw.hourly?.time ?? []).map(
+                (_, i) => rawProb[i] ??
+                          precipProbFrom(rawPrecip[i], rawCloud[i])),
             wind: raw.hourly?.wind_speed_10m ?? [],
             code: raw.hourly?.weather_code ?? [],
             isDay: (raw.hourly?.is_day ?? []).map(val => !!val),

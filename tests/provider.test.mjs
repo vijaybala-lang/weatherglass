@@ -93,3 +93,29 @@ test('a gap before the suffix still cuts the series at the gap', () => {
     eq(hourly.temp.length, 10);
     eq(hourly.code.length, 10);
 });
+
+/* -- derived precipitation probability (JMA, CMA: the models do not
+ * produce the field; Met.no already lands here via its own adapter) -- */
+
+test('a model without rain-probability gets it derived from the amount', () => {
+    const raw = rawResponse(48);
+    raw.hourly.precipitation_probability = Array(48).fill(null);
+    raw.hourly.precipitation = Array.from({length: 48},
+                                          (_, i) => (i % 6 === 0 ? 3.2 : 0));
+    raw.hourly.cloud_cover = Array(48).fill(40);
+    const {hourly} = openMeteo.parse(raw, {days: 2});
+    eq(hourly.precipProb.length, 48);
+    ok(noNulls(hourly.precipProb), 'derived probabilities must be complete');
+    // the same formula Met.no uses (precipProbFrom): 3.2mm -> ~98%,
+    // a dry hour under 40% cloud -> 16%
+    eq(hourly.precipProb[0], 98);
+    eq(hourly.precipProb[1], 16);
+});
+
+test('a probability the model DID report is never overwritten', () => {
+    const raw = rawResponse(48);
+    raw.hourly.precipitation = Array(48).fill(3.2);   // would derive ~98
+    raw.hourly.cloud_cover = Array(48).fill(40);
+    const {hourly} = openMeteo.parse(raw, {days: 2});
+    eq(hourly.precipProb[0], 20);                     // reported value wins
+});
