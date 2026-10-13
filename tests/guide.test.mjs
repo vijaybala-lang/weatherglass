@@ -190,6 +190,17 @@ test('release ritual: skill owns commands, AGENTS points, kit stays prose', () =
         'ego-upload-notes.md must not carry command lines -- the skill owns those');
 });
 
+// Review rounds must not inflate the version counter: fixing reviewer
+// findings produces new BYTES (new sha, re-certified, re-attached) but
+// the same release. The skill must say so where the bump rule lives.
+test('release ritual: addressing review comments never bumps the version', () => {
+    const skill = read(`${ROOT}/skills/weatherglass-release/SKILL.md`);
+    ok(/reviewer comments[\s\S]{0,400}same version/i.test(skill) ||
+       /same version[\s\S]{0,400}reviewer comments/i.test(skill),
+        'the version-bump step must state that responding to review ' +
+        'comments or findings keeps the version integer unchanged');
+});
+
 // v8 resubmit lessons, pinned: the upload artifact must be a named file
 // proven by sha (dist/ exists in every tree; a pre-commit rebuild nearly
 // shipped as "the newest zip"), and re-canonicalizing goldens publishes

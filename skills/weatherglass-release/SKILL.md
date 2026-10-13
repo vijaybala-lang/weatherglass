@@ -65,9 +65,18 @@ close before release, not after the next regression.
 
 `metadata.json` version goes up by exactly one -- EGO latches on the
 integer, and it lives inside the zip, so the bump precedes the final
-build. Exception: if EGO returned the SAME version as needs-work,
-resubmit the same number (a bump would strand the flagged build in
-the reviewer queue).
+build.
+
+**Addressing reviewer comments or findings does NOT bump the
+version.** A review round -- needs-work returned, or comments arriving
+while still in review -- is answered with the SAME version integer,
+even when the fix changes code, re-certifies, rebuilds the zip, and
+lands a fresh sha in the release body. The integer identifies the
+RELEASE to EGO (bumping strands the flagged build in the queue and
+opens a number that was never reviewed); the sha identifies the
+BUILD. New bytes are normal mid-review -- a new number is not.
+The only time to bump is a genuinely new release: EGO approved N,
+the next submission is N+1.
 
 ### 2. Certify the release commit itself
 
