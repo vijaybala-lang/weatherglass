@@ -1,0 +1,305 @@
+From 4076ea4605267b268ef894fef8174d9622b2ad8a Mon Sep 17 00:00:00 2001
+From: vijaybala-lang <vijaybala-lang@users.noreply.github.com>
+Date: Wed, 14 Oct 2026 16:23:40 -0700
+Subject: [PATCH] web-source: bound every location query with a deadline and
+ recover from event kills
+
+Queries to location servers had no overall time bound. On flaky or
+silently-stalling endpoints (observed: api.beacondb.net and IPv6-only
+reachability paths) a send could sit until the D-Bus reply timeout made
+every waiting client give up, while the daemon still considered the
+query live.
+
+Give each query a private GCancellable plus a 20 s deadline, below the
+client-side 25 s D-Bus timeout. Caller cancellation and source-lifecycle
+cancellation are chained into the private handle exactly as they killed
+the query before, so existing cancellation semantics are preserved; the
+deadline expiry is distinguished and logged instead of vanishing
+silently.
+
+When a query is killed by source churn (network-change / connectivity
+events), the stock follower refresh races this completion and is
+routinely swallowed by the in-progress guard; nothing then re-arms a
+query and every waiting client hangs forever. Re-arm once from an idle
+after a non-caller cancellation, capped at five consecutive attempts so
+a pathological state cannot turn into a hot loop.
+
+Both failure modes reproduce 100% with a local endpoint that accepts
+connections and never answers; the deadline fires at exactly 20 s on a
+live daemon and the re-arm recovers clients that would otherwise wait
+indefinitely.
+---
+ src/gclue-web-source.c | 206 +++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 200 insertions(+), 6 deletions(-)
+
+diff --git a/src/gclue-web-source.c b/src/gclue-web-source.c
+index 75b0ca3..6c92692 100644
+--- a/src/gclue-web-source.c
++++ b/src/gclue-web-source.c
+@@ -40,6 +40,15 @@
+ 
+ struct _GClueWebSourcePrivate {
+         GCancellable *cancellable;
++        GCancellable *query_cancellable;
++        struct {
++                GCancellable *cancellable;
++                gulong handler_id;
++        } bound[2];
++        guint query_deadline_id;
++        guint event_kill_retries;
++        guint query_timed_out : 1;
++        guint query_by_caller : 1;
+ 
+         GClueAccuracyLevel accuracy_level;
+ 
+@@ -77,6 +86,127 @@ static void refresh_callback (SoupSession  *session,
+                               GAsyncResult *result,
+                               gpointer      user_data);
+ 
++/* Upper bound for a single location query, including any prerequisite
++ * work such as the WiFi AP scan (which itself allows up to 10 s at high
++ * accuracy). This must stay below the D-Bus method-call timeout our
++ * clients are given (25 s by default): a query outliving that window
++ * makes the daemon look wedged to every waiting client -- each Start
++ * reply is lost to a client-side timeout before the query ever fails,
++ * and no error is ever reported. */
++#define QUERY_TIMEOUT_SECONDS 20
++
++static gboolean
++on_query_deadline (gpointer user_data)
++{
++        GClueWebSource *source = GCLUE_WEB_SOURCE (user_data);
++        GClueWebSourcePrivate *priv = source->priv;
++
++        priv->query_deadline_id = 0;
++        if (priv->query_cancellable) {
++                priv->query_timed_out = TRUE;
++                g_cancellable_cancel (priv->query_cancellable);
++                g_clear_object (&priv->query_cancellable);
++        }
++
++        return G_SOURCE_REMOVE;
++}
++
++static void
++forward_query_cancelled (GCancellable *bound_cancellable G_GNUC_UNUSED,
++                         gpointer      user_data)
++{
++        g_cancellable_cancel ((GCancellable *) user_data);
++}
++
++/* Chain a caller-owned cancellable (the caller's, or the source's own) to
++ * the query's own handle, so a caller cancel kills the query exactly as it
++ * did before, while a deadline expiry remains distinguishable in
++ * refresh_callback. Bound pairs are always released via
++ * cancel_pending_query() to balance the g_cancellable_connect() data ref. */
++static void
++bind_query_cancel (GClueWebSource *source, GCancellable *cancellable)
++{
++        GClueWebSourcePrivate *priv = source->priv;
++        guint i;
++
++        if (cancellable == NULL)
++                return;
++
++        for (i = 0; i < G_N_ELEMENTS (priv->bound); i++) {
++                if (priv->bound[i].cancellable == cancellable)
++                        return;
++                if (priv->bound[i].cancellable == NULL) {
++                        priv->bound[i].cancellable = g_object_ref (cancellable);
++                        priv->bound[i].handler_id =
++                                g_cancellable_connect (cancellable,
++                                                       (GCallback) forward_query_cancelled,
++                                                       g_object_ref (priv->query_cancellable),
++                                                       g_object_unref);
++                        return;
++                }
++        }
++}
++
++/* Was the in-flight query's cancellation initiated by the caller itself?
++ * Callers of refresh_async are bound first, so their handle (if any) is
++ * the first non-empty slot. */
++static gboolean
++query_cancelled_by_caller (GClueWebSource *source)
++{
++        GClueWebSourcePrivate *priv = source->priv;
++        guint i;
++
++        for (i = 0; i < G_N_ELEMENTS (priv->bound); i++)
++                if (priv->bound[i].cancellable != NULL)
++                        return priv->bound[i].cancellable != priv->cancellable &&
++                               g_cancellable_is_cancelled (priv->bound[i].cancellable);
++
++        return FALSE;
++}
++
++/* One-shot re-arm after a source-lifecycle (network event) kill: the
++ * stock follower refresh, locate_url_checked_cb, races this completion
++ * and is routinely swallowed by the in-progress guard; without a re-arm,
++ * every client waiting on the killed query hangs forever. */
++static gboolean
++retry_killed_query (gpointer user_data)
++{
++        GClueWebSource *source = GCLUE_WEB_SOURCE (user_data);
++
++        if (gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (source)) &&
++            source->priv->query == NULL)
++                gclue_web_source_refresh (source);
++
++        g_object_unref (source);
++        return G_SOURCE_REMOVE;
++}
++
++static void
++cancel_pending_query (GClueWebSource *source)
++{
++        GClueWebSourcePrivate *priv = source->priv;
++        guint i;
++
++        if (priv->query_deadline_id != 0) {
++                g_source_remove (priv->query_deadline_id);
++                priv->query_deadline_id = 0;
++        }
++
++        for (i = 0; i < G_N_ELEMENTS (priv->bound); i++) {
++                if (priv->bound[i].cancellable != NULL) {
++                        g_cancellable_disconnect (priv->bound[i].cancellable,
++                                                  priv->bound[i].handler_id);
++                        priv->bound[i].handler_id = 0;
++                        g_clear_object (&priv->bound[i].cancellable);
++                }
++        }
++
++        if (priv->query_cancellable) {
++                g_cancellable_cancel (priv->query_cancellable);
++                g_clear_object (&priv->query_cancellable);
++        }
++}
++
+ static void
+ gclue_web_source_real_refresh_async (GClueWebSource      *source,
+                                      GCancellable        *cancellable,
+@@ -116,10 +246,23 @@ gclue_web_source_real_refresh_async (GClueWebSource      *source,
+                 return;
+         }
+ 
++        /* Own handle for the query so a deadline expiry and a caller
++         * cancel can be told apart in refresh_callback; chain the
++         * caller's cancellation through to it. */
++        cancel_pending_query (source);
++        source->priv->query_cancellable = g_cancellable_new ();
++        source->priv->query_timed_out = FALSE;
++        source->priv->query_by_caller = FALSE;
++        source->priv->query_deadline_id =
++                g_timeout_add_seconds (QUERY_TIMEOUT_SECONDS,
++                                       on_query_deadline, source);
++        bind_query_cancel (source, cancellable);
++        bind_query_cancel (source, source->priv->cancellable);
++
+         soup_session_send_and_read_async (source->priv->soup_session,
+                                           source->priv->query,
+                                           G_PRIORITY_DEFAULT,
+-                                          cancellable,
++                                          source->priv->query_cancellable,
+                                           (GAsyncReadyCallback)refresh_callback,
+                                           g_steal_pointer (&task));
+ }
+@@ -131,6 +274,7 @@ refresh_callback (SoupSession  *session,
+ {
+         g_autoptr(GTask) task = g_steal_pointer (&user_data);
+         GClueWebSource *web;
++        gboolean timed_out;
+         g_autoptr(SoupMessage) query = NULL;
+         g_autoptr(GBytes) body = NULL;
+         g_autoptr(GError) local_error = NULL;
+@@ -143,13 +287,50 @@ refresh_callback (SoupSession  *session,
+         web = GCLUE_WEB_SOURCE (g_task_get_source_object (task));
+         query = g_steal_pointer (&web->priv->query);
+ 
++        timed_out = web->priv->query_timed_out;
++        /* Decide caller-cancel vs event-kill while the bound handles are
++         * still alive; cancel_pending_query() drops them next. */
++        web->priv->query_by_caller = query_cancelled_by_caller (web);
++        cancel_pending_query (web);
++
+         body = soup_session_send_and_read_finish (session, result, &local_error);
++        /* Any completion that is not an event kill clears the retry debt;
++         * a deadline expiry counts as having made real progress too. */
++        if (body != NULL || timed_out ||
++            !g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
++                web->priv->event_kill_retries = 0;
++
+         if (!body) {
+-                g_task_return_error (task, g_steal_pointer (&local_error));
++                g_autofree char *uri_str = NULL;
++
++                uri_str = g_uri_to_string (soup_message_get_uri (query));
++                if (timed_out) {
++                        g_info ("Location query to '%s' (%s) timed out after %d seconds",
++                                uri_str, web->priv->query_data_description,
++                                QUERY_TIMEOUT_SECONDS);
++                        g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_TIMED_OUT,
++                                                 "Query location timed out after %d seconds",
++                                                 QUERY_TIMEOUT_SECONDS);
++                } else if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
++                        /* Caller went away: normal life, no logging. */
++                        g_task_return_error (task, g_steal_pointer (&local_error));
++                } else {
++                        g_info ("Location query to '%s' (%s) failed: %s",
++                                uri_str, web->priv->query_data_description,
++                                local_error->message);
++                        g_task_return_error (task, g_steal_pointer (&local_error));
++                }
+                 return;
+         }
+ 
+         if (soup_message_get_status (query) != SOUP_STATUS_OK) {
++                g_autofree char *uri_str = NULL;
++
++                uri_str = g_uri_to_string (soup_message_get_uri (query));
++                g_info ("Location query to '%s' (%s) failed: HTTP %u %s",
++                        uri_str, web->priv->query_data_description,
++                        soup_message_get_status (query),
++                        soup_message_get_reason_phrase (query));
+                 g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_FAILED,
+                                          "Query location SOUP error: %s",
+                                          soup_message_get_reason_phrase (query));
+@@ -200,10 +381,21 @@ query_callback (GObject      *source_object,
+         if (location)
+                 g_object_unref (location);
+ 
+-        if (local_error != NULL &&
+-            !g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
+-                if (!g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_INITIALIZED) &&
+-                    !g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_PENDING)) {
++        if (local_error != NULL) {
++                if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_CANCELLED) &&
++                    !query_cancelled_by_caller (web) &&
++                    gclue_location_source_get_active (GCLUE_LOCATION_SOURCE (web))) {
++                        /* Source-lifecycle kill: re-arm, capped, so that a
++                         * pathological cancellation state cannot turn into
++                         * a hot loop. */
++                        web->priv->event_kill_retries++;
++                        if (web->priv->event_kill_retries <= 5)
++                                g_idle_add (retry_killed_query, g_object_ref (web));
++                        else if (web->priv->event_kill_retries == 6)
++                                g_info ("Giving up re-arming location query after "
++                                        "5 consecutive cancellations");
++                } else if (!g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_INITIALIZED) &&
++                           !g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_PENDING)) {
+                         g_warning ("Failed to query location: %s",
+                                    local_error->message);
+                 } else {
+@@ -417,6 +609,8 @@ gclue_web_source_finalize (GObject *gsource)
+ {
+         GClueWebSourcePrivate *priv = GCLUE_WEB_SOURCE (gsource)->priv;
+ 
++        cancel_pending_query (GCLUE_WEB_SOURCE (gsource));
++
+         g_cancellable_cancel (priv->cancellable);
+ 
+         if (priv->network_changed_id) {
+-- 
+2.56.0
+

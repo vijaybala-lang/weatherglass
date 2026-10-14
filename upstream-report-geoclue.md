@@ -88,16 +88,40 @@ Stopping it, restarting `geoclue.service`, and re-running the probe
 without any custom agent: same hang returns. So the daemon, the
 whitelist, and libgeoclue are fine; the shell's agent is the dead end.
 
+### Measured: agent registration is lost permanently on daemon restart
+
+The hang above worsens into a system-wide wedge after any
+`systemctl restart geoclue` (including the idle auto-shutdown): the
+shell registers its agent exactly once per daemon instance.
+Journal evidence from a live session:
+
+```text
+17:14:26 daemon (re)start: "New agent for user ID '1000'" (x2 churn)
+17:14:29 "Agent for user '1000' vanished"
+17:14:31 "New agent for user ID '1000'"
+17:15:18 "Agent for user '1000' vanished"   <-- final; never returns
+```
+
+From 17:15:18 on, no `AddAgent` arrives for any subsequent daemon
+instance, and every location client for that user either hangs (Start
+is queued on `clients_waiting_agent`, `gclue-service-manager.c`, with
+no timeout) or is refused while the shell momentarily holds the slot
+with `MaxAccuracyLevel = 0`. A minimal stand-in agent (own object
+implementing `org.freedesktop.GeoClue2.Agent`, `AddAgent` with the
+whitelisted id) immediately unblocks every client -- proving the queue
+drains the moment any agent exists, and that the missing
+re-registration is the whole gap.
+
 ### Notes on observability (contributing factor)
 
 In geoclue 2.8.2 the Manager's `Agent` property is gone (introspected:
 only `AvailableAccuracyLevel` / `InUse` remain), so there is no way to
 ask the daemon which agent holds the slot, and no journal line when an
 agent fails to answer. `location.js` registers once (`AddAgentAsync`)
-at daemon startup and never re-registers if the name owner dies or is
-stolen (e.g. by any process that calls `AddAgent('geoclue-demo-agent')`,
-which is whitelisted and auto-started via
-`/etc/xdg/autostart/geoclue-demo-agent.desktop` on some desktops).
+at daemon startup and, as measured above, never re-registers after the
+daemon restarts or the slot is taken (any whitelisted id works — the
+daemon trusts the claimed id from an unconfined caller, which is how
+the stand-in agent above gets in).
 Both make the failure mode invisible to users and to us.
 
 ### Impact
@@ -203,6 +227,39 @@ Measured A/B on this setup:
   dead-end. The client-notification gap is the bug; the patch bounds
   the query and lifts the veil.
 
+### A third failure mode: churn kills the query, the follower
+### refresh loses the race, nothing ever re-arms
+
+Distinct from a stall: `GClueWebSource` rides every query on the
+source's own `priv->cancellable`, and `on_network_changed` /
+`on_connectivity_changed` cancel-and-recreate it on routine events
+(e.g. the connectivity notify a daemon receives seconds after
+activation). The kill itself is by design -- but the recovery is a
+race: the follower refresh (`locate_url_checked_cb` →
+`gclue_web_source_refresh`) usually arrives while the killed query's
+completion has not yet cleared `priv->query`, so `refresh_async`'s
+in-progress guard eats it, and if no further event happens to arrive,
+**no query is ever armed again** while clients wait forever.
+
+Measured with the harness above plus live churn: on patched builds
+the signature is direct (`Sending following request` logged, a
+connectivity event within the same second, `Operation was cancelled`
+on the query, **no subsequent `Sending` line ever** -- client hangs;
+`g_cancellable_cancel` breakpoints confirm the kill path). Stock
+2.8.2 hangs identically under the same conditions (its send rides the
+same cancellable, and the follow-the-kill refresh is the same racing
+code); on one stock run the daemon never even reached the first send
+before the window closed. Same signature also killed a live query
+against the real BeaconDB endpoint during testing (daemon start, query
+armed, connectivity notify in the same second, silence thereafter).
+
+The attached patch re-arms once from an idle after a non-caller
+cancellation while the source is still active. The cap (5, then one
+info line) is load-bearing, not cosmetic: an uncapped revision of the
+re-arm, driven by a pathological cancellation state we did not fully
+isolate, burned 583,181 sends in four minutes before the cap
+contained it.
+
 ### Asks
 
 1. **Decide how clients learn of query failure.** Options with
@@ -212,9 +269,10 @@ Measured A/B on this setup:
    implement once chosen.
 2. **Retry with backoff on failed sources** -- currently a failed
    source only re-fires on network/connectivity change signals.
-3. Attached MR bounds queries (20 s deadline) and logs all query
+3. Attached MR bounds queries (20 s deadline), logs all query
    failures at info level (endpoint URI + data class only, no
-   location data).
+   location data), and caps the churn re-arm described above — the
+   general "retry with backoff" decision (#2) remains open.
 4. Observability: `Manager.Agent` removal in 2.8 makes agent-side
    dead-ends (Report A) undiagnosable from outside; one info-level
    line per `AuthorizeApp` dispatch/answer would have saved days.
