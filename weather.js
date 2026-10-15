@@ -949,7 +949,12 @@ export function ensureDesktopEntry() {
     file.load_contents_async(null, (obj, res) => {
         try {
             const [, bytes] = obj.load_contents_finish(res);
-            if (new TextDecoder().decode(bytes) === text)
+            /* Keep any entry that carries our consent key: the standalone
+             * WeatherGlass app historically installed a richer .desktop
+             * under the same id and it satisfies the consent agent just as
+             * well (Name + X-Geoclue-Reason). Byte-equality here used to
+             * bulldoze it. */
+            if (new TextDecoder().decode(bytes).includes('X-Geoclue-Reason'))
                 return;
         } catch (err) {
             // concrete failure mode: entry absent (the common first
@@ -973,8 +978,13 @@ export function ensureDesktopEntry() {
 export function removeDesktopEntry() {
     const file = desktopEntryFile();
     try {
-        if (file.query_exists(null))
-            file.delete(null);
+        /* Only ever delete OUR stub: a fuller third-party/app entry sharing
+         * the id is not ours to remove. */
+        if (file.query_exists(null)) {
+            const [, bytes] = file.load_contents(null);
+            if (new TextDecoder().decode(bytes).includes('NoDisplay=true'))
+                file.delete(null);
+        }
     } catch (err) {
         logError(err, 'Weatherglass: consent entry not removable');
     }
