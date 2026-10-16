@@ -937,6 +937,27 @@ function desktopEntryFile() {
         [GLib.get_user_data_dir(), 'applications', desktopEntryName()]));
 }
 
+/** Read the consent stub once for BOTH upkeep siblings (the dedup
+ * rule): delivers `{file, text}` where text is null for absent-or-
+ * unreadable. NOT_FOUND is the common first-run path and stays silent;
+ * other read failures are logged here because neither caller can DO
+ * anything better with them. The null outcome's fate is deliberately
+ * each caller's own policy: ensure overwrites (recovery), remove
+ * no-ops (absence was the goal). */
+function readConsentStub(done) {
+    const file = desktopEntryFile();
+    file.load_contents_async(null, (obj, res) => {
+        try {
+            const [, bytes] = obj.load_contents_finish(res);
+            done({file, text: new TextDecoder().decode(bytes)});
+        } catch (err) {
+            if (!err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND))
+                logError(err, 'Weatherglass: consent entry unreadable');
+            done({file, text: null});
+        }
+    });
+}
+
 /** Idempotent: writes only when absent or stale. The read is async
  * (EGO-X-004): a synchronous load would stall the UI thread for a disk
  * round-trip on every enable/toggle. The write is the rare path (only
@@ -944,27 +965,17 @@ function desktopEntryFile() {
  * callers fire-and-forget -- the entry is consulted later by the
  * consent agent, never by this call stack. */
 export function ensureDesktopEntry() {
-    const file = desktopEntryFile();
-    const text = desktopEntryText();
-    file.load_contents_async(null, (obj, res) => {
-        try {
-            const [, bytes] = obj.load_contents_finish(res);
-            /* Keep any entry that carries our consent key: the standalone
-             * WeatherGlass app historically installed a richer .desktop
-             * under the same id and it satisfies the consent agent just as
-             * well (Name + X-Geoclue-Reason). Byte-equality here used to
-             * bulldoze it. */
-            if (new TextDecoder().decode(bytes).includes('X-Geoclue-Reason'))
-                return;
-        } catch (err) {
-            // concrete failure mode: entry absent (the common first
-            // run) -- falls through to the write below
-            if (!err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND))
-                logError(err, 'Weatherglass: consent entry unreadable');
-        }
+    readConsentStub(({file, text}) => {
+        /* Keep any entry that carries our consent key: the standalone
+         * WeatherGlass app historically installed a richer .desktop
+         * under the same id and it satisfies the consent agent just as
+         * well (Name + X-Geoclue-Reason). Byte-equality here used to
+         * bulldoze it. */
+        if (text !== null && text.includes('X-Geoclue-Reason'))
+            return;
         try {
             makeDirectoryPath(file.get_parent());
-            file.replace_contents(text, null, false,
+            file.replace_contents(desktopEntryText(), null, false,
                 Gio.FileCreateFlags.NONE, null);
         } catch (err) {
             // concrete failure mode: unwritable home; the consent
@@ -975,29 +986,18 @@ export function ensureDesktopEntry() {
     });
 }
 
-/* Async read (EGO-X-004): the ownership probe must not stall the UI
- * thread for a disk round-trip. Callers fire-and-forget. Concrete
- * failure mode: a remove landing AFTER a re-enable rewrote the stub
- * (disable/enable inside the millisecond callback window) leaves no
- * entry while auto-location stays on -- the consent agent then falls
- * back to the IP chain, and the next ensure()/enable rewrite heals it. */
+/* Async via readConsentStub (EGO-X-004, shared with ensureDesktopEntry
+ * -- no second bespoke read pipeline). Callers fire-and-forget.
+ * Concrete failure mode: a remove landing AFTER a re-enable rewrote
+ * the stub (disable/enable inside the millisecond callback window)
+ * leaves no entry while auto-location stays on -- the consent agent
+ * then falls back to the IP chain, and the next ensure()/enable
+ * rewrite heals it. */
 export function removeDesktopEntry() {
-    const file = desktopEntryFile();
-    file.load_contents_async(null, (obj, res) => {
+    readConsentStub(({file, text}) => {
         /* Only ever delete OUR stub: a fuller third-party/app entry
          * sharing the id is not ours to remove. */
-        let ours = false;
-        try {
-            const [, bytes] = obj.load_contents_finish(res);
-            ours = new TextDecoder().decode(bytes).includes('NoDisplay=true');
-        } catch (err) {
-            // absent (nothing to remove) or unreadable (prove-ably not
-            // ours to guess with): both stop here
-            if (!err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND))
-                logError(err, 'Weatherglass: consent entry unreadable');
-            return;
-        }
-        if (!ours)
+        if (text === null || !text.includes('NoDisplay=true'))
             return;
         try {
             file.delete(null);

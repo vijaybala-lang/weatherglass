@@ -137,6 +137,13 @@ the commands are skill step 0):
    the measured-ground referee) with a comment for the reviewer.
 4. **Verify & bump.** The version bump rules, the certify gate on the
    release commit, the zip + sha record -- commands in the skill.
+   Certification is per shell, not per machine: every major listed in
+   `shell-version` must have presented a green guest cert (the skill's
+   older-shell certs run the ladder against the Fedora that houses
+   that GNOME, on the same zip bytes), refreshed whenever shipped
+   code changed since that cert was struck. A shell version without a
+   current cert does not ride in the metadata -- and a version that
+   would need branched code to keep is dropped, per BEST-PRACTICES.md.
 5. **Live verification.** Headless gates prove the zip boots; only a
    live session proves the card. The install/login/surface-walk
    sequence and the byte-identity rule ("the verified zip IS the
