@@ -2,6 +2,6 @@
   "uuid": "probe@vijaybala.dev",
   "name": "Weatherglass Shell Probe (dev only)",
   "description": "Never shipped. Runs inside a nested gnome-shell to report which capture primitives GNOME 50 still exposes in-process, and tries the shell's own Screenshot service from inside the shell itself.",
-  "shell-version": ["50"],
+  "shell-version": ["49", "50"],
   "version": 1
 }

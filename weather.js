@@ -975,19 +975,36 @@ export function ensureDesktopEntry() {
     });
 }
 
+/* Async read (EGO-X-004): the ownership probe must not stall the UI
+ * thread for a disk round-trip. Callers fire-and-forget. Concrete
+ * failure mode: a remove landing AFTER a re-enable rewrote the stub
+ * (disable/enable inside the millisecond callback window) leaves no
+ * entry while auto-location stays on -- the consent agent then falls
+ * back to the IP chain, and the next ensure()/enable rewrite heals it. */
 export function removeDesktopEntry() {
     const file = desktopEntryFile();
-    try {
-        /* Only ever delete OUR stub: a fuller third-party/app entry sharing
-         * the id is not ours to remove. */
-        if (file.query_exists(null)) {
-            const [, bytes] = file.load_contents(null);
-            if (new TextDecoder().decode(bytes).includes('NoDisplay=true'))
-                file.delete(null);
+    file.load_contents_async(null, (obj, res) => {
+        /* Only ever delete OUR stub: a fuller third-party/app entry
+         * sharing the id is not ours to remove. */
+        let ours = false;
+        try {
+            const [, bytes] = obj.load_contents_finish(res);
+            ours = new TextDecoder().decode(bytes).includes('NoDisplay=true');
+        } catch (err) {
+            // absent (nothing to remove) or unreadable (prove-ably not
+            // ours to guess with): both stop here
+            if (!err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND))
+                logError(err, 'Weatherglass: consent entry unreadable');
+            return;
         }
-    } catch (err) {
-        logError(err, 'Weatherglass: consent entry not removable');
-    }
+        if (!ours)
+            return;
+        try {
+            file.delete(null);
+        } catch (err) {
+            logError(err, 'Weatherglass: consent entry not removable');
+        }
+    });
 }
 
 /* -- client ---------------------------------------------------------------- */

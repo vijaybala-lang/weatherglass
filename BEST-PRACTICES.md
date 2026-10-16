@@ -89,6 +89,13 @@ Mechanics:
   stable releases (plus at most one development release); `url` points
   at the public repo; `uuid` is `id@namespace` of letters, digits,
   `.`, `_`, `-`.
+- Support widens through metadata only, never through version-branched
+  code. Widen `shell-version` downwards on user demand or a passing
+  test on that shell (floor for this codebase: GNOME 45, due to
+  `Adw.EntryRow`). If a bug on an older shell would require an
+  `if (ShellVersion …)` guard or a second API path, remove that
+  version from `shell-version` instead of keeping it alive with a
+  shim — one code path is the invariant.
 
 ## ZIP contents
 

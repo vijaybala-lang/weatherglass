@@ -96,6 +96,9 @@ runs it -- master must always build the zip under review.
 bash tools/certify.sh        # must end: CERTIFIED: all stages green
 git checkout -- po/ locale/  # packaging stamps build artifacts; keep the tree clean
 sha256sum dist/weatherglass@vijaybala.dev.zip
+bash tools/qa/run-old-shell.sh 43   # certify the OLDEST shell in metadata
+                                    # shell-version; repeat per older major
+                                    # (Fedora N houses GNOME N+6)
 ```
 
 `CERTIFIED` is the whole suite standing at attention on the release
@@ -107,6 +110,26 @@ host-gated SKIP if the engine binary is absent, which is NOT a pass
 for step 8 purposes -- install it before uploading and run it green).
 The sha goes into the release
 body at step 3. Any rebuild re-runs both.
+
+**The older-shell certs.** Host certify attests exactly one shell: the
+dev box's. Every *older* major declared in `shell-version` owes its own
+green cert: `tools/qa/run-old-shell.sh <fedora-release>` builds a podman
+guest of that Fedora (Fedora N ships GNOME N+6) and runs the ladder
+there -- every property stage on the foreign GJS, the FULL card registry
+rendered as the real ForecastPanel and graded structurally, and the
+SAME dist zip byte-for-byte installed via `gnome-extensions install` and
+surviving the popup-toggle crash gate, plus a JS-error scan attributed
+per shipped module. Rendered goldens cannot cross shells (different
+font/render stacks), so foreign shells grade STRUCTURALLY and only
+REPORT pixel drift vs the blessed canon (`diffs.txt`, median a fraction
+of a percent is support; structural fallout is not); native renders
+bank under `tools/out/qa-gnome<SHELL>/` beside the summary for human
+eyes. A version wins its `shell-version` slot by certing, and LOSES it
+the moment keeping it alive would cost version-branched code --
+drop-over-branch, per BEST-PRACTICES.md. Companion test extensions in
+`tools/` must stay unlocked to every certified shell too: a stale
+single-major pin makes 49-era shells silently decline to load them,
+turning green pipelines into empty no-heartbeat husks.
 
 **The golden lock and the bless ceremony.** The goldens
 (`tools/golden/shell/`) are blessed rendered truth: every
