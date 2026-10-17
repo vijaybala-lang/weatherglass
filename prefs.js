@@ -245,13 +245,24 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             manual.setLocation(selectedResult.latitude, selectedResult.longitude, selectedResult.name);
         });
 
-        page.add(this._buildAutoLocationGroup(settings));
+        /* Detection owns the page: while auto-location is on, the
+         * search and manual groups cannot express state (choosing any
+         * of them flips the switch off), so they stay hidden until the
+         * switch yields. Every path that writes a manual position also
+         * clears auto-location, which fires notify::active and reveals
+         * the groups again -- no second source of visibility truth. */
+        const autoGroup = this._buildAutoLocationGroup(settings, auto => {
+            for (const g of [...searchGroups, manual.group])
+                g.visible = !auto;
+        });
+
+        page.add(autoGroup);
         searchGroups.forEach(group => page.add(group));
         page.add(manual.group);
         return page;
     }
 
-    _buildAutoLocationGroup(settings) {
+    _buildAutoLocationGroup(settings, onToggled) {
         const autoGroup = new Adw.PreferencesGroup({
             title: _('Automatic'),
             description: _('Uses system location when available, otherwise your public IP address'),
@@ -260,6 +271,8 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             title: _('Detect location automatically'),
         });
         settings.bind('auto-location', autoRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        autoRow.connect('notify::active', () => onToggled(autoRow.active));
+        onToggled(autoRow.active);   // initial fold matches the saved setting
         autoGroup.add(autoRow);
         return autoGroup;
     }
