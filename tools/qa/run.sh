@@ -39,6 +39,118 @@ echo "qa: guest identity: $(tr '\n' '|' < "$STAMPS")"
 # Foreign shells die young without a system bus (see the bootstrap file)
 . "$(dirname "$0")/system-bus-bootstrap.sh"
 
+# Containers ship no writable /tmp/.X11-unix, and shell 48 treats a
+# failed Xwayland start as FATAL (libmutter-ERROR aborts the whole
+# shell; 49 merely degrades). The harness boots without --no-x11, so
+# give Xwayland its socket dir instead of teaching product tools new
+# flags for the guest's comfort.
+mkdir -p -m 1777 /tmp/.X11-unix
+
+# gnome-desktop on 45-47 dereferences the locale1 reply unguarded --
+# feed the name (see locale1_stub.py for the gdb-caught stack).
+# Era-scoped by VERSION_ID: 48+ guards the reply, and 42/43 images
+# were cached before this stub existed -- they must keep working.
+source /etc/os-release 2>/dev/null
+if [ "${VERSION_ID:-99}" -le 41 ]; then
+    python3 "$(dirname "$0")/locale1_stub.py" >/out/log-locale1-stub.txt 2>&1 &
+    sleep 1
+    kill -0 $! 2>/dev/null || echo "qa: WARN locale1 stub died: $(tail -1 /out/log-locale1-stub.txt)"
+
+    # Real GNOME sessions autostart ibus-daemon, so portal.IBus activation
+    # (Exec=ibus-portal, which HARD-exits rc=1 'Not connected to the ibus
+    # bus' without a daemon) always succeeds there. Our containers have
+    # no session manager: the activator dies, shell logs 'portal is not
+    # running', and the keyboard machinery falls into the gnome-desktop
+    # localed callback that upstream later guarded (gdb-verified crash
+    # pc identical across payload variants; same unresolved stack as
+    # gnome-shell#7262 on real Asahi hardware). Emulate the session:
+    # override the service file to boot the daemon on the SAME session
+    # bus right before the portal attaches. Overlay rides XDG_DATA_DIRS
+    # prepended: the stage tools own XDG_DATA_HOME (/d profile seeds),
+    # whose dbus-1/services scan would otherwise shadow a HOME drop --
+    # and a nonexistent /d/dbus-1/services falls through to this one.
+    # System dirs spelled out explicitly: once XDG_DATA_DIRS is set at
+    # all, this glib stops offering /usr/share for free (measured --
+    # a bare overlay value killed EVERY GSettings read, shell included).
+    mkdir -p /opt/wg-services/dbus-1/services
+    export XDG_DATA_DIRS="/opt/wg-services:/usr/local/share:/usr/share${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
+    cat > /opt/wg-services/wg-ibus-portal-wrapper.sh <<'WRAP'
+#!/bin/sh
+exec >>/out/log-ibus-portal.txt 2>&1
+[ -x /usr/bin/ibus-daemon ] || exit 1
+ibus-daemon --daemonize --panel=disable
+sleep 1
+exec /usr/libexec/ibus-portal
+WRAP
+    chmod +x /opt/wg-services/wg-ibus-portal-wrapper.sh
+    cat > /opt/wg-services/dbus-1/services/org.freedesktop.portal.IBus.service <<'SVC'
+[D-Bus Service]
+Name=org.freedesktop.portal.IBus
+Exec=/opt/wg-services/wg-ibus-portal-wrapper.sh
+SVC
+
+    # Fedora-patched shells 45-47 boot their keyboard manager via
+    # gnome_get_default_input_sources -> the localed-proxy callback that
+    # segfaults wherever the codegen property cache can't be trusted
+    # (verified pc +0x8f4 = locale_data[0] indexing a NULL get_locale
+    # reply; immune to every stub payload tried: full LOCALE as-array,
+    # X11 quartet, faithful introspection XML, portal.IBus resurrection
+    # -- the same unresolved crash as gnome-shell#7262 on REAL Asahi
+    # hardware). The helper is only consulted when resolved
+    # input-sources is EMPTY: seed a plain xkb layout into the
+    # nested-shell profiles and the crash path is never entered. Both
+    # section spellings below -- glib 2.80 reads dotted, 2.82+
+    # path-style, and each era silently ignores the other's dialect.
+    sed -i 's|^enabled-extensions=.*|&\n[org.gnome.desktop.input-sources]\nsources=[("xkb","us")]\n[org/gnome/desktop/input-sources]\nsources=[("xkb","us")]|' tools/shell-golden.sh
+    grep -q 'org/gnome/desktop/input-sources' tools/shell-golden.sh || { echo 'qa: input-sources seeding (golden) failed'; exit 1; }
+    # dconf-on-disposable-HOME is too polite for these shells: 45/47
+    # SEGFAULT after INITIALIZING the zip's extension (EMPTY
+    # input-sources walks into the Fedora gnome-desktop3 localed
+    # callback -- crash witness in the seed comment above) and 46 parks
+    # everything in INITIALIZED forever. Swap zipcheck's boot to the
+    # keyfile recipe -- the one shell-golden has proven green on all
+    # three eras -- carrying fixtures AND the input-sources seed; it
+    # supersedes any gsettings-side seeding on this path.
+    python3 "$(dirname "$0")/keyfile_zipcheck.py" \
+        && bash -n tools/zipcheck.sh \
+        || { echo 'qa: era zipcheck-keyfile rewrite failed'; exit 1; }
+    # zipcheck pins XDG_DATA_DIRS=/usr/share, which would erase the
+    # overlay carrying the portal.IBus resurrection from its nested
+    # session bus. Spell it the rig way before any tool re-exports it.
+    sed -i 's|XDG_DATA_DIRS=/usr/share|XDG_DATA_DIRS=/opt/wg-services:/usr/local/share:/usr/share|' tools/zipcheck.sh
+fi
+
+# The guest is GPU-less software rasterization always. Since 45-era
+# mutter, booting Xwayland WITHOUT --no-x11 segfaults the compositor
+# outright (glamor has no GBM interface to grab and the sw fallback
+# arrives too late); 48+ merely limp. Strip the legacy launch's
+# exposure to Xwayland in both tool copies, guest-side only: the host
+# boots with a real GPU and its nested shells want the untouched flags.
+sed -i 's|gnome-shell --headless|gnome-shell --headless --no-x11|; s|gnome-shell --wayland --headless|gnome-shell --wayland --headless --no-x11|' tools/shell-golden.sh
+grep -q 'headless --no-x11' tools/shell-golden.sh || { echo 'qa: x11-stripping failed'; exit 1; }
+
+# Chicken-and-egg of certification: the graded zip declares only the
+# majors certified SO FAR, and 45-47-era extensionUtils gate loading on
+# a LITERAL shell-major match (verified: ["*"] is rejected, ["47"] is
+# welcomed to ACTIVE; --unsafe-mode parses but demonstrably ignores the
+# staleness gate). Relax the DECLARATION toward the guest's own era --
+# guest copy only, packaging metadata never product code -- so the era
+# can prove its code works; the uploaded zip keeps declaring only
+# certified majors, and the stamp records the mutation so no one
+# mistakes the rehearsal paper for the deed. See unrestrict_zip.py.
+if [ "${VERSION_ID:-99}" -le 41 ]; then
+    SHELL_MAJOR=$((VERSION_ID + 6))   # Fedora N ships GNOME N+6
+    python3 "$(dirname "$0")/unrestrict_zip.py" dist/*.zip "$SHELL_MAJOR" \
+        || { echo 'qa: era zip-redeclare failed'; exit 1; }
+    for meta in tools/harness/probe@vijaybala.dev/metadata.json \
+                tools/menutest@vijaybala.dev/metadata.json; do
+        [ -f "$meta" ] && sed -i "s|\"shell-version\": *\[[^]]*\]|\"shell-version\": [\"$SHELL_MAJOR\"]|" "$meta"
+    done
+    grep -q "\"shell-version\": \[\"$SHELL_MAJOR\"\]" tools/harness/probe@vijaybala.dev/metadata.json \
+        || { echo 'qa: harness metadata redeclare failed'; exit 1; }
+    echo "qa: era-note: guest dist zip + harness metadata re-declared shell-version [\"$SHELL_MAJOR\"]; zipcheck boot keyfile-ized (declaration/settings-only mutations, guest copy; upload keeps explicit certified majors)" >> /out/stamps.txt
+fi
+
 # NO FLATPAK SENTINEL HERE (attempted, reverted, witnessed): /.flatpak-info
 # makes GLib's Glycin loader switch to SANDBOX mode, which spawns its
 # loaders via flatpak-spawn -- absent in the guest. That kills not just
