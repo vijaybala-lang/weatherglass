@@ -186,7 +186,7 @@ accent:
 The sky is live cairo animation -- stars twinkle, the moon carries the
 real phase, and switching tabs or day tiles morphs the chart between
 series. The full 5&nbsp;s capture as an mp4 is in the
-<a href="https://github.com/vijaybala-lang/weatherglass/releases/tag/v8">release</a>.
+<a href="https://github.com/vijaybala-lang/weatherglass/releases/tag/v14">release</a>.
 
 ## Install
 
