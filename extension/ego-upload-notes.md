@@ -1,4 +1,4 @@
-# EGO upload kit -- v8
+# EGO upload kit -- integer 10
 
 The release ritual (every command, in order: review, bump, certify,
 GitHub release, live gate, captures, publish, README links, upload)
@@ -7,15 +7,26 @@ EGO-page material: the artifact identity, the capture list, the
 canonical description block, and the standing reviewer answers.
 
 Upload at: https://extensions.gnome.org/upload/
-Artifact:  dist/weatherglass@vijaybala.dev.zip  (version 8; rebuilt from
-main after every landed change -- its `sha256sum` is recorded in the
-GitHub release body, and the EGO-served bytes must match).
+Artifact:  dist/weatherglass@vijaybala.dev.zip  (integer 10; sha256
+52fdeba95b316ad1b2e45c57d04be9e9c1553fd20a6c47df79f69ba2d56b0a0e,
+certified on every declared shell; the EGO-served bytes must match).
 
-v8 ships the contrast fixes (#49) and the Today-morph fix (#50): night
-strip/tile glyphs on bright grounds wear ink twins, and the new-moon
-ghost is a visible slate disc. The upload imagery is the goldens, so
-the v7-era lesson -- live-photo sets that "photograph whatever bugs
-shipped then" -- no longer applies: see skill step 5.
+## Last shipped (the step-0 audit anchor; update at every upload)
+
+Last shipped commit: 414d18f
+(integer 10, pending upload as the next serial after 16; serial 16's
+exact build commit was never recorded -- the gap this section ends.
+The integer-10 audit used 558f319, the release-v9 merge, as its base:
+shipped changes since are only the two #89 theme fixes, dead-code
+sweep clean.)
+
+Integer 10 ships the #89 theme fixes: light mode works on GNOME 50
+(the watcher no longer reads a settings key schemas 50 removed), the
+solid style's city/clock no longer ink black over a dimmed sun, and
+the theme-background style judges its ink by the shell surface
+variant. The upload imagery is the goldens, so the v7-era lesson --
+live-photo sets that "photograph whatever bugs shipped then" -- no
+longer applies: see skill step 5.
 
 ## Before uploading (manual verification gate)
 
@@ -163,4 +174,4 @@ way during the v8 review round:
 - The metadata "url" points at the GitHub repo per the EGO review
   guidelines (must be a GitHub/GitLab project URL) -- keep it there even
   after approval; link the EGO page from the repo README instead.
-- Keep integer version bumps for every future upload (next: 9).
+- Keep integer version bumps for every future upload (next: 11).

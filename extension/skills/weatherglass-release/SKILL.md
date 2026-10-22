@@ -41,10 +41,34 @@ the `guide` lock inside certify; this is the semantic half no regex
 can see):
 
 ```sh
+# The audit anchor is the commit whose bytes last shipped -- NOT blindly
+# the newest tag: serial-named tags can sit on a non-ancestor lineage
+# (v14 predates the monorepo and is not an ancestor of main; the v10
+# audit nearly diffed against it). Verify ancestry, else fall back to
+# the commit recorded in ego-upload-notes.md ("Last shipped commit:").
 PREV=$(git tag --sort=-v:refname | head -1)
+git merge-base --is-ancestor "$PREV" main 2>/dev/null \
+    || PREV=$(sed -n 's/^Last shipped commit: //p' ego-upload-notes.md)
+git merge-base --is-ancestor "$PREV" main   # must pass now -- else stop
 git diff "$PREV..main" --stat
 git diff --name-only "$PREV..main"            # the audit file set
 tools/review-diff "$PREV" main                # read every hunk (Meld or vimdiff)
+```
+
+The audit is not done until its evidence is written down: the bump
+commit body (step 1) records the anchor commit, the shipped file set,
+and the dead-code sweep result. The sweep itself is mechanical --
+every exported name in the shipped modules must have a consumer
+(test/tool consumers are the lock pattern, named as such):
+
+```sh
+for f in *.js; do
+    grep -oE 'export (function|const|let|class) [A-Za-z0-9_]+' "$f" \
+        | awk '{print $3}' | while read -r n; do
+            grep -rlq "\b$n\b" --exclude="$f" *.js tests tools \
+                || echo "ORPHAN: $f: $n"
+        done
+done
 ```
 
 Then validate every changed file against `BEST-PRACTICES.md` -- our
@@ -325,6 +349,11 @@ verbatim rather than re-explaining.
 Keep the manifest `url` pointed at the GitHub repo (EGO requires it);
 link the EGO page from the README instead. Record the outcome (sha,
 date) in the release body. Next release: N+1.
+
+Also update the "Last shipped commit:" line in `ego-upload-notes.md`
+(serial, integer, sha, commit, date) -- step 0 of the NEXT release
+audits against that anchor, and an unrecorded upload commit is how
+the v10 audit almost anchored on a non-ancestor tag.
 
 ## When stuck
 
