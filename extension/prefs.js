@@ -65,6 +65,7 @@ const LEGEND = [
 const LEGEND_PRECIP_INTENSITY = { rain: 6, sleet: 5, snow: 4, hail: 5, storm: 7 };
 
 const COFFEE_URL = 'https://buymeacoffee.com/vbala';
+const PAYPAL_URL = 'https://paypal.me/vijaybaladev';
 
 function openUri(parent, uri) {
     try {
@@ -820,15 +821,19 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             title: _('Support the development'),
             description: _('Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps the pixels falling.'),
         });
-        const coffeeRow = new Adw.ActionRow({
-            title: _('Buy me a coffee'),
-            subtitle: COFFEE_URL,
-            activatable: true,
-        });
-        coffeeRow.add_suffix(new Gtk.Image({ icon_name: 'emblem-symbolic-link' }));
-        coffeeRow.connect('activated', () => openUri(
-            coffeeRow.get_root() ?? null, COFFEE_URL));
-        loveGroup.add(coffeeRow);
+        const linkRow = (title, url) => {
+            const row = new Adw.ActionRow({
+                title,
+                subtitle: url,
+                activatable: true,
+            });
+            row.add_suffix(new Gtk.Image({ icon_name: 'emblem-symbolic-link' }));
+            row.connect('activated', () => openUri(
+                row.get_root() ?? null, url));
+            return row;
+        };
+        loveGroup.add(linkRow(_('Buy me a coffee'), COFFEE_URL));
+        loveGroup.add(linkRow(_('PayPal'), PAYPAL_URL));
         page.add(loveGroup);
 
         return page;
