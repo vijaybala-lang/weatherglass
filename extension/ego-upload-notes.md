@@ -8,12 +8,12 @@ canonical description block, and the standing reviewer answers.
 
 Upload at: https://extensions.gnome.org/upload/
 Artifact:  dist/weatherglass@vijaybala.dev.zip  (integer 10; sha256
-52fdeba95b316ad1b2e45c57d04be9e9c1553fd20a6c47df79f69ba2d56b0a0e,
+324fff81cf390d75663deb0831027ddf17e3a5dcae88bff08d729c9fe3d626d0,
 certified on every declared shell; the EGO-served bytes must match).
 
 ## Last shipped (the step-0 audit anchor; update at every upload)
 
-Last shipped commit: 414d18f
+Last shipped commit: 247cc65
 (integer 10, pending upload as the next serial after 16; serial 16's
 exact build commit was never recorded -- the gap this section ends.
 The integer-10 audit used 558f319, the release-v9 merge, as its base:
