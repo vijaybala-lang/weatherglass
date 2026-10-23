@@ -291,10 +291,10 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
         const resultRows = [];
         const clearResults = () => {
-            for (const row of resultRows.splice(0)) {
+            // GTK4 widgets have no destroy method: removing unparents,
+            // and the row is reclaimed once unreferenced (splice drops ours)
+            for (const row of resultRows.splice(0))
                 resultsGroup.remove(row);
-                row.destroy();
-            }
             resultsGroup.visible = false;
         };
 

@@ -110,6 +110,17 @@ test('no silent catch blocks', () => {
     silence(shipped.flatMap(silentCatches));
 });
 
+test('no GtkWidget.destroy in prefs (GTK4 removed it)', () => {
+    // prefs.js is the only Gtk4/Adw surface shipped; Gtk.Widget.destroy
+    // does not exist there (Clutter actors in the shell modules still
+    // have theirs). The call threw AFTER clearResults had spliced its
+    // tracking array, orphaning the not-yet-removed search rows so
+    // every later city search appended (#89 follow-up, journal-proven:
+    // "TypeError: row.destroy is not a function"). Removal unparents;
+    // that is the whole GTK4 idiom.
+    silence(scan(/\.destroy\s*\(/, ['prefs.js']));
+});
+
 /* -- formatting and review hygiene ------------------------------------- */
 
 test('lines stay within 200 characters', () => {
