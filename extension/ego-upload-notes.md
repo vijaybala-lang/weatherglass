@@ -8,7 +8,7 @@ canonical description block, and the standing reviewer answers.
 
 Upload at: https://extensions.gnome.org/upload/
 Artifact:  dist/weatherglass@vijaybala.dev.zip  (integer 10; sha256
-324fff81cf390d75663deb0831027ddf17e3a5dcae88bff08d729c9fe3d626d0,
+3298d8b76c65d3d9ed0317d407b94273251fe1f48fa2423b678c9ed03db5c92a,
 certified on every declared shell; the EGO-served bytes must match).
 
 ## Last shipped (the step-0 audit anchor; update at every upload)
