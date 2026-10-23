@@ -17,10 +17,23 @@ Adw.init();
 const ResultRow = GObject.registerClass(class ResultRow extends Adw.ActionRow {
     _init(title, cb) {
         super._init({title, activatable: true});
-        this.add_suffix(new Gtk.Image({icon_name: 'go-next-symbolic'}));
+        const useButton = new Gtk.Button({label: 'Use Location', valign: Gtk.Align.CENTER});
+        useButton.connect('clicked', () => cb());
+        this.add_suffix(useButton);
         this.connect('activated', () => cb());
     }
 });
+
+function findUseButton(widget) {
+    if (widget instanceof Gtk.Button && widget.label === 'Use Location')
+        return widget;
+    for (let c = widget.get_first_child(); c; c = c.get_next_sibling()) {
+        const found = findUseButton(c);
+        if (found)
+            return found;
+    }
+    return null;
+}
 
 function locationLabel(r) {
     return [r.name, r.admin, r.country].filter(Boolean).join(', ');
@@ -44,6 +57,16 @@ print(`rows built & added: ${group.get_n_rows ? 'api' : rows.length}`);
 /* simulate a click on the first result */
 rows[0].activate();
 print(`activated callback fired: ${clicks === 1}`);
+
+/* the labelled Use Location button must exist and pick its row */
+const useButton = findUseButton(rows[1]);
+print(`Use Location button present: ${useButton !== null}`);
+if (!useButton)
+    throw new Error('result row has no Use Location button');
+useButton.emit('clicked');
+print(`button callback fired: ${clicks === 2}`);
+if (clicks !== 2)
+    throw new Error('Use Location button did not pick its row');
 
 /* second search cycle: the clear must unparent EVERY first-cycle row
  * (the shipped bug: a throwing teardown call left them in the group,

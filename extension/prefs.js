@@ -87,9 +87,14 @@ function locationLabel(result) {
 const ResultRow = GObject.registerClass(class ResultRow extends Adw.ActionRow {
     _init(title, onActivated) {
         super._init({ title, activatable: true });
-        const iconImage = new Gtk.Image({ pixel_size: 16 });
-        iconImage.set_from_icon_name('go-next-symbolic');
-        this.add_suffix(iconImage);
+        // a labelled button says what picking does; the old go-next
+        // arrow read as "drill in", not "set this as my location"
+        const useButton = new Gtk.Button({
+            label: _('Use Location'),
+            valign: Gtk.Align.CENTER,
+        });
+        useButton.connect('clicked', () => onActivated());
+        this.add_suffix(useButton);
         this.connect('activated', () => onActivated());
     }
 });
