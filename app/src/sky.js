@@ -1319,7 +1319,7 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
 
     const baseFx = fxScale !== null
         ? fxScale
-        : (rw <= 360 ? 1 : Math.min(0.5, 900 / Math.max(1, rw)));
+        : (rw <= 360 || rh <= 240 ? 1 : Math.min(0.5, 900 / Math.max(1, rw)));
     if (sky.fxScale === null || sky.fxScale === undefined || fxScale !== null)
         sky.fxScale = Math.max(0.2, Math.min(1, baseFx));
     const fw = Math.max(1, Math.round(rw * sky.fxScale));
