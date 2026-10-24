@@ -14,11 +14,15 @@ certified on every declared shell; the EGO-served bytes must match).
 ## Last shipped (the step-0 audit anchor; update at every upload)
 
 Last shipped commit: 734cb26
-(integer 10, pending upload as the next serial after 16; serial 16's
-exact build commit was never recorded -- the gap this section ends.
-The integer-10 audit used 558f319, the release-v9 merge, as its base:
-shipped changes since are only the two #89 theme fixes, dead-code
-sweep clean.)
+(integer 10, uploaded and Active as EGO serial 17, verified
+2026-10-23; GitHub release v17 carries the identical zip. Serial
+16's exact build commit was never recorded -- the gap this section
+ends. The integer-10 audit used 558f319, the release-v9 merge, as
+its base; shipped changes since are the #89 theme fixes, the prefs
+search fixes, donation links, and the dead-code removal, sweep
+clean. The demo-capture line in the README still points at v8:
+its claim is that the mp4 lives in that release, and the fresh
+cast is pending a capable host, per skill step 6.)
 
 Integer 10 ships the #89 theme fixes: light mode works on GNOME 50
 (the watcher no longer reads a settings key schemas 50 removed), the
