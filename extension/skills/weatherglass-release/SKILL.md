@@ -57,18 +57,14 @@ tools/review-diff "$PREV" main                # read every hunk (Meld or vimdiff
 
 The audit is not done until its evidence is written down: the bump
 commit body (step 1) records the anchor commit, the shipped file set,
-and the dead-code sweep result. The sweep itself is mechanical --
-every exported name in the shipped modules must have a consumer
-(test/tool consumers are the lock pattern, named as such):
+the dead-code sweep result, and (step 2) the served-artifact diff.
+The sweep itself is mechanical and maintained as a tool -- it covers
+exported names (both declaration and `export {}` forms), module-scope
+consts judged per-file, and unused imports; test/tool-only consumers
+are the lock pattern and report as NOTE, anything consumer-less fails:
 
 ```sh
-for f in *.js; do
-    grep -oE 'export (function|const|let|class) [A-Za-z0-9_]+' "$f" \
-        | awk '{print $3}' | while read -r n; do
-            grep -rlq "\b$n\b" --exclude="$f" *.js tests tools \
-                || echo "ORPHAN: $f: $n"
-        done
-done
+python3 tools/dead-code-sweep.py   # must end: 0 dead
 ```
 
 Then validate every changed file against `BEST-PRACTICES.md` -- our
@@ -133,6 +129,21 @@ host-gated SKIP if the engine binary is absent, which is NOT a pass
 for step 8 purposes -- install it before uploading and run it green).
 The sha goes into the release
 body at step 3. Any rebuild re-runs both.
+
+**Diff the artifact against what EGO serves** (the last upload), not
+only against git -- the served zip is the ground truth users run, and
+its file list is the reviewer's first screen. Expect mechanical
+differences only where SweetTooth restamps (metadata rewritten,
+schema compiled in); every other delta must already be justified by
+the step-0 audit:
+
+```sh
+PK=$(curl -s "https://extensions.gnome.org/extension-query/?uuid=weatherglass@vijaybala.dev" \
+    | python3 -c "import json,sys; print(list(json.load(sys.stdin)['extensions'][0]['shell_version_map'].values())[0]['pk'])")
+curl -sL -o /tmp/served.zip "https://extensions.gnome.org/download-extension/weatherglass@vijaybala.dev.shell-extension.zip?version_tag=$PK"
+diff <(unzip -l /tmp/served.zip | awk '{print $4}' | sort) \
+     <(unzip -l dist/weatherglass@vijaybala.dev.zip | awk '{print $4}' | sort)
+```
 
 **The older-shell certs.** Host certify attests exactly one shell: the
 dev box's. `tools/certify-all-shells.sh` reads every major declared in

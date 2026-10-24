@@ -95,18 +95,24 @@ host green alone never proves the older majors in `shell-version`.
 
 Before building the ZIP for extensions.gnome.org, review the full diff
 since the last released version and simplify the code in its wake
-(`git diff` vs the previous tag, then read every hunk side-by-side —
-the commands are skill step 0):
+(the anchor is the commit whose bytes last shipped — ancestor-verified,
+never the newest tag blindly — then read every hunk side-by-side; the
+built artifact is additionally diffed against the zip EGO currently
+serves. The commands are skill steps 0 and 2):
 
 1. **Justify every hunk.** Each change must trace to a user-reported
    issue or a shipped PR description. Anything you cannot explain —
    leftovers from debugging rounds, superseded experiments (e.g. a
    signal that never existed, an option whose consumer was deleted) —
    gets removed in a follow-up commit before packaging.
-2. **Sweep dead & repetitive code.** Grep every exported symbol and
-   module-level `const` for consumers (`grep -rn "name" *.js`); delete
-   orphans. Equal or near-equal blocks in ≥2 places become a helper
-   (see gjs.guide "Use Helper Functions Instead of Code Duplication").
+2. **Sweep dead & repetitive code.** Every exported symbol,
+   module-level `const`, and import must have a consumer — the sweep
+   is a maintained tool (`tools/dead-code-sweep.py`, skill step 0),
+   not a hand grep: the hand version covered only declaration-form
+   exports and shipped a dead const plus an unused import for
+   multiple releases. Delete orphans. Equal or near-equal blocks in
+   ≥2 places become a helper (see gjs.guide "Use Helper Functions
+   Instead of Code Duplication").
 3. **Audit against the official rules.** Apply [BEST-PRACTICES.md](BEST-PRACTICES.md)
    — our working distillation of the EGO
    [review guidelines](https://gjs.guide/extensions/review-guidelines/review-guidelines.html)

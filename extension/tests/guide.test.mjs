@@ -315,6 +315,24 @@ test('release ritual: every declared shell owes a certification', () => {
         'the support policy must forbid version-branched product code');
 });
 
+// Step 0's audit gates live in the skill as runnable commands, not
+// intentions: the dead-code sweep is a maintained tool (the hand-grep
+// snippet it replaced covered only declaration-form exports and
+// shipped a dead const + unused import for multiple releases), and
+// the built artifact is diffed against the zip EGO actually serves.
+test('release ritual: dead-code sweep and served-artifact diff are commands', () => {
+    const skill = read(`${ROOT}/skills/weatherglass-release/SKILL.md`);
+    ok(/tools\/dead-code-sweep\.py/.test(skill),
+        'step 0 must run the maintained dead-code sweep tool');
+    ok(/download-extension\//.test(skill) && /served/i.test(skill),
+        'step 2 must diff the built zip against the served artifact');
+    ok(/merge-base --is-ancestor/.test(skill),
+        'the audit anchor must be ancestor-verified, never the newest tag blindly');
+    const sweep = read(`${ROOT}/tools/dead-code-sweep.py`);
+    ok(/export/.test(sweep) && /import/.test(sweep),
+        'the sweep tool must exist and judge exports and imports');
+});
+
 // The README gallery is public imagery: if it hard-codes another branch,
 // the homepage keeps showing that branch's goldens after the current
 // ones move. Local assets must be branch-relative so the pixels a reader
