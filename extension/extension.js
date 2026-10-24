@@ -14,7 +14,7 @@ import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/
 
 import { WeatherIcon } from './animation.js';
 import { ForecastPanel } from './menu.js';
-import { WeatherClient, sceneFor, deriveScene, fmtTemp,
+import { WeatherClient, deriveScene, fmtTemp,
          ensureDesktopEntry, removeDesktopEntry } from './weather.js';
 import { moonPhase } from './moon.js';
 import { resolveIsDark, resolveShellDark } from './theme.js';

@@ -14,8 +14,6 @@ import { paintWeather } from './painter.js';
 import { createSky, paintSky } from './sky.js';
 import { drawText } from './chart.js';
 
-const N_ = s => s;
-
 const UNITS = ['metric', 'imperial'];
 const HOURS = ['auto', '12h', '24h'];
 
