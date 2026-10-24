@@ -151,6 +151,37 @@ test('schema id comes from metadata, not call sites', () => {
     silence(scan(/getSettings\(\s*['"]/));
 });
 
+/* EGO renders donations from metadata; named platforms take bare
+ * handles (a full URL would double-expand), and both handles have a
+ * second home in prefs -- the copies must never drift. */
+test('donation handles are bare and mirror prefs', () => {
+    const meta = JSON.parse(read(`${ROOT}/metadata.json`));
+    const allowed = ['buymeacoffee', 'custom', 'github', 'kofi',
+        'liberapay', 'opencollective', 'patreon', 'paypal'];
+    ok(meta.donations && typeof meta.donations === 'object',
+        'metadata.json must declare donations');
+    for (const [key, value] of Object.entries(meta.donations)) {
+        ok(allowed.includes(key), `unknown donations key: ${key}`);
+        const values = Array.isArray(value) ? value : [value];
+        ok(values.length >= 1 && values.length <= 3,
+            `donations.${key} must carry 1-3 values`);
+        for (const v of values) {
+            ok(typeof v === 'string' && v.length > 0,
+                `donations.${key} values must be non-empty strings`);
+            if (key !== 'custom')
+                ok(!v.includes('/') && !v.includes(':'),
+                    `donations.${key} must be a bare handle, not a URL`);
+        }
+    }
+    const prefs = read(`${ROOT}/prefs.js`);
+    const coffee = prefs.match(/buymeacoffee\.com\/([^'"]+)/);
+    ok(coffee, 'prefs must carry the buymeacoffee link');
+    eq(meta.donations.buymeacoffee, coffee[1]);
+    const paypal = prefs.match(/paypal\.me\/([^'"]+)/);
+    ok(paypal, 'prefs must carry the paypal link');
+    eq(meta.donations.paypal, paypal[1]);
+});
+
 /* The prefs picker, the gschema choices and the gsettings default are
  * three lists the user can desync by touching one: a model id in prefs
  * but not gschema is a write the settings layer rejects (silent no-op),
