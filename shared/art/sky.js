@@ -43,13 +43,13 @@ const SCENE_FEATURES = {
     sun: { sun: 1 },
     partly: { clouds: 3, sun: 1, moon: 1 },  // night: moon behind the clouds
     moon: { stars: 1, moon: 1 },
-    cloud: { clouds: 7 },
+    cloud: { clouds: 8 },
     fog: { clouds: 2, fog: 1 },
-    rain: { clouds: 6, drops: 95, curtains: 3, ripples: 10 },
-    sleet: { clouds: 6, drops: 48, flakes: 28, pellets: 22 },
-    snow: { clouds: 6, flakes: 72 },
-    hail: { clouds: 6, drops: 42, hail: 28, bolt: 1 },
-    storm: { clouds: 7, drops: 120, curtains: 4, ripples: 12, bolt: 1 },
+    rain: { clouds: 7, drops: 95, ripples: 10 },
+    sleet: { clouds: 7, drops: 48, flakes: 28, pellets: 22 },
+    snow: { clouds: 7, flakes: 72 },
+    hail: { clouds: 7, drops: 42, hail: 28, bolt: 1 },
+    storm: { clouds: 8, drops: 120, ripples: 12, bolt: 1 },
     wind: { streaks: 18, leaves: 16, trees: 1 },
     error: {},
     loading: {},
@@ -154,74 +154,57 @@ export function bodyOf(scene, night, width, height, glow = 0, solar = null, phas
     return null;
 }
 
-/** Pre-rendered billowing cumulus puff sprite: soft cool-slate underbelly
- *  puffs along the lower base + multi-scale sunlit cumulus crown puffs. */
+/** Pre-rendered cumulus sprite: overlapping puffs merged with LIGHTEN on an
+ *  offscreen mask (so interior overlap never compounds into a bright white
+ *  streak or band) and shaded top-to-bottom with soft radial feathering on
+ *  all sides. */
 function makeCloudSprite(variant = 0) {
-    const SW = 440, SH = 220;
+    const SW = 360, SH = 180;
+    const mask = new Cairo.ImageSurface(Cairo.Format.ARGB32, SW, SH);
+    const mc = new Cairo.Context(mask);
+    mc.setOperator(Cairo.Operator.CLEAR);
+    mc.paint();
+    mc.setOperator(Cairo.Operator.LIGHTEN);
+
+    const puffs = variant === 0 ? [
+        [0.24, 0.62, 0.21],
+        [0.38, 0.64, 0.24],
+        [0.54, 0.64, 0.24],
+        [0.70, 0.62, 0.20],
+        [0.33, 0.48, 0.25],
+        [0.50, 0.39, 0.29],
+        [0.64, 0.50, 0.22],
+    ] : [
+        [0.25, 0.62, 0.20],
+        [0.40, 0.64, 0.24],
+        [0.56, 0.64, 0.24],
+        [0.71, 0.62, 0.21],
+        [0.35, 0.50, 0.23],
+        [0.47, 0.40, 0.28],
+        [0.62, 0.46, 0.25],
+    ];
+    for (const [nx, ny, nr] of puffs) {
+        const r = nr * SH, x = nx * SW, y = ny * SH;
+        const g = new Cairo.RadialGradient(x, y, r * 0.58, x, y, r);
+        g.addColorStopRGBA(0, 1, 1, 1, 1.0);
+        g.addColorStopRGBA(0.45, 1, 1, 1, 0.78);
+        g.addColorStopRGBA(0.78, 1, 1, 1, 0.32);
+        g.addColorStopRGBA(1, 1, 1, 1, 0.0);
+        mc.setSource(g);
+        mc.arc(x, y, r, 0, TWO_PI);
+        mc.fill();
+    }
+    mc.$dispose();
+    mask.flush();
+
     const surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, SW, SH);
     const cr = new Cairo.Context(surface);
-    cr.setOperator(Cairo.Operator.CLEAR);
-    cr.paint();
-    cr.setOperator(Cairo.Operator.OVER);
-
-    const bellyColor = [0.50, 0.56, 0.65];
-    const bellyPuffs = variant === 0
-        ? [[0.28, 0.67, 0.24], [0.45, 0.69, 0.27], [0.61, 0.68, 0.25], [0.73, 0.66, 0.20]]
-        : [[0.26, 0.68, 0.22], [0.43, 0.69, 0.26], [0.59, 0.67, 0.27], [0.74, 0.67, 0.21]];
-    for (const [nx, ny, nr] of bellyPuffs) {
-        const r = nr * SH, x = nx * SW, y = ny * SH;
-        cr.save();
-        cr.translate(x, y);
-        cr.scale(1.32, 0.76);
-        const g = new Cairo.RadialGradient(0, 0, r * 0.05, 0, 0, r);
-        g.addColorStopRGBA(0, bellyColor[0], bellyColor[1], bellyColor[2], 0.28);
-        g.addColorStopRGBA(0.48, bellyColor[0], bellyColor[1], bellyColor[2], 0.16);
-        g.addColorStopRGBA(0.80, bellyColor[0], bellyColor[1], bellyColor[2], 0.05);
-        g.addColorStopRGBA(1, bellyColor[0], bellyColor[1], bellyColor[2], 0);
-        cr.setSource(g);
-        cr.arc(0, 0, r, 0, TWO_PI);
-        cr.fill();
-        cr.restore();
-    }
-
-    const crownPuffs = variant === 0 ? [
-        [0.32, 0.59, 0.27, 1.24, 0.88, 0.44],
-        [0.50, 0.59, 0.29, 1.28, 0.88, 0.46],
-        [0.66, 0.59, 0.25, 1.20, 0.88, 0.42],
-        [0.24, 0.55, 0.20, 1.04, 0.95, 0.44],
-        [0.37, 0.45, 0.25, 1.04, 0.98, 0.52],
-        [0.51, 0.39, 0.27, 1.05, 1.00, 0.56],
-        [0.64, 0.46, 0.23, 1.04, 0.96, 0.48],
-        [0.75, 0.55, 0.18, 1.05, 0.92, 0.38],
-        [0.48, 0.33, 0.17, 1.04, 0.95, 0.42],
-        [0.35, 0.40, 0.15, 1.02, 0.95, 0.38],
-    ] : [
-        [0.30, 0.60, 0.26, 1.24, 0.88, 0.44],
-        [0.48, 0.59, 0.29, 1.28, 0.88, 0.46],
-        [0.66, 0.60, 0.25, 1.20, 0.88, 0.42],
-        [0.23, 0.56, 0.19, 1.04, 0.95, 0.42],
-        [0.35, 0.47, 0.24, 1.05, 0.98, 0.50],
-        [0.47, 0.38, 0.28, 1.05, 1.00, 0.56],
-        [0.60, 0.43, 0.25, 1.04, 0.98, 0.52],
-        [0.73, 0.53, 0.20, 1.05, 0.94, 0.42],
-        [0.44, 0.32, 0.18, 1.04, 0.95, 0.42],
-        [0.58, 0.36, 0.16, 1.02, 0.95, 0.38],
-    ];
-    for (const [nx, ny, nr, sx, sy, a0] of crownPuffs) {
-        const r = nr * SH, x = nx * SW, y = ny * SH;
-        cr.save();
-        cr.translate(x, y);
-        cr.scale(sx, sy);
-        const g = new Cairo.RadialGradient(0, -r * 0.12, r * 0.04, 0, 0, r);
-        g.addColorStopRGBA(0, 0.99, 0.995, 1.0, a0);
-        g.addColorStopRGBA(0.38, 0.98, 0.99, 1.0, a0 * 0.74);
-        g.addColorStopRGBA(0.70, 0.96, 0.98, 1.0, a0 * 0.32);
-        g.addColorStopRGBA(1, 0.96, 0.98, 1.0, 0);
-        cr.setSource(g);
-        cr.arc(0, 0, r, 0, TWO_PI);
-        cr.fill();
-        cr.restore();
-    }
+    const bodyGrad = new Cairo.LinearGradient(0, SH * 0.10, 0, SH * 0.88);
+    bodyGrad.addColorStopRGBA(0.0, 0.98, 0.99, 1.00, 0.46);
+    bodyGrad.addColorStopRGBA(0.60, 0.92, 0.95, 0.99, 0.38);
+    bodyGrad.addColorStopRGBA(1.0, 0.84, 0.89, 0.95, 0.26);
+    cr.setSource(bodyGrad);
+    cr.maskSurface(mask, 0, 0);
     cr.$dispose();
     surface.flush();
     return surface;
@@ -231,7 +214,7 @@ export function createSky() {
     return {
         sprite: null, spriteAlt: null, w: 0, h: 0, scene: '', night: null,
         lastTime: null, lastT: null,
-        drops: [], curtains: [], ripples: [], flakes: [], pellets: [],
+        drops: [], ripples: [], flakes: [], pellets: [],
         hail: [], clouds: [], stars: [], streaks: [], leaves: [], fog: [],
         cache: null, cacheKey: '', builds: 0, blits: 0,
         fx: null, fxW: 0, fxH: 0, fxScale: null, frameMs: null, _fxFrames: 0,
@@ -254,13 +237,6 @@ function rebuild(sky, width, height, scene) {
             length, l: length, speed, sp: speed, layer,
         };
     });
-    sky.curtains = Array.from({ length: features.curtains ?? 0 }, (_, i) => ({
-        x: (i + 0.3) * (width / Math.max(1, features.curtains ?? 1)),
-        width: rand(0.18, 0.30) * width,
-        speed: rand(10, 22),
-        alpha: rand(0.07, 0.13),
-        phase: rand(0, TWO_PI),
-    }));
     sky.ripples = createList(features.ripples ?? 0, () => ({
         x: rand(0.05 * width, 0.95 * width),
         y: rand(0.93 * height, 0.99 * height),
@@ -324,20 +300,15 @@ function rebuild(sky, width, height, scene) {
             isTwinkle, tw: isTwinkle, isCool, cool: isCool,
         };
     });
-    const cloudCount = scene === 'cloud'
-        ? Math.max(7, Math.round(9 * areaScaleFactor))
-        : Math.round((features.clouds ?? 0) * areaScaleFactor);
-    const spanW = width + 180;
+    const cloudCount = Math.round((features.clouds ?? 0) * areaScaleFactor);
+    const spanW = width + 160;
     sky.clouds = Array.from({ length: cloudCount }, (_, i) => {
         const isBack = i % 3 === 0;
-        const scale = scene === 'cloud'
-            ? (isBack ? rand(2.0, 2.8) : rand(1.8, 2.7))
-            : (isBack ? rand(1.5, 2.4) : rand(1.2, 2.3));
+        const scale = isBack ? rand(1.25, 1.85) : rand(1.35, 2.05);
         const speed = isBack ? rand(6, 13) : rand(11, 22);
-        const maxY = scene === 'cloud' ? 0.25 : 0.36;
-        const slotX = -110 + ((i + rand(0.1, 0.9)) / Math.max(1, cloudCount)) * spanW;
+        const slotX = -80 + ((i + rand(0.12, 0.88)) / Math.max(1, cloudCount)) * spanW;
         return {
-            x: slotX, y: rand(0.00 * height, maxY * height),
+            x: slotX, y: rand(0.01 * height, 0.20 * height),
             scale, s: scale, speed, sp: speed,
             variant: i % 2, isBack,
         };
@@ -653,16 +624,16 @@ function drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight) {
     for (const cloudItem of sky.clouds) {
         const cloudSpeed = cloudItem.speed ?? cloudItem.sp;
         const cloudScale = cloudItem.scale ?? cloudItem.s;
-        const cw = 440 * cloudScale * 0.24 * scale;
-        const ch = 220 * cloudScale * 0.24 * scale;
+        const cw = 360 * cloudScale * 0.24 * scale;
+        const ch = 180 * cloudScale * 0.24 * scale;
         cloudItem.x += cloudSpeed * dt * scale;
-        if (cloudItem.x > width + 20 * scale)
-            cloudItem.x = -cw - 10 * scale;
+        if (cloudItem.x > width + 40 * scale)
+            cloudItem.x = -cw - 30 * scale;
         const sprite = cloudItem.variant ? sky.spriteAlt : sky.sprite;
         const layerFactor = cloudItem.isBack ? 0.76 : 1.0;
         cr.save();
         cr.translate(cloudItem.x, cloudItem.y + Math.sin(time * 0.3 + cloudItem.y) * 4 * scale);
-        cr.scale(cw / 440, ch / 220);
+        cr.scale(cw / 360, ch / 180);
         cr.setSourceSurface(sprite, 0, 0);
         cr.paintWithAlpha(baseAlpha * layerFactor * tint);
         if (twilight > 0.01) {
@@ -816,49 +787,14 @@ function drawFog(cr, sky, width, dt, time, night, scale = 1) {
 }
 
 /* Rain, Drizzle & Showers: diagonal rain curtains + 3-plane tapered streaks + splash ripples */
-function drawRain(cr, sky, width, height, scale, dt, time, scene, code = null) {
+function drawRain(cr, sky, width, height, scale, dt, scene, code = null) {
     if (!sky.drops.length)
         return;
     const isDrizzle = code === 51 || code === 53 || code === 55;
-    const isShower = code === 80 || code === 81 || code === 82;
     const speedMul = isDrizzle ? 0.68 : 1.0;
     const lenMul = isDrizzle ? 0.65 : 1.0;
     const slant = scene === 'sleet' ? 0.34 : (isDrizzle ? 0.18 : 0.28);
 
-    // Peeking sun/moon break in the upper-right cloud deck for convective showers
-    if (isShower) {
-        const gx = width * 0.78, gy = height * 0.16, gr = 95 * scale;
-        const glow = new Cairo.RadialGradient(gx, gy, 4 * scale, gx, gy, gr);
-        glow.addColorStopRGBA(0, 1.0, 0.95, 0.78, 0.28);
-        glow.addColorStopRGBA(0.5, 0.95, 0.90, 0.76, 0.10);
-        glow.addColorStopRGBA(1, 0.90, 0.88, 0.78, 0);
-        cr.setSource(glow);
-        cr.arc(gx, gy, gr, 0, TWO_PI);
-        cr.fill();
-    }
-
-    // Distant sweeping diagonal rain curtains (virga shafts)
-    for (const curtain of sky.curtains) {
-        curtain.x += curtain.speed * dt * scale;
-        if (curtain.x > width + curtain.width)
-            curtain.x = -curtain.width * 1.5;
-        const pulse = 0.75 + 0.25 * Math.sin(time * 0.8 + curtain.phase);
-        const alpha = curtain.alpha * pulse;
-        const topX = curtain.x, botX = curtain.x - height * slant * 0.75;
-        const g = new Cairo.LinearGradient(topX, height * 0.08, botX, height * 0.95);
-        g.addColorStopRGBA(0, 0.74, 0.84, 0.95, 0);
-        g.addColorStopRGBA(0.30, 0.74, 0.84, 0.95, alpha);
-        g.addColorStopRGBA(0.75, 0.74, 0.84, 0.95, alpha * 0.7);
-        g.addColorStopRGBA(1, 0.74, 0.84, 0.95, 0);
-        cr.setSource(g);
-        cr.newPath();
-        cr.moveTo(topX, height * 0.08);
-        cr.lineTo(topX + curtain.width, height * 0.08);
-        cr.lineTo(botX + curtain.width, height * 0.95);
-        cr.lineTo(botX, height * 0.95);
-        cr.closePath();
-        cr.fill();
-    }
 
     const rainColor = scene === 'sleet' ? [0.66, 0.82, 0.95] : [0.74, 0.85, 0.96];
     cr.setLineCap(Cairo.LineCap.ROUND);
@@ -946,16 +882,6 @@ function drawSnow(cr, sky, width, height, scale, dt, time, code = null, variant 
     const isGrains = code === 77 || variant === 'grains';
     const isShower = code === 85 || variant === 'shower';
 
-    if (isShower) {
-        const gx = width * 0.78, gy = height * 0.16, gr = 90 * scale;
-        const glow = new Cairo.RadialGradient(gx, gy, 4 * scale, gx, gy, gr);
-        glow.addColorStopRGBA(0, 1.0, 0.97, 0.86, 0.26);
-        glow.addColorStopRGBA(0.55, 0.92, 0.95, 1.0, 0.10);
-        glow.addColorStopRGBA(1, 0.90, 0.94, 1.0, 0);
-        cr.setSource(glow);
-        cr.arc(gx, gy, gr, 0, TWO_PI);
-        cr.fill();
-    }
 
     const speedMul = isLight ? 0.75 : (isHeavy ? 1.38 : (isGrains ? 1.55 : 1.0));
     const windShear = isHeavy ? -36 * scale : (isShower ? -14 * scale : 0);
@@ -1007,18 +933,10 @@ function drawSnow(cr, sky, width, height, scale, dt, time, code = null, variant 
         }
     }
 
-    if (isHeavy) {
-        const drift = new Cairo.LinearGradient(0, height * 0.84, 0, height);
-        drift.addColorStopRGBA(0, 0.92, 0.96, 1.0, 0);
-        drift.addColorStopRGBA(1, 0.94, 0.97, 1.0, 0.28);
-        cr.setSource(drift);
-        cr.rectangle(0, height * 0.84, width, height * 0.16);
-        cr.fill();
-    }
 }
 
 /* Sleet & Freezing Rain: glinting translucent ice pellets + bottom glaze shimmer */
-function drawSleetPellets(cr, sky, width, height, scale, dt, time) {
+function drawSleetPellets(cr, sky, width, height, scale, dt) {
     if (!sky.pellets.length)
         return;
     for (const p of sky.pellets) {
@@ -1036,13 +954,6 @@ function drawSleetPellets(cr, sky, width, height, scale, dt, time) {
         cr.arc(p.x - r * 0.28, p.y - r * 0.28, r * 0.38, 0, TWO_PI);
         cr.fill();
     }
-    const shimmer = 0.16 + 0.06 * Math.sin(time * 2.2);
-    const glaze = new Cairo.LinearGradient(0, height * 0.93, 0, height);
-    glaze.addColorStopRGBA(0, 0.80, 0.92, 1.0, 0);
-    glaze.addColorStopRGBA(1, 0.86, 0.95, 1.0, shimmer);
-    cr.setSource(glaze);
-    cr.rectangle(0, height * 0.93, width, height * 0.07);
-    cr.fill();
 }
 
 /* Rimmed & glinting bouncing hailstones */
@@ -1352,9 +1263,9 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
         }
         drawClouds(fc, sky, width, scale, dt, time, scene, night, twilight);
         drawFog(fc, sky, width, dt, time, night, scale);
-        drawRain(fc, sky, width, height, scale, dt, time, scene, code);
+        drawRain(fc, sky, width, height, scale, dt, scene, code);
         drawSnow(fc, sky, width, height, scale, dt, time, code, variant);
-        drawSleetPellets(fc, sky, width, height, scale, dt, time);
+        drawSleetPellets(fc, sky, width, height, scale, dt);
         drawHail(fc, sky, width, height, dt);
         drawWindStreaks(fc, sky, width, height, dt, time, night, scale);
         if (features.bolt)
