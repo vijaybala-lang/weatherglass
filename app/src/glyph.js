@@ -9,6 +9,7 @@ import GLib from 'gi://GLib?version=2.0';
 import Gtk from 'gi://Gtk?version=4.0';
 import { paintWeather, createParticles, GRID } from './painter.js';
 import { paintMoon, moonPhase } from './moon.js';
+import { createSky, paintSky } from './sky.js';
 
 // The pose vocabulary (smoke + callers iterate it; painter dispatches).
 export const SCENES = ['sun', 'moon', 'partly', 'cloud', 'fog', 'wind',
@@ -127,5 +128,92 @@ export function makeWeatherIcon(size, getOpts = null, animate = () => true) {
             timer = 0;
         }
     });
+    return area;
+}
+
+
+// ---------------------------------------------------------------------------
+// Widget: full-page backdrop, ticking only while mapped AND animated, 20 fps
+// like the extension. Sun glow/solar are solved at paint time (per-minute
+// cached) from the city's clock, never at fetch time.
+
+export function makeSkyBackdrop(getState, animate = () => true) {
+    const area = new Gtk.DrawingArea();
+    area.set_can_target(false);
+    const sky = createSky();
+    const t0 = GLib.get_monotonic_time();
+    const tPauseStatic = 42;
+
+    area.set_hexpand(true);
+    area.set_vexpand(true);
+    area.set_draw_func((_w, cr, w, h) => {
+        const st = getState() ?? {};
+        let time = (GLib.get_monotonic_time() - t0) / 1e6;
+        if (!animate()) time = tPauseStatic;
+        const { glow = 0, solar = null } = st;
+        paintSky(cr, {
+            w, h, time,
+            scene: st.scene ?? 'partly',
+            night: !!st.night,
+            glow, solar,
+            phase: st.phase ?? null,
+            code: st.code ?? null,
+            scrim: st.scrim ?? null,
+            sky,
+        });
+    });
+
+    let tick = 0, lastDrawUs = 0, winActive = true, settled = false;
+    let root = null, activeHandler = 0;
+    const readActive = () => {
+        try {
+            return root ? root.get_property('is-active') !== false : true;
+        } catch { return true; }
+    };
+    area.connect('map', () => {
+        root = area.get_root();
+        winActive = readActive();
+        if (root && !activeHandler) {
+            try {
+                activeHandler = root.connect('notify::is-active', () => {
+                    winActive = readActive();
+                    if (winActive) area.queue_draw();
+                });
+            } catch { activeHandler = 0; }
+        }
+        if (tick) return;
+        lastDrawUs = 0;
+        settled = !animate();
+        tick = area.add_tick_callback((_w, clock) => {
+            if (!animate()) {
+                if (!settled) {
+                    settled = true;
+                    area.queue_draw();
+                }
+                return true;
+            }
+            settled = false;
+            if (!winActive) return true;
+            const now = clock.get_frame_time();
+            const intervalUs = (sky.frameMs > 12 ? 100 : 50) * 1000;
+            if (now - lastDrawUs >= intervalUs) {
+                lastDrawUs = now;
+                area.queue_draw();
+            }
+            return true;
+        });
+    });
+    area.connect('unmap', () => {
+        if (tick) {
+            area.remove_tick_callback(tick);
+            tick = 0;
+        }
+        if (root && activeHandler) {
+            root.disconnect(activeHandler);
+            activeHandler = 0;
+        }
+        root = null;
+    });
+    area.invalidateState = () => area.queue_draw();
     return area;
 }

@@ -10,8 +10,7 @@ import Gtk from 'gi://Gtk?version=4.0';
 import Adw from 'gi://Adw?version=1';
 import { CityPage } from './citypage.js';
 import { AddCityDialog } from './addcity.js';
-import { makeWeatherIcon } from './glyph.js';
-import { makeSkyBackdrop } from './sky.js';
+import { makeWeatherIcon, makeSkyBackdrop } from './glyph.js';
 import { fmtTemp, cityWallMs, fmtClock, sceneFor, brandTexture } from './weather.js';
 
 const CityRow = GObject.registerClass({ gTypeName: 'WCityRow' },

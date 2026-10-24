@@ -93,7 +93,7 @@ if 'THEME_CONFIG' not in app_css:
 # three homes (extension owns; shared/ archives below the marker; app ships a
 # byte-clone — all divergence must be IN the extension and propagate).
 MK = '/* == SYNCHED DESIGN BRAIN (byte-identity enforced by scripts/check-design-parity.py) == */'
-for name in ('painter', 'moon'):
+for name in ('painter', 'moon', 'sky'):
     ext_src = (ROOT / 'extension' / (name + '.js')).read_text()
     app_src = (ROOT / 'app' / 'src' / (name + '.js')).read_text()
     sh_src = (ROOT / 'shared' / 'art' / (name + '.js')).read_text()
