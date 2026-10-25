@@ -149,6 +149,8 @@ export function bodyOf(scene, night, width, height, glow = 0, solar = null, phas
     return null;
 }
 
+const PRECIP_CLOUD_SCENES = new Set(['rain', 'sleet', 'snow', 'hail', 'storm']);
+
 /** Pre-rendered atmospheric cloud sprite: horizontally blended, asymmetric
  *  stratocumulus vapor lobes merged with LIGHTEN on an offscreen mask and
  *  softly feathered on all sides for a natural, realistic cloud formation. */
@@ -206,9 +208,113 @@ function makeCloudSprite(variant = 0) {
     return surface;
 }
 
+/** Dark heavy cumulus (nimbus) sprite for precipitation scenes:
+ *  Pass 1 paints swollen, rounded cumulus domes lit from above;
+ *  Pass 2 grounds them with a broad, dark condensation base. */
+function makePrecipCloudSprite(variant = 0, scene = 'rain') {
+    const SW = 440, SH = 220;
+    const buildMask = lobes => {
+        const m = new Cairo.ImageSurface(Cairo.Format.ARGB32, SW, SH);
+        const mc = new Cairo.Context(m);
+        mc.setOperator(Cairo.Operator.CLEAR);
+        mc.paint();
+        mc.setOperator(Cairo.Operator.LIGHTEN);
+        for (const [nx, ny, nr, sx, sy, peak, hard] of lobes) {
+            const r = nr * SH, x = nx * SW, y = ny * SH;
+            mc.save();
+            mc.translate(x, y);
+            mc.scale(sx, sy);
+            const g = new Cairo.RadialGradient(0, 0, r * hard, 0, 0, r);
+            g.addColorStopRGBA(0, 1, 1, 1, peak);
+            g.addColorStopRGBA(0.52, 1, 1, 1, peak * 0.82);
+            g.addColorStopRGBA(0.80, 1, 1, 1, peak * 0.36);
+            g.addColorStopRGBA(1, 1, 1, 1, 0.0);
+            mc.setSource(g);
+            mc.arc(0, 0, r, 0, TWO_PI);
+            mc.fill();
+            mc.restore();
+        }
+        mc.$dispose();
+        m.flush();
+        return m;
+    };
+
+    const turretLobes = variant === 0 ? [
+        [0.24, 0.56, 0.24, 1.35, 0.86, 0.90, 0.32],
+        [0.37, 0.44, 0.28, 1.32, 0.92, 0.96, 0.34],
+        [0.53, 0.38, 0.31, 1.36, 0.95, 1.00, 0.36],
+        [0.68, 0.48, 0.26, 1.32, 0.88, 0.94, 0.32],
+        [0.79, 0.58, 0.21, 1.38, 0.78, 0.84, 0.28],
+        [0.46, 0.58, 0.32, 1.65, 0.78, 0.98, 0.35],
+    ] : [
+        [0.21, 0.58, 0.21, 1.36, 0.80, 0.84, 0.28],
+        [0.34, 0.46, 0.27, 1.32, 0.90, 0.95, 0.34],
+        [0.49, 0.37, 0.32, 1.38, 0.96, 1.00, 0.36],
+        [0.65, 0.45, 0.28, 1.34, 0.90, 0.96, 0.34],
+        [0.77, 0.56, 0.23, 1.36, 0.82, 0.88, 0.30],
+        [0.50, 0.58, 0.32, 1.65, 0.78, 0.98, 0.35],
+    ];
+    const bellyLobes = [
+        [0.26, 0.70, 0.24, 1.85, 0.52, 0.92, 0.30],
+        [0.50, 0.72, 0.28, 2.05, 0.50, 0.98, 0.34],
+        [0.73, 0.70, 0.24, 1.80, 0.52, 0.90, 0.30],
+    ];
+
+    const turretMask = buildMask(turretLobes);
+    const bellyMask = buildMask(bellyLobes);
+
+    const surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, SW, SH);
+    const cr = new Cairo.Context(surface);
+    const isStorm = scene === 'storm' || scene === 'hail';
+    const isSnow = scene === 'snow';
+
+    const bodyGrad = new Cairo.LinearGradient(0, SH * 0.08, 0, SH * 0.82);
+    if (isStorm) {
+        bodyGrad.addColorStopRGBA(0.00, 0.66, 0.72, 0.82, 0.82);
+        bodyGrad.addColorStopRGBA(0.38, 0.38, 0.44, 0.54, 0.78);
+        bodyGrad.addColorStopRGBA(0.75, 0.19, 0.23, 0.31, 0.76);
+        bodyGrad.addColorStopRGBA(1.00, 0.12, 0.15, 0.22, 0.60);
+    } else if (isSnow) {
+        bodyGrad.addColorStopRGBA(0.00, 0.86, 0.90, 0.95, 0.78);
+        bodyGrad.addColorStopRGBA(0.45, 0.62, 0.69, 0.78, 0.72);
+        bodyGrad.addColorStopRGBA(0.80, 0.44, 0.51, 0.61, 0.68);
+        bodyGrad.addColorStopRGBA(1.00, 0.36, 0.42, 0.52, 0.54);
+    } else {
+        bodyGrad.addColorStopRGBA(0.00, 0.74, 0.80, 0.88, 0.80);
+        bodyGrad.addColorStopRGBA(0.42, 0.46, 0.53, 0.64, 0.76);
+        bodyGrad.addColorStopRGBA(0.78, 0.27, 0.33, 0.43, 0.74);
+        bodyGrad.addColorStopRGBA(1.00, 0.19, 0.24, 0.33, 0.58);
+    }
+    cr.setSource(bodyGrad);
+    cr.maskSurface(turretMask, 0, 0);
+
+    const bellyGrad = new Cairo.LinearGradient(0, SH * 0.52, 0, SH * 0.88);
+    if (isStorm) {
+        bellyGrad.addColorStopRGBA(0.0, 0.18, 0.21, 0.29, 0.45);
+        bellyGrad.addColorStopRGBA(0.5, 0.10, 0.13, 0.20, 0.76);
+        bellyGrad.addColorStopRGBA(1.0, 0.07, 0.09, 0.15, 0.55);
+    } else if (isSnow) {
+        bellyGrad.addColorStopRGBA(0.0, 0.46, 0.53, 0.63, 0.40);
+        bellyGrad.addColorStopRGBA(0.5, 0.34, 0.41, 0.51, 0.68);
+        bellyGrad.addColorStopRGBA(1.0, 0.28, 0.35, 0.45, 0.48);
+    } else {
+        bellyGrad.addColorStopRGBA(0.0, 0.26, 0.32, 0.42, 0.42);
+        bellyGrad.addColorStopRGBA(0.5, 0.16, 0.21, 0.30, 0.72);
+        bellyGrad.addColorStopRGBA(1.0, 0.12, 0.17, 0.25, 0.52);
+    }
+    cr.setSource(bellyGrad);
+    cr.maskSurface(bellyMask, 0, 0);
+
+    cr.$dispose();
+    surface.flush();
+    return surface;
+}
+
 export function createSky() {
     return {
-        sprite: null, spriteAlt: null, w: 0, h: 0, scene: '', night: null,
+        sprite: null, spriteAlt: null,
+        precipSprite: null, precipSpriteAlt: null, precipSpriteScene: '',
+        w: 0, h: 0, scene: '', night: null,
         lastTime: null, lastT: null,
         drops: [], ripples: [], flakes: [], pellets: [],
         hail: [], clouds: [], stars: [], streaks: [], leaves: [], fog: [],
@@ -296,15 +402,25 @@ function rebuild(sky, width, height, scene) {
             isTwinkle, tw: isTwinkle, isCool, cool: isCool,
         };
     });
-    const cloudCount = Math.round((features.clouds ?? 0) * areaScaleFactor);
-    const spanW = width + 160;
+    const isPrecip = PRECIP_CLOUD_SCENES.has(scene);
+    const rawClouds = features.clouds ?? 0;
+    const cloudCount = isPrecip && rawClouds > 0
+        ? Math.max(6, Math.round(rawClouds * areaScaleFactor))
+        : Math.round(rawClouds * areaScaleFactor);
+    const spanW = isPrecip ? width + 180 : width + 160;
     sky.clouds = Array.from({ length: cloudCount }, (_, i) => {
-        const isBack = i % 3 === 0;
-        const scale = isBack ? rand(1.25, 1.85) : rand(1.35, 2.05);
+        const isBack = isPrecip ? i % 2 === 0 : i % 3 === 0;
+        const scale = isPrecip
+            ? (isBack ? rand(2.15, 2.75) : rand(1.85, 2.40))
+            : (isBack ? rand(1.25, 1.85) : rand(1.35, 2.05));
         const speed = isBack ? rand(6, 13) : rand(11, 22);
-        const slotX = -80 + ((i + rand(0.12, 0.88)) / Math.max(1, cloudCount)) * spanW;
+        const startX = isPrecip ? -110 : -80;
+        const slotX = startX + ((i + rand(0.12, 0.88)) / Math.max(1, cloudCount)) * spanW;
+        const y = isPrecip
+            ? (isBack ? rand(-0.03 * height, 0.08 * height) : rand(0.05 * height, 0.16 * height))
+            : rand(0.01 * height, 0.20 * height);
         return {
-            x: slotX, y: rand(0.01 * height, 0.20 * height),
+            x: slotX, y,
             scale, s: scale, speed, sp: speed,
             variant: i % 2, isBack,
         };
@@ -609,31 +725,51 @@ function drawBodies(cr, sky, width, height, scale, features, time, night, phase,
 function drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight) {
     if (!sky.clouds.length)
         return;
-    if (!sky.sprite)
-        sky.sprite = makeCloudSprite(0);
-    if (!sky.spriteAlt)
-        sky.spriteAlt = makeCloudSprite(1);
-    const tint = night ? 0.45 + 0.35 * twilight : 1;
+    const isPrecip = PRECIP_CLOUD_SCENES.has(scene);
+    let sprite0, sprite1, sw, sh;
+    if (isPrecip) {
+        if (!sky.precipSprite || sky.precipSpriteScene !== scene) {
+            sky.precipSprite = makePrecipCloudSprite(0, scene);
+            sky.precipSpriteAlt = makePrecipCloudSprite(1, scene);
+            sky.precipSpriteScene = scene;
+        }
+        sprite0 = sky.precipSprite;
+        sprite1 = sky.precipSpriteAlt;
+        sw = 440;
+        sh = 220;
+    } else {
+        if (!sky.sprite)
+            sky.sprite = makeCloudSprite(0);
+        if (!sky.spriteAlt)
+            sky.spriteAlt = makeCloudSprite(1);
+        sprite0 = sky.sprite;
+        sprite1 = sky.spriteAlt;
+        sw = 420;
+        sh = 180;
+    }
+    const tint = isPrecip
+        ? (night ? 0.62 + 0.28 * twilight : 1)
+        : (night ? 0.45 + 0.35 * twilight : 1);
     const [glowR, glowG, glowB] = night ? [1.0, 0.50, 0.46] : [1.0, 0.62, 0.48];
-    const baseAlpha = scene === 'clear' || scene === 'sun' ? 0.45
-        : scene === 'cloud' ? 0.88 : 0.78;
+    const baseAlpha = isPrecip ? 0.94
+        : (scene === 'clear' || scene === 'sun' ? 0.45 : (scene === 'cloud' ? 0.88 : 0.78));
     for (const cloudItem of sky.clouds) {
         const cloudSpeed = cloudItem.speed ?? cloudItem.sp;
         const cloudScale = cloudItem.scale ?? cloudItem.s;
-        const cw = 420 * cloudScale * 0.24 * scale;
-        const ch = 180 * cloudScale * 0.24 * scale;
+        const cw = sw * cloudScale * 0.24 * scale;
+        const ch = sh * cloudScale * 0.24 * scale;
         cloudItem.x += cloudSpeed * dt * scale;
         if (cloudItem.x > width + 40 * scale)
             cloudItem.x = -cw - 30 * scale;
-        const sprite = cloudItem.variant ? sky.spriteAlt : sky.sprite;
-        const layerFactor = cloudItem.isBack ? 0.76 : 1.0;
+        const sprite = cloudItem.variant ? sprite1 : sprite0;
+        const layerFactor = cloudItem.isBack ? 0.82 : 1.0;
         cr.save();
         cr.translate(cloudItem.x, cloudItem.y + Math.sin(time * 0.3 + cloudItem.y) * 4 * scale);
-        cr.scale(cw / 420, ch / 180);
+        cr.scale(cw / sw, ch / sh);
         cr.setSourceSurface(sprite, 0, 0);
         cr.paintWithAlpha(baseAlpha * layerFactor * tint);
         if (twilight > 0.01) {
-            cr.setSourceRGBA(glowR, glowG, glowB, 0.50 * twilight * layerFactor);
+            cr.setSourceRGBA(glowR, glowG, glowB, (isPrecip ? 0.36 : 0.50) * twilight * layerFactor);
             cr.maskSurface(sprite, 0, 0);
         }
         cr.restore();
