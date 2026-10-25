@@ -247,7 +247,9 @@ export function buildState(weather, moon, fx) {
             code: d.code, tmax: d.tmax, tmin: d.tmin})),
         currentIso: iso,
         units: 'metric',
-        effective: sceneFor(data.code, isDay),
+        effective: fx.condition === 'wind'
+            ? {...sceneFor(data.code, isDay), scene: 'wind'}
+            : sceneFor(data.code, isDay),
         dark: fx.session !== 'light',
         updated: null,
         phase,

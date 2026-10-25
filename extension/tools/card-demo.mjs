@@ -356,7 +356,8 @@ function renderCard(p, outDir, probe = null) {
     WALL = p.tzMin !== undefined ? p.tzMin * 60000 : wallClock(p.local);
     const {glow, solar, isDay} = sunShade(p.lat, p.lon, ms);
     const wmo = WMO[p.condition] ?? 0;
-    const {scene, desc} = sceneFor(wmo, isDay);
+    const {scene: rawScene, desc} = sceneFor(wmo, isDay);
+    const scene = p.condition === 'wind' ? 'wind' : rawScene;
     const night = !isDay;
     const data = buildData(p.condition, p.lat, p.lon, ms);
 
