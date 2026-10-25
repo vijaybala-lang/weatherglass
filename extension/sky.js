@@ -39,7 +39,7 @@ const SCENE_FEATURES = {
     partly: { clouds: 3, sun: 1, moon: 1 },  // night: moon behind the clouds
     moon: { stars: 1, moon: 1 },
     cloud: { clouds: 8 },
-    fog: { clouds: 2, fog: 1 },
+    fog: { fog: 1 },
     rain: { clouds: 7, drops: 95, ripples: 10 },
     sleet: { clouds: 7, drops: 48, flakes: 28, pellets: 22 },
     snow: { clouds: 7, flakes: 72 },
@@ -149,55 +149,56 @@ export function bodyOf(scene, night, width, height, glow = 0, solar = null, phas
     return null;
 }
 
-/** Pre-rendered cumulus sprite: overlapping puffs merged with LIGHTEN on an
- *  offscreen mask (so interior overlap never compounds into a bright white
- *  streak or band) and shaded top-to-bottom with soft radial feathering on
- *  all sides. */
+/** Pre-rendered atmospheric cloud sprite: horizontally blended, asymmetric
+ *  stratocumulus vapor lobes merged with LIGHTEN on an offscreen mask and
+ *  softly feathered on all sides for a natural, realistic cloud formation. */
 function makeCloudSprite(variant = 0) {
-    const SW = 360, SH = 180;
+    const SW = 420, SH = 180;
     const mask = new Cairo.ImageSurface(Cairo.Format.ARGB32, SW, SH);
     const mc = new Cairo.Context(mask);
     mc.setOperator(Cairo.Operator.CLEAR);
     mc.paint();
     mc.setOperator(Cairo.Operator.LIGHTEN);
 
-    const puffs = variant === 0 ? [
-        [0.24, 0.62, 0.21],
-        [0.38, 0.64, 0.24],
-        [0.54, 0.64, 0.24],
-        [0.70, 0.62, 0.20],
-        [0.33, 0.48, 0.25],
-        [0.50, 0.39, 0.29],
-        [0.64, 0.50, 0.22],
+    const lobes = variant === 0 ? [
+        [0.24, 0.60, 0.22, 1.55, 0.72, 0.82],
+        [0.44, 0.62, 0.25, 1.65, 0.70, 0.92],
+        [0.64, 0.60, 0.23, 1.55, 0.72, 0.84],
+        [0.35, 0.48, 0.24, 1.38, 0.80, 0.90],
+        [0.53, 0.44, 0.26, 1.45, 0.78, 0.96],
+        [0.72, 0.54, 0.19, 1.40, 0.74, 0.72],
     ] : [
-        [0.25, 0.62, 0.20],
-        [0.40, 0.64, 0.24],
-        [0.56, 0.64, 0.24],
-        [0.71, 0.62, 0.21],
-        [0.35, 0.50, 0.23],
-        [0.47, 0.40, 0.28],
-        [0.62, 0.46, 0.25],
+        [0.26, 0.60, 0.21, 1.50, 0.72, 0.80],
+        [0.46, 0.62, 0.25, 1.65, 0.70, 0.90],
+        [0.66, 0.59, 0.22, 1.52, 0.72, 0.82],
+        [0.38, 0.45, 0.26, 1.42, 0.78, 0.95],
+        [0.58, 0.48, 0.24, 1.38, 0.80, 0.88],
+        [0.20, 0.55, 0.18, 1.35, 0.74, 0.70],
     ];
-    for (const [nx, ny, nr] of puffs) {
+    for (const [nx, ny, nr, sx, sy, peak] of lobes) {
         const r = nr * SH, x = nx * SW, y = ny * SH;
-        const g = new Cairo.RadialGradient(x, y, r * 0.58, x, y, r);
-        g.addColorStopRGBA(0, 1, 1, 1, 1.0);
-        g.addColorStopRGBA(0.45, 1, 1, 1, 0.78);
-        g.addColorStopRGBA(0.78, 1, 1, 1, 0.32);
+        mc.save();
+        mc.translate(x, y);
+        mc.scale(sx, sy);
+        const g = new Cairo.RadialGradient(0, 0, r * 0.18, 0, 0, r);
+        g.addColorStopRGBA(0, 1, 1, 1, peak);
+        g.addColorStopRGBA(0.42, 1, 1, 1, peak * 0.68);
+        g.addColorStopRGBA(0.75, 1, 1, 1, peak * 0.26);
         g.addColorStopRGBA(1, 1, 1, 1, 0.0);
         mc.setSource(g);
-        mc.arc(x, y, r, 0, TWO_PI);
+        mc.arc(0, 0, r, 0, TWO_PI);
         mc.fill();
+        mc.restore();
     }
     mc.$dispose();
     mask.flush();
 
     const surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, SW, SH);
     const cr = new Cairo.Context(surface);
-    const bodyGrad = new Cairo.LinearGradient(0, SH * 0.10, 0, SH * 0.88);
-    bodyGrad.addColorStopRGBA(0.0, 0.98, 0.99, 1.00, 0.46);
-    bodyGrad.addColorStopRGBA(0.60, 0.92, 0.95, 0.99, 0.38);
-    bodyGrad.addColorStopRGBA(1.0, 0.84, 0.89, 0.95, 0.26);
+    const bodyGrad = new Cairo.LinearGradient(0, SH * 0.12, 0, SH * 0.88);
+    bodyGrad.addColorStopRGBA(0.0, 0.98, 0.99, 1.00, 0.44);
+    bodyGrad.addColorStopRGBA(0.60, 0.91, 0.95, 0.99, 0.36);
+    bodyGrad.addColorStopRGBA(1.0, 0.82, 0.88, 0.94, 0.24);
     cr.setSource(bodyGrad);
     cr.maskSurface(mask, 0, 0);
     cr.$dispose();
@@ -619,7 +620,7 @@ function drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight) {
     for (const cloudItem of sky.clouds) {
         const cloudSpeed = cloudItem.speed ?? cloudItem.sp;
         const cloudScale = cloudItem.scale ?? cloudItem.s;
-        const cw = 360 * cloudScale * 0.24 * scale;
+        const cw = 420 * cloudScale * 0.24 * scale;
         const ch = 180 * cloudScale * 0.24 * scale;
         cloudItem.x += cloudSpeed * dt * scale;
         if (cloudItem.x > width + 40 * scale)
@@ -628,7 +629,7 @@ function drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight) {
         const layerFactor = cloudItem.isBack ? 0.76 : 1.0;
         cr.save();
         cr.translate(cloudItem.x, cloudItem.y + Math.sin(time * 0.3 + cloudItem.y) * 4 * scale);
-        cr.scale(cw / 360, ch / 180);
+        cr.scale(cw / 420, ch / 180);
         cr.setSourceSurface(sprite, 0, 0);
         cr.paintWithAlpha(baseAlpha * layerFactor * tint);
         if (twilight > 0.01) {
@@ -661,27 +662,45 @@ function drawSoftFogBand(cr, cx, cy, halfW, halfH, rgb, alpha) {
 function drawPineTree(cr, x, baseY, treeHeight, rgb, alpha, bend = 0) {
     cr.save();
     cr.setSourceRGBA(rgb[0], rgb[1], rgb[2], alpha);
+    const trunkW = Math.max(1.2, treeHeight * 0.035);
+    cr.newPath();
+    cr.moveTo(x - trunkW, baseY);
+    cr.curveTo(
+        x + bend * 0.18, baseY - treeHeight * 0.30,
+        x + bend * 0.45, baseY - treeHeight * 0.60,
+        x + bend * 0.85, baseY - treeHeight * 0.88);
+    cr.lineTo(x + bend * 0.85 + trunkW * 0.6, baseY - treeHeight * 0.88);
+    cr.curveTo(
+        x + bend * 0.45 + trunkW, baseY - treeHeight * 0.60,
+        x + bend * 0.18 + trunkW, baseY - treeHeight * 0.30,
+        x + trunkW, baseY);
+    cr.closePath();
+    cr.fill();
+
     const tiers = 5;
     for (let t = 0; t < tiers; t++) {
         const f = t / tiers;
-        const topShift = bend * ((1 - f * 0.72) ** 1.45);
-        const botShift = bend * ((0.66 - f * 0.66) ** 1.45);
-        const topY = baseY - treeHeight * (1.0 - f * 0.72);
-        const botY = baseY - treeHeight * (0.66 - f * 0.66);
-        const hw = treeHeight * (0.13 + f * 0.21);
+        const hTop = 1.0 - f * 0.70;
+        const hBot = 0.62 - f * 0.60;
+        const topShift = bend * (hTop ** 1.35);
+        const botShift = bend * (hBot ** 1.35);
+        const topY = baseY - treeHeight * hTop;
+        const botY = baseY - treeHeight * hBot;
+        const hw = treeHeight * (0.14 + f * 0.22);
+        const tiltY = (topShift - botShift) * 0.38;
         cr.newPath();
         cr.moveTo(x + topShift, topY);
         cr.curveTo(
-            x + (topShift + botShift) * 0.5 - hw * 0.35, (topY + botY) * 0.5,
-            x + botShift - hw * 0.85, botY - 1.5,
-            x + botShift - hw, botY);
+            x + (topShift + botShift) * 0.5 - hw * 0.38, (topY + botY) * 0.5 - tiltY * 0.5,
+            x + botShift - hw * 0.85, botY - tiltY - 1.5,
+            x + botShift - hw, botY - tiltY);
         cr.curveTo(
-            x + botShift, botY + 2.5,
-            x + botShift, botY + 2.5,
-            x + botShift + hw, botY);
+            x + botShift - hw * 0.25, botY + 2.5,
+            x + botShift + hw * 0.25, botY + 2.5,
+            x + botShift + hw, botY + tiltY);
         cr.curveTo(
-            x + botShift + hw * 0.85, botY - 1.5,
-            x + (topShift + botShift) * 0.5 + hw * 0.35, (topY + botY) * 0.5,
+            x + botShift + hw * 0.85, botY + tiltY - 1.5,
+            x + (topShift + botShift) * 0.5 + hw * 0.38, (topY + botY) * 0.5 + tiltY * 0.5,
             x + topShift, topY);
         cr.closePath();
         cr.fill();
@@ -709,16 +728,16 @@ function drawFogHills(cr, width, height, night) {
     const mistRgb = night ? [0.46, 0.52, 0.62] : [0.85, 0.88, 0.91];
     const treeLayers = [
         {
-            baseY: 0.29 * height, skirtH: 48 * scale,
+            baseY: 0.29 * height, skirtH: 48 * scale, offset: 0.5,
             rgb: night ? [0.10, 0.13, 0.18] : [0.38, 0.43, 0.50],
             alpha: night ? 0.56 : 0.48,
-            treeScale: 1.18 * scale, seed: 31, count: 12, minH: 44, maxH: 68,
+            treeScale: 1.18 * scale, seed: 31, count: 8, minH: 46, maxH: 68,
         },
         {
-            baseY: 0.35 * height, skirtH: 56 * scale,
+            baseY: 0.35 * height, skirtH: 56 * scale, offset: 0.0,
             rgb: night ? [0.06, 0.08, 0.13] : [0.27, 0.32, 0.39],
             alpha: night ? 0.74 : 0.62,
-            treeScale: 1.48 * scale, seed: 73, count: 9, minH: 48, maxH: 74,
+            treeScale: 1.48 * scale, seed: 73, count: 8, minH: 50, maxH: 74,
         },
     ];
     for (const layer of treeLayers) {
@@ -740,7 +759,7 @@ function drawFogHills(cr, width, height, night) {
         cr.fill();
 
         for (let i = 0; i < layer.count; i++) {
-            const tx = (i / (layer.count - 1)) * width + r(-9, 9) * scale;
+            const tx = ((i + layer.offset) / (layer.count - 1)) * width + r(-4, 4) * scale;
             const u = tx / width;
             const ridgeY = layer.baseY -
                 Math.sin(u * Math.PI * 2.0 + layer.seed) * 7 * scale;
@@ -1022,35 +1041,62 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
         cr.stroke();
     }
 
-    // 2. W1 Swaying Ridge Pines along the lower horizon
+    // 2. W1 Swaying Ridge Pines: two receding treelines positioned above the graph
     if (sky.leaves.length) {
-        const ridgeBase = 0.89 * height;
-        const treeRgb = night ? [0.06, 0.10, 0.16] : [0.22, 0.32, 0.42];
-        const treeAlpha = night ? 0.78 : 0.68;
-        cr.setSourceRGBA(treeRgb[0], treeRgb[1], treeRgb[2], treeAlpha);
-        cr.newPath();
-        cr.moveTo(0, height);
-        for (let x = 0; x <= width; x += 8) {
-            const u = x / width;
-            const y = ridgeBase - Math.sin(u * Math.PI * 1.8 + 0.5) * 8 * scale;
-            cr.lineTo(x, y);
+        const treeLayers = [
+            {
+                baseY: 0.29 * height, offset: 0.5,
+                rgb: night ? [0.10, 0.15, 0.23] : [0.36, 0.48, 0.60],
+                treeScale: 1.18 * scale, seed: 37, count: 8, minH: 46, maxH: 68, bendMul: 0.80,
+            },
+            {
+                baseY: 0.35 * height, offset: 0.0,
+                rgb: night ? [0.06, 0.10, 0.17] : [0.25, 0.37, 0.49],
+                treeScale: 1.48 * scale, seed: 53, count: 8, minH: 50, maxH: 74, bendMul: 1.05,
+            },
+        ];
+        const crownTop = 0.08 * height;
+        const skirtBot = 0.46 * height;
+        cr.pushGroup();
+        for (const layer of treeLayers) {
+            const r = seededRand(layer.seed);
+            cr.setSourceRGBA(layer.rgb[0], layer.rgb[1], layer.rgb[2], 1.0);
+            cr.newPath();
+            cr.moveTo(0, skirtBot);
+            for (let x = 0; x <= width; x += 8) {
+                const u = x / width;
+                const y = layer.baseY - Math.sin(u * Math.PI * 1.8 + layer.seed) * 7 * scale;
+                cr.lineTo(x, y);
+            }
+            cr.lineTo(width, skirtBot);
+            cr.closePath();
+            cr.fill();
+
+            for (let i = 0; i < layer.count; i++) {
+                const tx = ((i + layer.offset) / (layer.count - 1)) * width + r(-4, 4) * scale;
+                const u = tx / width;
+                const ridgeY = layer.baseY -
+                    Math.sin(u * Math.PI * 1.8 + layer.seed) * 7 * scale;
+                const th = r(layer.minH, layer.maxH) * layer.treeScale;
+                const gust = 0.55 + 0.32 * Math.sin(time * 2.3 - u * 2.6 + layer.seed) +
+                    0.18 * Math.sin(time * 5.1 - u * 4.2);
+                const bend = (6 + gust * 10) * layer.bendMul * scale;
+                drawPineTree(cr, tx, ridgeY + th * 0.18, th, layer.rgb, 1.0, bend);
+            }
         }
-        cr.lineTo(width, height);
-        cr.closePath();
+        cr.setOperator(Cairo.Operator.DEST_IN);
+        const fade = new Cairo.LinearGradient(0, crownTop, 0, skirtBot);
+        fade.addColorStopRGBA(0, 0, 0, 0, 1.0);
+        fade.addColorStopRGBA(0.68, 0, 0, 0, 0.92);
+        fade.addColorStopRGBA(0.84, 0, 0, 0, 0.42);
+        fade.addColorStopRGBA(1.0, 0, 0, 0, 0.0);
+        cr.setSource(fade);
+        cr.rectangle(0, crownTop, width, skirtBot - crownTop);
         cr.fill();
 
-        const r = seededRand(53);
-        const count = 13;
-        for (let i = 0; i < count; i++) {
-            const tx = (i / (count - 1)) * width + r(-6, 6) * scale;
-            const u = tx / width;
-            const ridgeY = ridgeBase - Math.sin(u * Math.PI * 1.8 + 0.5) * 8 * scale;
-            const th = r(36, 58) * scale;
-            const gust = 0.55 + 0.32 * Math.sin(time * 2.3 - u * 2.6) +
-                0.18 * Math.sin(time * 5.1 - u * 4.2);
-            const bend = (10 + gust * 14) * scale;
-            drawPineTree(cr, tx, ridgeY + th * 0.18, th, treeRgb, treeAlpha, bend);
-        }
+        cr.popGroupToSource();
+        cr.setOperator(Cairo.Operator.OVER);
+        cr.paintWithAlpha(0.88);
     }
 
     // 3. 3D-tumbling wind-borne leaves
