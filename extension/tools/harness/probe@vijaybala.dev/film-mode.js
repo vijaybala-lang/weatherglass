@@ -102,6 +102,14 @@ export async function shootFilm({fixture, beats, cssPath, pngFor, captureRegion}
     const berlinDay = {city: 'Berlin', lat: 52.52, lon: 13.4};
     const berlinSunset = weather.sunGeometry(berlinDay.lat, berlinDay.lon,
         Date.parse('2026-06-29T12:00+02:00')).sunset;
+    const sfSunset = weather.sunGeometry(37.77, -122.42,
+        Date.parse('2026-10-07T12:00-07:00')).sunset;
+    const vanSunset = weather.sunGeometry(49.28, -123.12,
+        Date.parse('2026-10-07T12:00-07:00')).sunset;
+    const mtlSunset = weather.sunGeometry(45.50, -73.57,
+        Date.parse('2026-11-15T12:00-05:00')).sunset;
+    const osloSunset = weather.sunGeometry(59.91, 10.75,
+        Date.parse('2026-11-10T12:00+01:00')).sunset;
     Object.assign(REG, {
         'demo-berlin-sunny': {...berlinDay,
             local: '2026-06-29T13:00+02:00', condition: 'clear'},
@@ -111,6 +119,59 @@ export async function shootFilm({fixture, beats, cssPath, pngFor, captureRegion}
             tzMin: 120, condition: 'clear'},
         'demo-berlin-fullmoon': {...berlinDay,
             local: '2026-06-29T23:30+02:00', condition: 'clear'},
+        // World-tour showcase fixtures (--world flag in tools/film.sh):
+        // Covers all 16 supported weather conditions across Day, Golden Hour,
+        // and Night, plus Solid & Accent styles in Dark and Light themes.
+        // 1. Day (7 conditions: clear, wind, partly, drizzle, rain, showers, hail)
+        'world-cairo-clear-day': {city: 'Cairo', lat: 30.04, lon: 31.24,
+            local: '2026-06-21T13:15+03:00', condition: 'clear', worldClock: true},
+        'world-sydney-wind-day': {city: 'Sydney', lat: -33.87, lon: 151.21,
+            local: '2026-11-14T14:30+11:00', condition: 'wind', worldClock: true},
+        'world-rio-partly-day': {city: 'Rio de Janeiro', lat: -22.91, lon: -43.17,
+            local: '2026-10-12T11:45-03:00', condition: 'partly', worldClock: true},
+        'world-london-drizzle-day': {city: 'London', lat: 51.51, lon: -0.13,
+            local: '2026-10-14T13:50+01:00', condition: 'drizzle', worldClock: true},
+        'world-berlin-rain-day': {city: 'Berlin', lat: 52.52, lon: 13.4,
+            local: '2026-10-18T14:10+02:00', condition: 'rain', worldClock: true},
+        'world-mumbai-showers-day': {city: 'Mumbai', lat: 19.08, lon: 72.88,
+            local: '2026-07-22T15:20+05:30', condition: 'showers', worldClock: true},
+        'world-zurich-hail-day': {city: 'Zurich', lat: 47.37, lon: 8.54,
+            local: '2026-07-12T16:15+02:00', condition: 'hail', worldClock: true},
+        // 2. Golden Hour (4 conditions: cloud, fog, freezing, sleet)
+        'world-sf-cloud-golden': {city: 'San Francisco', lat: 37.77, lon: -122.42,
+            ms: sfSunset - 12 * 60000, tzMin: -420, condition: 'cloud', worldClock: true},
+        'world-vancouver-fog-golden': {city: 'Vancouver', lat: 49.28, lon: -123.12,
+            ms: vanSunset - 10 * 60000, tzMin: -420, condition: 'fog', worldClock: true},
+        'world-montreal-freezing-golden': {city: 'Montreal', lat: 45.50, lon: -73.57,
+            ms: mtlSunset - 10 * 60000, tzMin: -300, condition: 'freezing', worldClock: true},
+        'world-oslo-sleet-golden': {city: 'Oslo', lat: 59.91, lon: 10.75,
+            ms: osloSunset - 10 * 60000, tzMin: 60, condition: 'sleet', worldClock: true},
+        // 3. Night (5 conditions: snow, grains, snowshowers, storm, clear full-moon, unknown)
+        'world-reykjavik-snow-night': {city: 'Reykjavik', lat: 64.15, lon: -21.94,
+            local: '2027-01-19T21:20+00:00', condition: 'snow', worldClock: true},
+        'world-anchorage-grains-night': {city: 'Anchorage', lat: 61.22, lon: -149.90,
+            local: '2027-01-22T22:05-09:00', condition: 'grains', worldClock: true},
+        'world-sapporo-snowshowers-night': {city: 'Sapporo', lat: 43.06, lon: 141.35,
+            local: '2027-01-25T22:40+09:00', condition: 'snowshowers', worldClock: true},
+        'world-tokyo-storm-night': {city: 'Tokyo', lat: 35.68, lon: 139.69,
+            local: '2026-08-14T23:15+09:00', condition: 'storm', worldClock: true},
+        'world-santiago-moon-night': {city: 'Santiago', lat: -33.45, lon: -70.67,
+            local: '2026-06-29T23:30-04:00', condition: 'clear', worldClock: true},
+        'world-ushuaia-unknown-night': {city: 'Ushuaia', lat: -54.80, lon: -68.30,
+            local: '2026-08-03T23:50-03:00', condition: 'unknown', worldClock: true},
+        // 4. Themed Dark & Light (solid dark/light + accent dark/light)
+        'world-theme-solid-dark': {city: 'Edinburgh', lat: 55.95, lon: -3.19,
+            local: '2026-10-18T20:45+01:00', condition: 'rain',
+            style: 'solid', session: 'dark', worldClock: true},
+        'world-theme-solid-light': {city: 'Paris', lat: 48.86, lon: 2.35,
+            local: '2026-07-03T13:20+02:00', condition: 'clear',
+            style: 'solid', session: 'light', worldClock: true},
+        'world-theme-accent-dark': {city: 'Stockholm', lat: 59.33, lon: 18.07,
+            local: '2026-11-20T21:10+01:00', condition: 'snow',
+            style: 'accent', session: 'dark', worldClock: true},
+        'world-theme-accent-light': {city: 'Copenhagen', lat: 55.68, lon: 12.57,
+            local: '2026-05-18T11:45+02:00', condition: 'partly',
+            style: 'accent', session: 'light', worldClock: true},
     });
     const fx = REG[fixture];
     if (!fx)
@@ -118,10 +179,14 @@ export async function shootFilm({fixture, beats, cssPath, pngFor, captureRegion}
             + `${Object.keys(REG).length}-slug registry`);
     const sheet = beats.slice().sort((a, b) => a.t - b.t);
     for (const b of sheet)
-        if (!Number.isFinite(b.t) || !['open', 'metric', 'day', 'close'].includes(b.do))
+        if (!Number.isFinite(b.t) || !['open', 'metric', 'day', 'fixture', 'close'].includes(b.do))
             throw new Error(`bad beat: ${JSON.stringify(b)}`);
 
-    const css = await loadCss(cssPath, '.wg-probe-host { background-color: #161616; }');
+    const css = await loadCss(cssPath, [
+        '.wg-probe-host { background-color: #161616; }',
+        '.wg-probe-accent-dark { background-color: #2f2f30; border-radius: 14px; }',
+        '.wg-probe-accent-light { background-color: #f5f5f7; border-radius: 14px; }',
+    ].join('\n'));
 
     const {ForecastPanel} = await import('./menu.js');
     const St = (await import('gi://St')).default;
@@ -138,10 +203,40 @@ export async function shootFilm({fixture, beats, cssPath, pngFor, captureRegion}
         return s / 4294967296;
     };
 
+    const applyFixtureState = (targetFx, initial = false) => {
+        const targetMs = Math.floor(targetFx.ms ?? Date.parse(targetFx.local));
+        Date.now = () => targetMs;
+        s = 1337 >>> 0;
+        panel._shadeCache = {minute: -1, glow: 0, solar: null};
+        panel._day = 0;
+        if (panel._morphId) {
+            GLib.source_remove(panel._morphId);
+            panel._morphId = 0;
+        }
+        panel._shown = [];
+        panel.setPlaceName(targetFx.city);
+        const isDark = targetFx.session !== 'light';
+        panel.setDark(isDark);
+        panel.setShellDark(isDark);
+        const style = targetFx.style ?? 'animated';
+        panel.setStyle(style);
+        panel.actor.remove_style_class_name('wg-probe-accent-dark');
+        panel.actor.remove_style_class_name('wg-probe-accent-light');
+        if (style === 'accent') {
+            panel.actor.add_style_class_name(
+                isDark ? 'wg-probe-accent-dark' : 'wg-probe-accent-light');
+        }
+        const st = buildState(weather, moon, targetFx);
+        extendHourlyForAllDays(st, weather, targetFx);
+        if (targetFx.worldClock && st.currentIso)
+            st.currentIso = st.currentIso.replace(/(?:Z|[+-]\d{2}:\d{2})$/, '');
+        if (!initial && (targetFx.condition === 'storm' || targetFx.condition === 'hail'))
+            panel._skyArea._time = 0.94;
+        panel.render(st);
+        panel._applyTextInk();
+    };
+
     const panel = new ForecastPanel({animate: true});
-    panel.setPlaceName(fx.city);
-    panel.setStyle(fx.style ?? 'animated');
-    panel.setDark(fx.session !== 'light');
     panel.setAccent([0.208, 0.518, 0.894]);
     panel.setCondPos('bottom');
     panel.setHourFormat(false);
@@ -154,9 +249,7 @@ export async function shootFilm({fixture, beats, cssPath, pngFor, captureRegion}
     host.add_child(panel.actor);
     Main.uiGroup.add_child(host);
     host.set_position(100, 120);        // clear of the topbar's shadow edge
-    const state = buildState(weather, moon, fx);
-    extendHourlyForAllDays(state, weather, fx);
-    panel.render(state);
+    applyFixtureState(fx, true);
 
     await wait(500);       // one layout + several paint cycles (card mode's 400 + headroom):
                            // also primes the first composited frame
@@ -194,6 +287,14 @@ export async function shootFilm({fixture, beats, cssPath, pngFor, captureRegion}
         case 'day':
             panel._selectDay(Number(b.arg));
             break;
+        case 'fixture': {
+            const nextFx = REG[b.arg];
+            if (!nextFx)
+                failures.push(`unknown fixture: ${b.arg}`);
+            else
+                applyFixtureState(nextFx, false);
+            break;
+        }
         }
     };
 

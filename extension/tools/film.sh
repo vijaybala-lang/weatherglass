@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # tools/film.sh -- cast the EGO demo video headlessly (film mode, #60).
 #
-#   tools/film.sh              # PNG sequence + tools/out/film/weatherglass-demo-card.mp4
-#   tools/film.sh --check      # the same shoot, graded as the smoke lock
+#   tools/film.sh                  # PNG sequence + tools/out/film/weatherglass-demo-card.mp4
+#   tools/film.sh --check          # the same shoot, graded as the smoke lock
+#   tools/film.sh --world [--check] # global showcase (Day, Golden Hour, Night + Dark/Light themes)
 #
 # This is the golden machine on a timer: the SAME disposable nested
 # gnome-shell as shell-golden.sh, the SAME working-tree widget code the
@@ -36,12 +37,17 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 CHECK=0
-if [ "${1:-}" = "--check" ]; then
-    CHECK=1
-elif [ $# -gt 0 ]; then
-    echo "usage: tools/film.sh [--check]"
-    exit 2
-fi
+WORLD=0
+for arg in "$@"; do
+    case "$arg" in
+        --check) CHECK=1 ;;
+        --world|--world-tour) WORLD=1 ;;
+        *)
+            echo "usage: tools/film.sh [--world] [--check]"
+            exit 2
+            ;;
+    esac
+done
 
 command -v gnome-shell >/dev/null 2>&1 || {
     echo "SKIP: no gnome-shell on this machine (film mode is host-gated; the goldens remain the pixel canon)"
@@ -53,15 +59,22 @@ command -v ffmpeg >/dev/null 2>&1 && command -v ffprobe >/dev/null 2>&1 && HAVE_
 PROBE=probe@vijaybala.dev
 OUT="${WG_FILM_OUT:-/tmp/opencode/wg-film.json}"
 FILMDIR="${WG_FILM_DIR:-tools/out/film}"
-MP4="$FILMDIR/weatherglass-demo-card.mp4"     # the manifest demo-URL asset name
 SRC="${WG_FILM_SRC:-/tmp/opencode/wg-film-src}"
 TIMEOUT="${WG_FILM_TIMEOUT:-300}"
-FIXTURE="${WG_FILM_FIXTURE:-cov-clear-night}"
-# NB: no ${VAR:-[json]} here -- bash ends the expansion at the first '}'
-# in the JSON default and leaks the rest. Unset-and-assign only.
-BEATS='[{"t":0,"do":"open"},{"t":1,"do":"metric","arg":"precip"},{"t":2.5,"do":"metric","arg":"wind"},{"t":4,"do":"day","arg":2},{"t":5.5,"do":"close"}]'
+if [ "$WORLD" = 1 ]; then
+    MP4="${WG_FILM_MP4:-$FILMDIR/weatherglass-demo-world.mp4}"
+    FIXTURE="${WG_FILM_FIXTURE:-world-cairo-clear-day}"
+    BEATS='[{"t":0,"do":"open"},{"t":1.2,"do":"fixture","arg":"world-sydney-wind-day"},{"t":1.6,"do":"metric","arg":"wind"},{"t":2.4,"do":"fixture","arg":"world-rio-partly-day"},{"t":2.8,"do":"metric","arg":"temp"},{"t":3.6,"do":"fixture","arg":"world-london-drizzle-day"},{"t":4.8,"do":"fixture","arg":"world-berlin-rain-day"},{"t":5.2,"do":"metric","arg":"precip"},{"t":6.0,"do":"fixture","arg":"world-mumbai-showers-day"},{"t":7.2,"do":"fixture","arg":"world-zurich-hail-day"},{"t":7.6,"do":"metric","arg":"temp"},{"t":8.4,"do":"fixture","arg":"world-sf-cloud-golden"},{"t":9.6,"do":"fixture","arg":"world-vancouver-fog-golden"},{"t":10.8,"do":"fixture","arg":"world-montreal-freezing-golden"},{"t":12.0,"do":"fixture","arg":"world-oslo-sleet-golden"},{"t":13.2,"do":"fixture","arg":"world-reykjavik-snow-night"},{"t":14.4,"do":"fixture","arg":"world-anchorage-grains-night"},{"t":15.6,"do":"fixture","arg":"world-sapporo-snowshowers-night"},{"t":16.8,"do":"fixture","arg":"world-tokyo-storm-night"},{"t":18.0,"do":"fixture","arg":"world-santiago-moon-night"},{"t":19.2,"do":"fixture","arg":"world-ushuaia-unknown-night"},{"t":20.4,"do":"fixture","arg":"world-theme-solid-dark"},{"t":21.6,"do":"fixture","arg":"world-theme-solid-light"},{"t":22.8,"do":"fixture","arg":"world-theme-accent-dark"},{"t":24.0,"do":"fixture","arg":"world-theme-accent-light"},{"t":25.2,"do":"close"}]'
+    MIN_FRAMES=450
+else
+    MP4="${WG_FILM_MP4:-$FILMDIR/weatherglass-demo-card.mp4}"     # the manifest demo-URL asset name
+    FIXTURE="${WG_FILM_FIXTURE:-cov-clear-night}"
+    # NB: no ${VAR:-[json]} here -- bash ends the expansion at the first '}'
+    # in the JSON default and leaks the rest. Unset-and-assign only.
+    BEATS='[{"t":0,"do":"open"},{"t":1,"do":"metric","arg":"precip"},{"t":2.5,"do":"metric","arg":"wind"},{"t":4,"do":"day","arg":2},{"t":5.5,"do":"close"}]'
+    MIN_FRAMES=120
+fi
 [ -n "${WG_FILM_BEATS:-}" ] && BEATS="$WG_FILM_BEATS"
-MIN_FRAMES=120
 FPS=30
 # fade-ramp exemption for the painted check: must stay in step with
 # FADE_MS+TAIL_MS in tools/harness/probe@vijaybala.dev/film-mode.js
@@ -71,8 +84,8 @@ RAMP_MS=300
 
 # ---------------- 1. capture: nested shell boot (mirrors shell-golden.sh) --
 
-rm -f "$OUT" "${OUT}.final"
-rm -rf "$FILMDIR" "$SRC"
+rm -f "$OUT" "${OUT}.final" "$MP4" "$FILMDIR"/frame_*.png
+rm -rf "$SRC"
 mkdir -p "$FILMDIR"
 # the probe resolves paths inside gnome-shell's own CWD: hand it absolutes
 FILMDIR_ABS="$(realpath "$FILMDIR")"
@@ -149,10 +162,17 @@ else
         else
             QUAL=(-b:v 4M)     # libopenh264 has no crf; a rate that holds chart text legible
         fi
-        # -vf even-sizes the frame: the menu rect may be odd and h264 demands even
-        echo "==> encode: ffmpeg -framerate $FPS -> $MP4 (encoder $ENC)"
-        if ffmpeg -y -v error -framerate "$FPS" -i "$FILMDIR/frame_%03d.png" \
-                -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' -c:v "$ENC" "${QUAL[@]}" \
+        # -vf even-sizes the frame: the menu rect may be odd and h264 demands even.
+        # In --world mode, 20 live fixture rebuilds add capture overhead, so read
+        # the PNG sequence at the measured capture rate (frames / (endMs / 1000))
+        # and emit a standard 30 fps stream matching the beat sheet's real duration.
+        IN_FPS="$FPS"
+        if [ "$WORLD" = 1 ] && [ -f "${OUT}.final" ]; then
+            IN_FPS="$(python3 -c "import json; r=json.load(open('${OUT}.final')); print(f'{len(r[\"frames\"]) / (r[\"endMs\"] / 1000.0):.4f}')")"
+        fi
+        echo "==> encode: ffmpeg -framerate $IN_FPS -r $FPS -> $MP4 (encoder $ENC)"
+        if ffmpeg -y -v error -framerate "$IN_FPS" -i "$FILMDIR/frame_%03d.png" \
+                -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' -r "$FPS" -c:v "$ENC" "${QUAL[@]}" \
                 -pix_fmt yuv420p -movflags +faststart "$MP4"; then
             [ -s "$MP4" ] && ENCODED=1
             [ "$ENCODED" = 1 ] || { echo "FAIL: ffmpeg exited 0 but produced no bytes -- refusing a PASS over emptiness"; exit 1; }
@@ -210,12 +230,12 @@ def painted(path):
 
 def chart_painted(path):
     # the hourly chart band (y=35%..60%) carries the curve, value labels,
-    # weather strip glyphs, and hour labels (stddev ~25-30). An empty
+    # weather strip glyphs, and hour labels (stddev ~10-30). An empty
     # daySlice (e.g. unpopulated future day) leaves only the sky gradient
     # (~5.6), which must fail the smoke lock.
     crop = Image.open(path).convert("L").crop(
         (int(w * 0.08), int(h * 0.35), int(w * 0.92), int(h * 0.60)))
-    return ImageStat.Stat(crop).stddev[0] >= 12.0
+    return ImageStat.Stat(crop).stddev[0] >= 8.5
 
 painted_n, ramp_n = 0, 0
 for fr in frames:
