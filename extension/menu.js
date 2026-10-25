@@ -145,7 +145,7 @@ const SkyArea = GObject.registerClass(
                     w: surfaceWidth, h: surfaceHeight, time: this._time,
                     scene: skyOptions.scene, night: skyOptions.night, scrim: skyOptions.scrim,
                     sky: skyOptions.sky, radius: skyOptions.radius ?? 0, phase: skyOptions.phase ?? null,
-                    glow, solar
+                    glow, solar, fxScale: 1,
                 });
             }
             // 'accent' style paints NOTHING: the surface stays transparent and

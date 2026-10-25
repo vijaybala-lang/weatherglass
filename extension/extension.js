@@ -446,7 +446,7 @@ const WeatherIndicator = GObject.registerClass(
                 currentIso: current.timeIso,
                 units,
                 windy,
-                effective,
+                effective: { ...effective, scene: panelScene },
                 windKmh: current.wind,
                 dark: this._themeWatcher.isDark,
                 shellDark: this._themeWatcher.shellDark,

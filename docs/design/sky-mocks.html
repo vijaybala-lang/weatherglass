@@ -1,0 +1,1525 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeatherGlass — animated sky &amp; weather simulation mocks (v2)</title>
+<style>
+  :root{
+    --ink:#f4f7fa; --dim:rgba(244,247,250,.66); --faint:rgba(244,247,250,.42);
+    --slab:rgba(13,18,26,.52); --slab2:rgba(13,18,26,.38); --line:rgba(255,255,255,.14);
+    --page:#22262b; --card:#2b3036; --border:#3a4046;
+    --amber:#f5a524; --blue:#57a8ff; --green:#3ecf8e;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--page); color:var(--ink);
+    font-family:Cantarell,"Noto Sans",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  header.bar{
+    position:sticky; top:0; z-index:30;
+    background:rgba(43,48,54,.94); backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);
+    padding:10px 18px; display:flex; gap:14px; align-items:center; flex-wrap:wrap;
+  }
+  header.bar h1{font-size:15px; margin:0; font-weight:700; white-space:nowrap}
+  header.bar p{margin:0; font-size:12.5px; color:#aeb6bf; max-width:680px}
+  .controls{margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .seg{
+    display:inline-flex; background:#1d2126; border:1px solid var(--border);
+    border-radius:9px; padding:2px; gap:2px;
+  }
+  .seg button, .pillbtn{
+    font:inherit; font-size:12px; font-weight:600; color:#cfd6dd;
+    background:transparent; border:1px solid transparent;
+    border-radius:7px; padding:5px 10px; cursor:pointer; transition:all .12s ease;
+  }
+  .seg button:hover, .pillbtn:hover{color:#fff; background:rgba(255,255,255,.06)}
+  .seg button[aria-pressed="true"], .seg button[aria-selected="true"]{
+    background:#e8edf1; color:#171b1f; font-weight:700;
+  }
+  .pillbtn{
+    background:#323840; border-color:#454d56; border-radius:999px; padding:5px 12px;
+  }
+  .pillbtn[aria-pressed="true"]{background:var(--amber); color:#171b1f; border-color:var(--amber)}
+
+  main{max-width:1240px; margin:0 auto; padding:22px 16px 56px}
+  h2{font-size:16px; margin:34px 0 5px; display:flex; align-items:center; gap:10px}
+  h2:first-child{margin-top:4px}
+  .badge{
+    font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+    padding:2px 8px; border-radius:999px; background:rgba(87,168,255,.16);
+    color:var(--blue); border:1px solid rgba(87,168,255,.32);
+  }
+  .badge.rec{background:rgba(62,207,142,.16); color:var(--green); border-color:rgba(62,207,142,.35)}
+  .sub{font-size:12.5px; color:var(--dim); margin:0 0 14px; max-width:940px; line-height:1.5}
+  code{font-family:ui-monospace,monospace; font-size:11.5px; color:#d7e0ea; background:rgba(255,255,255,.07); padding:1px 5px; border-radius:4px}
+
+  .grid{display:grid; gap:14px}
+  .snow-grid{grid-template-columns:repeat(auto-fit, minmax(280px, 1fr))}
+  .Snow-variants-grid{grid-template-columns:repeat(4, 1fr)}
+  .wind-grid{grid-template-columns:repeat(4, 1fr)}
+  .cond-grid{grid-template-columns:repeat(2, 1fr)}
+  @media (max-width:960px){
+    .cond-grid, .Snow-variants-grid, .wind-grid{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:600px){
+    .cond-grid, .Snow-variants-grid, .wind-grid{grid-template-columns:1fr}
+  }
+  .card{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:14px; padding:13px 14px; display:flex; flex-direction:column; gap:10px;
+  }
+  .card.rec-card{border-color:rgba(62,207,142,.55); box-shadow:0 0 0 1px rgba(62,207,142,.18)}
+  .card-head{display:flex; justify-content:space-between; align-items:center; gap:8px}
+  .card-head h3{margin:0; font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:7px}
+  .card p{margin:0; font-size:12px; color:var(--dim); line-height:1.48}
+  .card p b{color:var(--ink)}
+
+  .stage{
+    position:relative; width:100%; height:200px; border-radius:11px; overflow:hidden;
+    border:1px solid rgba(255,255,255,.10); background:#141a24;
+  }
+  .stage.tall{height:230px}
+  .stage canvas{width:100%; height:100%; display:block}
+  .stage-tag{
+    position:absolute; top:8px; left:8px; z-index:2;
+    font-size:10.5px; font-weight:700; letter-spacing:.03em;
+    background:rgba(10,14,22,.62); backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.15); color:#e8edf2;
+    padding:3px 8px; border-radius:999px; pointer-events:none;
+  }
+  .stage-tag.imp{color:#7ee8b7; border-color:rgba(62,207,142,.4)}
+  .stage-glyph{
+    position:absolute; top:7px; right:8px; z-index:2;
+    display:flex; align-items:center; gap:5px;
+    background:rgba(10,14,22,.56); backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.14);
+    padding:3px 7px; border-radius:999px; font-size:10.5px; color:var(--dim);
+  }
+  .stage-glyph svg{width:20px; height:20px; display:block}
+
+  .compare-pair{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  @media (max-width:560px){.compare-pair{grid-template-columns:1fr}}
+
+  .theater{
+    display:grid; grid-template-columns:310px 1fr; gap:16px;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:16px; padding:16px;
+  }
+  @media (max-width:960px){.theater{grid-template-columns:1fr}}
+  .t-sidebar{display:flex; flex-direction:column; gap:12px}
+  .t-group-label{
+    font-size:10.5px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--faint); margin:2px 0 4px;
+  }
+  .scene-list{display:grid; grid-template-columns:1fr 1fr; gap:5px}
+  .scene-btn{
+    display:flex; align-items:center; gap:7px; text-align:left;
+    font:inherit; font-size:12px; font-weight:600; color:#d0d7de;
+    background:#22262b; border:1px solid #363c42; border-radius:9px;
+    padding:6px 8px; cursor:pointer; transition:all .12s ease;
+  }
+  .scene-btn:hover{background:#2d333b; color:#fff}
+  .scene-btn[aria-selected="true"]{
+    background:rgba(87,168,255,.18); border-color:var(--blue); color:#fff;
+  }
+  .scene-btn svg{width:20px; height:20px; flex:none}
+
+  .t-viewport{
+    position:relative; min-height:480px; border-radius:14px; overflow:hidden;
+    border:1px solid rgba(255,255,255,.14); box-shadow:0 16px 44px rgba(0,0,0,.45);
+    display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .t-viewport canvas#theaterCanvas{
+    position:absolute; inset:0; width:100%; height:100%; z-index:0;
+  }
+  .t-ui{
+    position:relative; z-index:2; padding:22px 24px 18px;
+    display:flex; flex-direction:column; gap:18px; height:100%; justify-content:space-between;
+    pointer-events:none;
+  }
+  .t-ui-top{display:flex; justify-content:space-between; align-items:flex-start}
+  .t-temp{font-size:54px; font-weight:200; line-height:1; font-variant-numeric:tabular-nums}
+  .t-city{font-size:24px; font-weight:700; margin-top:6px}
+  .t-meta{font-size:12.5px; opacity:.78; margin-top:2px}
+  .t-cond{font-size:13.5px; font-weight:600; margin-top:6px; display:flex; align-items:center; gap:6px}
+  .t-clock{text-align:right; font-variant-numeric:tabular-nums}
+  .t-clock-time{font-size:18px; font-weight:700}
+  .t-clock-sub{font-size:12px; opacity:.75; margin-top:2px}
+  .t-ink-pill{
+    display:inline-block; margin-top:8px; font-size:10.5px; font-weight:700;
+    padding:3px 8px; border-radius:999px; background:rgba(13,18,26,.55);
+    color:#e8edf2; border:1px solid rgba(255,255,255,.18);
+  }
+  .t-bottom{display:flex; flex-direction:column; gap:10px}
+  .t-days{display:grid; grid-template-columns:repeat(8, 1fr); gap:5px}
+  .t-day{
+    background:rgba(13,18,26,.42); backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.12); border-radius:11px;
+    padding:8px 3px 7px; text-align:center; font-size:11px; color:#f4f7fa;
+  }
+  .t-day.sel{background:rgba(13,18,26,.64); border-color:rgba(255,255,255,.28)}
+  .t-day svg{width:24px; height:24px; margin:3px auto; display:block}
+  .t-day b{font-weight:700}
+  .t-day span{opacity:.72}
+  .t-chart-slab{
+    background:rgba(13,18,26,.46); backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.13); border-radius:12px;
+    padding:10px 14px; display:flex; align-items:center; justify-content:space-between;
+    color:#f4f7fa; font-size:12px;
+  }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <h1>WeatherGlass — Sky &amp; Weather Simulation Mocks (v2)</h1>
+  <p>Updated with <b>Option B Depth-Layered Snow</b>, <b>Merged Cumulus Cloud Formations</b> (no spheres), <b>Swaying Trees &amp; Blowing Leaves</b> for High Wind, and <b>Clean Valley Fog</b> (no star sparkles).</p>
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Time of day">
+      <button type="button" data-tod="day" aria-pressed="true">Day</button>
+      <button type="button" data-tod="twilight" aria-pressed="false">Golden Hour</button>
+      <button type="button" data-tod="night" aria-pressed="false">Night</button>
+    </div>
+    <button type="button" class="pillbtn" id="pauseBtn" aria-pressed="false">Pause motion</button>
+  </div>
+</header>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="sunGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe9a8"/><stop offset="1" stop-color="#ffb52e"/>
+    </linearGradient>
+    <linearGradient id="moonGreyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4f6f8"/><stop offset="1" stop-color="#8e99a6"/>
+    </linearGradient>
+    <linearGradient id="cloudDay" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2f7fc"/><stop offset="1" stop-color="#c7d6e6"/>
+    </linearGradient>
+    <linearGradient id="cloudGrey" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ccd9e7"/><stop offset="1" stop-color="#93a9c0"/>
+    </linearGradient>
+    <linearGradient id="cloudStorm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a9bccd"/><stop offset="1" stop-color="#637b99"/>
+    </linearGradient>
+    <linearGradient id="boltGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd964"/><stop offset="1" stop-color="#f5a524"/>
+    </linearGradient>
+    <linearGradient id="dropGradNight" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a8e2ff"/><stop offset="1" stop-color="#61d1ff"/>
+    </linearGradient>
+    <path id="cloudPath" d="M7 19h10.2a4.3 3.66 0 0 0 .8-7.23A6.2 5.27 0 0 0 5.4 13.05 4 3.4 0 0 0 7 19Z"/>
+    <g id="flake" stroke="#f4fbff" stroke-width="1.35" stroke-linecap="round">
+      <path d="M0-2.1V2.1M-1.8-1.05 1.8 1.05M1.8-1.05-1.8 1.05"/>
+    </g>
+    <path id="dropPath" d="M0-2.3C.95-.9 1.45.05 1.45.85A1.45 1.45 0 1 1-1.45.85C-1.45.05-.95-.9 0-2.3Z"/>
+    <g id="dropNight"><use href="#dropPath" fill="url(#dropGradNight)"/><circle cx="-.45" cy=".55" r=".34" fill="#ffffff" opacity=".8"/></g>
+    <path id="spark" d="M0-2.2.62-.62 2.2 0 .62.62 0 2.2-.62.62-2.2 0-.62-.62Z"/>
+    <g id="sunRays" stroke="#f5a524" stroke-width="1.8" stroke-linecap="round">
+      <path d="M12 3.2v2.3M12 18.5v2.3M3.2 12h2.3M18.5 12h2.3M16.4 7.6l1.7-1.7M16.4 16.4l1.7 1.7M7.6 16.4l-1.7 1.7M7.6 7.6 5.9 5.9"/>
+    </g>
+    <g id="sunFull"><use href="#sunRays"/><circle cx="12" cy="12" r="4.7" fill="url(#sunGrad)"/></g>
+    <path id="boltPath" d="M13.2 13.4 9.7 19h2.4l-1.2 3.4L15.7 16.6h-2.7l1.7-3.2Z"/>
+
+    <symbol id="ic-sun" viewBox="0 0 24 24"><use href="#sunFull"/></symbol>
+    <symbol id="ic-cloud" viewBox="0 0 24 24">
+      <use href="#cloudPath" transform="translate(-2.1,0.4) scale(.74,.63)" fill="url(#cloudStorm)"/>
+      <use href="#cloudPath" transform="translate(2,1.6) scale(.88)" fill="url(#cloudGrey)"/>
+    </symbol>
+    <symbol id="ic-fog" viewBox="0 0 24 24">
+      <use href="#cloudPath" transform="translate(1,-5) scale(.92)" fill="url(#cloudGrey)"/>
+      <g stroke="#d7e4f0" stroke-width="1.8" stroke-linecap="round"><path d="M5 15.6h13M7.5 18.4h10M9 21h6.5"/></g>
+    </symbol>
+    <symbol id="ic-wind" viewBox="0 0 24 24">
+      <g fill="none" stroke="#eef7ff" stroke-width="1.9" stroke-linecap="round">
+        <path d="M3 8.6h9.2a2.6 2.6 0 1 0-2.5-3.3"/>
+        <path d="M2.6 12.8h13.2a2.9 2.9 0 1 1-2.8 3.7"/>
+        <path d="M4.5 17h6"/>
+      </g>
+    </symbol>
+    <symbol id="ic-rain" viewBox="0 0 24 24">
+      <use href="#cloudPath" transform="translate(0,-3.8)" fill="url(#cloudGrey)"/>
+      <use href="#dropNight" transform="translate(7.8,18.4) scale(.92)"/>
+      <use href="#dropNight" transform="translate(12.2,19) scale(.98)"/>
+      <use href="#dropNight" transform="translate(16.6,18.4) scale(.92)"/>
+    </symbol>
+    <symbol id="ic-showers" viewBox="0 0 24 24">
+      <use href="#sunFull" transform="translate(0.8,0.8) scale(.5)"/>
+      <use href="#cloudPath" transform="translate(4.2,0.8) scale(.78)" fill="url(#cloudGrey)"/>
+      <use href="#dropNight" transform="translate(8.9,18.6) scale(.92)"/>
+      <use href="#dropNight" transform="translate(13.3,19.2) scale(.98)"/>
+      <use href="#dropNight" transform="translate(17.7,18.6) scale(.92)"/>
+    </symbol>
+    <symbol id="ic-sleet" viewBox="0 0 24 24">
+      <use href="#cloudPath" transform="translate(0,-3.8)" fill="url(#cloudStorm)"/>
+      <use href="#dropNight" transform="translate(7.8,18.2) scale(.88)"/>
+      <use href="#flake" transform="translate(12.2 18.2) scale(.9)"/>
+      <use href="#dropNight" transform="translate(16.6,18.2) scale(.88)"/>
+      <path d="M6 21.8h12" stroke="#bfe3ff" stroke-width="1.3" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="ic-snow" viewBox="0 0 24 24">
+      <use href="#cloudPath" transform="translate(0,-3.8)" fill="url(#cloudDay)"/>
+      <use href="#flake" transform="translate(7.8 18.2) scale(.8)"/>
+      <use href="#flake" transform="translate(12.4 19.6) scale(.95)"/>
+      <use href="#flake" transform="translate(17 18.2) scale(.8)"/>
+    </symbol>
+    <symbol id="ic-snow-heavy" viewBox="0 0 24 24">
+      <use href="#cloudPath" transform="translate(0,-3.8)" fill="url(#cloudGrey)"/>
+      <use href="#flake" transform="translate(6.8 17.6) scale(.75)"/>
+      <use href="#flake" transform="translate(10.2 19.6) scale(.9)"/>
+      <use href="#flake" transform="translate(13.8 17.8) scale(.8)"/>
+      <use href="#flake" transform="translate(17.2 19.4) scale(.9)"/>
+    </symbol>
+    <symbol id="ic-snow-grains" viewBox="0 0 24 24">
+      <use href="#cloudPath" transform="translate(0,-3.8)" fill="url(#cloudDay)"/>
+      <g fill="#f4fbff"><circle cx="7.6" cy="17.4" r=".85"/><circle cx="10.4" cy="19.4" r=".85"/><circle cx="13.2" cy="17.8" r=".85"/><circle cx="16" cy="19.6" r=".85"/><circle cx="18.4" cy="17.6" r=".75"/></g>
+    </symbol>
+    <symbol id="ic-snow-showers" viewBox="0 0 24 24">
+      <use href="#sunFull" transform="translate(0.8,0.8) scale(.5)"/>
+      <use href="#cloudPath" transform="translate(4.2,0.8) scale(.78)" fill="url(#cloudDay)"/>
+      <use href="#flake" transform="translate(9.2 19.2) scale(.8)"/>
+      <use href="#flake" transform="translate(13.8 20.6) scale(.95)"/>
+      <use href="#flake" transform="translate(18.4 19.2) scale(.8)"/>
+    </symbol>
+    <symbol id="ic-storm" viewBox="0 0 24 24">
+      <use href="#cloudPath" transform="translate(0,-3.8)" fill="url(#cloudStorm)"/>
+      <use href="#boltPath" fill="url(#boltGrad)" stroke="#e89b1c" stroke-width=".6" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-hail" viewBox="0 0 24 24">
+      <use href="#cloudPath" transform="translate(0,-3.8)" fill="url(#cloudStorm)"/>
+      <use href="#boltPath" transform="translate(-3,.2) scale(.9)" fill="url(#boltGrad)" stroke="#e89b1c" stroke-width=".6" stroke-linejoin="round"/>
+      <g fill="#eaf6ff" stroke="#9fc9ee" stroke-width=".7" transform="translate(2.4,.4) scale(.86)">
+        <circle cx="6.6" cy="17.2" r="1.35"/><circle cx="9.8" cy="19.4" r="1.55"/><circle cx="13.2" cy="17.6" r="1.45"/><circle cx="16.4" cy="19.6" r="1.6"/><circle cx="19" cy="17.4" r="1.25"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<main>
+  <!-- ==================================================================== -->
+  <!-- SECTION 1: SELECTED SNOW SIMULATION & WMO SUB-VARIANTS               -->
+  <!-- ==================================================================== -->
+  <h2>1 · Selected Snow Simulation (Option B · Depth-Layered Hybrid) &amp; 1b Variants <span class="badge rec">Approved</span></h2>
+  <p class="sub">
+    <b>Option B (Depth-Layered Hybrid)</b> pairs foreground &amp; midground 6-spoke icon glyphs (<code>#flake</code> from <code>painter.js</code>) with soft out-of-focus snow powder bokeh in the far plane, riding underneath the new merged cloud formations.
+    Below are the baseline comparison and the 4 WMO snow sub-variants:
+  </p>
+
+  <div class="grid Snow-variants-grid">
+    <div class="card rec-card">
+      <div class="card-head"><h3>WMO 73 · Snow (Option B)</h3><span class="badge rec">Selected</span></div>
+      <div class="stage">
+        <span class="stage-tag imp">3-Plane Hybrid · 6-spoke + Bokeh</span>
+        <span class="stage-glyph"><svg><use href="#ic-snow"/></svg>73</span>
+        <canvas data-sim="snow-hybrid"></canvas>
+      </div>
+      <p>Near (25%) &amp; Mid (40%) 6-spoke icon glyphs with lazy rocking tumble + Far (35%) powder bokeh.</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>WMO 71 · Light Flurries</h3></div>
+      <div class="stage">
+        <span class="stage-tag imp">Sparse · buoyant float</span>
+        <span class="stage-glyph"><svg><use href="#ic-snow"/></svg>71</span>
+        <canvas data-sim="snow-light"></canvas>
+      </div>
+      <p>~28 flakes, slower terminal velocity, wider pendular float.</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>WMO 75 · Heavy / Blizzard</h3></div>
+      <div class="stage">
+        <span class="stage-tag imp">Wind-slanted · blowing wisps</span>
+        <span class="stage-glyph"><svg><use href="#ic-snow-heavy"/></svg>75</span>
+        <canvas data-sim="snow-blizzard"></canvas>
+      </div>
+      <p>110 multi-plane 6-spoke flakes driven diagonally by gusts + blowing snow wisps.</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>WMO 85/86 · Snow Showers</h3></div>
+      <div class="stage">
+        <span class="stage-tag imp">Peeking sun/moon + snow</span>
+        <span class="stage-glyph"><svg><use href="#ic-snow-showers"/></svg>85</span>
+        <canvas data-sim="snow-showers"></canvas>
+      </div>
+      <p>Sun or moon shines through a broken cloud deck while 6-spoke flakes tumble below.</p>
+    </div>
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- SECTION 2: UPDATED OVERCAST, HIGH WIND, AND FOG                      -->
+  <!-- ==================================================================== -->
+  <h2>2 · Revised Mocks: High Wind (Trees &amp; Leaves), Merged Cloud Formations, &amp; Clean Fog <span class="badge rec">Updated</span></h2>
+  <p class="sub">
+    Addressing your feedback on <b>High Wind</b>, <b>Overcast Clouds</b>, and <b>Fog / Rime Fog</b>:
+  </p>
+
+  <!-- 2A: HIGH WIND 4-UP COMPARISON -->
+  <h2 style="margin-top:16px;font-size:14.5px">2a · High Wind Explorations — Swaying Trees &amp; Blowing Leaves</h2>
+  <p class="sub">
+    Instead of rigid horizontal lines or curly ribbons, here are three natural ways to show high wind using <b>swaying tree silhouettes</b> and <b>3D-tumbling wind-borne leaves</b>:
+  </p>
+  <div class="grid wind-grid">
+    <div class="card">
+      <div class="card-head"><h3>0 · Current <code>sky.js</code></h3><span class="badge">Baseline</span></div>
+      <div class="stage">
+        <span class="stage-tag">Current · 22 straight lines</span>
+        <canvas data-sim="wind-current"></canvas>
+      </div>
+      <p>22 rigid horizontal line segments that read like scanlines.</p>
+    </div>
+    <div class="card rec-card">
+      <div class="card-head"><h3>W1 · Swaying Pines + Leaves</h3><span class="badge rec">Option W1</span></div>
+      <div class="stage">
+        <span class="stage-tag imp">Trees swaying + Leaves blowing</span>
+        <span class="stage-glyph"><svg><use href="#ic-wind"/></svg>W1</span>
+        <canvas data-sim="wind-pines-leaves"></canvas>
+      </div>
+      <p><b>Both together:</b> Wind-bent pines on a low ridge flex and sway with compound wind gusts while detached leaves tumble and flutter across the sky.</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>W2 · Whipping Boughs + Leaves</h3><span class="badge">Option W2</span></div>
+      <div class="stage">
+        <span class="stage-tag imp">Canopy boughs + Leaves</span>
+        <span class="stage-glyph"><svg><use href="#ic-wind"/></svg>W2</span>
+        <canvas data-sim="wind-boughs"></canvas>
+      </div>
+      <p><b>No ground hill:</b> Leafy branches reach in from the left edge, whipping and flexing in the gusts while shedding tumbling leaves across the sky.</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>W3 · Blowing Leaves Only</h3><span class="badge">Option W3</span></div>
+      <div class="stage">
+        <span class="stage-tag imp">Open sky · Tumbling leaves</span>
+        <span class="stage-glyph"><svg><use href="#ic-wind"/></svg>W3</span>
+        <canvas data-sim="wind-leaves"></canvas>
+      </div>
+      <p><b>Pure sky:</b> Multi-depth leaves (sage, birch, warm gold) tumble in 3D pitch &amp; roll along sinusoidal wind gusts under fast-scudding clouds.</p>
+    </div>
+  </div>
+
+  <!-- 2B: OVERCAST & FOG -->
+  <div class="grid cond-grid" style="margin-top:18px">
+    <div class="card rec-card">
+      <div class="card-head">
+        <h3>Overcast (WMO 03) — Merged Cumulus Formations</h3>
+        <span class="badge rec">Fixed: No Spheres</span>
+      </div>
+      <div class="compare-pair">
+        <div class="stage tall">
+          <span class="stage-tag">Current · 5 distinct spheres</span>
+          <canvas data-sim="cloud-current"></canvas>
+        </div>
+        <div class="stage tall">
+          <span class="stage-tag imp">Improved · Merged Formation Deck</span>
+          <span class="stage-glyph"><svg><use href="#ic-cloud"/></svg>03</span>
+          <canvas data-sim="cloud-improved"></canvas>
+        </div>
+      </div>
+      <p>
+        <b>Why it looked like spheres before:</b> Each of the 5 circles had its own radial falloff and dark outer ring, outlining 5 separate balls.
+        <br><b>Fix:</b> Overlapping plateau-core domes + a wide flat base are merged into a <b>single unified alpha mask</b> first, then shaded once top-to-bottom (`cr.maskSurface`), producing a cohesive billowy cloud formation with zero internal spheres.
+      </p>
+    </div>
+
+    <div class="card rec-card">
+      <div class="card-head">
+        <h3>Valley Fog (WMO 45 &amp; 48) — Clean Interleaved Mist</h3>
+        <span class="badge rec">Fixed: No Sparkles</span>
+      </div>
+      <div class="compare-pair">
+        <div class="stage tall">
+          <span class="stage-tag">Current · Flat cutout hills</span>
+          <canvas data-sim="fog-current"></canvas>
+        </div>
+        <div class="stage tall">
+          <span class="stage-tag imp">Improved · Interleaved Mist (45 &amp; 48)</span>
+          <span class="stage-glyph"><svg><use href="#ic-fog"/></svg>45/48</span>
+          <canvas data-sim="fog-improved"></canvas>
+        </div>
+      </div>
+      <p>
+        <b>Fixed:</b> Removed all 4-point star sparkles (`#spark` belongs only to the small 24px icon, not the sky where it looks like night stars). Both <b>Fog (45)</b> and <b>Rime Fog (48)</b> share the clean <b>Interleaved Valley Mist</b> scene with a mist band drifting between the far and near ridges.
+      </p>
+    </div>
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- SECTION 3: APPROVED PRECIPITATION & STORM IMPROVEMENTS               -->
+  <!-- ==================================================================== -->
+  <h2>3 · Approved Storm, Rain, Showers, &amp; Sleet Improvements <span class="badge rec">Approved</span></h2>
+  <div class="grid cond-grid">
+    <div class="card">
+      <div class="card-head">
+        <h3>Severe Thunderstorm &amp; Hail (WMO 95 / 96 / 99)</h3>
+        <span class="badge rec">Approved</span>
+      </div>
+      <div class="compare-pair">
+        <div class="stage tall">
+          <span class="stage-tag imp">WMO 95 · Forked Bolts + Cloud Flash</span>
+          <span class="stage-glyph"><svg><use href="#ic-storm"/></svg>95</span>
+          <canvas data-sim="storm-improved"></canvas>
+        </div>
+        <div class="stage tall">
+          <span class="stage-tag imp">WMO 96/99 · Bolts + Rimmed Hailstones</span>
+          <span class="stage-glyph"><svg><use href="#ic-hail"/></svg>96/99</span>
+          <canvas data-sim="hail-improved"></canvas>
+        </div>
+      </div>
+      <p>Procedural multi-branch forked bolts at varied strike positions, in-cloud sheet illumination, merged dark storm anvil clouds, and lightning + glinting/bouncing hailstones for 96/99.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Rain, Showers (WMO 51–65, 80–82) &amp; Sleet / Freezing Rain (56–67)</h3>
+        <span class="badge rec">Approved</span>
+      </div>
+      <div class="compare-pair">
+        <div class="stage tall">
+          <span class="stage-tag imp">Rain · 3-Plane Streaks + Curtains</span>
+          <span class="stage-glyph"><svg><use href="#ic-rain"/></svg>63</span>
+          <canvas data-sim="rain-improved"></canvas>
+        </div>
+        <div class="stage tall">
+          <span class="stage-tag imp">Sleet · Drops + 6-Spoke Flakes + Glaze</span>
+          <span class="stage-glyph"><svg><use href="#ic-sleet"/></svg>67</span>
+          <canvas data-sim="sleet-improved"></canvas>
+        </div>
+      </div>
+      <p>3-plane tapered rain streaks, sweeping diagonal rain curtains, and splash ripples; Sleet pairs slanted drops with tumbling 6-spoke icon flakes and bottom ice glaze.</p>
+    </div>
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- SECTION 4: INTERACTIVE FULL-WINDOW THEATER                           -->
+  <!-- ==================================================================== -->
+  <h2>4 · Interactive Full-Window &amp; Card Theater</h2>
+  <div class="theater">
+    <div class="t-sidebar">
+      <div>
+        <div class="t-group-label">Simulation Engine</div>
+        <div class="seg" style="width:100%" id="engineToggle">
+          <button type="button" style="flex:1" data-engine="improved" aria-pressed="true">Improved Mock</button>
+          <button type="button" style="flex:1" data-engine="current" aria-pressed="false">Current sky.js</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="t-group-label">High Wind Variant (when High Wind selected)</div>
+        <div class="seg" style="width:100%" id="windStyleToggle">
+          <button type="button" style="flex:1" data-windstyle="wind-pines-leaves" aria-pressed="true">W1 · Pines+Leaves</button>
+          <button type="button" style="flex:1" data-windstyle="wind-boughs" aria-pressed="false">W2 · Boughs</button>
+          <button type="button" style="flex:1" data-windstyle="wind-leaves" aria-pressed="false">W3 · Leaves</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="t-group-label">Weather Condition</div>
+        <div class="scene-list" id="theaterScenes">
+          <button type="button" class="scene-btn" data-tscene="wind" aria-selected="true"><svg><use href="#ic-wind"/></svg>High Wind</button>
+          <button type="button" class="scene-btn" data-tscene="cloud" aria-selected="false"><svg><use href="#ic-cloud"/></svg>Overcast</button>
+          <button type="button" class="scene-btn" data-tscene="fog" aria-selected="false"><svg><use href="#ic-fog"/></svg>Fog (45/48)</button>
+          <button type="button" class="scene-btn" data-tscene="snow" aria-selected="false"><svg><use href="#ic-snow"/></svg>Snow (73)</button>
+          <button type="button" class="scene-btn" data-tscene="snow-blizzard" aria-selected="false"><svg><use href="#ic-snow-heavy"/></svg>Blizzard (75)</button>
+          <button type="button" class="scene-btn" data-tscene="snow-showers" aria-selected="false"><svg><use href="#ic-snow-showers"/></svg>Snow Showers</button>
+          <button type="button" class="scene-btn" data-tscene="snow-grains" aria-selected="false"><svg><use href="#ic-snow-grains"/></svg>Snow Grains</button>
+          <button type="button" class="scene-btn" data-tscene="storm" aria-selected="false"><svg><use href="#ic-storm"/></svg>Thunderstorm</button>
+          <button type="button" class="scene-btn" data-tscene="hail" aria-selected="false"><svg><use href="#ic-hail"/></svg>Storm + Hail</button>
+          <button type="button" class="scene-btn" data-tscene="rain" aria-selected="false"><svg><use href="#ic-rain"/></svg>Heavy Rain</button>
+          <button type="button" class="scene-btn" data-tscene="showers" aria-selected="false"><svg><use href="#ic-showers"/></svg>Showers (81)</button>
+          <button type="button" class="scene-btn" data-tscene="sleet" aria-selected="false"><svg><use href="#ic-sleet"/></svg>Freezing Rain</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="t-viewport" id="theaterViewport">
+      <canvas id="theaterCanvas"></canvas>
+      <div class="t-ui" id="theaterUI">
+        <div class="t-ui-top">
+          <div>
+            <div class="t-temp" id="thTemp">14°</div>
+            <div class="t-city" id="thCity">Wellington</div>
+            <div class="t-meta" id="thMeta">New Zealand · 41.29°S, 174.78°E</div>
+            <div class="t-cond" id="thCond">Gale force wind · Gusts 68 km/h NW</div>
+          </div>
+          <div class="t-clock">
+            <div class="t-clock-time" id="thClock">14:20</div>
+            <div class="t-clock-sub" id="thDate">Sat 24 Oct</div>
+            <div class="t-ink-pill" id="thInkBadge">Ink verdict: LIGHT</div>
+          </div>
+        </div>
+
+        <div class="t-bottom">
+          <div class="t-days">
+            <div class="t-day sel"><div>Today</div><svg><use href="#ic-wind"/></svg><div><b>14°</b> <span>9°</span></div></div>
+            <div class="t-day"><div>Sun</div><svg><use href="#ic-cloud"/></svg><div><b>13°</b> <span>8°</span></div></div>
+            <div class="t-day"><div>Mon</div><svg><use href="#ic-fog"/></svg><div><b>11°</b> <span>6°</span></div></div>
+            <div class="t-day"><div>Tue</div><svg><use href="#ic-snow"/></svg><div><b>−1°</b> <span>−5°</span></div></div>
+            <div class="t-day"><div>Wed</div><svg><use href="#ic-sleet"/></svg><div><b>2°</b> <span>−1°</span></div></div>
+            <div class="t-day"><div>Thu</div><svg><use href="#ic-rain"/></svg><div><b>9°</b> <span>4°</span></div></div>
+            <div class="t-day"><div>Fri</div><svg><use href="#ic-storm"/></svg><div><b>16°</b> <span>10°</span></div></div>
+            <div class="t-day"><div>Sat</div><svg><use href="#ic-sun"/></svg><div><b>19°</b> <span>11°</span></div></div>
+          </div>
+          <div class="t-chart-slab">
+            <span><b>Hourly forecast</b> · Merged cloud formations, swaying trees &amp; blowing leaves, and 3-plane 6-spoke snow</span>
+            <span style="color:var(--blue);font-weight:700">60 fps Cairo-ready</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(() => {
+  const TWO_PI = Math.PI * 2;
+  const clamp01 = v => Math.max(0, Math.min(1, v || 0));
+  const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+  const rgbCss = (rgb, a = 1) =>
+    `rgba(${Math.round(rgb[0]*255)},${Math.round(rgb[1]*255)},${Math.round(rgb[2]*255)},${a})`;
+
+  const SKY_PALETTES = {
+    clear:  { d: [[0.18, 0.43, 0.70], [0.75, 0.88, 0.97]], n: [[0.04, 0.06, 0.15], [0.15, 0.20, 0.36]] },
+    partly: { d: [[0.23, 0.43, 0.66], [0.66, 0.79, 0.89]], n: [[0.05, 0.07, 0.19], [0.16, 0.21, 0.38]] },
+    cloud:  { d: [[0.36, 0.44, 0.54], [0.71, 0.76, 0.81]], n: [[0.08, 0.09, 0.14], [0.17, 0.20, 0.26]] },
+    fog:    { d: [[0.47, 0.50, 0.55], [0.72, 0.74, 0.77]], n: [[0.11, 0.13, 0.17], [0.20, 0.23, 0.27]] },
+    rain:   { d: [[0.22, 0.27, 0.36], [0.44, 0.50, 0.58]], n: [[0.05, 0.07, 0.13], [0.14, 0.17, 0.24]] },
+    sleet:  { d: [[0.28, 0.35, 0.44], [0.55, 0.60, 0.66]], n: [[0.07, 0.09, 0.15], [0.16, 0.19, 0.29]] },
+    snow:   { d: [[0.41, 0.47, 0.55], [0.72, 0.78, 0.83]], n: [[0.09, 0.11, 0.17], [0.19, 0.23, 0.32]] },
+    hail:   { d: [[0.14, 0.17, 0.24], [0.30, 0.35, 0.43]], n: [[0.04, 0.05, 0.09], [0.11, 0.14, 0.20]] },
+    storm:  { d: [[0.11, 0.13, 0.19], [0.24, 0.28, 0.36]], n: [[0.03, 0.04, 0.07], [0.08, 0.11, 0.17]] },
+    wind:   { d: [[0.30, 0.43, 0.57], [0.66, 0.75, 0.83]], n: [[0.06, 0.09, 0.16], [0.15, 0.20, 0.29]] },
+  };
+  const TWILIGHT_PALETTES = {
+    d: [[0.30, 0.33, 0.66], [0.86, 0.50, 0.62], [1.00, 0.58, 0.30], [1.00, 0.72, 0.28]],
+    n: [[0.08, 0.09, 0.24], [0.36, 0.22, 0.48], [0.78, 0.34, 0.30], [0.96, 0.50, 0.26]],
+  };
+  const TWILIGHT_STOPS = [0, 0.45, 0.8, 1];
+  const TWILIGHT_EASE = [[0.85, 1.5], [0.95, 1.0], [0.97, 0.6], [1.0, 0.45]];
+  const TWILIGHT_CLARITY = {
+    clear: 1, partly: 0.9, wind: 0.8, cloud: 0.5, fog: 0.4,
+    rain: 0.3, sleet: 0.3, snow: 0.35, hail: 0.15, storm: 0.15,
+  };
+  const NOON_PALETTE = [
+    [[0.09, 0.32, 0.66], 0.6], [[0.32, 0.58, 0.86], 0.4],
+    [[0.70, 0.84, 0.96], 0.3], [[0.88, 0.93, 0.97], 0.5],
+  ];
+  const NOON_CLARITY = { clear: 1, partly: 0.8, wind: 0.7 };
+
+  function skyStops(scene, night, glow, solar) {
+    const pal = (SKY_PALETTES[scene] || SKY_PALETTES.cloud)[night ? 'n' : 'd'];
+    const [top, bottom] = pal;
+    const twilight = clamp01(glow) * (TWILIGHT_CLARITY[scene] ?? 0);
+    const noon = (!night && Number.isFinite(solar)) ? (clamp01(solar) ** 2) * (NOON_CLARITY[scene] ?? 0) : 0;
+    const tints = TWILIGHT_PALETTES[night ? 'n' : 'd'];
+    return TWILIGHT_STOPS.map((offset, idx) => {
+      const [strength, easing] = TWILIGHT_EASE[idx];
+      const [noonRgb, noonStrength] = NOON_PALETTE[idx];
+      const base = mix(mix(top, bottom, offset), noonRgb, noonStrength * noon);
+      return [offset, mix(base, tints[idx], strength * (twilight ** easing))];
+    });
+  }
+
+  // Legacy 5-sphere sprite (for Current baseline comparison only)
+  function makeLegacySphereCloud() {
+    const sw = 240, sh = 120;
+    const c = document.createElement('canvas');
+    c.width = sw; c.height = sh;
+    const g = c.getContext('2d');
+    for (const [nx, ny, nr] of [[0.32, 0.55, 0.27], [0.47, 0.44, 0.24], [0.62, 0.54, 0.21], [0.40, 0.63, 0.26], [0.56, 0.64, 0.23]]) {
+      const r = nr * sh, x = nx * sw, y = ny * sh;
+      const grad = g.createRadialGradient(x, y, r * 0.05, x, y, r);
+      grad.addColorStop(0, 'rgba(255,255,255,0.50)');
+      grad.addColorStop(0.55, 'rgba(255,255,255,0.22)');
+      grad.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = grad;
+      g.beginPath(); g.arc(x, y, r, 0, TWO_PI); g.fill();
+    }
+    return c;
+  }
+
+  /**
+   * Cohesive Merged Cloud Formation Sprite (V2):
+   * Overlapping plateau-core domes + a wide flat base are drawn into a single alpha mask,
+   * bottom-flattened, and then shaded ONCE top-to-bottom via source-atop (Cairo: cr.maskSurface).
+   * Zero internal sphere seams!
+   */
+  function makeMergedCloudFormation(variant, topHex, midHex, bellyHex) {
+    const W = 360, H = 160;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d');
+
+    const domes = variant === 0 ? [
+      [0.50, 0.72, 0.38, 0.18],
+      [0.32, 0.71, 0.24, 0.17],
+      [0.68, 0.71, 0.24, 0.17],
+      [0.43, 0.46, 0.21, 0.26],
+      [0.62, 0.53, 0.19, 0.22],
+      [0.26, 0.57, 0.17, 0.19],
+      [0.76, 0.65, 0.15, 0.14],
+      [0.16, 0.66, 0.14, 0.13],
+    ] : [
+      [0.50, 0.73, 0.42, 0.17],
+      [0.35, 0.54, 0.22, 0.22],
+      [0.57, 0.48, 0.23, 0.25],
+      [0.74, 0.60, 0.19, 0.18],
+      [0.20, 0.63, 0.17, 0.16],
+    ];
+
+    for (const [nx, ny, rxF, ryF] of domes) {
+      g.save();
+      g.translate(nx * W, ny * H);
+      g.scale(rxF * W, ryF * H);
+      const rad = g.createRadialGradient(0, 0, 0, 0, 0, 1);
+      rad.addColorStop(0.00, 'rgba(255,255,255,0.78)');
+      rad.addColorStop(0.56, 'rgba(255,255,255,0.72)');
+      rad.addColorStop(0.80, 'rgba(255,255,255,0.32)');
+      rad.addColorStop(1.00, 'rgba(255,255,255,0)');
+      g.fillStyle = rad;
+      g.beginPath(); g.arc(0, 0, 1, 0, TWO_PI); g.fill();
+      g.restore();
+    }
+
+    // Flatten cloud base smoothly
+    g.globalCompositeOperation = 'destination-in';
+    const baseClip = g.createLinearGradient(0, H * 0.70, 0, H * 0.94);
+    baseClip.addColorStop(0, 'rgba(255,255,255,1)');
+    baseClip.addColorStop(0.65, 'rgba(255,255,255,0.85)');
+    baseClip.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = baseClip;
+    g.fillRect(0, 0, W, H);
+
+    // Shade the entire merged formation top-to-bottom as one body
+    g.globalCompositeOperation = 'source-atop';
+    const shade = g.createLinearGradient(0, H * 0.20, 0, H * 0.86);
+    shade.addColorStop(0.00, topHex);
+    shade.addColorStop(0.60, midHex);
+    shade.addColorStop(1.00, bellyHex);
+    g.fillStyle = shade;
+    g.fillRect(0, 0, W, H);
+
+    return c;
+  }
+
+  const SPRITE_LEGACY = makeLegacySphereCloud();
+  const SPRITE_FRONT  = makeMergedCloudFormation(0, '#f4f8ff', '#cdd8e6', '#8e9eb2');
+  const SPRITE_BACK   = makeMergedCloudFormation(1, '#9eadc0', '#7c8da3', '#5c6b80');
+  const SPRITE_STORM  = makeMergedCloudFormation(1, '#8c9eb5', '#5a6b82', '#344154');
+
+  let globalTod = 'day';
+  let paused = false;
+
+  function todParams() {
+    if (globalTod === 'night') return { night: true, glow: 0, solar: null };
+    if (globalTod === 'twilight') return { night: false, glow: 0.88, solar: 0.08 };
+    return { night: false, glow: 0, solar: 0.78 };
+  }
+
+  function drawIconFlake(ctx, x, y, r, rot, alpha, dayContrast = false) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    ctx.lineCap = 'round';
+    if (dayContrast && r >= 3.2) {
+      ctx.strokeStyle = `rgba(22, 34, 50, ${alpha * 0.34})`;
+      ctx.lineWidth = Math.max(1.2, r * 0.44);
+      ctx.beginPath();
+      for (let k = 0; k < 3; k++) {
+        const a = (k / 3) * Math.PI;
+        ctx.moveTo(-Math.cos(a) * r, -Math.sin(a) * r);
+        ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      ctx.stroke();
+    }
+    ctx.strokeStyle = `rgba(244, 251, 255, ${alpha})`;
+    ctx.lineWidth = Math.max(0.8, r * 0.29);
+    ctx.beginPath();
+    for (let k = 0; k < 3; k++) {
+      const a = (k / 3) * Math.PI;
+      ctx.moveTo(-Math.cos(a) * r, -Math.sin(a) * r);
+      ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.stroke();
+    if (r >= 3.8) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha * 1.1)})`;
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.15, 0, TWO_PI); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Draw a wind-borne leaf glyph with 3D pitch & roll
+  function drawLeaf(ctx, x, y, size, angle, pitch, rgb, alpha = 0.92) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.scale(1, Math.max(0.26, Math.abs(pitch)));
+    const s = size;
+    ctx.fillStyle = rgbCss(rgb, alpha);
+    ctx.beginPath();
+    ctx.moveTo(-s, 0);
+    ctx.bezierCurveTo(-s * 0.4, -s * 0.65, s * 0.35, -s * 0.55, s * 1.05, 0);
+    ctx.bezierCurveTo(s * 0.35, s * 0.55, -s * 0.4, s * 0.65, -s, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = rgbCss(rgb.map(c => c * 0.65), alpha * 0.75);
+    ctx.lineWidth = Math.max(0.7, s * 0.13);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-s * 1.32, s * 0.12);
+    ctx.quadraticCurveTo(-s * 0.4, 0, s * 0.75, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Draw a wind-swaying pine silhouette standing on a ridge
+  function drawSwayingPine(ctx, baseX, baseY, height, bend, rgbaStr) {
+    ctx.save();
+    ctx.translate(baseX, baseY);
+    const tipX = bend * height * 0.38;
+    const tipY = -height;
+
+    ctx.strokeStyle = rgbaStr;
+    ctx.fillStyle = rgbaStr;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = Math.max(1.5, height * 0.045);
+    ctx.beginPath();
+    ctx.moveTo(0, 2);
+    ctx.quadraticCurveTo(tipX * 0.35, -height * 0.5, tipX, tipY);
+    ctx.stroke();
+
+    const tiers = 5;
+    for (let i = 0; i < tiers; i++) {
+      const t = (i + 1) / (tiers + 0.5);
+      const cx = tipX * (t * t);
+      const cy = -height * t;
+      const w = height * (0.34 * (1 - t * 0.65));
+      const hTier = height * 0.24;
+      const nextT = Math.min(1, t + 0.22);
+      const nx = tipX * (nextT * nextT);
+      const ny = -height * nextT;
+
+      ctx.beginPath();
+      ctx.moveTo(nx, ny);
+      ctx.quadraticCurveTo(cx - w * 0.55, cy - hTier * 0.15, cx - w * 0.72 + bend * 4, cy + hTier * 0.22);
+      ctx.quadraticCurveTo(cx + bend * 3, cy + hTier * 0.08, cx + w * 1.15 + bend * 8, cy + hTier * 0.30);
+      ctx.quadraticCurveTo(cx + w * 0.65, cy - hTier * 0.15, nx, ny);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Draw whipping leafy boughs reaching from the left edge
+  function drawWhippingBoughs(ctx, w, h, scale, time) {
+    const twigs = [
+      [-8 * scale, h * 0.28, w * 0.36, -0.06, [0.28, 0.44, 0.50], 0.0],
+      [-8 * scale, h * 0.48, w * 0.42,  0.04, [0.34, 0.52, 0.56], 1.2],
+      [-8 * scale, h * 0.68, w * 0.32, -0.10, [0.24, 0.38, 0.45], 2.5],
+    ];
+    for (const [sx, sy, len, baseAng, lcol, ph] of twigs) {
+      const bend = 0.42 + 0.18 * Math.sin(time * 2.1 + ph) + 0.07 * Math.sin(time * 4.7 + ph);
+      const ang = baseAng + bend * 0.18;
+      const ex = sx + Math.cos(ang) * len;
+      const ey = sy + Math.sin(ang) * len;
+      const cx = sx + len * 0.52;
+      const cy = sy - 12 * scale + bend * 14 * scale;
+
+      ctx.strokeStyle = 'rgba(26, 38, 50, 0.90)';
+      ctx.lineCap = 'round';
+      ctx.lineWidth = 2.4 * scale;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.quadraticCurveTo(cx, cy, ex, ey);
+      ctx.stroke();
+
+      for (let k = 1; k <= 7; k++) {
+        const t = k / 7.5;
+        const u = 1 - t;
+        const bx = u * u * sx + 2 * u * t * cx + t * t * ex;
+        const by = u * u * sy + 2 * u * t * cy + t * t * ey;
+        const side = k % 2 === 0 ? 1 : -1;
+        const flutter = Math.sin(time * 5.2 + k * 1.3 + ph) * 0.12;
+        const leafAng = ang + side * 0.26 + bend * 0.22 + flutter;
+        drawLeaf(ctx, bx + Math.cos(leafAng) * 6 * scale, by + Math.sin(leafAng) * 6 * scale, (5.0 - t * 1.1) * scale, leafAng, 0.75, lcol, 0.94);
+      }
+    }
+  }
+
+  function drawCelestial(ctx, w, h, scale, time, night, glow, solar) {
+    const sx = w * 0.80;
+    const sy = h * (!night && Number.isFinite(solar) ? 0.22 - 0.07 * clamp01(solar) : 0.20);
+    const r = 36 * scale;
+    if (!night) {
+      const auraR = r * (3.2 + 1.0 * glow);
+      const aura = ctx.createRadialGradient(sx, sy, r * 0.2, sx, sy, auraR);
+      const ab = 0.38 + 0.06 * Math.sin(time * 0.7);
+      aura.addColorStop(0, glow > 0.4 ? `rgba(255,175,95,${ab})` : `rgba(255,228,125,${ab})`);
+      aura.addColorStop(0.45, glow > 0.4 ? `rgba(255,125,75,${ab*0.45})` : `rgba(255,188,65,${ab*0.45})`);
+      aura.addColorStop(1, 'rgba(255,140,30,0)');
+      ctx.fillStyle = aura;
+      ctx.beginPath(); ctx.arc(sx, sy, auraR, 0, TWO_PI); ctx.fill();
+
+      const coreR = r * 0.82;
+      const core = ctx.createRadialGradient(sx - r * 0.2, sy - r * 0.2, r * 0.08, sx, sy, coreR);
+      core.addColorStop(0, '#fffbe0');
+      core.addColorStop(0.55, glow > 0.4 ? '#ffae52' : '#ffdf6b');
+      core.addColorStop(1, glow > 0.4 ? '#f06428' : '#f79c1d');
+      ctx.fillStyle = core;
+      ctx.beginPath(); ctx.arc(sx, sy, coreR, 0, TWO_PI); ctx.fill();
+    } else {
+      const mg = ctx.createRadialGradient(sx, sy, r * 0.5, sx, sy, r * 3.1);
+      mg.addColorStop(0, 'rgba(204, 222, 252, 0.24)');
+      mg.addColorStop(1, 'rgba(178, 204, 245, 0)');
+      ctx.fillStyle = mg;
+      ctx.beginPath(); ctx.arc(sx, sy, r * 3.1, 0, TWO_PI); ctx.fill();
+
+      const mr = r * 0.76;
+      ctx.fillStyle = 'rgba(42, 58, 82, 0.55)';
+      ctx.beginPath(); ctx.arc(sx, sy, mr, 0, TWO_PI); ctx.fill();
+      ctx.fillStyle = 'rgba(232, 238, 245, 0.88)';
+      ctx.beginPath();
+      ctx.arc(sx, sy, mr, -Math.PI / 2, Math.PI / 2, false);
+      ctx.ellipse(sx, sy, mr * 0.42, mr, 0, Math.PI / 2, -Math.PI / 2, false);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  function createSim(canvas, mode) {
+    const state = {
+      canvas, mode,
+      w: 0, h: 0,
+      flakes: [], drops: [], hail: [], chips: [], clouds: [], backClouds: [],
+      fogMid: [], fogFront: [], streaks: [], leaves: [],
+      bolt: null, lastCycle: -1, ripples: [], shafts: []
+    };
+
+    function seed(w, h) {
+      state.w = w; state.h = h;
+      const sc = h / 220;
+      const rand = (a, b) => a + Math.random() * (b - a);
+
+      const cloudCount = mode.startsWith('wind') ? 2 : mode.includes('fog') ? 2 : 4;
+      state.clouds = Array.from({ length: cloudCount }, (_, i) => ({
+        x: (i / Math.max(1, cloudCount)) * (w + 140) - 70,
+        y: rand(0.01 * h, 0.28 * h),
+        s: rand(0.85, 1.35),
+        sp: mode.startsWith('wind') ? rand(28, 48) : rand(8, 20)
+      }));
+      state.backClouds = Array.from({ length: 3 }, (_, i) => ({
+        x: (i / 3) * (w + 160) - 80,
+        y: rand(-0.03 * h, 0.18 * h),
+        s: rand(1.0, 1.45),
+        sp: rand(5, 12)
+      }));
+
+      const flakeCount = mode === 'snow-light' ? 26
+        : mode === 'snow-blizzard' ? 105
+        : mode === 'snow-grains' ? 80
+        : mode.startsWith('sleet') ? 26
+        : 64;
+      state.flakes = Array.from({ length: flakeCount }, () => {
+        const u = Math.random();
+        const layer = u < 0.35 ? 0 : u < 0.76 ? 1 : 2;
+        const r = layer === 0 ? rand(1.5, 2.7) : layer === 1 ? rand(2.6, 4.0) : rand(4.3, 6.4);
+        return {
+          x: rand(-20, w + 20), y: rand(-h, h), r, layer,
+          sp: (layer === 0 ? rand(18, 32) : layer === 1 ? rand(30, 48) : rand(44, 68)),
+          ph: rand(0, TWO_PI), rotPh: rand(0, TWO_PI),
+          sway: layer === 0 ? rand(6, 12) : layer === 1 ? rand(12, 20) : rand(16, 26)
+        };
+      });
+
+      const dropCount = mode.includes('storm') ? 95 : mode.includes('sleet') ? 38 : mode.includes('hail') ? 45 : 75;
+      state.drops = Array.from({ length: dropCount }, () => {
+        const layer = Math.random() < 0.3 ? 2 : Math.random() < 0.7 ? 1 : 0;
+        return {
+          x: rand(-40, w + 80), y: rand(-h, h),
+          l: (layer === 2 ? rand(22, 34) : layer === 1 ? rand(15, 24) : rand(10, 16)),
+          sp: (layer === 2 ? rand(340, 480) : layer === 1 ? rand(250, 350) : rand(180, 250)),
+          layer
+        };
+      });
+      state.shafts = Array.from({ length: 3 }, (_, i) => ({
+        x: (i + 0.3) * (w / 3), w: rand(0.18 * w, 0.28 * w), sp: rand(10, 22), a: rand(0.06, 0.12)
+      }));
+      state.ripples = Array.from({ length: 10 }, () => ({
+        x: rand(10, w - 10), y: rand(h - 18 * sc, h - 3 * sc), p: rand(0, 1), sp: rand(1.2, 2.0)
+      }));
+
+      state.hail = Array.from({ length: 24 }, () => ({
+        x: rand(0, w), y: rand(-h, h), vx: rand(-35, 20), vy: rand(160, 290), r: rand(2.3, 4.2), bounces: 0
+      }));
+      state.chips = [];
+
+      state.fogMid = Array.from({ length: 6 }, (_, i) => ({
+        x: rand(-w, w), y: rand(0.36 * h, 0.45 * h),
+        len: rand(0.50, 0.95) * w, ht: rand(18, 34) * sc,
+        sp: rand(8, 16), o: rand(0.18, 0.28), tone: i % 2 === 0 ? 1 : 0
+      }));
+      state.fogFront = Array.from({ length: 12 }, () => ({
+        x: rand(-w, w), y: rand(0.48 * h, 0.92 * h),
+        len: rand(0.55, 1.2) * w, ht: rand(34, 84) * sc,
+        sp: rand(14, 32), o: rand(0.22, 0.38), tone: Math.random() < 0.5 ? 1 : 0
+      }));
+
+      state.streaks = Array.from({ length: 18 }, () => ({
+        x: rand(-w, w), y: rand(0.08 * h, 0.92 * h),
+        l: rand(55, 155) * sc, sp: rand(130, 290),
+        w: rand(0.9, 2.0) * sc, o: rand(0.14, 0.36)
+      }));
+
+      // Wind-borne leaves
+      const leafColors = [
+        [0.34, 0.52, 0.56],
+        [0.44, 0.62, 0.60],
+        [0.78, 0.60, 0.32],
+        [0.26, 0.42, 0.48],
+      ];
+      state.leaves = Array.from({ length: 20 }, (_, i) => ({
+        x: rand(-40, w), y: rand(0.12 * h, 0.86 * h),
+        sz: rand(3.8, 6.5) * sc,
+        spX: rand(110, 220),
+        ampY: rand(8, 22) * sc,
+        freq: rand(1.6, 3.0),
+        ph: rand(0, TWO_PI),
+        rotSp: rand(2.2, 4.8),
+        pitchSp: rand(3.0, 6.2),
+        col: leafColors[i % leafColors.length]
+      }));
+    }
+
+    function buildBolt(w, h, scale) {
+      const startX = w * (0.25 + Math.random() * 0.52);
+      const startY = h * 0.06;
+      const pts = [[startX, startY]];
+      let cx = startX, cy = startY;
+      const steps = 6;
+      const branches = [];
+      for (let i = 1; i <= steps; i++) {
+        cx += (Math.random() - 0.52) * 38 * scale;
+        cy += (h * 0.72 / steps) * (0.8 + Math.random() * 0.4);
+        pts.push([cx, cy]);
+        if ((i === 2 || i === 4) && Math.random() < 0.85) {
+          const bPts = [[cx, cy]];
+          let bx = cx, by = cy;
+          const dir = Math.random() < 0.5 ? -1 : 1;
+          for (let k = 0; k < 3; k++) {
+            bx += dir * (10 + Math.random() * 18) * scale;
+            by += (16 + Math.random() * 20) * scale;
+            bPts.push([bx, by]);
+          }
+          branches.push(bPts);
+        }
+      }
+      return { pts, branches, x: startX, y: startY };
+    }
+
+    return { state, seed, buildBolt };
+  }
+
+  function baseSceneForMode(mode) {
+    if (mode === 'snow-showers' || mode === 'showers') return 'partly';
+    if (mode.startsWith('snow')) return 'snow';
+    if (mode.startsWith('storm')) return 'storm';
+    if (mode.startsWith('hail')) return 'hail';
+    if (mode.startsWith('fog')) return 'fog';
+    if (mode.startsWith('rain')) return 'rain';
+    if (mode.startsWith('sleet')) return 'sleet';
+    if (mode.startsWith('wind')) return 'wind';
+    return 'cloud';
+  }
+
+  function paintSim(sim, time, dt, overrideOpts = null) {
+    const { state, seed, buildBolt } = sim;
+    const { canvas } = state;
+    const mode = overrideOpts?.mode ?? state.mode;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const cw = Math.round(canvas.clientWidth * dpr);
+    const ch = Math.round(canvas.clientHeight * dpr);
+    if (cw <= 0 || ch <= 0) return;
+    if (canvas.width !== cw || canvas.height !== ch || state.lastMode !== mode) {
+      canvas.width = cw; canvas.height = ch;
+      state.lastMode = mode;
+      seed(cw, ch);
+    }
+
+    const ctx = canvas.getContext('2d');
+    const w = cw, h = ch;
+    const scale = h / 220;
+    const { night, glow, solar } = todParams();
+    const baseScene = baseSceneForMode(mode);
+
+    // 1. Backdrop
+    const stops = skyStops(baseScene, night, glow, solar);
+    const bg = ctx.createLinearGradient(0, 0, 0, h);
+    for (const [off, rgb] of stops) bg.addColorStop(off, rgbCss(rgb));
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+
+    // 2. Celestial peeking for Showers / Snow Showers
+    if (mode === 'snow-showers' || mode === 'showers') {
+      drawCelestial(ctx, w, h, scale, time, night, glow, solar);
+    }
+
+    // 3. Far-plane snow bokeh behind clouds
+    const isSnowScene = mode.startsWith('snow') && mode !== 'snow-current' && mode !== 'snow-grains';
+    if (isSnowScene) {
+      for (const f of state.flakes) {
+        if (f.layer !== 0) continue;
+        f.y += f.sp * dt * scale;
+        if (f.y > h + 12) { f.y = -12; f.x = Math.random() * w; }
+        const swayX = f.x + Math.sin(time * 0.9 + f.ph) * f.sway * scale;
+        const rad = f.r * 1.25 * scale;
+        const pg = ctx.createRadialGradient(swayX, f.y, 0, swayX, f.y, rad);
+        pg.addColorStop(0, 'rgba(255, 255, 255, 0.52)');
+        pg.addColorStop(0.6, 'rgba(240, 248, 255, 0.24)');
+        pg.addColorStop(1, 'rgba(240, 248, 255, 0)');
+        ctx.fillStyle = pg;
+        ctx.beginPath(); ctx.arc(swayX, f.y, rad, 0, TWO_PI); ctx.fill();
+      }
+    }
+
+    // 4. Cloud Formations (Legacy 5-spheres on *-current vs Merged Cumulus Formations on improved)
+    const isCurrent = mode.endsWith('-current');
+    if (!isCurrent && (mode === 'cloud-improved' || mode === 'storm-improved' || mode === 'hail-improved')) {
+      for (const bc of state.backClouds) {
+        bc.x += bc.sp * dt * scale;
+        if (bc.x > w + 160 * scale) bc.x = -240 * scale;
+        const cw2 = 190 * bc.s * scale, ch2 = 85 * bc.s * scale;
+        ctx.save();
+        ctx.globalAlpha = night ? 0.58 : 0.82;
+        ctx.drawImage(SPRITE_STORM, bc.x, bc.y, cw2, ch2);
+        ctx.restore();
+      }
+    }
+    const frontSprite = isCurrent ? SPRITE_LEGACY
+      : (mode === 'storm-improved' || mode === 'hail-improved') ? SPRITE_BACK
+      : SPRITE_FRONT;
+    if (mode !== 'wind-current') {
+      for (const c of state.clouds) {
+        c.x += c.sp * dt * scale;
+        if (c.x > w + 140 * scale) c.x = -220 * scale;
+        const cw2 = 180 * c.s * scale, ch2 = 82 * c.s * scale;
+        const cy = c.y + Math.sin(time * 0.3 + c.y) * 3 * scale;
+        ctx.save();
+        ctx.globalAlpha = night ? 0.55 : 0.90;
+        ctx.drawImage(frontSprite, c.x, cy, cw2, ch2);
+        ctx.restore();
+      }
+    }
+
+    // 5. Fog (Clean Interleaved Valley Mist for both WMO 45 & 48 — Zero Star Sparkles!)
+    if (mode === 'fog-current') {
+      const ridges = [
+        { base: 0.30, amp: 0.060, f1: 1.7, f2: 4.1, p1: 0.6, p2: 2.2, c: night ? [0.09, 0.11, 0.15] : [0.42, 0.45, 0.51] },
+        { base: 0.44, amp: 0.075, f1: 2.3, f2: 5.3, p1: 2.9, p2: 0.4, c: night ? [0.05, 0.07, 0.10] : [0.28, 0.32, 0.39] }
+      ];
+      for (const r of ridges) {
+        ctx.fillStyle = rgbCss(r.c, 1);
+        ctx.beginPath(); ctx.moveTo(0, h);
+        for (let x = 0; x <= w; x += 6) {
+          const u = x / w;
+          const y = h * (r.base - r.amp * Math.sin(u * Math.PI * r.f1 + r.p1) - r.amp * 0.5 * Math.sin(u * Math.PI * r.f2 + r.p2));
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, h); ctx.closePath(); ctx.fill();
+      }
+      const wc = night ? [0.50, 0.55, 0.64] : [0.82, 0.85, 0.88];
+      const wash = ctx.createLinearGradient(0, 0.34 * h, 0, h);
+      wash.addColorStop(0, rgbCss(wc, 0));
+      wash.addColorStop(1, rgbCss(wc, night ? 0.62 : 0.78));
+      ctx.fillStyle = wash; ctx.fillRect(0, 0.34 * h, w, 0.66 * h);
+      drawFogBanks(ctx, state.fogFront, w, dt, time, night, scale);
+    } else if (mode === 'fog-improved') {
+      const farC = night ? [0.11, 0.14, 0.19] : [0.42, 0.45, 0.51];
+      const nearC = night ? [0.06, 0.08, 0.12] : [0.28, 0.32, 0.39];
+      drawRidge(ctx, w, h, { base: 0.31, amp: 0.058, f1: 1.7, f2: 4.1, p1: 0.6, p2: 2.2 }, farC, night);
+      drawFogBanks(ctx, state.fogMid, w, dt, time, night, scale);
+      drawRidge(ctx, w, h, { base: 0.47, amp: 0.072, f1: 2.3, f2: 5.3, p1: 2.9, p2: 0.4 }, nearC, night);
+      const wc = night ? [0.52, 0.58, 0.68] : [0.84, 0.87, 0.90];
+      const wash = ctx.createLinearGradient(0, 0.36 * h, 0, h);
+      wash.addColorStop(0, rgbCss(wc, 0));
+      wash.addColorStop(1, rgbCss(wc, night ? 0.64 : 0.76));
+      ctx.fillStyle = wash; ctx.fillRect(0, 0.36 * h, w, 0.64 * h);
+      drawFogBanks(ctx, state.fogFront, w, dt, time, night, scale);
+    }
+
+    // 6. Rain, Showers, & Sleet
+    if (mode === 'rain-improved' || mode === 'showers' || mode === 'sleet-improved' || mode === 'storm-improved' || mode === 'hail-improved') {
+      const slant = (mode === 'storm-improved' || mode === 'hail-improved')
+        ? 0.38 + 0.08 * Math.sin(time * 1.4)
+        : mode === 'sleet-improved' ? 0.36 : 0.28;
+
+      if (mode !== 'sleet-improved') {
+        for (const sh of state.shafts) {
+          sh.x += sh.sp * dt * scale;
+          if (sh.x > w + sh.w) sh.x = -sh.w * 1.5;
+          ctx.save();
+          ctx.transform(1, 0, -slant, 1, sh.x, 0);
+          const sg = ctx.createLinearGradient(0, 0, sh.w, 0);
+          sg.addColorStop(0, 'rgba(185, 215, 245, 0)');
+          sg.addColorStop(0.5, `rgba(185, 215, 245, ${sh.a})`);
+          sg.addColorStop(1, 'rgba(185, 215, 245, 0)');
+          ctx.fillStyle = sg;
+          ctx.fillRect(0, h * 0.12, sh.w, h * 0.88);
+          ctx.restore();
+        }
+      }
+
+      ctx.lineCap = 'round';
+      for (const d of state.drops) {
+        d.y += d.sp * dt * scale;
+        d.x -= d.sp * slant * dt * scale;
+        if (d.y > h + 25) { d.y = -25; d.x = Math.random() * (w + 90); }
+        const len = d.l * scale;
+        const x2 = d.x - len * slant, y2 = d.y + len;
+        const alpha = d.layer === 2 ? 0.72 : d.layer === 1 ? 0.48 : 0.26;
+        const dg = ctx.createLinearGradient(d.x, d.y, x2, y2);
+        dg.addColorStop(0, 'rgba(170, 212, 250, 0)');
+        dg.addColorStop(0.7, `rgba(170, 212, 250, ${alpha * 0.75})`);
+        dg.addColorStop(1, `rgba(220, 242, 255, ${alpha})`);
+        ctx.strokeStyle = dg;
+        ctx.lineWidth = (d.layer === 2 ? 1.75 : d.layer === 1 ? 1.3 : 0.95) * scale;
+        ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(x2, y2); ctx.stroke();
+      }
+
+      if (mode === 'rain-improved' || mode === 'showers') {
+        for (const rp of state.ripples) {
+          rp.p += rp.sp * dt;
+          if (rp.p >= 1) { rp.p = 0; rp.x = Math.random() * w; }
+          const rx = (2 + rp.p * 9) * scale, ry = rx * 0.28;
+          ctx.strokeStyle = `rgba(215, 238, 255, ${(1 - rp.p) * 0.38})`;
+          ctx.lineWidth = 1.0 * scale;
+          ctx.beginPath(); ctx.ellipse(rp.x, rp.y, rx, ry, 0, 0, TWO_PI); ctx.stroke();
+        }
+      }
+
+      if (mode === 'sleet-improved') {
+        for (const f of state.flakes) {
+          f.y += f.sp * 1.15 * dt * scale;
+          f.x -= f.sp * 0.35 * dt * scale;
+          if (f.y > h + 12) { f.y = -12; f.x = Math.random() * (w + 40); }
+          const swayX = f.x + Math.sin(time * 1.3 + f.ph) * 8 * scale;
+          const rot = -0.4 + Math.sin(time * 1.1 + f.rotPh) * 0.75;
+          drawIconFlake(ctx, swayX, f.y, Math.max(2.8, f.r * 0.85) * scale, rot, 0.88, !night);
+        }
+        const gg = ctx.createLinearGradient(0, h - 10 * scale, 0, h);
+        gg.addColorStop(0, 'rgba(190, 228, 255, 0)');
+        gg.addColorStop(1, 'rgba(195, 232, 255, 0.36)');
+        ctx.fillStyle = gg; ctx.fillRect(0, h - 10 * scale, w, 10 * scale);
+      }
+    }
+
+    // 7. Snow (Option B Hybrid + Variants)
+    if (mode === 'snow-current') {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      for (const f of state.flakes) {
+        f.y += f.sp * dt * scale;
+        if (f.y > h + 10) { f.y = -10; f.x = Math.random() * w; }
+        ctx.beginPath(); ctx.arc(f.x + Math.sin(time * 1.2 + f.ph) * 18 * scale, f.y, f.r * scale, 0, TWO_PI); ctx.fill();
+      }
+    } else if (mode === 'snow-grains') {
+      for (const f of state.flakes) {
+        f.y += f.sp * 2.6 * dt * scale;
+        f.x -= f.sp * 0.18 * dt * scale;
+        if (f.y > h + 8) { f.y = -8; f.x = Math.random() * w; }
+        const gx = f.x + Math.sin(time * 2.4 + f.ph) * 2.2 * scale;
+        ctx.fillStyle = 'rgba(244, 251, 255, 0.92)';
+        ctx.beginPath(); ctx.arc(gx, f.y, Math.min(2.1, f.r * 0.52) * scale, 0, TWO_PI); ctx.fill();
+      }
+    } else if (isSnowScene) {
+      const blizzard = mode === 'snow-blizzard';
+      const windGust = blizzard ? (42 + 18 * Math.sin(time * 1.5)) : 0;
+      for (const f of state.flakes) {
+        if (f.layer === 0) continue;
+        const mult = blizzard ? 1.55 : mode === 'snow-light' ? 0.72 : 1.0;
+        f.y += f.sp * mult * dt * scale;
+        f.x -= windGust * (f.layer === 2 ? 1.1 : 0.75) * dt * scale;
+        if (f.y > h + 14) { f.y = -14; f.x = Math.random() * (w + (blizzard ? 90 : 0)); }
+        if (f.x < -20) f.x = w + 15;
+        const swayX = f.x + Math.sin(time * 1.15 + f.ph) * f.sway * scale;
+        const rock = -0.42 + (0.5 + 0.5 * Math.sin(time * 1.05 + f.rotPh)) * 1.33;
+        drawIconFlake(ctx, swayX, f.y, f.r * scale, rock, f.layer === 2 ? 0.96 : 0.78, !night);
+      }
+    }
+
+    // 8. Hailstones + Lightning
+    if (mode === 'hail-improved') {
+      for (const st of state.hail) {
+        st.vy += 920 * scale * dt;
+        st.x += st.vx * scale * dt;
+        st.y += st.vy * scale * dt;
+        const r = st.r * scale, floor = h - 6 * scale - r;
+        if (st.y > floor && st.vy > 0) {
+          st.y = floor; st.vy *= -0.46; st.vx = (Math.random() - 0.5) * 340; st.bounces++;
+        }
+        if (st.bounces > 2 || st.x < -10 || st.x > w + 10) {
+          st.x = Math.random() * w; st.y = -10; st.vx = -25 + (Math.random() - 0.5) * 60;
+          st.vy = 190 + Math.random() * 140; st.bounces = 0;
+        }
+        ctx.fillStyle = 'rgba(234, 246, 255, 0.95)';
+        ctx.strokeStyle = 'rgba(159, 201, 238, 0.85)';
+        ctx.lineWidth = 0.85 * scale;
+        ctx.beginPath(); ctx.arc(st.x, st.y, r, 0, TWO_PI); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.90)';
+        ctx.beginPath(); ctx.arc(st.x - r * 0.32, st.y - r * 0.32, r * 0.34, 0, TWO_PI); ctx.fill();
+      }
+    }
+
+    if (mode === 'storm-improved' || mode === 'hail-improved') {
+      const period = 2.8;
+      const cycleIdx = Math.floor(time / period);
+      const cyc = time % period;
+      if (cycleIdx !== state.lastCycle || !state.bolt) {
+        state.lastCycle = cycleIdx;
+        state.bolt = buildBolt(w, h, scale);
+      }
+      let fl = 0;
+      if (cyc < 0.07) fl = cyc / 0.07;
+      else if (cyc < 0.17) fl = 1 - (cyc - 0.07) / 0.10;
+      else if (cyc < 0.24) fl = 0.72 * (cyc - 0.17) / 0.07;
+      else if (cyc < 0.42) fl = 0.72 * (1 - (cyc - 0.24) / 0.18);
+
+      let sheetFl = (cyc > 1.35 && cyc < 1.65) ? Math.sin(((cyc - 1.35) / 0.30) * Math.PI) * 0.45 : 0;
+      if (fl > 0 || sheetFl > 0) {
+        const b = state.bolt;
+        const glowX = fl > 0 ? b.x : w * 0.65, glowY = h * 0.14;
+        const cg = ctx.createRadialGradient(glowX, glowY, 4 * scale, glowX, glowY, w * 0.55);
+        const ca = Math.max(fl * 0.48, sheetFl);
+        cg.addColorStop(0, `rgba(255, 240, 195, ${ca})`);
+        cg.addColorStop(0.4, `rgba(185, 195, 255, ${ca * 0.45})`);
+        cg.addColorStop(1, 'rgba(140, 160, 220, 0)');
+        ctx.fillStyle = cg; ctx.fillRect(0, 0, w, h);
+      }
+      if (fl > 0 && state.bolt) {
+        const b = state.bolt;
+        ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        for (const br of b.branches) {
+          ctx.strokeStyle = `rgba(245, 165, 36, ${fl * 0.45})`; ctx.lineWidth = 3.6 * scale;
+          ctx.beginPath(); br.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+          ctx.strokeStyle = `rgba(255, 242, 190, ${fl * 0.85})`; ctx.lineWidth = 1.3 * scale; ctx.stroke();
+        }
+        ctx.strokeStyle = `rgba(245, 165, 36, ${fl * 0.55})`; ctx.lineWidth = 7.5 * scale;
+        ctx.beginPath(); b.pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+        ctx.strokeStyle = `rgba(255, 250, 220, ${fl})`; ctx.lineWidth = 2.5 * scale; ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // 9. High Wind (Current vs W1 Swaying Pines+Leaves, W2 Whipping Boughs+Leaves, W3 Leaves Only)
+    if (mode === 'wind-current') {
+      for (const s of state.streaks) {
+        s.x += s.sp * dt * scale;
+        if (s.x > w + s.l) { s.x = -s.l; s.y = Math.random() * h; }
+        ctx.strokeStyle = `rgba(219, 237, 250, ${s.o})`;
+        ctx.lineWidth = s.w;
+        ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x + s.l, s.y); ctx.stroke();
+      }
+    } else if (mode === 'wind-pines-leaves' || mode === 'wind-boughs' || mode === 'wind-leaves') {
+      // Subtle translucent wind air-current waves
+      for (let i = 0; i < 6; i++) {
+        const s = state.streaks[i];
+        s.x += s.sp * 1.1 * dt * scale;
+        if (s.x > w + s.l) { s.x = -s.l; s.y = (0.12 + Math.random() * 0.70) * h; }
+        const wg = ctx.createLinearGradient(s.x, s.y, s.x + s.l, s.y);
+        wg.addColorStop(0, 'rgba(230, 244, 255, 0)');
+        wg.addColorStop(0.5, `rgba(230, 244, 255, ${s.o * 0.55})`);
+        wg.addColorStop(1, 'rgba(230, 244, 255, 0)');
+        ctx.strokeStyle = wg;
+        ctx.lineWidth = 1.4 * scale;
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.bezierCurveTo(s.x + s.l * 0.33, s.y - 6 * scale, s.x + s.l * 0.66, s.y + 6 * scale, s.x + s.l, s.y);
+        ctx.stroke();
+      }
+
+      if (mode === 'wind-pines-leaves') {
+        const hillY = x => {
+          const u = x / w;
+          return h * (0.85 - 0.075 * Math.sin(u * Math.PI * 1.3 + 0.4));
+        };
+        const hg = ctx.createLinearGradient(0, h * 0.72, 0, h);
+        hg.addColorStop(0, night ? 'rgba(18, 25, 36, 0.95)' : 'rgba(52, 72, 92, 0.94)');
+        hg.addColorStop(1, night ? 'rgba(10, 14, 22, 0.98)' : 'rgba(34, 48, 64, 0.98)');
+        ctx.fillStyle = hg;
+        ctx.beginPath(); ctx.moveTo(0, h);
+        for (let x = 0; x <= w; x += 5) ctx.lineTo(x, hillY(x));
+        ctx.lineTo(w, h); ctx.closePath(); ctx.fill();
+
+        const trees = [
+          [0.14, 58, 0.0], [0.25, 72, 0.7], [0.36, 48, 1.5],
+          [0.76, 54, 0.4], [0.86, 42, 1.1]
+        ];
+        const treeCol = night ? 'rgba(14, 20, 30, 0.96)' : 'rgba(38, 54, 72, 0.96)';
+        for (const [xf, th, ph] of trees) {
+          const tx = w * xf, ty = hillY(tx) + 4 * scale;
+          // Compound wind sway: steady gale lean + slow gust roll + fast bough flutter
+          const bend = 0.38 + 0.16 * Math.sin(time * 1.8 + ph) + 0.06 * Math.sin(time * 4.3 + ph * 2);
+          drawSwayingPine(ctx, tx, ty, th * scale, bend, treeCol);
+        }
+      } else if (mode === 'wind-boughs') {
+        drawWhippingBoughs(ctx, w, h, scale, time);
+      }
+
+      // Tumbling wind-borne leaves
+      for (const lf of state.leaves) {
+        lf.x += lf.spX * dt * scale;
+        if (lf.x > w + 25) {
+          lf.x = -25;
+          lf.y = (0.14 + Math.random() * 0.68) * h;
+        }
+        const ly = lf.y + Math.sin(time * lf.freq + lf.ph) * lf.ampY;
+        const ang = Math.sin(time * lf.rotSp + lf.ph) * 0.65 + 0.15;
+        const pitch = Math.cos(time * lf.pitchSp + lf.ph);
+        drawLeaf(ctx, lf.x, ly, lf.sz, ang, pitch, lf.col, 0.92);
+      }
+    }
+  }
+
+  function drawRidge(ctx, w, h, r, col, night) {
+    const rg = ctx.createLinearGradient(0, h * (r.base - r.amp * 1.5), 0, h);
+    rg.addColorStop(0, rgbCss(col, 0.96));
+    rg.addColorStop(0.55, rgbCss(col, 0.88));
+    rg.addColorStop(1, rgbCss(night ? [0.16, 0.20, 0.26] : [0.68, 0.72, 0.77], 0.95));
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.moveTo(0, h);
+    for (let x = 0; x <= w; x += 6) {
+      const u = x / w;
+      const y = h * (r.base - r.amp * Math.sin(u * Math.PI * r.f1 + r.p1) - r.amp * 0.5 * Math.sin(u * Math.PI * r.f2 + r.p2));
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h); ctx.closePath(); ctx.fill();
+  }
+
+  function drawFogBanks(ctx, list, w, dt, time, night, scale) {
+    const lit = night ? [0.56, 0.62, 0.72] : [0.94, 0.96, 0.98];
+    const shade = night ? [0.08, 0.10, 0.15] : [0.40, 0.44, 0.50];
+    for (const fg of list) {
+      fg.x += fg.sp * dt * scale;
+      if (fg.x > w + fg.len) fg.x = -fg.len;
+      const y = fg.y + Math.sin(time * 0.38 + (fg.x + w) * 0.008) * 4 * scale;
+      const tint = fg.tone ? lit : shade;
+      ctx.save();
+      ctx.translate(fg.x + fg.len / 2, y);
+      ctx.scale(fg.len / (fg.ht * 2), 1);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, fg.ht);
+      g.addColorStop(0, rgbCss(tint, fg.o));
+      g.addColorStop(0.6, rgbCss(tint, fg.o * 0.62));
+      g.addColorStop(1, rgbCss(tint, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 0, fg.ht, 0, TWO_PI); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  const sims = [];
+  document.querySelectorAll('canvas[data-sim]').forEach(c => {
+    sims.push(createSim(c, c.dataset.sim));
+  });
+
+  const theaterCanvas = document.getElementById('theaterCanvas');
+  const theaterSim = createSim(theaterCanvas, 'wind-pines-leaves');
+  let theaterEngine = 'improved';
+  let theaterWindStyle = 'wind-pines-leaves';
+  let theaterSceneKey = 'wind';
+
+  const THEATER_PRESETS = {
+    'wind':          { imp: () => theaterWindStyle, cur: 'wind-current', temp: '14°', city: 'Wellington', meta: 'New Zealand · 41.29°S, 174.78°E', cond: 'Gale force wind · Gusts 68 km/h NW' },
+    'cloud':         { imp: () => 'cloud-improved', cur: 'cloud-current', temp: '13°', city: 'Berlin', meta: 'Germany · 52.52°N, 13.40°E', cond: 'Overcast deck · Feels like 12°' },
+    'fog':           { imp: () => 'fog-improved', cur: 'fog-current', temp: '11°', city: 'San Francisco', meta: 'California, United States · 37.77°N, 122.42°W', cond: 'Dense valley fog (WMO 45/48) · Vis 400 m' },
+    'snow':          { imp: () => 'snow-hybrid', cur: 'snow-current', temp: '−2°', city: 'Sapporo', meta: 'Hokkaido, Japan · 43.06°N, 141.35°E', cond: 'Moderate snow · Feels like −6°' },
+    'snow-blizzard': { imp: () => 'snow-blizzard', cur: 'snow-current', temp: '−7°', city: 'Tromsø', meta: 'Troms, Norway · 69.65°N, 18.96°E', cond: 'Heavy snow & blowing gusts · Feels like −15°' },
+    'snow-showers':  { imp: () => 'snow-showers', cur: 'snow-current', temp: '0°', city: 'Zürich', meta: 'Switzerland · 47.37°N, 8.54°E', cond: 'Snow showers · Brief sun breaks' },
+    'snow-grains':   { imp: () => 'snow-grains', cur: 'snow-current', temp: '−4°', city: 'Reykjavík', meta: 'Iceland · 64.15°N, 21.94°W', cond: 'Snow grains (WMO 77) · Fine ice pellets' },
+    'storm':         { imp: () => 'storm-improved', cur: 'storm-current', temp: '22°', city: 'Miami', meta: 'Florida, United States · 25.76°N, 80.19°W', cond: 'Severe thunderstorm · Frequent lightning' },
+    'hail':          { imp: () => 'hail-improved', cur: 'hail-current', temp: '17°', city: 'Oklahoma City', meta: 'Oklahoma, United States · 35.47°N, 97.52°W', cond: 'Thunderstorm with heavy hail (WMO 99)' },
+    'rain':          { imp: () => 'rain-improved', cur: 'rain-current', temp: '12°', city: 'London', meta: 'England, United Kingdom · 51.51°N, 0.13°W', cond: 'Heavy rain · Wind 28 km/h SW' },
+    'showers':       { imp: () => 'showers', cur: 'rain-current', temp: '16°', city: 'Vancouver', meta: 'British Columbia, Canada · 49.28°N, 123.12°W', cond: 'Passing showers · Sun breaks' },
+    'sleet':         { imp: () => 'sleet-improved', cur: 'sleet-current', temp: '0°', city: 'Montreal', meta: 'Quebec, Canada · 45.50°N, 73.57°W', cond: 'Heavy freezing rain & sleet (WMO 67)' },
+  };
+
+  function syncTheaterHeader() {
+    const p = THEATER_PRESETS[theaterSceneKey] || THEATER_PRESETS.wind;
+    document.getElementById('thTemp').textContent = p.temp;
+    document.getElementById('thCity').textContent = p.city;
+    document.getElementById('thMeta').textContent = p.meta;
+    document.getElementById('thCond').textContent = p.cond;
+
+    const { night, glow, solar } = todParams();
+    const m = theaterEngine === 'improved' ? p.imp() : p.cur;
+    const baseScene = baseSceneForMode(m);
+    const stops = skyStops(baseScene, night, glow, solar);
+    const topRgb = stops[0][1];
+    const lin = topRgb.map(c => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    const lum = 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+    const darkInk = !night && lum > 0.36;
+    const ui = document.getElementById('theaterUI');
+    ui.style.color = darkInk ? '#101823' : '#f4f7fa';
+    ui.style.textShadow = darkInk ? '0 1px 2px rgba(255,255,255,0.35)' : '0 1px 6px rgba(0,0,0,0.38)';
+    document.getElementById('thInkBadge').textContent =
+      `Ink verdict: ${darkInk ? 'DARK (#101823)' : 'LIGHT (#f4f7fa)'} · WCAG Y=${lum.toFixed(2)}`;
+    document.getElementById('thClock').textContent =
+      globalTod === 'night' ? '22:15' : globalTod === 'twilight' ? '17:48' : '14:20';
+  }
+
+  document.querySelectorAll('[data-tod]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      globalTod = btn.dataset.tod;
+      document.querySelectorAll('[data-tod]').forEach(b => b.setAttribute('aria-pressed', b === btn));
+      syncTheaterHeader();
+    });
+  });
+
+  const pauseBtn = document.getElementById('pauseBtn');
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    pauseBtn.setAttribute('aria-pressed', String(paused));
+    pauseBtn.textContent = paused ? 'Resume motion' : 'Pause motion';
+  });
+
+  document.querySelectorAll('#engineToggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      theaterEngine = btn.dataset.engine;
+      document.querySelectorAll('#engineToggle button').forEach(b => b.setAttribute('aria-pressed', b === btn));
+      syncTheaterHeader();
+    });
+  });
+
+  document.querySelectorAll('#windStyleToggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      theaterWindStyle = btn.dataset.windstyle;
+      document.querySelectorAll('#windStyleToggle button').forEach(b => b.setAttribute('aria-pressed', b === btn));
+    });
+  });
+
+  document.querySelectorAll('#theaterScenes .scene-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      theaterSceneKey = btn.dataset.tscene;
+      document.querySelectorAll('#theaterScenes .scene-btn').forEach(b => b.setAttribute('aria-selected', b === btn));
+      syncTheaterHeader();
+    });
+  });
+
+  syncTheaterHeader();
+
+  let simTime = 1.2;
+  let lastWall = performance.now();
+  function frame(now) {
+    const rawDt = Math.min(0.05, (now - lastWall) / 1000);
+    lastWall = now;
+    const dt = paused ? 0 : rawDt;
+    simTime += dt;
+
+    for (const s of sims) paintSim(s, simTime, dt);
+    const p = THEATER_PRESETS[theaterSceneKey] || THEATER_PRESETS.wind;
+    paintSim(theaterSim, simTime, dt, { mode: theaterEngine === 'improved' ? p.imp() : p.cur });
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

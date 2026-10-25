@@ -794,6 +794,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                 sky: skyPool,
                 radius: 14,
                 scrim: styleManager.dark ? null : [1, 1, 1, 0.42],
+                fxScale: 1,
             });
         });
         return skyArea;
