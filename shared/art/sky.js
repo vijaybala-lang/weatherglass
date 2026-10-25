@@ -1019,25 +1019,51 @@ function drawHail(cr, sky, width, height, dt) {
     }
 }
 
+/* Smoothly-tapered cubic Bezier limb helper for organic tree trunks & boughs */
+function drawSmoothLimb(cr, x0, y0, w0, cx1, cy1, cx2, cy2, x1, y1, w1) {
+    const dx0 = cx1 - x0, dy0 = cy1 - y0;
+    const len0 = Math.hypot(dx0, dy0) || 1;
+    const nx0 = -dy0 / len0, ny0 = dx0 / len0;
+
+    const dx1 = x1 - cx2, dy1 = y1 - cy2;
+    const len1 = Math.hypot(dx1, dy1) || 1;
+    const nx1 = -dy1 / len1, ny1 = dx1 / len1;
+
+    const dxc = cx2 - x0, dyc = cy2 - y0;
+    const lenc = Math.hypot(dxc, dyc) || 1;
+    const nxc = -dyc / lenc, nyc = dxc / lenc;
+    const wc = (w0 + w1) * 0.5;
+
+    cr.newPath();
+    cr.moveTo(x0 + nx0 * w0, y0 + ny0 * w0);
+    cr.curveTo(
+        cx1 + nxc * wc * 1.05, cy1 + nyc * wc * 1.05,
+        cx2 + nxc * wc * 0.75, cy2 + nyc * wc * 0.75,
+        x1 + nx1 * w1, y1 + ny1 * w1);
+    cr.arc(x1, y1, Math.max(0.4, w1), Math.atan2(ny1, nx1), Math.atan2(-ny1, -nx1));
+    cr.curveTo(
+        cx2 - nxc * wc * 0.75, cy2 - nyc * wc * 0.75,
+        cx1 - nxc * wc * 1.05, cy1 - nyc * wc * 1.05,
+        x0 - nx0 * w0, y0 - ny0 * w0);
+    cr.closePath();
+}
+
 /* Colored evergreen pine with brown bark trunk and two-tone green bough tiers */
 function drawColoredPine(cr, x, baseY, treeHeight, palette, bend = 0) {
     cr.save();
-    const { trunk, darkGreen, lightGreen } = palette;
+    const { trunk, trunkHi, darkGreen, midGreen, lightGreen } = palette;
     const trunkW = Math.max(1.8, treeHeight * 0.048);
 
-    cr.setSourceRGBA(trunk[0], trunk[1], trunk[2], 1.0);
-    cr.newPath();
-    cr.moveTo(x - trunkW * 1.15, baseY);
-    cr.curveTo(
-        x + bend * 0.14, baseY - treeHeight * 0.28,
-        x + bend * 0.42, baseY - treeHeight * 0.58,
-        x + bend * 0.80, baseY - treeHeight * 0.86);
-    cr.lineTo(x + bend * 0.80 + trunkW * 0.55, baseY - treeHeight * 0.86);
-    cr.curveTo(
-        x + bend * 0.42 + trunkW, baseY - treeHeight * 0.58,
-        x + bend * 0.14 + trunkW, baseY - treeHeight * 0.28,
-        x + trunkW * 1.15, baseY);
-    cr.closePath();
+    drawSmoothLimb(
+        cr,
+        x, baseY + 3, trunkW * 0.85,
+        x + bend * 0.14, baseY - treeHeight * 0.24,
+        x + bend * 0.38, baseY - treeHeight * 0.52,
+        x + bend * 0.72, baseY - treeHeight * 0.80, trunkW * 0.25);
+    const tg = new Cairo.LinearGradient(x - trunkW, baseY, x + trunkW, baseY);
+    tg.addColorStopRGBA(0, trunkHi[0], trunkHi[1], trunkHi[2], 1.0);
+    tg.addColorStopRGBA(1, trunk[0], trunk[1], trunk[2], 1.0);
+    cr.setSource(tg);
     cr.fill();
 
     const tiers = 5;
@@ -1053,10 +1079,10 @@ function drawColoredPine(cr, x, baseY, treeHeight, palette, bend = 0) {
         const tiltY = (topShift - botShift) * 0.36;
 
         const g = new Cairo.LinearGradient(
-            x + topShift, topY, x + botShift, botY + tiltY + 4);
+            x + botShift - hw, topY, x + botShift + hw, botY + tiltY + 4);
         g.addColorStopRGBA(0, lightGreen[0], lightGreen[1], lightGreen[2], 1.0);
-        g.addColorStopRGBA(0.65, darkGreen[0], darkGreen[1], darkGreen[2], 1.0);
-        g.addColorStopRGBA(1, darkGreen[0] * 0.82, darkGreen[1] * 0.82, darkGreen[2] * 0.82, 1.0);
+        g.addColorStopRGBA(0.50, midGreen[0], midGreen[1], midGreen[2], 1.0);
+        g.addColorStopRGBA(1, darkGreen[0], darkGreen[1], darkGreen[2], 1.0);
         cr.setSource(g);
 
         cr.newPath();
@@ -1079,88 +1105,122 @@ function drawColoredPine(cr, x, baseY, treeHeight, palette, bend = 0) {
     cr.restore();
 }
 
-/* Colored deciduous broadleaf tree with forked brown trunk/branches and fluttering green foliage crown */
+/* Dappled oak/birch broadleaf tree with smooth curved trunk/boughs and fine micro-leaf clusters */
 function drawDeciduousTree(cr, x, baseY, treeHeight, palette, bend = 0, time = 0, seed = 1) {
     cr.save();
-    const { trunk, trunkHi, shadeLeaf, midLeaf, litLeaf } = palette;
-    const trunkW = Math.max(2.2, treeHeight * 0.062);
-    const forkX = x + bend * 0.32;
-    const forkY = baseY - treeHeight * 0.42;
+    const { trunk, trunkHi, shadeLeaf, midLeaf, litLeaf, sunLeaf } = palette;
+    const r = seededRand(seed * 131 + 7);
+    const treeW = treeHeight * 0.35;
+    const baseW = Math.max(2.2, treeW * 0.14);
+    const forkY = baseY - treeHeight * 0.38;
+    const forkX = x + bend * 0.28;
 
-    const tg = new Cairo.LinearGradient(x - trunkW, forkY, x + trunkW, forkY);
-    tg.addColorStopRGBA(0, trunkHi[0], trunkHi[1], trunkHi[2], 1.0);
-    tg.addColorStopRGBA(0.6, trunk[0], trunk[1], trunk[2], 1.0);
-    tg.addColorStopRGBA(1, trunk[0] * 0.78, trunk[1] * 0.78, trunk[2] * 0.78, 1.0);
-    cr.setSource(tg);
-    cr.newPath();
-    cr.moveTo(x - trunkW * 1.15, baseY);
-    cr.curveTo(
-        x - trunkW * 0.7, baseY - treeHeight * 0.18,
-        forkX - trunkW * 0.65, baseY - treeHeight * 0.30,
-        forkX - trunkW * 0.55, forkY);
-    cr.lineTo(forkX + trunkW * 0.55, forkY);
-    cr.curveTo(
-        forkX + trunkW * 0.65, baseY - treeHeight * 0.30,
-        x + trunkW * 0.7, baseY - treeHeight * 0.18,
-        x + trunkW * 1.15, baseY);
-    cr.closePath();
-    cr.fill();
-
-    cr.setLineCap(Cairo.LineCap.ROUND);
-    const branches = [
-        [-0.22, 0.70, 0.55],
-        [ 0.04, 0.80, 0.62],
-        [ 0.24, 0.66, 0.50],
+    const clusters = [
+        [-treeW * 0.46, -treeHeight * 0.60, treeW * 0.36, treeHeight * 0.11, 18],
+        [ treeW * 0.50, -treeHeight * 0.56, treeW * 0.38, treeHeight * 0.11, 18],
+        [-treeW * 0.14, -treeHeight * 0.76, treeW * 0.46, treeHeight * 0.13, 24],
+        [ treeW * 0.24, -treeHeight * 0.74, treeW * 0.44, treeHeight * 0.12, 22],
+        [ treeW * 0.04, -treeHeight * 0.88, treeW * 0.38, treeHeight * 0.11, 20],
     ];
-    for (const [dxFrac, hFrac, wMul] of branches) {
-        const bx = x + dxFrac * treeHeight + bend * (hFrac ** 1.35);
-        const by = baseY - treeHeight * hFrac;
-        cr.setLineWidth(trunkW * wMul);
-        cr.setSourceRGBA(trunk[0], trunk[1], trunk[2], 1.0);
-        cr.newPath();
-        cr.moveTo(forkX, forkY);
-        cr.curveTo(
-            (forkX + bx) * 0.5, (forkY + by) * 0.5 - 3,
-            bx - bend * 0.08, by + 4,
-            bx, by);
-        cr.stroke();
+
+    const sScale = treeHeight / 52;
+    const leafAngle = 0.18 + (bend / treeHeight) * 0.55;
+
+    // 1. Deep shadow leaf dabs behind upper branches
+    cr.setSourceRGBA(shadeLeaf[0], shadeLeaf[1], shadeLeaf[2], 1.0);
+    for (let cIdx = 0; cIdx < clusters.length; cIdx++) {
+        const [ox, oy, rx, ry, count] = clusters[cIdx];
+        const sm = (-oy / treeHeight) ** 1.25;
+        const flutter = Math.sin(time * 4.6 + seed * 1.9 + cIdx * 1.4) * 1.2 * sScale;
+        const cx = x + bend * sm + ox + flutter;
+        const cy = baseY + oy + 2.0 * sScale;
+        for (let i = 0; i < count; i++) {
+            const a = r(0, TWO_PI);
+            const rad = Math.sqrt(r(0, 1));
+            const lx = cx + Math.cos(a) * rad * rx;
+            const ly = cy + Math.sin(a) * rad * ry;
+            const dabR = r(2.4, 4.0) * sScale;
+            cr.save();
+            cr.translate(lx, ly);
+            cr.rotate(leafAngle + r(-0.18, 0.18));
+            cr.scale(1.38, 0.66);
+            cr.arc(0, 0, dabR, 0, TWO_PI);
+            cr.fill();
+            cr.restore();
+        }
     }
 
-    const blobs = [
-        [-0.24, 0.56, 0.18, 0.14, 0],
-        [ 0.22, 0.54, 0.19, 0.14, 0],
-        [-0.08, 0.52, 0.21, 0.15, 0],
-        [ 0.10, 0.52, 0.20, 0.15, 0],
-        [-0.20, 0.68, 0.20, 0.16, 1],
-        [ 0.20, 0.66, 0.21, 0.16, 1],
-        [ 0.00, 0.66, 0.24, 0.18, 1],
-        [-0.10, 0.78, 0.20, 0.15, 1],
-        [ 0.10, 0.76, 0.20, 0.15, 1],
-        [-0.04, 0.85, 0.18, 0.14, 2],
-        [ 0.12, 0.81, 0.17, 0.13, 2],
-    ];
-    for (let k = 0; k < blobs.length; k++) {
-        const [dxF, hF, rxF, ryF, tier] = blobs[k];
-        const flutter = Math.sin(time * 5.2 + seed * 2.1 + k * 1.3) * 1.8;
-        const cx = x + dxF * treeHeight + bend * (hF ** 1.35) + flutter;
-        const cy = baseY - treeHeight * hF + Math.abs(bend) * 0.08 * (dxF > 0 ? 1 : -0.5);
-        const rx = rxF * treeHeight * (1 + Math.min(0.18, Math.abs(bend) / treeHeight * 0.4));
-        const ry = ryF * treeHeight;
-        const col = tier === 2 ? litLeaf : (tier === 1 ? midLeaf : shadeLeaf);
-        const colBot = tier === 2 ? midLeaf : shadeLeaf;
+    // 2. Smooth curved trunk & graceful S-curve primary boughs
+    const bg = new Cairo.LinearGradient(x - baseW * 1.5, baseY, x + baseW * 1.5, baseY);
+    bg.addColorStopRGBA(0, trunkHi[0], trunkHi[1], trunkHi[2], 1.0);
+    bg.addColorStopRGBA(0.7, trunk[0], trunk[1], trunk[2], 1.0);
+    bg.addColorStopRGBA(1, trunk[0] * 0.82, trunk[1] * 0.82, trunk[2] * 0.82, 1.0);
+    cr.setSource(bg);
 
-        cr.save();
-        cr.translate(cx, cy);
-        cr.rotate(Math.min(0.28, bend / treeHeight * 0.55));
-        cr.scale(rx / ry, 1);
-        const cg = new Cairo.RadialGradient(-ry * 0.2, -ry * 0.25, ry * 0.1, 0, 0, ry);
-        cg.addColorStopRGBA(0, col[0], col[1], col[2], 0.98);
-        cg.addColorStopRGBA(0.82, colBot[0], colBot[1], colBot[2], 0.95);
-        cg.addColorStopRGBA(1, colBot[0] * 0.88, colBot[1] * 0.88, colBot[2] * 0.88, 0.0);
-        cr.setSource(cg);
-        cr.arc(0, 0, ry, 0, TWO_PI);
+    drawSmoothLimb(
+        cr,
+        x, baseY + 3 * sScale, baseW * 0.65,
+        x + bend * 0.08, baseY - treeHeight * 0.14,
+        x + bend * 0.18, baseY - treeHeight * 0.25,
+        forkX, forkY, baseW * 0.45);
+    cr.fill();
+
+    const boughs = [
+        [
+            forkX - baseW * 0.12, forkY + 2 * sScale, baseW * 0.30,
+            forkX - treeW * 0.22, forkY - treeHeight * 0.08,
+            forkX - treeW * 0.38 + bend * 0.22, forkY - treeHeight * 0.16,
+            x + bend * 0.56 - treeW * 0.44, baseY - treeHeight * 0.59, 0.7 * sScale,
+        ],
+        [
+            forkX - baseW * 0.04, forkY + 1 * sScale, baseW * 0.32,
+            forkX + bend * 0.12 - treeW * 0.06, forkY - treeHeight * 0.15,
+            forkX + bend * 0.28 - treeW * 0.12, forkY - treeHeight * 0.27,
+            x + bend * 0.74 - treeW * 0.14, baseY - treeHeight * 0.75, 0.65 * sScale,
+        ],
+        [
+            forkX + baseW * 0.06, forkY + 1 * sScale, baseW * 0.28,
+            forkX + bend * 0.16 + treeW * 0.10, forkY - treeHeight * 0.14,
+            forkX + bend * 0.32 + treeW * 0.20, forkY - treeHeight * 0.25,
+            x + bend * 0.78 + treeW * 0.22, baseY - treeHeight * 0.73, 0.65 * sScale,
+        ],
+        [
+            forkX + baseW * 0.12, forkY + 2 * sScale, baseW * 0.28,
+            forkX + treeW * 0.24 + bend * 0.18, forkY - treeHeight * 0.06,
+            forkX + treeW * 0.44 + bend * 0.34, forkY - treeHeight * 0.14,
+            x + bend * 0.80 + treeW * 0.48, baseY - treeHeight * 0.55, 0.7 * sScale,
+        ],
+    ];
+    for (const b of boughs) {
+        drawSmoothLimb(cr, b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9]);
         cr.fill();
-        cr.restore();
+    }
+
+    // 3. Mid-tone & sunlit dappled micro-leaf clusters
+    for (let cIdx = 0; cIdx < clusters.length; cIdx++) {
+        const [ox, oy, rx, ry, count] = clusters[cIdx];
+        const sm = (-oy / treeHeight) ** 1.25;
+        const flutter = Math.sin(time * 4.6 + seed * 1.9 + cIdx * 1.4) * 1.2 * sScale;
+        const cx = x + bend * sm + ox + flutter;
+        const cy = baseY + oy;
+        for (let i = 0; i < count; i++) {
+            const a = r(0, TWO_PI);
+            const rad = Math.sqrt(r(0, 1)) * 0.90;
+            const lx = cx + Math.cos(a) * rad * rx;
+            const ly = cy + Math.sin(a) * rad * ry;
+            const dabR = r(2.1, 3.6) * sScale;
+            const isUpperLeft = Math.sin(a) < -0.15 || Math.cos(a) < -0.25;
+            const isCrest = cIdx === 4 && Math.sin(a) < 0;
+            const c = isCrest ? sunLeaf : (isUpperLeft ? litLeaf : midLeaf);
+            cr.setSourceRGBA(c[0], c[1], c[2], 1.0);
+            cr.save();
+            cr.translate(lx, ly);
+            cr.rotate(leafAngle + r(-0.18, 0.18));
+            cr.scale(1.4, 0.65);
+            cr.arc(0, 0, dabR, 0, TWO_PI);
+            cr.fill();
+            cr.restore();
+        }
     }
     cr.restore();
 }
@@ -1192,55 +1252,68 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
         cr.stroke();
     }
 
-    // 2. Swaying mixed woodland (evergreens + deciduous trees with brown trunks & green crowns)
+    // 2. Swaying mixed woodland on rolling hilly terrain (colored in day, silhouette at night)
     if (sky.leaves.length) {
+        const backSil = [0.09, 0.15, 0.23];
+        const frontSil = [0.05, 0.09, 0.16];
         const treeLayers = [
             {
                 baseY: 0.29 * height, offset: 0.5,
-                hillRgb: night ? [0.10, 0.17, 0.18] : [0.27, 0.42, 0.35],
+                hillRgb: night ? backSil : [0.24, 0.39, 0.33],
                 pinePalette: {
-                    trunk: night ? [0.20, 0.14, 0.11] : [0.40, 0.28, 0.20],
-                    darkGreen: night ? [0.10, 0.20, 0.18] : [0.22, 0.39, 0.32],
-                    lightGreen: night ? [0.15, 0.28, 0.24] : [0.31, 0.50, 0.40],
+                    trunk: night ? backSil : [0.25, 0.18, 0.13],
+                    trunkHi: night ? backSil : [0.36, 0.26, 0.19],
+                    darkGreen: night ? backSil : [0.13, 0.23, 0.19],
+                    midGreen: night ? backSil : [0.20, 0.32, 0.25],
+                    lightGreen: night ? backSil : [0.27, 0.41, 0.31],
                 },
                 decidPalette: {
-                    trunk: night ? [0.20, 0.14, 0.11] : [0.42, 0.29, 0.20],
-                    trunkHi: night ? [0.26, 0.19, 0.15] : [0.52, 0.37, 0.26],
-                    shadeLeaf: night ? [0.11, 0.21, 0.17] : [0.24, 0.42, 0.30],
-                    midLeaf: night ? [0.16, 0.28, 0.22] : [0.33, 0.53, 0.35],
-                    litLeaf: night ? [0.21, 0.34, 0.26] : [0.43, 0.62, 0.39],
+                    trunk: night ? backSil : [0.25, 0.18, 0.13],
+                    trunkHi: night ? backSil : [0.37, 0.27, 0.19],
+                    shadeLeaf: night ? backSil : [0.13, 0.23, 0.16],
+                    midLeaf: night ? backSil : [0.19, 0.33, 0.22],
+                    litLeaf: night ? backSil : [0.27, 0.42, 0.27],
+                    sunLeaf: night ? backSil : [0.36, 0.52, 0.31],
                 },
-                treeScale: 1.15 * scale, seed: 37, count: 7, minH: 46, maxH: 66, bendMul: 0.80,
+                treeScale: 1.05 * scale, seed: 37, count: 8, minH: 40, maxH: 56, bendMul: 0.80,
             },
             {
                 baseY: 0.35 * height, offset: 0.0,
-                hillRgb: night ? [0.08, 0.14, 0.14] : [0.21, 0.35, 0.27],
+                hillRgb: night ? frontSil : [0.18, 0.32, 0.25],
                 pinePalette: {
-                    trunk: night ? [0.22, 0.14, 0.09] : [0.44, 0.28, 0.16],
-                    darkGreen: night ? [0.09, 0.20, 0.15] : [0.18, 0.38, 0.26],
-                    lightGreen: night ? [0.15, 0.29, 0.21] : [0.28, 0.52, 0.34],
+                    trunk: night ? frontSil : [0.20, 0.13, 0.09],
+                    trunkHi: night ? frontSil : [0.31, 0.20, 0.14],
+                    darkGreen: night ? frontSil : [0.09, 0.18, 0.14],
+                    midGreen: night ? frontSil : [0.14, 0.27, 0.20],
+                    lightGreen: night ? frontSil : [0.20, 0.35, 0.25],
                 },
                 decidPalette: {
-                    trunk: night ? [0.24, 0.15, 0.10] : [0.46, 0.30, 0.18],
-                    trunkHi: night ? [0.32, 0.21, 0.14] : [0.58, 0.39, 0.24],
-                    shadeLeaf: night ? [0.11, 0.22, 0.15] : [0.22, 0.43, 0.24],
-                    midLeaf: night ? [0.16, 0.30, 0.20] : [0.32, 0.56, 0.29],
-                    litLeaf: night ? [0.22, 0.38, 0.24] : [0.45, 0.67, 0.34],
+                    trunk: night ? frontSil : [0.20, 0.13, 0.09],
+                    trunkHi: night ? frontSil : [0.31, 0.21, 0.15],
+                    shadeLeaf: night ? frontSil : [0.08, 0.17, 0.12],
+                    midLeaf: night ? frontSil : [0.14, 0.27, 0.17],
+                    litLeaf: night ? frontSil : [0.21, 0.38, 0.22],
+                    sunLeaf: night ? frontSil : [0.31, 0.47, 0.26],
                 },
-                treeScale: 1.42 * scale, seed: 53, count: 7, minH: 50, maxH: 72, bendMul: 1.05,
+                treeScale: 1.25 * scale, seed: 53, count: 8, minH: 44, maxH: 60, bendMul: 1.05,
             },
         ];
-        const crownTop = 0.06 * height;
-        const skirtBot = 0.45 * height;
+        const crownTop = 0;
+        const skirtBot = 0.46 * height;
         cr.pushGroup();
         for (const layer of treeLayers) {
             const r = seededRand(layer.seed);
-            cr.setSourceRGBA(layer.hillRgb[0], layer.hillRgb[1], layer.hillRgb[2], 1.0);
+            const hillGrad = new Cairo.LinearGradient(0, layer.baseY - 10 * scale, 0, skirtBot);
+            hillGrad.addColorStopRGBA(
+                0, layer.hillRgb[0] * 1.08, layer.hillRgb[1] * 1.08, layer.hillRgb[2] * 1.08, 1.0);
+            hillGrad.addColorStopRGBA(
+                1, layer.hillRgb[0] * 0.88, layer.hillRgb[1] * 0.88, layer.hillRgb[2] * 0.88, 1.0);
+            cr.setSource(hillGrad);
             cr.newPath();
             cr.moveTo(0, skirtBot);
-            for (let x = 0; x <= width; x += 8) {
+            for (let x = 0; x <= width; x += 6) {
                 const u = x / width;
-                const y = layer.baseY - Math.sin(u * Math.PI * 1.8 + layer.seed) * 7 * scale;
+                const y = layer.baseY - Math.sin(u * Math.PI * 1.8 + layer.seed) * 8 * scale;
                 cr.lineTo(x, y);
             }
             cr.lineTo(width, skirtBot);
@@ -1251,14 +1324,14 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
                 const tx = ((i + layer.offset) / (layer.count - 1)) * width + r(-4, 4) * scale;
                 const u = tx / width;
                 const ridgeY = layer.baseY -
-                    Math.sin(u * Math.PI * 1.8 + layer.seed) * 7 * scale;
+                    Math.sin(u * Math.PI * 1.8 + layer.seed) * 8 * scale;
                 const th = r(layer.minH, layer.maxH) * layer.treeScale;
                 const gust = 0.55 + 0.32 * Math.sin(time * 2.3 - u * 2.6 + layer.seed) +
                     0.18 * Math.sin(time * 5.1 - u * 4.2);
-                const bend = (6 + gust * 10) * layer.bendMul * scale;
-                const isDeciduous = (i + (layer.seed % 2)) % 2 === 1;
+                const bend = (5 + gust * 8) * layer.bendMul * scale;
+                const isDeciduous = (i + (layer.seed % 2)) % 3 === 1;
                 if (isDeciduous) {
-                    drawDeciduousTree(cr, tx, ridgeY + 3 * scale, th * 0.92,
+                    drawDeciduousTree(cr, tx, ridgeY + 3 * scale, th * 0.94,
                         layer.decidPalette, bend, time, i + layer.seed);
                 } else {
                     drawColoredPine(cr, tx, ridgeY + 3 * scale, th,
@@ -1267,10 +1340,11 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
             }
         }
         cr.setOperator(Cairo.Operator.DEST_IN);
-        const fade = new Cairo.LinearGradient(0, crownTop, 0, skirtBot);
-        fade.addColorStopRGBA(0, 0, 0, 0, 1.0);
-        fade.addColorStopRGBA(0.68, 0, 0, 0, 0.95);
-        fade.addColorStopRGBA(0.84, 0, 0, 0, 0.42);
+        const fade = new Cairo.LinearGradient(0, 0.28 * height, 0, skirtBot);
+        fade.addColorStopRGBA(0.0, 0, 0, 0, 1.0);
+        fade.addColorStopRGBA(0.42, 0, 0, 0, 0.96);
+        fade.addColorStopRGBA(0.75, 0, 0, 0, 0.32);
+        fade.addColorStopRGBA(0.95, 0, 0, 0, 0.0);
         fade.addColorStopRGBA(1.0, 0, 0, 0, 0.0);
         cr.setSource(fade);
         cr.rectangle(0, crownTop, width, skirtBot - crownTop);
@@ -1278,7 +1352,7 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
 
         cr.popGroupToSource();
         cr.setOperator(Cairo.Operator.OVER);
-        cr.paintWithAlpha(0.92);
+        cr.paintWithAlpha(night ? 0.86 : 0.94);
     }
 
     // 3. Larger 3D-tumbling wind-borne leaves with petiole stem + central midrib vein
