@@ -4,8 +4,10 @@
  * silently turned every daytime card into a "night" card. These tests
  * pin the space itself and the verdicts it drives.
  */
+import Cairo from 'gi://cairo';
+import GdkPixbuf from 'gi://GdkPixbuf';
 import { lumOf, pickInk, INK_DARK, tileGlyphPale, GLYPH_BAR } from '../chart.js';
-import { bodyOf } from '../sky.js';
+import { bodyOf, createSky, paintSky } from '../sky.js';
 import { chromeVerdicts, compositeGround } from '../ink-policy.js';
 import { file, test, ok, near, report, lumOfPlain } from './harness.mjs';
 
@@ -142,6 +144,62 @@ test('off-disc grounds are plain scrimmed sky', () => {
     const noBody = compositeGround(daySkyTop, solidDarkScrim, null, 0);
     far.forEach((c, i) => near(c, noBody[i], 1e-9));
     near(noBody[0], daySkyTop[0] * 0.22 + 0.03 * 0.78, 1e-9);
+});
+
+// -- windy clear night / golden hour (woodland + zenith stars + 45% moon) --
+
+test('wind night: moonlit woodland separates from twilight sky, zenith stars + 45% moon only on clear sky', () => {
+    ok(bodyOf('wind', true, 330, 430, 0.96, null, 0.5) === null,
+        'wind 45% moon must not trigger dark headerRight ink on night sky');
+    ok(bodyOf('wind', false, 330, 430, 0, 0.95) === null,
+        'wind day has no sun disc');
+
+    const W = 330, H = 430;
+    const sky = createSky();
+    const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, W, H);
+    const cr = new Cairo.Context(surf);
+    paintSky(cr, {
+        w: W, h: H, time: 1.1, scene: 'wind', night: true,
+        glow: 0.965, phase: 0.25, code: 0, sky, fxScale: 1,
+    });
+    cr.$dispose();
+    ok(sky.stars.length === 35, `expected 35 wind stars on 330x430 card, got ${sky.stars.length}`);
+    for (const s of sky.stars)
+        ok(s.y <= 0.29 * H + 0.01, `wind star at y=${s.y} bled into woodland below 0.29*H`);
+    const expectedMoonR = (64 * (H / 420) * 0.45).toFixed(1);
+    ok(sky.moonSprite && sky.moonSprite.key.startsWith(`${expectedMoonR}|`),
+        `expected 45% moon sprite (${expectedMoonR}), got ${sky.moonSprite ? sky.moonSprite.key : 'none'}`);
+
+    const tmpFx = '/tmp/wg-test-wind-fx.png';
+    const tmpBg = '/tmp/wg-test-wind-bg.png';
+    sky.fx.writeToPNG(tmpFx);
+    sky.cache.writeToPNG(tmpBg);
+    const pbFx = GdkPixbuf.Pixbuf.new_from_file(tmpFx);
+    const pbBg = GdkPixbuf.Pixbuf.new_from_file(tmpBg);
+    const pxFx = pbFx.get_pixels(), pxBg = pbBg.get_pixels();
+    const stride = pbFx.get_rowstride(), nChan = pbFx.get_n_channels();
+    let separatedPx = 0;
+    for (let y = 125; y <= 155; y++) {
+        for (let x = 20; x < W - 20; x++) {
+            const idx = y * stride + x * nChan;
+            const dG = (pxFx[idx + 1] - pxBg[idx + 1]) / 255;
+            const dB = (pxFx[idx + 2] - pxBg[idx + 2]) / 255;
+            if (dG > 0.06 || dB > 0.06)
+                separatedPx++;
+        }
+    }
+    ok(separatedPx > 1500,
+        `moonlit woodland must visibly separate from twilight backdrop (got ${separatedPx} px)`);
+
+    const skyOvercast = createSky();
+    const surf2 = new Cairo.ImageSurface(Cairo.Format.ARGB32, W, H);
+    const cr2 = new Cairo.Context(surf2);
+    paintSky(cr2, {
+        w: W, h: H, time: 1.1, scene: 'wind', night: true,
+        glow: 0.965, phase: 0.25, code: 3, sky: skyOvercast, fxScale: 1,
+    });
+    cr2.$dispose();
+    ok(skyOvercast.moonSprite === null, 'overcast wind night must not paint moon');
 });
 
 report('ink');
