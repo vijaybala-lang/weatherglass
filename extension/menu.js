@@ -777,19 +777,16 @@ export class ForecastPanel {
         const state = this._state;
         if (!state)
             return;
-        let scene, night, code;
+        let scene, night;
         if (this._day === 0) {
-            code = state.current.code;
-            scene = (state.effective ?? sceneFor(code, state.current.isDay)).scene;
+            scene = (state.effective ?? sceneFor(state.current.code, state.current.isDay)).scene;
             night = !state.current.isDay;
         } else {
-            code = state.daily[this._day].code;
-            scene = sceneFor(code, true).scene;
+            scene = sceneFor(state.daily[this._day].code, true).scene;
             night = false;
         }
         this._skyOpts.scene = scene;
         this._skyOpts.night = night;
-        this._skyOpts.code = code;
         this._skyOpts.phase = Number.isFinite(state.phase) ? state.phase : null;
         this._sunCoords = Number.isFinite(state.latitude) && Number.isFinite(state.longitude)
             ? [state.latitude, state.longitude] : null;
