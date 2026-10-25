@@ -208,6 +208,15 @@ def painted(path):
         (int(w * 0.15), int(h * 0.15), int(w * 0.85), int(h * 0.85)))
     return ImageStat.Stat(crop).stddev[0] >= 3.0
 
+def chart_painted(path):
+    # the hourly chart band (y=35%..60%) carries the curve, value labels,
+    # weather strip glyphs, and hour labels (stddev ~25-30). An empty
+    # daySlice (e.g. unpopulated future day) leaves only the sky gradient
+    # (~5.6), which must fail the smoke lock.
+    crop = Image.open(path).convert("L").crop(
+        (int(w * 0.08), int(h * 0.35), int(w * 0.92), int(h * 0.60)))
+    return ImageStat.Stat(crop).stddev[0] >= 12.0
+
 painted_n, ramp_n = 0, 0
 for fr in frames:
     t, path = fr["t"], f"{filmdir}/frame_{fr['f']:03d}.png"
@@ -227,10 +236,16 @@ for fr in frames:
               (close_ts and t >= close_ts[-1] * 1000)
     if in_ramp:
         ramp_n += 1
-    elif painted(path):
-        painted_n += 1
-    else:
+        if close_ts and t >= close_ts[-1] * 1000 + 250:
+            bg_std = ImageStat.Stat(im.convert("L")).stddev[0]
+            if bg_std >= 3.0:
+                fail.append(f"frame {fr['f']} (t={t}ms): closed frame leaked stage window (stddev={bg_std:.2f} >= 3.0)")
+    elif not painted(path):
         fail.append(f"frame {fr['f']} (t={t}ms): menu rect BLANK -- nothing painted")
+    elif not chart_painted(path):
+        fail.append(f"frame {fr['f']} (t={t}ms): hourly chart band BLANK after day/metric switch")
+    else:
+        painted_n += 1
 print(f"==> PNGs: {len(frames)} total, {painted_n} menu-painted, "
       f"{ramp_n} fade-ramp (validity-only)")
 if painted_n < int(min_frames):

@@ -34,6 +34,57 @@ const TAIL_MS = 60;      // grace after the final fade before the last frame
 const wait = ms => new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms,
     () => (r(), GLib.SOURCE_REMOVE)));
 
+/* card-mode's buildData only synthesises the first 24h (day 0). Film mode
+ * taps future day tiles (beat 4 -> day #2), so extend state.hourly across
+ * all 8 daily dates using a local LCG that leaves Math.random untouched. */
+function extendHourlyForAllDays(state, weather, fx) {
+    const ms = fx.ms ?? Date.parse(fx.local);
+    const wall = fx.tzMin !== undefined ? fx.tzMin * 60000 : (() => {
+        const m = (fx.local ?? '').match(/([+-])(\d{2}):(\d{2})$/);
+        return m ? (m[1] === '-' ? -1 : 1) * (+m[2] * 60 + +m[3]) * 60000 : 0;
+    })();
+    const p = n => String(n).padStart(2, '0');
+    const stampHour = t => {
+        const d = new Date(t + wall);
+        return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`
+            + `T${p(d.getUTCHours())}:00`;
+    };
+    const dailyByDate = new Map(state.daily.map(d => [d.date, d]));
+    let r = 24681357 >>> 0;
+    const rand = () => {
+        r = (r * 1664525 + 1013904223) >>> 0;
+        return r / 4294967296;
+    };
+    for (let h = 24; h < 24 * 9; h += 24) {
+        const raw = [];
+        for (let k = 0; k < 24; k++) {
+            const when = ms + (h + k) * 3600000;
+            const alt = weather.sunGeometry(fx.lat, fx.lon, when).altitude;
+            raw.push({when, s: Math.sin((alt + 5) / 95 * Math.PI / 2)});
+        }
+        const sMin = Math.min(...raw.map(x => x.s));
+        const sSpan = Math.max(1e-6, Math.max(...raw.map(x => x.s)) - sMin);
+        for (const {when, s} of raw) {
+            const isoHour = stampHour(when);
+            const dayEntry = dailyByDate.get(isoHour.slice(0, 10))
+                ?? state.daily[Math.min(state.daily.length - 1, Math.floor(h / 24))];
+            const diurnal = (s - sMin) / sSpan;
+            const temp = +(dayEntry.tmin + (dayEntry.tmax - dayEntry.tmin) * diurnal).toFixed(1);
+            const code = dayEntry.code;
+            const wet = code >= 51 && code <= 99;
+            const precip = wet ? 35 + Math.round(rand() * 50)
+                : code >= 2 ? 5 + Math.round(rand() * 20)
+                : Math.round(rand() * 8);
+            const wind = 6 + Math.round(rand() * 14);
+            state.hourly.time.push(isoHour);
+            state.hourly.temp.push(temp);
+            state.hourly.precipProb.push(precip);
+            state.hourly.wind.push(wind);
+            state.hourly.code.push(code);
+        }
+    }
+}
+
 /**
  * Shoot the demo film for one fixture + beat sheet.
  * beats: [{t, do, arg}] -- t in seconds from enable(); `do` is one of
@@ -98,12 +149,14 @@ export async function shootFilm({fixture, beats, cssPath, pngFor, captureRegion}
     const host = new St.Widget({
         style_class: 'wg-probe-host',
         layout_manager: new Clutter.BinLayout(),
-        opacity: 0,                     // the menu opens on the first beat
     });
+    panel.actor.opacity = 0;            // the menu opens on the first beat; host stays opaque (#161616)
     host.add_child(panel.actor);
     Main.uiGroup.add_child(host);
     host.set_position(100, 120);        // clear of the topbar's shadow edge
-    panel.render(buildState(weather, moon, fx));
+    const state = buildState(weather, moon, fx);
+    extendHourlyForAllDays(state, weather, fx);
+    panel.render(state);
 
     await wait(500);       // one layout + several paint cycles (card mode's 400 + headroom):
                            // also primes the first composited frame
@@ -121,7 +174,7 @@ export async function shootFilm({fixture, beats, cssPath, pngFor, captureRegion}
         const t0 = GLib.get_monotonic_time();
         for (;;) {
             const p = Math.min(1, (GLib.get_monotonic_time() - t0) / (FADE_MS * 1000));
-            host.opacity = Math.round(from + (to - from) * p);
+            panel.actor.opacity = Math.round(from + (to - from) * p);
             if (p >= 1)
                 return;
             await wait(16);
