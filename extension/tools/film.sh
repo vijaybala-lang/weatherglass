@@ -167,7 +167,7 @@ else
         # the PNG sequence at the measured capture rate (frames / (endMs / 1000))
         # and emit a standard 30 fps stream matching the beat sheet's real duration.
         IN_FPS="$FPS"
-        if [ "$WORLD" = 1 ] && [ -f "${OUT}.final" ]; then
+        if { [ "$WORLD" = 1 ] || [ -n "${WG_FILM_BEATS:-}" ]; } && [ -f "${OUT}.final" ]; then
             IN_FPS="$(python3 -c "import json; r=json.load(open('${OUT}.final')); print(f'{len(r[\"frames\"]) / (r[\"endMs\"] / 1000.0):.4f}')")"
         fi
         echo "==> encode: ffmpeg -framerate $IN_FPS -r $FPS -> $MP4 (encoder $ENC)"

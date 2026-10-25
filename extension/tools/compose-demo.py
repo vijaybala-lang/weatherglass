@@ -39,6 +39,17 @@ DEFAULT_SEGMENTS = (
     ('golden', 'demo-berlin-golden'),
     ('fullmoon', 'demo-berlin-fullmoon'),
 )
+ALL_CONDITIONS = (
+    'clear', 'wind', 'partly', 'cloud', 'fog',
+    'drizzle', 'rain', 'showers', 'freezing', 'sleet',
+    'snow', 'grains', 'snowshowers', 'storm', 'hail', 'unknown',
+)
+ALL_CONDITIONS_SEGMENTS = tuple(
+    (f'{cond}-{slot}', f'cov-{cond}-{slot}')
+    for slot in ('day', 'night')
+    for cond in ALL_CONDITIONS
+)
+MAX_BATCH_SEGMENTS = 16
 
 
 @dataclass
@@ -99,12 +110,15 @@ def parse_args(argv=None):
                    help='GIF path (default: <workdir>/weatherglass-demo-transitions.gif)')
     p.add_argument('--segment', action='append', metavar='NAME=FIXTURE',
                    help='segment in sequence order; repeat to replace the default arc')
-    p.add_argument('--fps', type=int, default=12, help='GIF frames per second')
+    p.add_argument('--all-conditions', '--day-night', action='store_true',
+                   dest='all_conditions',
+                   help='compose all 16 supported weather conditions in day and night modes')
+    p.add_argument('--fps', type=int, default=None, help='GIF/MP4 frames per second')
     p.add_argument('--width', type=int, default=300,
                    help='output width in pixels (0 keeps the capture width)')
-    p.add_argument('--segment-seconds', type=float, default=2.5,
+    p.add_argument('--segment-seconds', type=float, default=None,
                    help='full-strength playback seconds per segment')
-    p.add_argument('--transition-seconds', type=float, default=0.8,
+    p.add_argument('--transition-seconds', type=float, default=None,
                    help='crossfade seconds between adjacent segments')
     p.add_argument('--intro-seconds', type=float, default=0.4,
                    help='opening fade from black')
@@ -132,7 +146,22 @@ def parse_args(argv=None):
     mode.add_argument('--force-shoot', action='store_true',
                       help='recapture every segment even if frames exist')
     args = p.parse_args(argv)
-    args.segments = parse_segments(args.segment)
+    if args.all_conditions:
+        args.segments = list(ALL_CONDITIONS_SEGMENTS)
+        if args.fps is None:
+            args.fps = 15
+        if args.segment_seconds is None:
+            args.segment_seconds = 0.85
+        if args.transition_seconds is None:
+            args.transition_seconds = 0.45
+    else:
+        args.segments = parse_segments(args.segment)
+        if args.fps is None:
+            args.fps = 12
+        if args.segment_seconds is None:
+            args.segment_seconds = 2.5
+        if args.transition_seconds is None:
+            args.transition_seconds = 0.8
     if not 5 <= args.fps <= 30:
         p.error('--fps must be between 5 and 30')
     if args.width != 0 and args.width < 120:
@@ -148,7 +177,10 @@ def parse_args(argv=None):
     if not 2 <= args.max_colors <= 256:
         p.error('--max-colors must be between 2 and 256')
     if args.output is None:
-        args.output = args.workdir / 'weatherglass-demo-transitions.gif'
+        default_name = ('weatherglass-demo-all-conditions.gif'
+                        if args.all_conditions
+                        else 'weatherglass-demo-transitions.gif')
+        args.output = args.workdir / default_name
     return args
 
 
@@ -226,16 +258,99 @@ def load_segment(seg, args):
     return seg
 
 
+def shoot_segments_batch(batch, args, batch_idx=0):
+    if len(batch) == 1:
+        shoot_segment(batch[0], args)
+        return
+    req_s = needed_seconds(args)
+    slot_0 = round((args.shoot_seconds or req_s) + 0.45, 2)
+    slot_n = round(max(1.2, (args.shoot_seconds or req_s) - args.start_seconds + 0.50), 2)
+    beats = [{'t': 0, 'do': 'open'}]
+    windows = []
+    cur = 0.0
+    for idx, seg in enumerate(batch):
+        dur = slot_0 if idx == 0 else slot_n
+        if idx > 0:
+            beats.append({'t': round(cur, 2), 'do': 'fixture', 'arg': seg.fixture})
+        windows.append((round(cur * 1000), round((cur + dur) * 1000)))
+        cur += dur
+    beats.append({'t': round(cur, 2), 'do': 'close'})
+
+    batch_root = args.workdir / 'batch' / f'run-{batch_idx:02d}'
+    frames_dir = batch_root / 'frames'
+    report_base = batch_root / 'report.json'
+    src_dir = batch_root / 'src'
+    mp4_path = batch_root / 'batch.mp4'
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    src_dir.mkdir(parents=True, exist_ok=True)
+
+    env = dict(os.environ)
+    env.update({
+        'TZ': args.timezone,
+        'WG_FILM_FIXTURE': batch[0].fixture,
+        'WG_FILM_BEATS': json.dumps(beats),
+        'WG_FILM_DIR': str(frames_dir),
+        'WG_FILM_OUT': str(report_base),
+        'WG_FILM_SRC': str(src_dir),
+        'WG_FILM_MP4': str(mp4_path),
+        'WG_FILM_TIMEOUT': '600',
+    })
+    names = ', '.join(s.name for s in batch)
+    print(f"batch shoot ({len(batch)} segments: {names}) close@{cur:.1f}s")
+    subprocess.run(['bash', 'tools/film.sh'], cwd=ROOT, env=env)
+
+    final_report = Path(f'{report_base}.final')
+    if not final_report.exists():
+        raise SystemExit(f'batch shoot failed: missing {final_report}')
+    rep = json.loads(final_report.read_text())
+    all_frames = rep.get('frames') or []
+    start_offset_ms = round(args.start_seconds * 1000)
+
+    for idx, (seg, (w_start, w_end)) in enumerate(zip(batch, windows)):
+        seg.directory.mkdir(parents=True, exist_ok=True)
+        seg.report_base.parent.mkdir(parents=True, exist_ok=True)
+        for stale in seg.directory.glob('frame_*.png'):
+            stale.unlink()
+        raw = [fr for fr in all_frames if w_start <= fr['t'] < w_end]
+        if not raw:
+            raise SystemExit(f'batch shoot produced no frames for {seg.name} in [{w_start}, {w_end})')
+        first_t = raw[0]['t']
+        seg_frames = []
+        for new_f, fr in enumerate(raw):
+            src_png = frames_dir / f"frame_{fr['f']:03d}.png"
+            dst_png = seg.directory / f"frame_{new_f:03d}.png"
+            if src_png.exists():
+                shutil.copy2(src_png, dst_png)
+                local_t = (round(fr['t'] - w_start) if idx == 0
+                           else round(fr['t'] - first_t + start_offset_ms))
+                seg_frames.append({
+                    'f': new_f,
+                    't': local_t,
+                    'bytes': fr.get('bytes'),
+                })
+        seg_rep = {
+            'fixture': seg.fixture,
+            'rect': rep.get('rect'),
+            'endMs': seg_frames[-1]['t'] if seg_frames else 0,
+            'frames': seg_frames,
+        }
+        seg.report_path.write_text(json.dumps(seg_rep, indent=1) + '\n')
+
+
 def ensure_segments(args):
     segments = [segment_shell(args.workdir, name, fixture)
                 for name, fixture in args.segments]
+    missing = [seg for seg in segments
+               if args.force_shoot or not seg.report_path.exists()]
+    if missing:
+        if args.compose_only:
+            raise SystemExit(
+                f'missing segment {missing[0].name} ({missing[0].fixture}); rerun without '
+                '--compose-only to shoot it')
+        for b_idx, start in enumerate(range(0, len(missing), MAX_BATCH_SEGMENTS)):
+            shoot_segments_batch(
+                missing[start:start + MAX_BATCH_SEGMENTS], args, b_idx)
     for seg in segments:
-        if args.force_shoot or not seg.report_path.exists():
-            if args.compose_only:
-                raise SystemExit(
-                    f'missing segment {seg.name} ({seg.fixture}); rerun without '
-                    '--compose-only to shoot it')
-            shoot_segment(seg, args)
         load_segment(seg, args)
     rects = {tuple(seg.rect) for seg in segments}
     if len(rects) != 1 or not next(iter(rects)):
@@ -378,7 +493,7 @@ def write_contact_sheet(path, frames, picks, segment_names):
             a, b = (int(part) for part in label.split('-to-'))
             label = f'{segment_names[a]}-to-{segment_names[b]}'
         labels.append((label, idx))
-    cols = 4
+    cols = 8 if len(segment_names) >= 16 else 4
     rows = (len(labels) + cols - 1) // cols
     w, h = frames[0].size
     sheet = Image.new('RGB', (cols * w, rows * h), (0, 0, 0))
@@ -416,6 +531,29 @@ def encode_gif_ffmpeg(frame_dir, output, args):
         '-loop', '0', str(output),
     ])
     return probe_gif(output)
+
+
+def encode_mp4_ffmpeg(frame_dir, output, args):
+    encs = subprocess.run(
+        ['ffmpeg', '-hide_banner', '-encoders'],
+        text=True, capture_output=True).stdout
+    enc = None
+    for cand in ('libx264', 'libopenh264'):
+        if f' {cand} ' in encs:
+            enc = cand
+            break
+    if not enc:
+        return None
+    mp4_path = output.with_suffix('.mp4')
+    qual = ['-crf', '18', '-preset', 'slow'] if enc == 'libx264' else ['-b:v', '4M']
+    run_checked([
+        'ffmpeg', '-y', '-v', 'error', '-framerate', str(args.fps),
+        '-i', str(frame_dir / 'frame_%04d.png'),
+        '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+        '-c:v', enc, *qual,
+        '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(mp4_path),
+    ])
+    return mp4_path
 
 
 def delta_palette(frame_paths, name, args):
@@ -582,10 +720,12 @@ def main(argv=None):
     if int(probe['nb_frames']) != len(frames):
         raise SystemExit(
             f"encoded GIF has {probe['nb_frames']} frames, composed {len(frames)}")
+    mp4_path = encode_mp4_ffmpeg(frame_dir, args.output, args)
 
     manifest = {
         'format': 2,
         'output': rel(args.output),
+        'mp4': rel(mp4_path) if mp4_path else None,
         'contact_sheet': rel(contact),
         'sha256': sha256(args.output),
         'bytes': args.output.stat().st_size,
@@ -627,6 +767,8 @@ def main(argv=None):
     manifest_path = args.output.with_name(f'{args.output.name}.manifest.json')
     manifest_path.write_text(json.dumps(manifest, indent=1) + '\n')
     print(f"gif: {args.output} ({manifest['bytes']} bytes, sha256 {manifest['sha256']})")
+    if mp4_path:
+        print(f'mp4: {mp4_path} ({mp4_path.stat().st_size} bytes)')
     print(f'contact: {contact}')
     print(f'manifest: {manifest_path}')
     print(f"frames: {len(frames)} @ {args.fps}fps = {manifest['duration_seconds']}s, "

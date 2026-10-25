@@ -228,10 +228,10 @@ export async function shootFilm({fixture, beats, cssPath, pngFor, captureRegion}
         }
         const st = buildState(weather, moon, targetFx);
         extendHourlyForAllDays(st, weather, targetFx);
-        if (targetFx.worldClock && st.currentIso)
+        if (st.currentIso)
             st.currentIso = st.currentIso.replace(/(?:Z|[+-]\d{2}:\d{2})$/, '');
         if (!initial && (targetFx.condition === 'storm' || targetFx.condition === 'hail'))
-            panel._skyArea._time = 0.94;
+            panel._skyArea._time = 0.25;
         panel.render(st);
         panel._applyTextInk();
     };
@@ -304,8 +304,14 @@ export async function shootFilm({fixture, beats, cssPath, pngFor, captureRegion}
     let bi = 0;
     for (;;) {
         const now = (GLib.get_monotonic_time() - t0) / 1000;
-        while (bi < sheet.length && sheet[bi].t * 1000 <= now)
+        let switchedFixture = false;
+        while (bi < sheet.length && sheet[bi].t * 1000 <= now) {
+            if (sheet[bi].do === 'fixture')
+                switchedFixture = true;
             runBeat(sheet[bi++]);
+        }
+        if (switchedFixture)
+            await wait(40);
         if (now >= endMs)
             break;
         const cap = await captureRegion(rect, pngFor(frames.length));
