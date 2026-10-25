@@ -727,9 +727,12 @@ function drawBodies(cr, sky, width, height, scale, features, time, night, phase,
         drawMoonSprited(cr, sky, sunX, sunY, radius, phase);
 }
 
-function drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight) {
-    if (!sky.clouds.length)
+function drawClouds(cr, sky, width, height, scale, dt, time, scene, night, twilight, hasBolt = false) {
+    if (!sky.clouds.length) {
+        if (hasBolt)
+            drawLightning(cr, width, height, scale, time);
         return;
+    }
     const isPrecip = PRECIP_CLOUD_SCENES.has(scene);
     let sprite0, sprite1, sw, sh;
     if (isPrecip) {
@@ -762,23 +765,35 @@ function drawClouds(cr, sky, width, scale, dt, time, scene, night, twilight) {
         const cloudSpeed = cloudItem.speed ?? cloudItem.sp;
         const cloudScale = cloudItem.scale ?? cloudItem.s;
         const cw = sw * cloudScale * 0.24 * scale;
-        const ch = sh * cloudScale * 0.24 * scale;
         cloudItem.x += cloudSpeed * dt * scale;
         if (cloudItem.x > width + 40 * scale)
             cloudItem.x = -cw - 30 * scale;
-        const sprite = cloudItem.variant ? sprite1 : sprite0;
-        const layerFactor = cloudItem.isBack ? 0.82 : 1.0;
-        cr.save();
-        cr.translate(cloudItem.x, cloudItem.y + Math.sin(time * 0.3 + cloudItem.y) * 4 * scale);
-        cr.scale(cw / sw, ch / sh);
-        cr.setSourceSurface(sprite, 0, 0);
-        cr.paintWithAlpha(baseAlpha * layerFactor * tint);
-        if (twilight > 0.01) {
-            cr.setSourceRGBA(glowR, glowG, glowB, (isPrecip ? 0.36 : 0.50) * twilight * layerFactor);
-            cr.maskSurface(sprite, 0, 0);
-        }
-        cr.restore();
     }
+    const paintPass = wantBack => {
+        for (const cloudItem of sky.clouds) {
+            if (Boolean(cloudItem.isBack) !== wantBack)
+                continue;
+            const cloudScale = cloudItem.scale ?? cloudItem.s;
+            const cw = sw * cloudScale * 0.24 * scale;
+            const ch = sh * cloudScale * 0.24 * scale;
+            const sprite = cloudItem.variant ? sprite1 : sprite0;
+            const layerFactor = cloudItem.isBack ? 0.82 : 1.0;
+            cr.save();
+            cr.translate(cloudItem.x, cloudItem.y + Math.sin(time * 0.3 + cloudItem.y) * 4 * scale);
+            cr.scale(cw / sw, ch / sh);
+            cr.setSourceSurface(sprite, 0, 0);
+            cr.paintWithAlpha(baseAlpha * layerFactor * tint);
+            if (twilight > 0.01) {
+                cr.setSourceRGBA(glowR, glowG, glowB, (isPrecip ? 0.36 : 0.50) * twilight * layerFactor);
+                cr.maskSurface(sprite, 0, 0);
+            }
+            cr.restore();
+        }
+    };
+    paintPass(true);
+    if (hasBolt)
+        drawLightning(cr, width, height, scale, time);
+    paintPass(false);
 }
 
 /* Double-feathered horizontal fog band (no polygon edges anywhere) */
@@ -1554,11 +1569,12 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
     }
 }
 
-/* Multi-branch forked lightning + in-cloud sheet illumination */
-const BOLT_ORIGINS = [0.48, 0.28, 0.68];
+/* Multi-branch forked lightning emerging from the dark cloud underbelly */
+const BOLT_ORIGINS = [0.46, 0.56, 0.64];
 
 function drawLightning(cr, width, height, scale, time) {
-    const cycleTime = time % 3.1;
+    const shifted = time + 2.08;
+    const cycleTime = ((shifted % 3.1) + 3.1) % 3.1;
     let flashIntensity = 0;
     if (cycleTime < 0.08)
         flashIntensity = cycleTime / 0.08;
@@ -1572,9 +1588,9 @@ function drawLightning(cr, width, height, scale, time) {
     // Secondary in-cloud sheet lightning pulse mid-cycle (1.65s..1.95s)
     if (flashIntensity <= 0 && cycleTime > 1.65 && cycleTime < 1.95) {
         const sheet = Math.sin(((cycleTime - 1.65) / 0.30) * Math.PI);
-        const sx = width * BOLT_ORIGINS[(Math.floor(time / 3.1) + 1) % 3];
-        const sy = height * 0.15;
-        const rad = 135 * scale;
+        const sx = width * BOLT_ORIGINS[(Math.floor(Math.max(0, shifted) / 3.1) + 1) % 3];
+        const sy = height * 0.18;
+        const rad = 125 * scale;
         const g = new Cairo.RadialGradient(sx, sy, 4 * scale, sx, sy, rad);
         g.addColorStopRGBA(0, 0.92, 0.90, 1.0, 0.32 * sheet);
         g.addColorStopRGBA(0.5, 0.78, 0.76, 0.98, 0.14 * sheet);
@@ -1587,20 +1603,21 @@ function drawLightning(cr, width, height, scale, time) {
     if (flashIntensity <= 0)
         return;
 
-    const strikeIdx = Math.floor(Math.max(0, time) / 3.1) % 3;
+    const strikeIdx = Math.floor(Math.max(0, shifted) / 3.1) % 3;
     const originX = width * BOLT_ORIGINS[strikeIdx];
-    const originY = height * 0.05;
+    const originY = height * 0.25;
 
-    // Sky-wide flash + in-cloud glow around the bolt origin
-    cr.setSourceRGBA(1, 0.99, 0.92, 0.10 * flashIntensity);
+    // Sky-wide flash + internal cloud-underbelly illumination
+    cr.setSourceRGBA(1, 0.99, 0.92, 0.07 * flashIntensity);
     cr.paint();
-    const cloudGlow = new Cairo.RadialGradient(originX, originY + 25 * scale, 4 * scale,
-        originX, originY + 25 * scale, 140 * scale);
-    cloudGlow.addColorStopRGBA(0, 1.0, 0.95, 0.82, 0.42 * flashIntensity);
-    cloudGlow.addColorStopRGBA(0.5, 0.88, 0.82, 0.98, 0.18 * flashIntensity);
+    const cloudGlow = new Cairo.RadialGradient(
+        originX, originY - 12 * scale, 3 * scale,
+        originX, originY - 12 * scale, 95 * scale);
+    cloudGlow.addColorStopRGBA(0, 1.0, 0.95, 0.82, 0.44 * flashIntensity);
+    cloudGlow.addColorStopRGBA(0.45, 0.88, 0.82, 0.98, 0.18 * flashIntensity);
     cloudGlow.addColorStopRGBA(1, 0.80, 0.78, 0.96, 0);
     cr.setSource(cloudGlow);
-    cr.arc(originX, originY + 25 * scale, 140 * scale, 0, TWO_PI);
+    cr.arc(originX, originY - 12 * scale, 95 * scale, 0, TWO_PI);
     cr.fill();
 
     cr.save();
@@ -1608,47 +1625,69 @@ function drawLightning(cr, width, height, scale, time) {
     cr.setLineJoin(Cairo.LineJoin.ROUND);
     cr.setLineCap(Cairo.LineCap.ROUND);
 
-    const traceMain = () => {
+    const traceUpper = () => {
         cr.newPath();
-        cr.moveTo(0, 0);
-        cr.lineTo(-18 * scale, 42 * scale);
-        cr.lineTo(-36 * scale, 88 * scale);
-        cr.lineTo(12 * scale, 96 * scale);
-        cr.lineTo(-12 * scale, 152 * scale);
-        cr.lineTo(-32 * scale, 218 * scale);
+        cr.moveTo(0, -10 * scale);
+        cr.lineTo(-6 * scale, 8 * scale);
+        cr.lineTo(-2 * scale, 22 * scale);
+        cr.lineTo(-14 * scale, 44 * scale);
+        cr.lineTo(-7 * scale, 60 * scale);
+        cr.lineTo(8 * scale, 72 * scale);
+    };
+    const traceLower = () => {
+        cr.newPath();
+        cr.moveTo(8 * scale, 72 * scale);
+        cr.lineTo(-3 * scale, 96 * scale);
+        cr.lineTo(-12 * scale, 118 * scale);
+        cr.lineTo(-6 * scale, 134 * scale);
+        cr.lineTo(-17 * scale, 156 * scale);
     };
     const traceBranches = () => {
         cr.newPath();
-        cr.moveTo(-18 * scale, 42 * scale);
-        cr.lineTo(16 * scale, 68 * scale);
-        cr.lineTo(28 * scale, 92 * scale);
-        cr.moveTo(-12 * scale, 152 * scale);
-        cr.lineTo(18 * scale, 184 * scale);
-        cr.lineTo(12 * scale, 208 * scale);
+        cr.moveTo(-2 * scale, 22 * scale);
+        cr.lineTo(11 * scale, 35 * scale);
+        cr.lineTo(17 * scale, 49 * scale);
+        cr.lineTo(25 * scale, 58 * scale);
+        cr.moveTo(-14 * scale, 44 * scale);
+        cr.lineTo(-27 * scale, 58 * scale);
+        cr.lineTo(-33 * scale, 73 * scale);
+        cr.moveTo(-3 * scale, 96 * scale);
+        cr.lineTo(10 * scale, 114 * scale);
+        cr.lineTo(7 * scale, 128 * scale);
+        cr.lineTo(14 * scale, 140 * scale);
     };
 
     // Outer atmospheric glow pass
-    cr.setSourceRGBA(0.88, 0.78, 1.0, 0.30 * flashIntensity);
-    cr.setLineWidth(8.5 * scale);
-    traceMain();
+    cr.setSourceRGBA(0.88, 0.78, 1.0, 0.28 * flashIntensity);
+    cr.setLineWidth(7.0 * scale);
+    traceUpper();
     cr.stroke();
-    cr.setLineWidth(5.0 * scale);
+    cr.setLineWidth(5.2 * scale);
+    traceLower();
+    cr.stroke();
+    cr.setLineWidth(3.8 * scale);
     traceBranches();
     cr.stroke();
 
-    // Mid golden-amber bolt pass
+    // Mid golden-amber bolt pass (tapered upper -> lower -> branches)
     cr.setSourceRGBA(1, 0.86, 0.31, flashIntensity);
-    cr.setLineWidth(3.4 * scale);
-    traceMain();
+    cr.setLineWidth(2.7 * scale);
+    traceUpper();
     cr.stroke();
     cr.setLineWidth(1.9 * scale);
+    traceLower();
+    cr.stroke();
+    cr.setLineWidth(1.3 * scale);
     traceBranches();
     cr.stroke();
 
     // Hot white-gold inner core
     cr.setSourceRGBA(1, 0.98, 0.90, flashIntensity);
-    cr.setLineWidth(1.4 * scale);
-    traceMain();
+    cr.setLineWidth(1.2 * scale);
+    traceUpper();
+    cr.stroke();
+    cr.setLineWidth(0.85 * scale);
+    traceLower();
     cr.stroke();
     cr.restore();
 }
@@ -1732,15 +1771,14 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
             drawStars(fc, sky.stars, time, twilight,
                 hasMoon ? { x: sx, y: sy, r: 64 * scale * 0.85 } : null);
         }
-        drawClouds(fc, sky, width, scale, dt, time, scene, night, twilight);
+        drawClouds(fc, sky, width, height, scale, dt, time, scene, night, twilight,
+            Boolean(features.bolt));
         drawFog(fc, sky, width, dt, time, night, scale);
         drawRain(fc, sky, width, height, scale, dt, scene, code);
         drawSnow(fc, sky, width, height, scale, dt, time, code, variant);
         drawSleetPellets(fc, sky, width, height, scale, dt);
         drawHail(fc, sky, width, height, dt);
         drawWindStreaks(fc, sky, width, height, dt, time, night, scale);
-        if (features.bolt)
-            drawLightning(fc, width, height, scale, time);
     }
     if (scrim) {
         fc.setSourceRGBA(scrim[0], scrim[1], scrim[2], scrim[3]);
