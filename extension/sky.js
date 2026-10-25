@@ -273,7 +273,7 @@ function rebuild(sky, width, height, scene) {
     }));
     sky.leaves = createList(features.leaves ?? 0, i => ({
         x: rand(-width * 0.5, width), y: rand(0.12 * height, 0.86 * height),
-        size: rand(3.2, 5.4), speed: rand(110, 230),
+        size: rand(5.8, 9.0), speed: rand(110, 230),
         phase: rand(0, TWO_PI), spin: rand(2.2, 4.6),
         tilt: rand(-0.5, 0.5), tone: i % 3,
     }));
@@ -1014,7 +1014,153 @@ function drawHail(cr, sky, width, height, dt) {
     }
 }
 
-/* W1 High Wind: curved slipstream currents + swaying ridge pines + 3D-tumbling leaves */
+/* Colored evergreen pine with brown bark trunk and two-tone green bough tiers */
+function drawColoredPine(cr, x, baseY, treeHeight, palette, bend = 0) {
+    cr.save();
+    const { trunk, darkGreen, lightGreen } = palette;
+    const trunkW = Math.max(1.8, treeHeight * 0.048);
+
+    cr.setSourceRGBA(trunk[0], trunk[1], trunk[2], 1.0);
+    cr.newPath();
+    cr.moveTo(x - trunkW * 1.15, baseY);
+    cr.curveTo(
+        x + bend * 0.14, baseY - treeHeight * 0.28,
+        x + bend * 0.42, baseY - treeHeight * 0.58,
+        x + bend * 0.80, baseY - treeHeight * 0.86);
+    cr.lineTo(x + bend * 0.80 + trunkW * 0.55, baseY - treeHeight * 0.86);
+    cr.curveTo(
+        x + bend * 0.42 + trunkW, baseY - treeHeight * 0.58,
+        x + bend * 0.14 + trunkW, baseY - treeHeight * 0.28,
+        x + trunkW * 1.15, baseY);
+    cr.closePath();
+    cr.fill();
+
+    const tiers = 5;
+    for (let t = tiers - 1; t >= 0; t--) {
+        const f = t / tiers;
+        const hTop = 1.0 - f * 0.58;
+        const hBot = 0.68 - f * 0.50;
+        const topShift = bend * (hTop ** 1.35);
+        const botShift = bend * (hBot ** 1.35);
+        const topY = baseY - treeHeight * hTop;
+        const botY = baseY - treeHeight * hBot;
+        const hw = treeHeight * (0.14 + f * 0.22);
+        const tiltY = (topShift - botShift) * 0.36;
+
+        const g = new Cairo.LinearGradient(
+            x + topShift, topY, x + botShift, botY + tiltY + 4);
+        g.addColorStopRGBA(0, lightGreen[0], lightGreen[1], lightGreen[2], 1.0);
+        g.addColorStopRGBA(0.65, darkGreen[0], darkGreen[1], darkGreen[2], 1.0);
+        g.addColorStopRGBA(1, darkGreen[0] * 0.82, darkGreen[1] * 0.82, darkGreen[2] * 0.82, 1.0);
+        cr.setSource(g);
+
+        cr.newPath();
+        cr.moveTo(x + topShift, topY);
+        cr.curveTo(
+            x + (topShift + botShift) * 0.5 - hw * 0.38, (topY + botY) * 0.5 - tiltY * 0.5,
+            x + botShift - hw * 0.85, botY - tiltY - 1.5,
+            x + botShift - hw, botY - tiltY);
+        cr.curveTo(
+            x + botShift - hw * 0.25, botY + 2.5,
+            x + botShift + hw * 0.25, botY + 2.5,
+            x + botShift + hw, botY + tiltY);
+        cr.curveTo(
+            x + botShift + hw * 0.85, botY + tiltY - 1.5,
+            x + (topShift + botShift) * 0.5 + hw * 0.38, (topY + botY) * 0.5 + tiltY * 0.5,
+            x + topShift, topY);
+        cr.closePath();
+        cr.fill();
+    }
+    cr.restore();
+}
+
+/* Colored deciduous broadleaf tree with forked brown trunk/branches and fluttering green foliage crown */
+function drawDeciduousTree(cr, x, baseY, treeHeight, palette, bend = 0, time = 0, seed = 1) {
+    cr.save();
+    const { trunk, trunkHi, shadeLeaf, midLeaf, litLeaf } = palette;
+    const trunkW = Math.max(2.2, treeHeight * 0.062);
+    const forkX = x + bend * 0.32;
+    const forkY = baseY - treeHeight * 0.42;
+
+    const tg = new Cairo.LinearGradient(x - trunkW, forkY, x + trunkW, forkY);
+    tg.addColorStopRGBA(0, trunkHi[0], trunkHi[1], trunkHi[2], 1.0);
+    tg.addColorStopRGBA(0.6, trunk[0], trunk[1], trunk[2], 1.0);
+    tg.addColorStopRGBA(1, trunk[0] * 0.78, trunk[1] * 0.78, trunk[2] * 0.78, 1.0);
+    cr.setSource(tg);
+    cr.newPath();
+    cr.moveTo(x - trunkW * 1.15, baseY);
+    cr.curveTo(
+        x - trunkW * 0.7, baseY - treeHeight * 0.18,
+        forkX - trunkW * 0.65, baseY - treeHeight * 0.30,
+        forkX - trunkW * 0.55, forkY);
+    cr.lineTo(forkX + trunkW * 0.55, forkY);
+    cr.curveTo(
+        forkX + trunkW * 0.65, baseY - treeHeight * 0.30,
+        x + trunkW * 0.7, baseY - treeHeight * 0.18,
+        x + trunkW * 1.15, baseY);
+    cr.closePath();
+    cr.fill();
+
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    const branches = [
+        [-0.22, 0.70, 0.55],
+        [ 0.04, 0.80, 0.62],
+        [ 0.24, 0.66, 0.50],
+    ];
+    for (const [dxFrac, hFrac, wMul] of branches) {
+        const bx = x + dxFrac * treeHeight + bend * (hFrac ** 1.35);
+        const by = baseY - treeHeight * hFrac;
+        cr.setLineWidth(trunkW * wMul);
+        cr.setSourceRGBA(trunk[0], trunk[1], trunk[2], 1.0);
+        cr.newPath();
+        cr.moveTo(forkX, forkY);
+        cr.curveTo(
+            (forkX + bx) * 0.5, (forkY + by) * 0.5 - 3,
+            bx - bend * 0.08, by + 4,
+            bx, by);
+        cr.stroke();
+    }
+
+    const blobs = [
+        [-0.24, 0.56, 0.18, 0.14, 0],
+        [ 0.22, 0.54, 0.19, 0.14, 0],
+        [-0.08, 0.52, 0.21, 0.15, 0],
+        [ 0.10, 0.52, 0.20, 0.15, 0],
+        [-0.20, 0.68, 0.20, 0.16, 1],
+        [ 0.20, 0.66, 0.21, 0.16, 1],
+        [ 0.00, 0.66, 0.24, 0.18, 1],
+        [-0.10, 0.78, 0.20, 0.15, 1],
+        [ 0.10, 0.76, 0.20, 0.15, 1],
+        [-0.04, 0.85, 0.18, 0.14, 2],
+        [ 0.12, 0.81, 0.17, 0.13, 2],
+    ];
+    for (let k = 0; k < blobs.length; k++) {
+        const [dxF, hF, rxF, ryF, tier] = blobs[k];
+        const flutter = Math.sin(time * 5.2 + seed * 2.1 + k * 1.3) * 1.8;
+        const cx = x + dxF * treeHeight + bend * (hF ** 1.35) + flutter;
+        const cy = baseY - treeHeight * hF + Math.abs(bend) * 0.08 * (dxF > 0 ? 1 : -0.5);
+        const rx = rxF * treeHeight * (1 + Math.min(0.18, Math.abs(bend) / treeHeight * 0.4));
+        const ry = ryF * treeHeight;
+        const col = tier === 2 ? litLeaf : (tier === 1 ? midLeaf : shadeLeaf);
+        const colBot = tier === 2 ? midLeaf : shadeLeaf;
+
+        cr.save();
+        cr.translate(cx, cy);
+        cr.rotate(Math.min(0.28, bend / treeHeight * 0.55));
+        cr.scale(rx / ry, 1);
+        const cg = new Cairo.RadialGradient(-ry * 0.2, -ry * 0.25, ry * 0.1, 0, 0, ry);
+        cg.addColorStopRGBA(0, col[0], col[1], col[2], 0.98);
+        cg.addColorStopRGBA(0.82, colBot[0], colBot[1], colBot[2], 0.95);
+        cg.addColorStopRGBA(1, colBot[0] * 0.88, colBot[1] * 0.88, colBot[2] * 0.88, 0.0);
+        cr.setSource(cg);
+        cr.arc(0, 0, ry, 0, TWO_PI);
+        cr.fill();
+        cr.restore();
+    }
+    cr.restore();
+}
+
+/* W1 High Wind: curved slipstream currents + swaying colored evergreen/deciduous woodland + larger 3D-tumbling leaves */
 function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
     // 1. Curved slipstream wisps
     for (const streakItem of sky.streaks) {
@@ -1041,26 +1187,50 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
         cr.stroke();
     }
 
-    // 2. W1 Swaying Ridge Pines: two receding treelines positioned above the graph
+    // 2. Swaying mixed woodland (evergreens + deciduous trees with brown trunks & green crowns)
     if (sky.leaves.length) {
         const treeLayers = [
             {
                 baseY: 0.29 * height, offset: 0.5,
-                rgb: night ? [0.10, 0.15, 0.23] : [0.36, 0.48, 0.60],
-                treeScale: 1.18 * scale, seed: 37, count: 8, minH: 46, maxH: 68, bendMul: 0.80,
+                hillRgb: night ? [0.10, 0.17, 0.18] : [0.27, 0.42, 0.35],
+                pinePalette: {
+                    trunk: night ? [0.20, 0.14, 0.11] : [0.40, 0.28, 0.20],
+                    darkGreen: night ? [0.10, 0.20, 0.18] : [0.22, 0.39, 0.32],
+                    lightGreen: night ? [0.15, 0.28, 0.24] : [0.31, 0.50, 0.40],
+                },
+                decidPalette: {
+                    trunk: night ? [0.20, 0.14, 0.11] : [0.42, 0.29, 0.20],
+                    trunkHi: night ? [0.26, 0.19, 0.15] : [0.52, 0.37, 0.26],
+                    shadeLeaf: night ? [0.11, 0.21, 0.17] : [0.24, 0.42, 0.30],
+                    midLeaf: night ? [0.16, 0.28, 0.22] : [0.33, 0.53, 0.35],
+                    litLeaf: night ? [0.21, 0.34, 0.26] : [0.43, 0.62, 0.39],
+                },
+                treeScale: 1.15 * scale, seed: 37, count: 7, minH: 46, maxH: 66, bendMul: 0.80,
             },
             {
                 baseY: 0.35 * height, offset: 0.0,
-                rgb: night ? [0.06, 0.10, 0.17] : [0.25, 0.37, 0.49],
-                treeScale: 1.48 * scale, seed: 53, count: 8, minH: 50, maxH: 74, bendMul: 1.05,
+                hillRgb: night ? [0.08, 0.14, 0.14] : [0.21, 0.35, 0.27],
+                pinePalette: {
+                    trunk: night ? [0.22, 0.14, 0.09] : [0.44, 0.28, 0.16],
+                    darkGreen: night ? [0.09, 0.20, 0.15] : [0.18, 0.38, 0.26],
+                    lightGreen: night ? [0.15, 0.29, 0.21] : [0.28, 0.52, 0.34],
+                },
+                decidPalette: {
+                    trunk: night ? [0.24, 0.15, 0.10] : [0.46, 0.30, 0.18],
+                    trunkHi: night ? [0.32, 0.21, 0.14] : [0.58, 0.39, 0.24],
+                    shadeLeaf: night ? [0.11, 0.22, 0.15] : [0.22, 0.43, 0.24],
+                    midLeaf: night ? [0.16, 0.30, 0.20] : [0.32, 0.56, 0.29],
+                    litLeaf: night ? [0.22, 0.38, 0.24] : [0.45, 0.67, 0.34],
+                },
+                treeScale: 1.42 * scale, seed: 53, count: 7, minH: 50, maxH: 72, bendMul: 1.05,
             },
         ];
-        const crownTop = 0.08 * height;
-        const skirtBot = 0.46 * height;
+        const crownTop = 0.06 * height;
+        const skirtBot = 0.45 * height;
         cr.pushGroup();
         for (const layer of treeLayers) {
             const r = seededRand(layer.seed);
-            cr.setSourceRGBA(layer.rgb[0], layer.rgb[1], layer.rgb[2], 1.0);
+            cr.setSourceRGBA(layer.hillRgb[0], layer.hillRgb[1], layer.hillRgb[2], 1.0);
             cr.newPath();
             cr.moveTo(0, skirtBot);
             for (let x = 0; x <= width; x += 8) {
@@ -1081,13 +1251,20 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
                 const gust = 0.55 + 0.32 * Math.sin(time * 2.3 - u * 2.6 + layer.seed) +
                     0.18 * Math.sin(time * 5.1 - u * 4.2);
                 const bend = (6 + gust * 10) * layer.bendMul * scale;
-                drawPineTree(cr, tx, ridgeY + th * 0.18, th, layer.rgb, 1.0, bend);
+                const isDeciduous = (i + (layer.seed % 2)) % 2 === 1;
+                if (isDeciduous) {
+                    drawDeciduousTree(cr, tx, ridgeY + 3 * scale, th * 0.92,
+                        layer.decidPalette, bend, time, i + layer.seed);
+                } else {
+                    drawColoredPine(cr, tx, ridgeY + 3 * scale, th,
+                        layer.pinePalette, bend);
+                }
             }
         }
         cr.setOperator(Cairo.Operator.DEST_IN);
         const fade = new Cairo.LinearGradient(0, crownTop, 0, skirtBot);
         fade.addColorStopRGBA(0, 0, 0, 0, 1.0);
-        fade.addColorStopRGBA(0.68, 0, 0, 0, 0.92);
+        fade.addColorStopRGBA(0.68, 0, 0, 0, 0.95);
         fade.addColorStopRGBA(0.84, 0, 0, 0, 0.42);
         fade.addColorStopRGBA(1.0, 0, 0, 0, 0.0);
         cr.setSource(fade);
@@ -1096,13 +1273,13 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
 
         cr.popGroupToSource();
         cr.setOperator(Cairo.Operator.OVER);
-        cr.paintWithAlpha(0.88);
+        cr.paintWithAlpha(0.92);
     }
 
-    // 3. 3D-tumbling wind-borne leaves
+    // 3. Larger 3D-tumbling wind-borne leaves with petiole stem + central midrib vein
     const leafPalettes = night
-        ? [[0.28, 0.42, 0.48], [0.34, 0.46, 0.40], [0.42, 0.44, 0.34]]
-        : [[0.34, 0.54, 0.46], [0.46, 0.60, 0.38], [0.64, 0.56, 0.32]];
+        ? [[0.22, 0.38, 0.26], [0.28, 0.44, 0.28], [0.38, 0.42, 0.24]]
+        : [[0.28, 0.54, 0.30], [0.40, 0.64, 0.32], [0.62, 0.58, 0.24]];
     for (const leaf of sky.leaves) {
         const gust = 0.85 + 0.35 * Math.sin(time * 2.3 + leaf.phase);
         leaf.x += leaf.speed * gust * dt * scale;
@@ -1119,17 +1296,27 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
         cr.translate(leaf.x, leaf.y);
         cr.rotate(rot);
         cr.scale(1, flip);
-        cr.setSourceRGBA(col[0], col[1], col[2], 0.86);
+        cr.setSourceRGBA(0.38, 0.28, 0.16, 0.85);
+        cr.setLineWidth(0.85 * scale);
+        cr.setLineCap(Cairo.LineCap.ROUND);
         cr.newPath();
-        cr.moveTo(-sz * 1.1, 0);
-        cr.curveTo(-sz * 0.35, -sz * 0.65, sz * 0.45, -sz * 0.55, sz * 1.15, 0);
-        cr.curveTo(sz * 0.45, sz * 0.55, -sz * 0.35, sz * 0.65, -sz * 1.1, 0);
+        cr.moveTo(-sz * 1.35, sz * 0.08);
+        cr.lineTo(-sz * 0.95, 0);
+        cr.stroke();
+        cr.setSourceRGBA(col[0], col[1], col[2], 0.92);
+        cr.newPath();
+        cr.moveTo(-sz * 1.0, 0);
+        cr.curveTo(-sz * 0.35, -sz * 0.68, sz * 0.42, -sz * 0.58, sz * 1.15, 0);
+        cr.curveTo(sz * 0.42, sz * 0.58, -sz * 0.35, sz * 0.68, -sz * 1.0, 0);
         cr.closePath();
         cr.fill();
-        cr.setSourceRGBA(col[0] * 1.2, col[1] * 1.2, col[2] * 1.1, 0.55);
-        cr.setLineWidth(0.6 * scale);
-        cr.moveTo(-sz * 0.9, 0);
-        cr.lineTo(sz * 0.9, 0);
+        cr.setSourceRGBA(
+            Math.min(1, col[0] * 1.3), Math.min(1, col[1] * 1.25),
+            Math.min(1, col[2] * 1.2), 0.70);
+        cr.setLineWidth(0.75 * scale);
+        cr.newPath();
+        cr.moveTo(-sz * 0.88, 0);
+        cr.lineTo(sz * 0.88, 0);
         cr.stroke();
         cr.restore();
     }
