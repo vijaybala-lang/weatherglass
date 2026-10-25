@@ -1126,8 +1126,9 @@ function drawDeciduousTree(cr, x, baseY, treeHeight, palette, bend = 0, time = 0
     const sScale = treeHeight / 52;
     const leafAngle = 0.18 + (bend / treeHeight) * 0.55;
 
-    // 1. Deep shadow leaf dabs behind upper branches
+    // 1. Deep shadow leaf dabs behind upper branches (batched into 1 fill)
     cr.setSourceRGBA(shadeLeaf[0], shadeLeaf[1], shadeLeaf[2], 1.0);
+    cr.newPath();
     for (let cIdx = 0; cIdx < clusters.length; cIdx++) {
         const [ox, oy, rx, ry, count] = clusters[cIdx];
         const sm = (-oy / treeHeight) ** 1.25;
@@ -1144,11 +1145,12 @@ function drawDeciduousTree(cr, x, baseY, treeHeight, palette, bend = 0, time = 0
             cr.translate(lx, ly);
             cr.rotate(leafAngle + r(-0.18, 0.18));
             cr.scale(1.38, 0.66);
+            cr.newSubPath();
             cr.arc(0, 0, dabR, 0, TWO_PI);
-            cr.fill();
             cr.restore();
         }
     }
+    cr.fill();
 
     // 2. Smooth curved trunk & graceful S-curve primary boughs
     const bg = new Cairo.LinearGradient(x - baseW * 1.5, baseY, x + baseW * 1.5, baseY);
@@ -1196,7 +1198,8 @@ function drawDeciduousTree(cr, x, baseY, treeHeight, palette, bend = 0, time = 0
         cr.fill();
     }
 
-    // 3. Mid-tone & sunlit dappled micro-leaf clusters
+    // 3. Mid-tone & sunlit dappled micro-leaf clusters (batched into 3 fills by tone)
+    const buckets = [[], [], []];
     for (let cIdx = 0; cIdx < clusters.length; cIdx++) {
         const [ox, oy, rx, ry, count] = clusters[cIdx];
         const sm = (-oy / treeHeight) ** 1.25;
@@ -1209,18 +1212,32 @@ function drawDeciduousTree(cr, x, baseY, treeHeight, palette, bend = 0, time = 0
             const lx = cx + Math.cos(a) * rad * rx;
             const ly = cy + Math.sin(a) * rad * ry;
             const dabR = r(2.1, 3.6) * sScale;
+            const rot = leafAngle + r(-0.18, 0.18);
             const isUpperLeft = Math.sin(a) < -0.15 || Math.cos(a) < -0.25;
             const isCrest = cIdx === 4 && Math.sin(a) < 0;
-            const c = isCrest ? sunLeaf : (isUpperLeft ? litLeaf : midLeaf);
-            cr.setSourceRGBA(c[0], c[1], c[2], 1.0);
+            const bIdx = isCrest ? 2 : (isUpperLeft ? 1 : 0);
+            buckets[bIdx].push([lx, ly, dabR, rot]);
+        }
+    }
+    const tones = [midLeaf, litLeaf, sunLeaf];
+    for (let bIdx = 0; bIdx < 3; bIdx++) {
+        const list = buckets[bIdx];
+        if (!list.length)
+            continue;
+        const c = tones[bIdx];
+        cr.setSourceRGBA(c[0], c[1], c[2], 1.0);
+        cr.newPath();
+        for (let i = 0; i < list.length; i++) {
+            const [lx, ly, dabR, rot] = list[i];
             cr.save();
             cr.translate(lx, ly);
-            cr.rotate(leafAngle + r(-0.18, 0.18));
+            cr.rotate(rot);
             cr.scale(1.4, 0.65);
+            cr.newSubPath();
             cr.arc(0, 0, dabR, 0, TWO_PI);
-            cr.fill();
             cr.restore();
         }
+        cr.fill();
     }
     cr.restore();
 }
