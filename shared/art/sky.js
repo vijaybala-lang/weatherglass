@@ -1,8 +1,3 @@
-// CANONICAL WeatherGlass sky backdrop painter (pure Cairo).
-// The extension owns this art; its copy lives at extension/sky.js and the
-// app consumes a byte-identical clone at app/src/sky.js. The parity gate
-// compares all three below the marker line. DO NOT EDIT COPIES — edit the
-// extension source, sync, and let the gate verify.
 /* == SYNCHED DESIGN BRAIN (byte-identity enforced by scripts/check-design-parity.py) == */
 /* sky.js -- animated sky backdrop (shared across extension and app) */
 
@@ -45,11 +40,11 @@ const SCENE_FEATURES = {
     moon: { stars: 1, moon: 1 },
     cloud: { clouds: 8 },
     fog: { fog: 1 },
-    rain: { clouds: 7, drops: 95, ripples: 10 },
-    sleet: { clouds: 7, drops: 48, flakes: 28, pellets: 22 },
+    rain: { clouds: 7, drops: 95, ripples: 28 },
+    sleet: { clouds: 7, drops: 48, flakes: 28, pellets: 22, ripples: 20 },
     snow: { clouds: 7, flakes: 72 },
     hail: { clouds: 7, drops: 42, hail: 28, bolt: 1 },
-    storm: { clouds: 8, drops: 120, ripples: 12, bolt: 1 },
+    storm: { clouds: 8, drops: 120, ripples: 34, bolt: 1 },
     wind: { streaks: 18, leaves: 16, trees: 1 },
     error: {},
     loading: {},
@@ -339,18 +334,30 @@ function rebuild(sky, width, height, scene) {
         const layer = i % 20 < 5 ? 2 : (i % 20 < 13 ? 1 : 0);
         const length = layer === 2 ? rand(24, 38) : (layer === 1 ? rand(16, 26) : rand(10, 17));
         const speed = layer === 2 ? rand(400, 540) : (layer === 1 ? rand(300, 410) : rand(210, 290));
+        const floorY = layer === 0
+            ? rand(0.685 * height, 0.80 * height)
+            : (layer === 1 ? rand(0.80 * height, 0.915 * height) : rand(0.915 * height, 0.992 * height));
         return {
-            x: rand(-60, width + 60), y: rand(-height, height),
-            length, l: length, speed, sp: speed, layer,
+            x: rand(-60, width + 60), y: rand(-height, floorY),
+            length, l: length, speed, sp: speed, layer, floorY,
         };
     });
-    sky.ripples = createList(features.ripples ?? 0, () => ({
-        x: rand(0.05 * width, 0.95 * width),
-        y: rand(0.93 * height, 0.99 * height),
-        phase: rand(0, 1),
-        speed: rand(1.1, 1.8),
-        maxR: rand(5, 11),
-    }));
+    const rippleCount = features.ripples
+        ? Math.max(18, Math.round(features.ripples * areaScaleFactor))
+        : 0;
+    sky.ripples = Array.from({ length: rippleCount }, (_, i) => {
+        const band = i % 3; // 0: distant (day-tiles top), 1: mid (day-tiles mid), 2: foreground floor
+        const yMin = band === 0 ? 0.685 : (band === 1 ? 0.795 : 0.905);
+        const yMax = band === 0 ? 0.795 : (band === 1 ? 0.905 : 0.990);
+        return {
+            x: ((i + rand(0.15, 0.85)) / Math.max(1, rippleCount)) * (width * 0.90) + width * 0.05,
+            y: rand(yMin * height, yMax * height),
+            band,
+            phase: ((i * 0.618034) + rand(0, 0.08)) % 1,
+            speed: rand(1.10, 1.70),
+            maxR: rand(10, 16),
+        };
+    });
     sky.flakes = createList(features.flakes ?? 0, i => {
         // Option B Depth-Layered Hybrid: 25% foreground 6-spoke, 40% midground 6-spoke, 35% powder bokeh
         const layer = i % 20 < 5 ? 2 : (i % 20 < 13 ? 1 : 0);
@@ -368,12 +375,41 @@ function rebuild(sky, width, height, scene) {
         x: rand(0, width + 40), y: rand(-height, height),
         radius: rand(1.5, 2.6), speed: rand(190, 310), phase: rand(0, TWO_PI),
     }));
-    sky.hail = createList(features.hail ?? 0, () => ({
-        x: rand(0, width), y: rand(-height, height),
-        vx: rand(-40, 40), vy: rand(180, 320),
-        radius: rand(2.4, 4.4), r: rand(2.4, 4.4),
-        bounces: 0, b: 0,
-    }));
+    const hailTotal = Math.round((features.hail ?? 0) * areaScaleFactor);
+    sky.hail = createList(features.hail ?? 0, i => {
+        const band = i % 3;
+        const yMin = band === 0 ? 0.70 : (band === 1 ? 0.81 : 0.91);
+        const yMax = band === 0 ? 0.81 : (band === 1 ? 0.91 : 0.99);
+        const floorY = rand(yMin * height, yMax * height);
+        const depth = Math.max(0, Math.min(1, (floorY - 0.68 * height) / (0.31 * height)));
+        const radius = rand(2.5, 4.2) * (0.62 + 0.42 * depth);
+        const slotX = ((i + rand(0.18, 0.82)) / Math.max(1, hailTotal)) * (width * 0.88) + width * 0.06;
+        if (i % 2 === 0) {
+            const bounceIdx = Math.floor(i / 2);
+            const bounceAge = 0.04 + ((bounceIdx * 0.618034) % 1) * 0.16;
+            const impactX = slotX;
+            const dScale = 0.62 + 0.42 * depth;
+            const vx = (bounceIdx % 2 === 0 ? 1 : -1) * rand(70, 110) * dScale;
+            const vy0 = -rand(140, 180) * dScale;
+            const gs = height / 420;
+            return {
+                x: impactX + vx * bounceAge * gs,
+                y: Math.min(floorY - radius * gs,
+                    floorY + (vy0 * bounceAge + 0.5 * 780 * dScale * bounceAge * bounceAge) * gs),
+                vx, vy: vy0 + 780 * dScale * bounceAge,
+                radius, r: radius,
+                bounces: 1, b: 1,
+                floorY, band, impactX, bounceAge,
+            };
+        }
+        return {
+            x: slotX, y: rand(-height * 0.6, floorY * 0.85),
+            vx: rand(-38, 38), vy: rand(220, 340),
+            radius, r: radius,
+            bounces: 0, b: 0,
+            floorY, band, impactX: 0, bounceAge: 0,
+        };
+    });
     sky.streaks = createList(features.streaks ?? 0, () => ({
         x: rand(-width, width), y: rand(0.06 * height, 0.82 * height),
         length: rand(55, 175), l: rand(55, 175),
@@ -983,14 +1019,15 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null) {
         const speed = (drop.speed ?? drop.sp) * speedMul;
         const length = (drop.length ?? drop.l) * lenMul * scale;
         const layer = drop.layer ?? 1;
+        const maxFloorY = drop.floorY ?? (height + 24 * scale);
         drop.y += speed * dt * scale;
         drop.x -= speed * slant * dt * scale;
-        if (drop.y > height + 24 * scale) {
-            drop.y = rand(-40 * scale, -10 * scale);
+        if (drop.y + length > maxFloorY) {
+            drop.y = rand(-45 * scale, -10 * scale);
             drop.x = rand(-20 * scale, width + 110 * scale);
         }
-        const alpha = layer === 2 ? 0.62 : (layer === 1 ? 0.44 : 0.26);
-        const lw = (layer === 2 ? 1.65 : (layer === 1 ? 1.25 : 0.90)) * scale;
+        const alpha = layer === 2 ? 0.62 : (layer === 1 ? 0.44 : 0.28);
+        const lw = (layer === 2 ? 1.65 : (layer === 1 ? 1.25 : 0.92)) * scale;
         const tx = drop.x - length * slant, ty = drop.y + length;
         cr.setLineWidth(lw);
         cr.setSourceRGBA(rainColor[0], rainColor[1], rainColor[2], alpha);
@@ -1004,24 +1041,70 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null) {
         }
     }
 
-    // Subtle ground splash ripples at the bottom of the card
+    // Perspective-graded ground splashes & ripples from day-tiles top (0.685h) to card floor (0.99h)
     for (const rp of sky.ripples) {
         rp.phase += rp.speed * dt;
         if (rp.phase >= 1) {
             rp.phase -= 1;
+            const band = rp.band ?? 2;
+            const yMin = band === 0 ? 0.685 : (band === 1 ? 0.795 : 0.905);
+            const yMax = band === 0 ? 0.795 : (band === 1 ? 0.905 : 0.990);
             rp.x = rand(0.05 * width, 0.95 * width);
-            rp.y = rand(0.93 * height, 0.99 * height);
+            rp.y = rand(yMin * height, yMax * height);
         }
-        const radius = rp.maxR * rp.phase * scale;
-        const alpha = (1 - rp.phase) * 0.34;
+        const depth = Math.max(0, Math.min(1, (rp.y - 0.68 * height) / (0.31 * height)));
+        const pScale = (0.52 + 0.54 * depth) * scale;
+        const pAlpha = 0.52 + 0.38 * depth;
+        const squash = 0.28 + 0.10 * depth;
+        const radius = (1.5 + rp.maxR * rp.phase) * pScale;
+        const alpha = (1 - rp.phase) * pAlpha;
+
         cr.save();
         cr.translate(rp.x, rp.y);
-        cr.scale(1, 0.32);
-        cr.setSourceRGBA(0.84, 0.92, 0.99, alpha);
-        cr.setLineWidth(1.0 * scale);
+        cr.scale(1, squash);
+        cr.setSourceRGBA(0.86, 0.94, 1.0, alpha);
+        cr.setLineWidth(Math.max(0.85, 1.35 * pScale));
+        cr.newPath();
         cr.arc(0, 0, radius, 0, TWO_PI);
         cr.stroke();
+        if (rp.phase > 0.12) {
+            cr.setSourceRGBA(0.90, 0.96, 1.0, alpha * 0.68);
+            cr.setLineWidth(Math.max(0.70, 1.05 * pScale));
+            cr.newPath();
+            cr.arc(0, 0, radius * 0.50, 0, TWO_PI);
+            cr.stroke();
+        }
         cr.restore();
+
+        if (rp.phase < 0.40) {
+            const pSplash = rp.phase / 0.40;
+            const arcLift = Math.sin(pSplash * Math.PI);
+            const sAlpha = (1 - pSplash * 0.52) * Math.min(0.95, pAlpha * 1.12);
+            const spread = (2.2 + 5.2 * pSplash) * pScale;
+            const lift = (2.2 + 5.4 * arcLift) * pScale;
+
+            cr.save();
+            cr.setLineCap(Cairo.LineCap.ROUND);
+            cr.setLineWidth(Math.max(0.85, 1.25 * pScale));
+            cr.setSourceRGBA(0.90, 0.96, 1.0, sAlpha * 0.88);
+            cr.newPath();
+            cr.moveTo(rp.x - spread * 0.45, rp.y - lift * 0.28);
+            cr.lineTo(rp.x - spread, rp.y - lift);
+            cr.moveTo(rp.x + spread * 0.45, rp.y - lift * 0.28);
+            cr.lineTo(rp.x + spread, rp.y - lift);
+            cr.stroke();
+
+            const beadR = Math.max(0.75, 1.15 * pScale);
+            cr.setSourceRGBA(0.95, 0.99, 1.0, sAlpha);
+            cr.newPath();
+            cr.arc(rp.x - spread * 1.08, rp.y - lift * 1.06, beadR, 0, TWO_PI);
+            cr.newSubPath();
+            cr.arc(rp.x + spread * 1.08, rp.y - lift * 1.06, beadR, 0, TWO_PI);
+            cr.newSubPath();
+            cr.arc(rp.x, rp.y - lift * 1.26, beadR * 0.90, 0, TWO_PI);
+            cr.fill();
+            cr.restore();
+        }
     }
 }
 
@@ -1137,34 +1220,128 @@ function drawSleetPellets(cr, sky, width, height, scale, dt) {
     }
 }
 
-/* Rimmed & glinting bouncing hailstones */
+/* Rimmed & glinting bouncing hailstones with floor impact rings and ice-chip bursts */
 function drawHail(cr, sky, width, height, dt) {
     const gs = height / 420;
     for (const stone of sky.hail) {
         const radius = (stone.radius ?? stone.r) * gs;
-        stone.vy += 900 * gs * dt;
+        const floorY = stone.floorY ?? (height - 14 * gs);
+        const depth = Math.max(0, Math.min(1, (floorY - 0.68 * height) / (0.31 * height)));
+        const dScale = (0.62 + 0.42 * depth) * gs;
+        const dAlpha = 0.60 + 0.38 * depth;
+        stone.vy += 780 * (0.62 + 0.42 * depth) * gs * dt;
         stone.x += stone.vx * gs * dt;
         stone.y += stone.vy * gs * dt;
-        if (stone.y > height - 6 * gs - radius && stone.vy > 0) {
-            stone.y = height - 6 * gs - radius;
-            stone.vy *= -0.42;
-            stone.vx = rand(-160, 160);
-            stone.bounces = (stone.bounces ?? stone.b) + 1;
+        if ((stone.bounces ?? stone.b) >= 1)
+            stone.bounceAge = (stone.bounceAge ?? 0) + dt;
+
+        if (stone.y > floorY - radius && stone.vy > 0) {
+            stone.y = floorY - radius;
+            const prevBounces = stone.bounces ?? stone.b;
+            const bounceMul = 0.62 + 0.42 * depth;
+            stone.vy = prevBounces === 0
+                ? -Math.max(145 * bounceMul, Math.abs(stone.vy) * 0.52)
+                : -Math.max(90 * bounceMul, Math.abs(stone.vy) * 0.38);
+            stone.vx = (stone.vx >= 0 ? 1 : -1) * rand(70, 110) * bounceMul;
+            stone.bounces = prevBounces + 1;
             stone.b = stone.bounces;
+            stone.impactX = stone.x;
+            stone.bounceAge = 0.01;
         }
-        if ((stone.bounces ?? stone.b) > 2 || stone.x < -10 || stone.x > width + 10)
+        if ((stone.bounces ?? stone.b) > 2 || stone.x < -10 || stone.x > width + 10) {
+            const band = stone.band ?? 2;
+            const yMin = band === 0 ? 0.70 : (band === 1 ? 0.81 : 0.91);
+            const yMax = band === 0 ? 0.81 : (band === 1 ? 0.91 : 0.99);
+            const nextFloor = rand(yMin * height, yMax * height);
+            const nextDepth = Math.max(0, Math.min(1, (nextFloor - 0.68 * height) / (0.31 * height)));
+            const nextRad = rand(2.5, 4.2) * (0.62 + 0.42 * nextDepth);
             Object.assign(stone, {
-                x: rand(0, width), y: -10, vx: rand(-40, 40),
-                vy: rand(180, 320), radius: rand(2.4, 4.4), r: rand(2.4, 4.4),
-                bounces: 0, b: 0,
+                x: rand(0.06 * width, 0.94 * width), y: -10, vx: rand(-38, 38),
+                vy: rand(220, 340), radius: nextRad, r: nextRad,
+                bounces: 0, b: 0, floorY: nextFloor, impactX: 0, bounceAge: 0,
             });
-        cr.setSourceRGBA(0.68, 0.80, 0.92, 0.88);
+        }
+
+        const bCount = stone.bounces ?? stone.b;
+        const bAge = stone.bounceAge ?? 0;
+        if (bCount >= 1 && bAge > 0 && bAge < 0.32) {
+            const ix = stone.impactX || stone.x;
+            const pRing = Math.min(1, bAge / 0.32);
+            const rAlpha = (1 - pRing) * 0.86 * dAlpha;
+            cr.save();
+            cr.translate(ix, floorY);
+            cr.scale(1, 0.28 + 0.10 * depth);
+            cr.setSourceRGBA(0.90, 0.96, 1.0, rAlpha);
+            cr.setLineWidth(Math.max(0.85, 1.4 * dScale));
+            cr.newPath();
+            cr.arc(0, 0, (3.5 + 12.5 * pRing) * dScale, 0, TWO_PI);
+            cr.stroke();
+            if (pRing > 0.15) {
+                cr.setSourceRGBA(0.90, 0.96, 1.0, rAlpha * 0.58);
+                cr.setLineWidth(Math.max(0.70, 1.0 * dScale));
+                cr.newPath();
+                cr.arc(0, 0, (1.8 + 6.0 * pRing) * dScale, 0, TWO_PI);
+                cr.stroke();
+            }
+            cr.restore();
+
+            if (bAge < 0.22) {
+                const pChip = bAge / 0.22;
+                const cAlpha = (1 - pChip) * 0.92 * dAlpha;
+                const spread = (2.8 + 6.5 * pChip) * dScale;
+                const lift = (2.0 + 4.8 * Math.sin(pChip * Math.PI)) * dScale;
+                cr.save();
+                cr.setLineCap(Cairo.LineCap.ROUND);
+                cr.setLineWidth(Math.max(0.8, 1.2 * dScale));
+                cr.setSourceRGBA(0.92, 0.97, 1.0, cAlpha * 0.82);
+                cr.newPath();
+                cr.moveTo(ix - spread * 0.45, floorY - lift * 0.30);
+                cr.lineTo(ix - spread, floorY - lift);
+                cr.moveTo(ix + spread * 0.45, floorY - lift * 0.30);
+                cr.lineTo(ix + spread, floorY - lift);
+                cr.stroke();
+
+                cr.setSourceRGBA(0.96, 0.99, 1.0, cAlpha);
+                cr.newPath();
+                cr.arc(ix - spread * 1.12, floorY - lift * 1.08, Math.max(0.75, 1.2 * dScale), 0, TWO_PI);
+                cr.newSubPath();
+                cr.arc(ix + spread * 1.12, floorY - lift * 1.08, Math.max(0.75, 1.2 * dScale), 0, TWO_PI);
+                cr.fill();
+                cr.restore();
+            }
+
+            // Detached airborne motion wake behind the rebounding stone
+            const dx = stone.x - ix;
+            const dy = stone.y - floorY;
+            if (Math.hypot(dx, dy) > radius * 2.0) {
+                const startX = ix + dx * 0.32;
+                const startY = floorY + dy * 0.45;
+                const endX = ix + dx * 0.82;
+                const endY = floorY + dy * 0.86;
+                const ctrlX = ix + dx * 0.52;
+                const ctrlY = Math.min(startY, endY) - 2.5 * dScale;
+                cr.save();
+                cr.setLineCap(Cairo.LineCap.ROUND);
+                cr.setSourceRGBA(0.90, 0.96, 1.0, 0.52 * (1 - pRing * 0.8) * dAlpha);
+                cr.setLineWidth(Math.max(0.8, 1.25 * dScale));
+                cr.newPath();
+                cr.moveTo(startX, startY);
+                cr.curveTo(ctrlX, ctrlY, ctrlX, ctrlY, endX, endY);
+                cr.stroke();
+                cr.restore();
+            }
+        }
+
+        cr.setSourceRGBA(0.68, 0.80, 0.92, 0.88 * dAlpha);
+        cr.newPath();
         cr.arc(stone.x, stone.y, radius * 1.12, 0, TWO_PI);
         cr.fill();
-        cr.setSourceRGBA(0.95, 0.97, 1.0, 0.95);
+        cr.setSourceRGBA(0.95, 0.97, 1.0, 0.95 * dAlpha);
+        cr.newPath();
         cr.arc(stone.x, stone.y, radius, 0, TWO_PI);
         cr.fill();
-        cr.setSourceRGBA(1, 1, 1, 0.85);
+        cr.setSourceRGBA(1, 1, 1, 0.85 * dAlpha);
+        cr.newPath();
         cr.arc(stone.x - radius * 0.30, stone.y - radius * 0.32, radius * 0.36, 0, TWO_PI);
         cr.fill();
     }
