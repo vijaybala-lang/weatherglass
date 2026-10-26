@@ -86,10 +86,6 @@ function column(styleClass) {
     return new St.BoxLayout({ vertical: true, style_class: styleClass, x_expand: true });
 }
 
-function spacer() {
-    return new St.Widget({ x_expand: true, x_align: ACTOR_FILL });
-}
-
 /** '2026-09-25T15:00' -> '3PM' (or '15') for the chart axis. The next
  *  calendar day gets a one-letter flag (rolling windows run past midnight
  *  after 10 PM); the exact next date only, so stale data never mislabels. */
@@ -335,10 +331,20 @@ export class ForecastPanel {
         const main = column('aw-main');
         this._main = main;
 
-        const header = row('aw-header');
+        // BinLayout decouples the bottom condition line from the top-right
+        // city label's width so long city names ("Mount Kilimanjaro") never
+        // squeeze and truncate _descriptionLabel ("Fri: Heavy snow showers").
+        const header = new St.Widget({
+            style_class: 'aw-header',
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: true,
+            x_align: ACTOR_FILL,
+        });
 
         const leftCol = new St.BoxLayout({
             vertical: true, style_class: 'aw-temp-col',
+            x_expand: true,
+            x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.START
         });
         const tempWrap = row('aw-temp-line');
@@ -352,10 +358,9 @@ export class ForecastPanel {
         leftCol.add_child(this._descriptionLabel);
         header.add_child(leftCol);
 
-        header.add_child(spacer());
-
         const right = new St.BoxLayout({
             vertical: true, style_class: 'aw-city-col',
+            x_expand: true,
             x_align: Clutter.ActorAlign.END,
             y_align: Clutter.ActorAlign.START
         });

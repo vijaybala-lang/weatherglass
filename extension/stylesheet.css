@@ -60,10 +60,12 @@
 }
 
 /* condition text under the big temp : sits close to the
- * numeral, keeps real air before the metric tabs */
+ * numeral, keeps real air before the metric tabs; max-width
+ * leaves 58px on the right for the refresh/settings buttons */
 .aw-desc {
     font-size: 0.85em;
     margin: 2px 0 4px 0;
+    max-width: 244px;
 }
 
 .aw-city-col {
@@ -73,6 +75,7 @@
 .aw-city {
     font-size: 1.15em;
     font-weight: bold;
+    max-width: 215px;
 }
 
 .aw-info-row {

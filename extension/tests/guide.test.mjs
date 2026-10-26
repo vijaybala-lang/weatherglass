@@ -388,4 +388,14 @@ test('enable() and disable() are adjacent', () => {
     ok(!stranger, `method between enable() and disable(): ${stranger?.trim()}`);
 });
 
+test('header decouples condition width from city column width', () => {
+    const menu = sources['menu.js'];
+    const css = read(`${ROOT}/stylesheet.css`);
+    ok(/style_class:\s*'aw-header'[\s\S]{0,120}Clutter\.BinLayout/.test(menu),
+        'aw-header must use Clutter.BinLayout so the city column cannot squeeze .aw-desc');
+    const descRule = css.match(/\.aw-desc\s*\{([^}]*)\}/);
+    ok(descRule && /max-width:\s*2\d\dpx/.test(descRule[1]),
+        '.aw-desc must declare a 200px+ max-width so long conditions do not truncate early');
+});
+
 report('guide');
