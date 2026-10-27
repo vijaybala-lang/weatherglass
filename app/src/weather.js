@@ -10,6 +10,8 @@ import Soup from 'gi://Soup?version=3.0';
 
 export const OPEN_METEO_FORECAST_API = 'https://api.open-meteo.com/v1/forecast';
 export const OPEN_METEO_GEOCODING_API = 'https://geocoding-api.open-meteo.com/v1/search';
+export const NOAA_NWS_API = 'https://api.weather.gov';
+export const MET_ALERTS_API = 'https://api.met.no/weatherapi/metalerts/2.0/current.json';
 export const USER_AGENT = 'dev.vijaybala.weatherglassapp/1.0 (standalone GJS app)';
 
 // --- brand texture ------------------------------------------------------------
@@ -51,7 +53,7 @@ function session() {
     return _session;
 }
 
-function httpGetJson(url) {
+function httpGetText(url) {
     return new Promise((resolve, reject) => {
         const msg = Soup.Message.new('GET', url);
         session().send_and_read_async(msg, GLib.PRIORITY_DEFAULT, null, (_s, res) => {
@@ -61,12 +63,22 @@ function httpGetJson(url) {
                     reject(new Error(`HTTP ${msg.get_status()} for ${url.split('?')[0]}`));
                     return;
                 }
-                resolve(JSON.parse(new TextDecoder().decode(bytes.get_data())));
+                resolve(new TextDecoder().decode(bytes.get_data()));
             } catch (e) {
                 reject(e);
             }
         });
     });
+}
+
+function httpGetJson(url) {
+    return httpGetText(url).then(text => JSON.parse(text));
+}
+
+function queryString(params) {
+    return Object.entries(params)
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .join('&');
 }
 
 // ---------------------------------------------------------------------------
@@ -97,12 +109,18 @@ export function forecastUrl(lat, lon, days = FORECAST_DAYS) {
     ].join('');
 }
 
-export async function fetchForecast(lat, lon, days = FORECAST_DAYS) {
+export async function fetchForecast(lat, lon, days = FORECAST_DAYS, alertCtx = {}) {
     const t0 = Date.now();
     const json = await httpGetJson(forecastUrl(lat, lon, days));
     if (!json.current || !json.hourly || !json.daily)
         throw new Error('malformed forecast payload');
-    return normalize(json, t0);
+    const data = normalize(json, t0);
+    // advisories ride along but can never fail the forecast (fetchAlerts
+    // swallows its own errors into alertsCoverage)
+    const alertData = await fetchAlerts(lat, lon, data.cityClockOffsetMs, {
+        ...alertCtx, nowIso: data.current.timeIso,
+    });
+    return { ...data, ...alertData };
 }
 
 function arr(a, i) {
@@ -173,6 +191,494 @@ export function normalize(j, receivedWallMs = Date.now()) {
             isDay: h.is_day ?? [],
         },
     };
+}
+
+// ---------------------------------------------------------------------------
+// Advisories — same normalized shape and rules as the extension's
+// advisory layer (weather.js there): sources return alerts active or
+// upcoming RIGHT NOW with a validity window; a day view is an overlap
+// filter. Native risk colour (MET) wins over the severity word; CAP
+// Unknown stays level null. Times are city-local naive ISO; MET's UTC
+// stamps convert through the forecast's cityClockOffsetMs.
+
+const SEVERITY_LEVEL = { Minor: 1, Moderate: 2, Severe: 3, Extreme: 3 };
+const COLOUR_LEVEL = { yellow: 1, orange: 2, red: 3 };
+
+export function parseNwsAlerts(raw) {
+    const alerts = [];
+    for (const feature of raw?.features ?? []) {
+        const p = feature?.properties ?? {};
+        if (p.status && p.status !== 'Actual') continue;
+        if (p.messageType && p.messageType !== 'Alert' && p.messageType !== 'Update') continue;
+        const cats = Array.isArray(p.category) ? p.category : [p.category];
+        if (p.category && !cats.includes('Met')) continue;
+        const startsAt = String(p.onset ?? p.effective ?? p.sent ?? '').slice(0, 16);
+        if (!startsAt) continue;
+        alerts.push({
+            id: String(p.id ?? startsAt + (p.event ?? '')),
+            event: p.event ?? '',
+            headline: p.headline ?? null,
+            level: SEVERITY_LEVEL[p.severity] ?? null,
+            severityLabel: p.severity ?? '',
+            certainty: p.certainty ?? null,
+            urgency: p.urgency ?? null,
+            startsAt,
+            // ends (event over) wins over expires (message stale)
+            endsAt: String(p.ends ?? p.expires ?? '').slice(0, 16) || null,
+            issuedAt: String(p.sent ?? '').slice(0, 16) || null,
+            description: (p.description ?? '').trim(),
+            instruction: (p.instruction ?? '').trim() || null,
+            areas: String(p.areaDesc ?? '').split(';').map(s => s.trim()).filter(Boolean),
+            sender: p.senderName ?? '',
+            source: 'NOAA NWS',
+            language: String(p.language ?? 'en').slice(0, 2),
+        });
+    }
+    return alerts;
+}
+
+export function parseMetAlerts(raw, cityOffsetMs = 0) {
+    const alerts = [];
+    const isoRe = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})/g;
+    const toCity = iso => wallNaiveStamp(Date.parse(iso) + cityOffsetMs);
+    for (const feature of raw?.features ?? []) {
+        const p = feature?.properties ?? {};
+        if (p.status && p.status !== 'Actual') continue;
+        if (p.type && p.type !== 'Alert' && p.type !== 'Update') continue;
+        const titleTimes = String(p.title ?? '').match(isoRe) ?? [];
+        const onsetUtc = titleTimes[0] ?? '';
+        const endsUtc = p.eventEndingTime ?? titleTimes[1] ?? '';
+        if (!onsetUtc) continue;
+        const native = COLOUR_LEVEL[String(p.riskMatrixColor ?? '').toLowerCase()]
+            ?? COLOUR_LEVEL[(String(p.awareness_level ?? '').split(';')[1] ?? '').trim()];
+        alerts.push({
+            id: String(p.id ?? onsetUtc + (p.event ?? '')),
+            event: p.eventAwarenessName ?? p.event ?? '',
+            headline: p.title ?? null,
+            level: native ?? SEVERITY_LEVEL[p.severity] ?? null,
+            severityLabel: p.severity ?? '',
+            certainty: p.certainty ?? null,
+            urgency: null,
+            startsAt: toCity(onsetUtc),
+            endsAt: endsUtc ? toCity(endsUtc) : null,
+            issuedAt: null,
+            description: (p.description ?? '').trim(),
+            instruction: (p.instruction ?? '').trim() || null,
+            areas: [p.area].filter(Boolean),
+            sender: 'MET Norway',
+            source: 'MET Norway',
+            language: raw?.lang ?? 'no',
+        });
+    }
+    return alerts;
+}
+
+/* -- point geometry (shared by the GeoJSON + CAP adapters) ---------------- */
+
+/** Ray-casting over one [lat, lon] ring. */
+export function pointInPolygon(lat, lon, ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [yi, xi] = ring[i], [yj, xj] = ring[j];
+        if ((yi > lat) !== (yj > lat) &&
+            lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi)
+            inside = !inside;
+    }
+    return inside;
+}
+
+function distKm(lat1, lon1, lat2, lon2) {
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180 *
+        Math.cos((lat1 + lat2) * Math.PI / 360);
+    return 6371 * Math.hypot(dLat, dLon);
+}
+
+/* -- ECCC (Canada): GeoMet WFS GeoJSON, real polygons --------------------- */
+
+/** GeoMet Current-Alerts features -> alerts covering the point.
+ *  Native risk colour, bilingual fields (ctx.language 'en'|'fr'). */
+export function parseEcccAlerts(raw, ctx = {}) {
+    const lang = ctx.language === 'fr' ? 'fr' : 'en';
+    const utcToLocal = ctx.utcToLocal ?? (iso => iso.slice(0, 16));
+    const alerts = [];
+    for (const feature of raw?.features ?? []) {
+        const p = feature?.properties ?? {};
+        const geom = feature?.geometry;
+        if ((p.status_en ?? '') === 'ended' || !geom)
+            continue;
+        const polys = geom.type === 'Polygon' ? [geom.coordinates[0]]
+            : geom.type === 'MultiPolygon' ? geom.coordinates.map(poly => poly[0]) : [];
+        const ringHit = polys.some(ring => Array.isArray(ring) &&
+            pointInPolygon(ctx.latitude, ctx.longitude,
+                           ring.map(([lon, lat]) => [lat, lon])));
+        if (!ringHit)
+            continue;
+        const name = p[`alert_name_${lang}`] ?? p.alert_name_en ?? '';
+        alerts.push({
+            id: String(p.id ?? p.feature_id ?? name),
+            event: name.charAt(0).toUpperCase() + name.slice(1),
+            headline: null,
+            level: COLOUR_LEVEL[String(p.risk_colour_en ?? '').toLowerCase()] ?? null,
+            severityLabel: p[`impact_${lang}`] ?? '',
+            certainty: p[`confidence_${lang}`] ?? null,
+            urgency: null,
+            startsAt: utcToLocal(p.validity_datetime ?? p.publication_datetime),
+            endsAt: p.event_end_datetime ? utcToLocal(p.event_end_datetime) : null,
+            issuedAt: p.publication_datetime ? utcToLocal(p.publication_datetime) : null,
+            description: (p[`alert_text_${lang}`] ?? '').trim(),
+            instruction: null,
+            areas: [p[`feature_name_${lang}`]].filter(Boolean),
+            sender: 'Environment and Climate Change Canada',
+            source: 'ECCC GeoMet',
+            language: lang,
+        });
+    }
+    return alerts;
+}
+
+/* -- CAP: one scanner for full documents and MeteoAlarm Atom summaries ----
+ * GJS has no XML DOM; CAP's flat tag structure scans safely with
+ * tag regexes + entity decoding. Candidates carry private geo
+ * fields (_polygons/_circles/_geocodes/_capLink) for matching;
+ * adapters strip them before the UI ever sees the alert. */
+
+function decodeXml(text) {
+    if (!text)
+        return '';
+    return text
+        .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+        .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+        .replace(/&#(\d+);/g, (m, n) => String.fromCharCode(Number(n)))
+        .replace(/&amp;/g, '&')
+        .trim();
+}
+
+function xmlTag(block, tag) {
+    const m = block.match(new RegExp(
+        `<(?:\\w+:)?${tag}(?:\\s[^>]*)?>([\\s\\S]*?)</(?:\\w+:)?${tag}>`));
+    return m ? decodeXml(m[1]) : '';
+}
+
+function xmlBlocks(block, tag) {
+    return [...block.matchAll(new RegExp(
+        `<(?:\\w+:)?${tag}(?:\\s[^>]*)?>([\\s\\S]*?)</(?:\\w+:)?${tag}>`, 'g'))]
+        .map(m => m[1]);
+}
+
+function capTime(iso, utcToLocal) {
+    if (!iso)
+        return null;
+    return /Z$|[+-]00:00$/.test(iso) ? utcToLocal(iso) : iso.slice(0, 16);
+}
+
+function parseCapAreas(infoBlock) {
+    const areas = [], polygons = [], circles = [], geocodes = [];
+    for (const area of xmlBlocks(infoBlock, 'area')) {
+        const desc = xmlTag(area, 'areaDesc');
+        if (desc)
+            areas.push(desc);
+        for (const polyText of xmlBlocks(area, 'polygon')) {
+            const ring = polyText.trim().split(/\s+/).map(pair => {
+                const [lat, lon] = pair.split(',').map(Number);
+                return [lat, lon];
+            }).filter(([lat, lon]) => Number.isFinite(lat) && Number.isFinite(lon));
+            if (ring.length >= 3)
+                polygons.push(ring);
+        }
+        for (const circleText of xmlBlocks(area, 'circle')) {
+            const [point, radius] = circleText.trim().split(/\s+/);
+            const [lat, lon] = (point ?? '').split(',').map(Number);
+            if (Number.isFinite(lat) && Number.isFinite(lon))
+                circles.push({ lat, lon, km: Number(radius) || 0 });
+        }
+        for (const geo of xmlBlocks(area, 'geocode')) {
+            const value = xmlTag(geo, 'value');
+            if (value)
+                geocodes.push(value);
+        }
+    }
+    return { areas, polygons, circles, geocodes };
+}
+
+function capParam(infoBlock, name) {
+    for (const param of xmlBlocks(infoBlock, 'parameter')) {
+        if (xmlTag(param, 'valueName') === name)
+            return xmlTag(param, 'value');
+    }
+    return '';
+}
+
+export function parseCapAlerts(xml, ctx = {}) {
+    const utcToLocal = ctx.utcToLocal ?? (iso => iso.slice(0, 16));
+    const candidates = [];
+    if (/<alert[\s>]/.test(xml)) {
+        for (const doc of xml.match(/<alert[\s>][\s\S]*?<\/alert>/g) ?? []) {
+            if (xmlTag(doc, 'status') !== 'Actual')
+                continue;
+            const msgType = xmlTag(doc, 'msgType');
+            if (msgType && msgType !== 'Alert' && msgType !== 'Update')
+                continue;
+            const infos = xmlBlocks(doc, 'info');
+            const info = infos.find(i => /^en/.test(xmlTag(i, 'language'))) ?? infos[0];
+            if (!info)
+                continue;
+            const categories = xmlBlocks(info, 'category');
+            if (categories.length && !categories.includes('Met'))
+                continue;
+            const geo = parseCapAreas(info);
+            const awareness = capParam(info, 'awareness_level');
+            const native = COLOUR_LEVEL[(awareness.split(';')[1] ?? '').trim()];
+            candidates.push({
+                id: xmlTag(doc, 'identifier'),
+                event: xmlTag(info, 'event'),
+                headline: xmlTag(info, 'headline') || null,
+                level: native ?? SEVERITY_LEVEL[xmlTag(info, 'severity')] ?? null,
+                severityLabel: xmlTag(info, 'severity'),
+                certainty: xmlTag(info, 'certainty') || null,
+                urgency: xmlTag(info, 'urgency') || null,
+                startsAt: capTime(xmlTag(info, 'onset') || xmlTag(doc, 'sent'), utcToLocal),
+                endsAt: capTime(xmlTag(info, 'expires'), utcToLocal),
+                issuedAt: capTime(xmlTag(doc, 'sent'), utcToLocal),
+                description: xmlTag(info, 'description'),
+                instruction: xmlTag(info, 'instruction') || null,
+                areas: geo.areas,
+                sender: xmlTag(info, 'senderName'),
+                source: 'CAP',
+                language: xmlTag(info, 'language').slice(0, 2) || 'en',
+                _polygons: geo.polygons, _circles: geo.circles,
+                _geocodes: geo.geocodes, _capLink: null,
+            });
+        }
+        return candidates;
+    }
+    // MeteoAlarm legacy Atom: one entry per AREA, grouped by identifier
+    const byId = new Map();
+    for (const entry of xmlBlocks(xml, 'entry')) {
+        if (xmlTag(entry, 'status') !== 'Actual')
+            continue;
+        const msgType = xmlTag(entry, 'message_type');
+        if (msgType && msgType !== 'Alert' && msgType !== 'Update')
+            continue;
+        const id = xmlTag(entry, 'identifier');
+        if (!id)
+            continue;
+        let cand = byId.get(id);
+        if (!cand) {
+            const title = xmlTag(entry, 'title');
+            const colour = COLOUR_LEVEL[(title.split(' ')[0] ?? '').toLowerCase()];
+            const linkMatch = entry.match(/<link[^>]*type="application\/cap\+xml"[^>]*href="([^"]+)"/);
+            cand = {
+                id,
+                event: xmlTag(entry, 'event'),
+                headline: title || null,
+                level: colour ?? SEVERITY_LEVEL[xmlTag(entry, 'severity')] ?? null,
+                severityLabel: xmlTag(entry, 'severity'),
+                certainty: xmlTag(entry, 'certainty') || null,
+                urgency: xmlTag(entry, 'urgency') || null,
+                startsAt: capTime(xmlTag(entry, 'onset') || xmlTag(entry, 'sent'), utcToLocal),
+                endsAt: capTime(xmlTag(entry, 'expires'), utcToLocal),
+                issuedAt: capTime(xmlTag(entry, 'sent'), utcToLocal),
+                description: '',
+                instruction: null,
+                areas: [],
+                sender: 'MeteoAlarm',
+                source: 'MeteoAlarm',
+                language: 'en',
+                _polygons: [], _circles: [], _geocodes: [],
+                _capLink: linkMatch ? linkMatch[1] : null,
+            };
+            byId.set(id, cand);
+        }
+        const areaDesc = xmlTag(entry, 'areaDesc');
+        if (areaDesc && !cand.areas.includes(areaDesc))
+            cand.areas.push(areaDesc);
+        for (const geo of xmlBlocks(entry, 'geocode')) {
+            const value = xmlTag(geo, 'value');
+            if (value && !cand._geocodes.includes(value))
+                cand._geocodes.push(value);
+        }
+    }
+    return [...byId.values()];
+}
+
+/** Point match, most precise first: polygon, circle, geocode,
+ *  then district-name match against the user's place names. */
+export function alertMatchesPoint(candidate, ctx = {}) {
+    const { latitude, longitude } = ctx;
+    if (candidate._polygons?.length && Number.isFinite(latitude))
+        return candidate._polygons.some(ring => pointInPolygon(latitude, longitude, ring));
+    if (candidate._circles?.length && Number.isFinite(latitude))
+        return candidate._circles.some(c => distKm(latitude, longitude, c.lat, c.lon) <= c.km);
+    if (candidate._geocodes?.length && ctx.geocodes?.length &&
+        candidate._geocodes.some(g => ctx.geocodes.includes(g)))
+        return true;
+    const fold = s => s.toLowerCase().normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/^(kreis|landkreis|stadt|city of|comune di)\s+/, '');
+    const names = (ctx.placeNames ?? []).map(fold).filter(n => n.length >= 3);
+    if (!names.length)
+        return false;
+    return candidate.areas.some(area => {
+        const folded = fold(area);
+        const head = folded.replace(/ - .*$/, '');
+        return names.some(n => folded.includes(n) || n.includes(head));
+    });
+}
+
+export function mergeAlerts(lists) {
+    const byId = new Map();
+    for (const list of lists)
+        for (const alert of list ?? [])
+            if (!byId.has(alert.id)) byId.set(alert.id, alert);
+    return [...byId.values()].sort((a, b) =>
+        ((b.level ?? 0) - (a.level ?? 0)) ||
+        (a.startsAt < b.startsAt ? -1 : a.startsAt > b.startsAt ? 1 : 0));
+}
+
+export function alertOverlapsDay(alert, date) {
+    if (alert.startsAt.slice(0, 10) > date) return false;
+    if (!alert.endsAt) return alert.startsAt.slice(0, 10) === date;
+    if (alert.endsAt.slice(0, 10) < date) return false;
+    return !(alert.endsAt.slice(0, 10) === date && alert.endsAt.slice(11, 16) === '00:00');
+}
+
+export function alertsForDay(alerts, daily, dayIndex) {
+    if (dayIndex === 0) return alerts ?? [];
+    const date = daily?.[dayIndex]?.date ?? '';
+    if (!date) return [];
+    return (alerts ?? []).filter(a => alertOverlapsDay(a, date));
+}
+
+// One adapter per advisory source, same contract as the extension:
+// fetch(lat, lon, ctx) -> {alerts, outcome: 'ok'|'none'|'failed'},
+// plus a pure parse(raw, ctx). Adding a source is one adapter plus
+// one ALERT_SOURCES entry; the UI only sees the normalized shape.
+const nwsAlertSource = {
+    id: 'noaa-nws',
+    parse: parseNwsAlerts,
+    async fetch(lat, lon) {
+        const point = `${Number(lat).toFixed(4)},${Number(lon).toFixed(4)}`;
+        try {
+            const raw = await httpGetJson(`${NOAA_NWS_API}/alerts/active?point=${point}`);
+            return { alerts: parseNwsAlerts(raw), outcome: 'ok' };
+        } catch (err) {
+            return { alerts: [], outcome: /HTTP 400/.test(err.message) ? 'none' : 'failed' };
+        }
+    },
+};
+
+const metAlertSource = {
+    id: 'met-norway',
+    parse: parseMetAlerts,
+    async fetch(lat, lon, cityOffsetMs = 0) {
+        const locale = GLib.get_language_names()[0] ?? '';
+        const lang = /^(nb|nn|no)/.test(locale) ? 'no' : 'en';
+        try {
+            const raw = await httpGetJson(`${MET_ALERTS_API}?lat=${Number(lat).toFixed(4)}`
+                + `&lon=${Number(lon).toFixed(4)}&lang=${lang}`);
+            const alerts = parseMetAlerts(raw, cityOffsetMs);
+            const inNorway = lat >= 57.5 && lat <= 71.5 && lon >= 4 && lon <= 32;
+            return { alerts, outcome: alerts.length || inNorway ? 'ok' : 'none' };
+        } catch {
+            return { alerts: [], outcome: 'failed' };
+        }
+    },
+};
+
+const ecccAlertSource = {
+    id: 'eccc-canada',
+    parse: parseEcccAlerts,
+    async fetch(lat, lon, cityOffsetMs = 0) {
+        if (!(lat >= 41 && lat <= 85 && lon >= -142 && lon <= -52))
+            return { alerts: [], outcome: 'none' };
+        const locale = GLib.get_language_names()[0] ?? '';
+        const dLat = 50 / 111;
+        const dLon = 50 / (111 * Math.cos(lat * Math.PI / 180));
+        const url = `https://geo.weather.gc.ca/geomet?${queryString({
+            SERVICE: 'WFS', VERSION: '2.0.0', REQUEST: 'GetFeature',
+            TYPENAMES: 'Current-Alerts', outputFormat: 'application/json',
+            BBOX: `${(lat - dLat).toFixed(4)},${(lon - dLon).toFixed(4)},`
+                + `${(lat + dLat).toFixed(4)},${(lon + dLon).toFixed(4)},EPSG:4326`,
+        })}`;
+        try {
+            const raw = await httpGetJson(url);
+            return {
+                alerts: parseEcccAlerts(raw, {
+                    latitude: lat, longitude: lon,
+                    language: locale.startsWith('fr') ? 'fr' : 'en',
+                    utcToLocal: iso => wallNaiveStamp(Date.parse(iso) + cityOffsetMs),
+                }),
+                outcome: 'ok',
+            };
+        } catch {
+            return { alerts: [], outcome: 'failed' };
+        }
+    },
+};
+
+// kept in sync with the extension table (same public legacy feeds)
+const METEOALARM_FEEDS = {
+    AD: 'andorra', AT: 'austria', BE: 'belgium', BA: 'bosnia-herzegovina',
+    BG: 'bulgaria', HR: 'croatia', CY: 'cyprus', CZ: 'czechia',
+    DK: 'denmark', EE: 'estonia', FI: 'finland', FR: 'france',
+    DE: 'germany', GR: 'greece', HU: 'hungary', IS: 'iceland',
+    IE: 'ireland', IL: 'israel', IT: 'italy', LV: 'latvia',
+    LT: 'lithuania', LU: 'luxembourg', MT: 'malta', MD: 'moldova',
+    ME: 'montenegro', NL: 'netherlands', NO: 'norway', PL: 'poland',
+    PT: 'portugal', MK: 'republic-of-north-macedonia', RO: 'romania',
+    RS: 'serbia', SK: 'slovakia', SI: 'slovenia', ES: 'spain',
+    SE: 'sweden', CH: 'switzerland', UA: 'ukraine', GB: 'united-kingdom',
+};
+
+const stripPrivate = ({ _polygons, _circles, _geocodes, _capLink, ...alert }) => alert;
+
+const meteoalarmAlertSource = {
+    id: 'meteoalarm',
+    parse: parseCapAlerts,
+    async fetch(lat, lon, cityOffsetMs = 0, ctx = {}) {
+        const slug = METEOALARM_FEEDS[(ctx.countryCode ?? '').toUpperCase()];
+        if (!slug) return { alerts: [], outcome: 'none' };
+        const utcToLocal = iso => wallNaiveStamp(Date.parse(iso) + cityOffsetMs);
+        try {
+            const xml = await httpGetText(
+                `https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-${slug}`);
+            const matchCtx = { latitude: lat, longitude: lon, placeNames: ctx.placeNames ?? [] };
+            const matched = parseCapAlerts(xml, { utcToLocal })
+                .filter(cand => alertMatchesPoint(cand, matchCtx))
+                .filter(cand => !ctx.nowIso || !cand.endsAt || cand.endsAt >= ctx.nowIso);
+            const alerts = await Promise.all(matched.slice(0, 5).map(async cand => {
+                if (!cand._capLink) return stripPrivate(cand);
+                try {
+                    const [full] = parseCapAlerts(await httpGetText(cand._capLink), { utcToLocal });
+                    if (!full) return stripPrivate(cand);
+                    if (full._polygons.length && !alertMatchesPoint(full, matchCtx)) return null;
+                    return stripPrivate({
+                        ...cand,
+                        description: full.description || cand.description,
+                        instruction: full.instruction,
+                        headline: full.headline ?? cand.headline,
+                        sender: full.sender || cand.sender,
+                        language: full.language || cand.language,
+                    });
+                } catch { return stripPrivate(cand); }
+            }));
+            return { alerts: alerts.filter(Boolean), outcome: 'ok' };
+        } catch { return { alerts: [], outcome: 'failed' }; }
+    },
+};
+
+export const ALERT_SOURCES = [nwsAlertSource, metAlertSource,
+    ecccAlertSource, meteoalarmAlertSource];
+
+async function fetchAlerts(lat, lon, cityOffsetMs = 0, alertCtx = {}) {
+    const results = await Promise.all(
+        ALERT_SOURCES.map(source => source.fetch(lat, lon, cityOffsetMs, alertCtx)));
+    let alertsCoverage = 'none';
+    if (results.some(r => r.outcome === 'ok')) alertsCoverage = 'ok';
+    else if (results.some(r => r.outcome === 'failed')) alertsCoverage = 'failed';
+    return { alerts: mergeAlerts(results.map(r => r.alerts)), alertsCoverage };
 }
 
 // ---------------------------------------------------------------------------

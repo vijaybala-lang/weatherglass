@@ -307,6 +307,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             settings.set_double('location-latitude', result.latitude);
             settings.set_double('location-longitude', result.longitude);
             settings.set_string('location-name', result.name);
+            settings.set_string('location-country-code', result.countryCode ?? '');
             onSelect(result);
             clearResults();
         };
@@ -361,6 +362,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             const val = parseFloat(latEntry.get_text());
             if (Number.isFinite(val) && val >= -90 && val <= 90) {
                 settings.set_double('location-latitude', val);
+                settings.set_string('location-country-code', '');
                 settings.set_boolean('auto-location', false);
                 latEntry.remove_css_class('error');
             } else
@@ -370,6 +372,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             const val = parseFloat(lonEntry.get_text());
             if (Number.isFinite(val) && val >= -180 && val <= 180) {
                 settings.set_double('location-longitude', val);
+                settings.set_string('location-country-code', '');
                 settings.set_boolean('auto-location', false);
                 lonEntry.remove_css_class('error');
             } else

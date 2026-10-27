@@ -15,6 +15,7 @@ import { HourlyChart, CHART_SERIES } from './chart.js';
 import { judgeBoxes, judgeInk, lineInk, applyInk, lumOf } from './ink.js';
 import {
     effectiveScene, precipIntensity, sceneFor, moonPhase, daySlice, cityWallMs,
+    alertsForDay, alertOverlapsDay,
     sunShade, dayName, fmtTemp, fmtWind, fmtPressure, fmtVisibility, fmtPrecipRate,
     fmtPrecipTotal, fmtDuration, fmtClock, fmtDayStamp, fmtLocalIso, compass,
     uvBand, relTime, locationLabel,
@@ -103,10 +104,14 @@ class CityPage extends Gtk.Box {
     #moonIconState = { scene: 'moon', phase: 0.62, night: true };
     #skyScene = 'loading';
     #skyNight = false;
+    #skyCode = null;
     #moonPhase = 0.62;
 
     #stack; #overlay; #vadj;
     #errorBanner; #errorBannerLabel; #coldErrorLabel;
+    #alertsSection; #alertsTitle; #alertsList; #alertsMore;
+    #alertRowWidgets = []; #expandedAlerts = new Set();
+    #alertsSeedKey = ''; #showAllAlerts = false;
     #tempLabel; #cityLabel; #locLabel; #condLabel; #nowBadge;
     #clockLabel; #dateLabel; #updatedLabel; #heroSpinner;
     #chart; #daySummary; #segBox;
@@ -416,6 +421,33 @@ class CityPage extends Gtk.Box {
         this.#errorBanner.append(this.#errorBannerLabel);
         top.append(this.#errorBanner);
 
+        // advisories ----------------------------------------------------------------
+        // Real AdwExpanderRows in a boxed list; the whole section is
+        // hidden unless an alert overlaps the selected day.
+        this.#alertsSection = new Gtk.Box({
+            orientation: Gtk.Orientation.VERTICAL,
+            spacing: 8,
+            margin_top: 24,
+            visible: false,
+        });
+        const alertsHeading = sectionHeading('Advisories',
+            'active and starting within 48 h');
+        this.#alertsTitle = alertsHeading.titleLbl;
+        this.#alertsSection.append(alertsHeading.box);
+        this.#alertsList = new Gtk.ListBox({ css_classes: ['boxed-list', 'alerts-list'] });
+        this.#alertsList.set_selection_mode(Gtk.SelectionMode.NONE);
+        this.#alertsSection.append(this.#alertsList);
+        this.#alertsMore = new Gtk.Button({
+            label: '', halign: Gtk.Align.START,
+            css_classes: ['flat', 'alerts-more'], visible: false,
+        });
+        this.#alertsMore.connect('clicked', () => {
+            this.#showAllAlerts = true;
+            this.#syncAlerts();
+        });
+        this.#alertsSection.append(this.#alertsMore);
+        top.append(this.#alertsSection);
+
         // 8-day selector ------------------------------------------------------------
         const forecastSection = new Gtk.Box({
             orientation: Gtk.Orientation.VERTICAL,
@@ -707,12 +739,115 @@ class CityPage extends Gtk.Box {
         this.#refreshCurrentStrip();
 
         this.#errorBanner.visible = false;
+        this.#buildAlerts();
         this.#buildDayTiles();
         this.#stack.visible_child_name = 'ready';
         this.#updatedLabel.label = relTime(data.fetchedAtWallMs);
         if (!silent) this.#tickClock();
         this.#invalidateSky();
         this.#scheduleRejudge(0);
+    }
+
+    #levelWord(alert) {
+        return { 1: 'Yellow', 2: 'Orange', 3: 'Red' }[alert.level] ?? '';
+    }
+
+    #alertWhen(alert) {
+        const nowIso = this.#data?.current?.timeIso ?? '';
+        const startDay = dayName(alert.startsAt.slice(0, 10));
+        if (!alert.endsAt)
+            return alert.startsAt <= nowIso
+                ? 'in effect now'
+                : `starts ${startDay} ${fmtLocalIso(alert.startsAt, this.#h12)}`;
+        const endDay = dayName(alert.endsAt.slice(0, 10));
+        if (alert.startsAt <= nowIso)
+            return `now until ${endDay} ${fmtLocalIso(alert.endsAt, this.#h12)}`;
+        if (alert.startsAt.slice(0, 10) === alert.endsAt.slice(0, 10))
+            return `starts ${startDay} ${fmtLocalIso(alert.startsAt, this.#h12)}`
+                + `–${fmtLocalIso(alert.endsAt, this.#h12)}`;
+        return `starts ${startDay} ${fmtLocalIso(alert.startsAt, this.#h12)}, `
+            + `until ${endDay} ${fmtLocalIso(alert.endsAt, this.#h12)}`;
+    }
+
+    #buildAlerts() {
+        this.#alertsList.remove_all();
+        this.#alertRowWidgets = [];
+        const alerts = this.#data?.alerts ?? [];
+        const seedKey = alerts.map(a => a.id).join('|');
+        if (seedKey !== this.#alertsSeedKey) {
+            this.#alertsSeedKey = seedKey;
+            this.#showAllAlerts = false;
+            if (alerts.length && (alerts[0].level ?? 0) >= 2)
+                this.#expandedAlerts.add(alerts[0].id);
+        }
+        for (const alert of alerts) {
+            const lvl = alert.level ?? 0;
+            const word = this.#levelWord(alert);
+            const row = new Adw.ExpanderRow({
+                title: alert.event,
+                subtitle: word ? `${word} · ${this.#alertWhen(alert)}` : this.#alertWhen(alert),
+                css_classes: [`adv-s${lvl}`],
+                expanded: this.#expandedAlerts.has(alert.id),
+            });
+            row.add_prefix(new Gtk.Image({
+                icon_name: 'weather-severe-alert-symbolic',
+                css_classes: [`adv-icon-s${lvl}`],
+            }));
+            const body = new Gtk.Box({
+                orientation: Gtk.Orientation.VERTICAL, spacing: 6,
+                margin_top: 10, margin_bottom: 12, margin_start: 12, margin_end: 12,
+            });
+            if (alert.description) {
+                const desc = new Gtk.Label({
+                    label: alert.description, xalign: 0, wrap: true, selectable: true,
+                });
+                body.append(desc);
+            }
+            if (alert.instruction) {
+                const instr = new Gtk.Label({
+                    label: alert.instruction, xalign: 0, wrap: true, selectable: true,
+                    css_classes: ['adv-instr'],
+                });
+                body.append(instr);
+            }
+            const issuedBy = alert.sender && alert.sender !== alert.source
+                ? `${alert.sender} · ${alert.source}` : alert.source;
+            body.append(new Gtk.Label({
+                label: `Issued by ${issuedBy}`
+                    + (alert.areas.length ? ` · ${alert.areas.join('; ')}` : ''),
+                xalign: 0, wrap: true, css_classes: ['adv-meta'],
+            }));
+            row.add_row(body);
+            row.connect('notify::expanded', () => {
+                if (row.expanded) this.#expandedAlerts.add(alert.id);
+                else this.#expandedAlerts.delete(alert.id);
+            });
+            this.#alertsList.append(row);
+            this.#alertRowWidgets.push({ row, alert });
+        }
+        this.#syncAlerts();
+    }
+
+    #syncAlerts() {
+        if (!this.#data) return;
+        const forDay = new Set(alertsForDay(this.#data.alerts ?? [],
+            this.#data.daily, this.#dayIndex).map(a => a.id));
+        let shown = 0, hidden = 0;
+        for (const { row, alert } of this.#alertRowWidgets) {
+            const inDay = forDay.has(alert.id);
+            const underCap = this.#showAllAlerts || shown < 3;
+            row.visible = inDay && underCap;
+            if (inDay && underCap) shown++;
+            else if (inDay) hidden++;
+        }
+        this.#alertsSection.visible = shown > 0;
+        this.#alertsMore.visible = hidden > 0;
+        if (hidden > 0) this.#alertsMore.label = `+${hidden} more advisories`;
+        if (this.#dayIndex > 0 && this.#data.daily[this.#dayIndex])
+            this.#alertsTitle.label =
+                `Advisories · ${dayName(this.#data.daily[this.#dayIndex].date)}`;
+        else
+            this.#alertsTitle.label = 'Advisories';
     }
 
     #showFailure(error) {
@@ -826,10 +961,25 @@ class CityPage extends Gtk.Box {
                 margin_top: 10, margin_bottom: 9,
             });
             const dateNum = dateParts(day.date)?.day;
-            col.append(new Gtk.Label({
+            const nameBox = new Gtk.Box({
+                orientation: Gtk.Orientation.HORIZONTAL, spacing: 4,
+                halign: Gtk.Align.CENTER,
+            });
+            nameBox.append(new Gtk.Label({
                 label: `${i === 0 ? 'Today' : dayName(day.date)}${dateNum ? ` ${dateNum}` : ''}`,
                 css_classes: ['day-name'],
             }));
+            const dayLevel = Math.max(0, ...(this.#data.alerts ?? [])
+                .filter(a => alertOverlapsDay(a, day.date))
+                .map(a => a.level ?? 0));
+            if (dayLevel > 0) {
+                nameBox.append(new Gtk.Label({
+                    label: '●', css_classes: [`adv-dot-s${dayLevel}`],
+                }));
+                btn.tooltip_text =
+                    `${{ 1: 'Yellow', 2: 'Orange', 3: 'Red' }[dayLevel]} advisory`;
+            }
+            col.append(nameBox);
             const glyphState = {
                 scene: info.scene,
                 night: false,
@@ -868,6 +1018,7 @@ class CityPage extends Gtk.Box {
 
     #rerender() {
         if (!this.#data) return;
+        this.#syncAlerts();
         this.#syncSkyScene();
         this.#invalidateSky();
         const units = this.#bus.config.units;

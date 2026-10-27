@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeatherGlass — advisory mocks</title>
+<style>
+  :root{
+    --ink:#f4f7fa; --dim:rgba(244,247,250,.62); --faint:rgba(244,247,250,.38);
+    --slab:rgba(13,18,26,.52); --slab2:rgba(13,18,26,.38); --line:rgba(255,255,255,.14);
+    --amber:#f5a524; --blue:#57a8ff; --page:#22262b;
+    --sev1:#f5c542; --sev2:#f07f2e; --sev3:#e5484d; --sev4:#ff2e3e;
+    --sev1bg:rgba(245,197,66,.16); --sev2bg:rgba(240,127,46,.18);
+    --sev3bg:rgba(229,72,77,.20); --sev4bg:rgba(255,46,62,.24);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);
+    font-family:Cantarell,"Noto Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  header.bar{position:sticky;top:0;z-index:9;background:#2b3036;border-bottom:1px solid #3a4046;
+    padding:10px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  header.bar h1{font-size:15px;margin:0;font-weight:650}
+  header.bar p{margin:0;font-size:12.5px;color:#aeb6bf;max-width:640px}
+  .switch{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+  .switch button{font:inherit;font-size:13px;color:#cfd6dd;background:#383f46;
+    border:1px solid #4a5158;border-radius:8px;padding:6px 12px;cursor:pointer}
+  .switch button[aria-selected="true"]{background:#e8edf1;color:#171b1f;border-color:#e8edf1;font-weight:650}
+  main{padding:22px 14px 40px;display:flex;flex-direction:column;align-items:center}
+  .note{max-width:1040px;width:100%;padding:0 6px 10px;color:#c3cbd3;font-size:13.5px;display:none}
+  .note.on{display:block}
+  .note b{color:#fff}
+  .note code{font-family:ui-monospace,monospace;font-size:12px;background:#333a41;border-radius:5px;padding:1px 5px}
+  /* ---------- timing model strip (always visible) ---------- */
+  .timing{max-width:1040px;width:100%;background:#2b3036;border:1px solid #3a4046;border-radius:12px;
+    padding:14px 16px 10px;margin-bottom:16px}
+  .timing h2{font-size:13px;margin:0 0 2px}
+  .timing p{font-size:12.5px;color:#aeb6bf;margin:0 0 10px;max-width:860px}
+  .tl{position:relative;height:86px}
+  .tl .dayband{position:absolute;top:0;height:18px;border-radius:4px;background:#3a4653;
+    font-size:10px;color:#cfd6dd;display:flex;align-items:center;justify-content:center}
+  .tl .alertbar{position:absolute;height:16px;border-radius:4px;font-size:10px;font-weight:650;
+    display:flex;align-items:center;padding:0 6px;color:#171b1f;white-space:nowrap;overflow:hidden}
+  .tl .nowline{position:absolute;top:-2px;bottom:16px;width:2px;background:#fff}
+  .tl .nowlab{position:absolute;bottom:0;font-size:10px;color:#fff;font-weight:700;transform:translateX(-50%)}
+  .tl .none-yet{position:absolute;top:26px;font-size:11px;color:#7e8894;font-style:italic}
+  /* ---------- shared card bits ---------- */
+  .glyph{width:24px;height:24px;flex:none}
+  .warn-ic{width:20px;height:20px;flex:none}
+  .days{display:flex;gap:5px}
+  .day{flex:1;font:inherit;color:var(--ink);background:transparent;border:1px solid transparent;
+    border-radius:12px;padding:7px 2px 6px;cursor:pointer;text-align:center;position:relative}
+  .day:hover{background:rgba(16,20,28,.28)}
+  .day[aria-selected="true"]{background:rgba(16,20,28,.48);border-color:var(--line)}
+  .day .dn{font-size:11.5px;font-weight:700}
+  .day .hl{font-size:11.5px;font-variant-numeric:tabular-nums}
+  .day .hl span{opacity:.75}
+  .day .adot{position:absolute;top:5px;right:7px;width:8px;height:8px;border-radius:50%}
+  .day .adot.s1{background:var(--sev1)} .day .adot.s2{background:var(--sev2)} .day .adot.s3{background:var(--sev3)}
+  .tabs{display:flex;gap:6px}
+  .tabs button{font:inherit;font-size:12px;border-radius:999px;padding:4px 11px;cursor:pointer;
+    background:transparent;border:1px solid transparent;color:var(--dim)}
+  .tabs button[aria-selected="true"]{background:rgba(16,20,28,.5);color:#fff;border-color:var(--line)}
+  /* ---------- advisory row (the common component) ---------- */
+  .adv{border-radius:12px;padding:9px 11px;margin-top:8px;border:1px solid transparent}
+  .adv.s1{background:var(--sev1bg);border-color:rgba(245,197,66,.35)}
+  .adv.s2{background:var(--sev2bg);border-color:rgba(240,127,46,.40)}
+  .adv.s3{background:var(--sev3bg);border-color:rgba(229,72,77,.45)}
+  .adv-head{display:flex;gap:9px;align-items:flex-start;width:100%;font:inherit;color:inherit;
+    background:none;border:0;padding:0;cursor:pointer;text-align:left}
+  /* prefix icon: Adwaita weather-severe-alert-symbolic — main shape in ink,
+     warning badge in the level colour (real code: Gtk.Image / St.Icon) */
+  .adv-ic{width:22px;height:22px;flex:none;margin-top:1px}
+  .s1 .adv-ic{color:var(--sev1)} .s2 .adv-ic{color:var(--sev2)} .s3 .adv-ic{color:var(--sev3)}
+  .adv-title{font-size:13.5px;font-weight:700;line-height:1.25}
+  .adv-when{font-size:11.5px;color:var(--dim);margin-top:1px;font-variant-numeric:tabular-nums}
+  /* suffix arrow: Adwaita pan-down-symbolic, as AdwExpanderRow's arrow */
+  .adv-chev{flex:none;color:var(--dim);margin-top:3px;margin-left:auto;transition:transform .15s ease}
+  .adv-chev svg{width:16px;height:16px;display:block}
+  .adv-body{display:none;margin-top:8px;font-size:12.5px;line-height:1.45;color:#e6ecf2}
+  .adv.open .adv-body{display:block}
+  .adv.open .adv-chev{transform:rotate(180deg)}
+  .adv-body p{margin:0 0 6px}
+  .adv-body .instr{background:rgba(10,14,20,.30);border-radius:8px;padding:7px 9px}
+  .adv-meta{font-size:11px;color:var(--faint);margin-top:7px}
+  .adv-meta b{color:var(--dim);font-weight:650}
+  section[data-win]{display:none;width:100%}
+  section[data-win].on{display:block}
+  .chip{display:flex;gap:8px;align-items:center;width:100%;font:inherit;cursor:pointer;text-align:left;
+    color:var(--ink);background:var(--sev2bg);border:1px solid rgba(240,127,46,.40);
+    border-radius:999px;padding:6px 12px 6px 8px;margin-top:10px;font-size:12.5px}
+  .chip svg{width:18px;height:18px;color:var(--sev2);flex:none}
+  .topbar{display:flex;align-items:center;gap:16px;background:#1b1e22;border-radius:10px;
+    padding:7px 14px;font-size:13px}
+  .panelbtn{display:flex;align-items:center;gap:7px;position:relative;padding:2px 12px 2px 6px}
+  .panelbtn .pbadge{position:absolute;top:-4px;right:0;width:15px;height:15px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center}
+  .panelbtn .pbadge svg{width:10px;height:10px}
+  pre.iface{background:#1b1e22;border:1px solid #3a4046;border-radius:10px;padding:12px 14px;
+    font-size:12px;line-height:1.5;overflow-x:auto;color:#d7e0ea}
+  table.map{border-collapse:collapse;font-size:12.5px;width:100%}
+  table.map td,table.map th{border-bottom:1px solid #3a4046;padding:6px 8px;text-align:left;vertical-align:top}
+  table.map th{color:#aeb6bf;font-weight:650}
+  .swatch{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+</style>
+</head>
+<body>
+<header class="bar">
+  <h1>WeatherGlass — advisory mocks</h1>
+  <p>One normalized <b style="color:#fff">alert</b> shape, four ways to surface it. All alert text below is
+     invented sample data in the issuer's voice; colour comes only from the common <b style="color:#fff">level</b> (1–3, or none).</p>
+  <nav class="switch" role="tablist" aria-label="Mock">
+    <button role="tab" aria-selected="true" data-mock="a">A · Extension banners</button>
+    <button role="tab" aria-selected="false" data-mock="b">B · Extension chip</button>
+    <button role="tab" aria-selected="false" data-mock="c">C · App window</button>
+    <button role="tab" aria-selected="false" data-mock="d">D · Panel + states</button>
+  </nav>
+</header>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="g-warn" viewBox="0 0 24 24"><path d="M12 3 22 20H2Z" fill="#171b1f"/><rect x="11.1" y="9.5" width="1.8" height="5.4" rx=".9" fill="#fff"/><circle cx="12" cy="17.4" r="1.15" fill="#fff"/></symbol>
+    <!-- verbatim Adwaita weather-severe-alert-symbolic (16px grid), fill -> currentColor -->
+    <symbol id="g-severe" viewBox="0 0 16 16"><path fill="#f4f7fa" d="M6.008 2.068C2.726 2.068.044 4.75.045 8.031c0 3.282 2.681 5.963 5.963 5.963L7 14v-2l-.986-.006h-.008a3.946 3.946 0 0 1-3.961-3.963c0-2.2 1.76-3.963 3.96-3.963a3.96 3.96 0 0 1 3.67 2.473 1 1 0 0 0 .393.453h5.057q.072.001.142.008a4.5 4.5 0 0 0-3.714-1.97c-.15 0-.29.047-.438.062-1.053-1.826-2.96-3.024-5.107-3.026Z"/><path fill="currentColor" d="M8.875 8A.864.864 0 0 0 8 8.875v6.25c0 .492.383.875.875.875h6.25a.864.864 0 0 0 .875-.875v-6.25A.864.864 0 0 0 15.125 8zM11 9h2v2.5s0 .5-.5.5h-1c-.5 0-.5-.5-.5-.5zm.5 4h1c.277 0 .5.223.5.5v1c0 .277-.223.5-.5.5h-1a.5.5 0 0 1-.5-.5v-1c0-.277.223-.5.5-.5m0 0"/></symbol>
+    <!-- verbatim Adwaita pan-down-symbolic (16px grid), fill -> currentColor -->
+    <symbol id="g-pan" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="m 3.292969 7.707031 l 4 4 c 0.390625 0.390625 1.023437 0.390625 1.414062 0 l 4 -4 c 0.390625 -0.390625 0.390625 -1.023437 0 -1.414062 s -1.023437 -0.390625 -1.414062 0 l -3.292969 3.292969 l -3.292969 -3.292969 c -0.390625 -0.390625 -1.023437 -0.390625 -1.414062 0 s -0.390625 1.023437 0 1.414062 z m 0 0"/></symbol>
+    <symbol id="g-sun" viewBox="0 0 24 24"><g stroke="#f7b733" stroke-width="1.7" stroke-linecap="round"><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.5 4.5l2 2M17.5 17.5l2 2M19.5 4.5l-2 2M6.5 17.5l-2 2"/></g><circle cx="12" cy="12" r="4.6" fill="#ffcf5c"/></symbol>
+    <symbol id="g-cloud" viewBox="0 0 24 24"><path d="M7 18h9.5a4.2 4.2 0 0 0 .6-8.35A6 6 0 0 0 5.6 11 3.8 3.8 0 0 0 7 18Z" fill="#dbe4ec"/></symbol>
+    <symbol id="g-partly" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3.4" fill="#ffcf5c"/><path d="M10 20h8.2a3.6 3.6 0 0 0 .5-7.15A5.4 5.4 0 0 0 8.6 13.4 3.3 3.3 0 0 0 10 20Z" fill="#dbe4ec"/></symbol>
+    <symbol id="g-rain" viewBox="0 0 24 24"><path d="M7 14h9.5a4.2 4.2 0 0 0 .6-8.35A6 6 0 0 0 5.6 7 3.8 3.8 0 0 0 7 14Z" fill="#c3cfdb"/><g stroke="#57a8ff" stroke-width="1.7" stroke-linecap="round"><path d="M8 17l-1 3M12.5 17l-1 3M17 17l-1 3"/></g></symbol>
+    <symbol id="g-storm" viewBox="0 0 24 24"><path d="M7 13h9.5a4.2 4.2 0 0 0 .6-8.35A6 6 0 0 0 5.6 6 3.8 3.8 0 0 0 7 13Z" fill="#b9c6d4"/><path d="M12.6 13.5 9.8 18h2.2l-1.2 3.4L14.2 16h-2.3l1.4-2.5Z" fill="#f5c542"/></symbol>
+    <symbol id="g-wind" viewBox="0 0 24 24"><g fill="none" stroke="#dbe4ec" stroke-width="1.9" stroke-linecap="round"><path d="M3 8h10a2.6 2.6 0 1 0-2.5-3.2M2.5 12.5h14a2.6 2.6 0 1 1-2.5 3.2M4 17h7"/></g></symbol>
+  </defs>
+</svg>
+
+<main>
+<section class="timing" aria-label="Timing model">
+  <h2>Timing model — advisories are not per forecast day</h2>
+  <p>Every source (NWS, MET Norway, MeteoAlarm, CAP feeds) returns alerts that are <b style="color:#fff">active or upcoming
+     right now</b>, each with its own validity window (<b style="color:#fff">starts → ends</b>). There is no “alerts for Thursday” query:
+     an alert for day 5 usually has not been issued yet. A day view is therefore an <b style="color:#fff">overlap filter</b> over the
+     alerts we already hold. Typical horizon is 0–48 h; multi-day events (heat, coastal flooding) can span 3+ days.</p>
+  <div class="tl" aria-hidden="true">
+    <div class="dayband" style="left:0;width:12%">Today</div>
+    <div class="dayband" style="left:12.7%;width:12%">Tue</div>
+    <div class="dayband" style="left:25.4%;width:12%">Wed</div>
+    <div class="dayband" style="left:38.1%;width:12%">Thu</div>
+    <div class="dayband" style="left:50.8%;width:12%">Fri</div>
+    <div class="dayband" style="left:63.5%;width:12%">Sat</div>
+    <div class="dayband" style="left:76.2%;width:12%">Sun</div>
+    <div class="dayband" style="left:88.9%;width:11.1%">Mon</div>
+    <div class="alertbar" style="left:4%;width:26%;top:26px;background:var(--sev2);color:#fff">Wind warning · now → Tue 03:00</div>
+    <div class="alertbar" style="left:14%;width:10%;top:48px;background:var(--sev1)">Rain · Tue 09–18:00</div>
+    <div class="none-yet" style="left:42%">nothing issued yet — not “no risk”</div>
+    <div class="nowline" style="left:6%"></div>
+    <div class="nowlab" style="left:6%">now</div>
+  </div>
+</section>
+
+<p class="note on" data-note="a"><b>A · Extension banners (recommended).</b> One row per active alert, directly under the
+  header, sorted by level then start. Collapsed by default except the highest level. Day tiles carry a dot in the level
+  colour when an alert overlaps that day; selecting a day lists only its overlapping alerts (try Wed — the whole
+  block disappears). Height cost: ~46 px per collapsed alert. No advisories means nothing renders at all:
+  no heading, no empty-state box. Rows follow <b>AdwExpanderRow</b> anatomy: prefix
+  <code>weather-severe-alert-symbolic</code> (its warning badge takes the level colour), title + subtitle, <code>pan-down-symbolic</code>
+  suffix arrow that rotates — no bespoke triangle or disc.</p>
+<p class="note" data-note="b"><b>B · Extension chip.</b> A single line under the condition text keeps the card short.
+  Cheapest on height, weakest on urgency: a red warning looks like a yellow advisory until opened. Kept as the
+  low-profile alternative; the expanded state reuses A's rows verbatim.</p>
+<p class="note" data-note="c"><b>C · App window.</b> Same rows, more room: full description and instruction inline for
+  the top alert, city rows in the sidebar gain a level dot, and the 8-day tiles mark overlapped days. Pick a day —
+  the advisory block retitles to that day and shows only alerts overlapping it. A day with none shows nothing.</p>
+<p class="note" data-note="d"><b>D · Panel + states.</b> What the top bar shows when the menu is closed, the common
+  interface every provider maps into, and the awkward states: several alerts at once, alert text in the issuer's
+  language, and the no-advisories rule: display nothing.</p>
+
+<!-- ================= MOCK A : extension card, banners ================= -->
+<section data-win="a" class="on" aria-label="Mock A">
+  <div style="width:392px;max-width:100%;margin:0 auto;border-radius:16px;overflow:hidden;
+       background:linear-gradient(180deg,#26344a 0%,#31445f 55%,#3c546f 100%);
+       border:1px solid rgba(255,255,255,.10);box-shadow:0 18px 50px rgba(0,0,0,.45)">
+    <div style="padding:14px 14px 12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:40px;font-weight:200;line-height:1;font-variant-numeric:tabular-nums">9°</div>
+          <div style="font-size:13px;color:var(--dim);margin-top:4px">Windy, showers</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:15px;font-weight:700">Berlin</div>
+          <div style="font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums">Mon 07:40</div>
+          <div style="font-size:11px;color:var(--faint);margin-top:5px">↻ ⚙</div>
+        </div>
+      </div>
+
+      <div data-advblock>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:12px">
+          <span data-advtitle style="font-size:12px;font-weight:750">Advisories</span>
+          <span data-advsub style="font-size:11px;color:var(--faint)">active and starting within 48 h</span>
+        </div>
+
+        <div class="adv s2 open" data-alert data-days="0,1">
+          <button class="adv-head" data-advtoggle aria-expanded="true">
+            <svg class="adv-ic"><use href="#g-severe"/></svg>
+            <span><span class="adv-title">Wind gusts warning</span>
+              <div class="adv-when">Orange · now until Tue 03:00</div></span>
+            <span class="adv-chev"><svg><use href="#g-pan"/></svg></span>
+          </button>
+          <div class="adv-body">
+            <p>Gusts of 85–100 km/h from the southwest, locally storm-force in showers. Loose objects may be blown about; branches can break.</p>
+            <p class="instr">Secure loose items outdoors. Take care near trees and scaffolding.</p>
+            <div class="adv-meta">Issued by <b>DWD via MeteoAlarm</b> · Berlin and surroundings · until Tue 27 Oct, 03:00</div>
+          </div>
+        </div>
+
+        <div class="adv s1" data-alert data-days="1">
+          <button class="adv-head" data-advtoggle aria-expanded="false">
+            <svg class="adv-ic"><use href="#g-severe"/></svg>
+            <span><span class="adv-title">Persistent rain advisory</span>
+              <div class="adv-when">Yellow · starts tomorrow, Tue 09:00–18:00</div></span>
+            <span class="adv-chev"><svg><use href="#g-pan"/></svg></span>
+          </button>
+          <div class="adv-body">
+            <p>Prolonged rain, 25–35 mm in nine hours. Standing water on roads and underpasses is possible.</p>
+            <div class="adv-meta">Issued by <b>DWD via MeteoAlarm</b> · Berlin and surroundings</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="display:flex;justify-content:center;margin-top:14px">
+        <nav class="tabs"><button aria-selected="true">Temperature</button>
+          <button aria-selected="false">Precipitation</button><button aria-selected="false">Wind</button></nav>
+      </div>
+      <svg viewBox="0 0 360 96" style="width:100%;height:auto;display:block;margin-top:4px" role="img" aria-label="Chart placeholder">
+        <path d="M6 62 C60 50 110 66 160 44 S280 22 354 38" fill="none" stroke="#f5a524" stroke-width="2.6" stroke-linecap="round"/>
+        <g fill="rgba(255,255,255,.6)" font-size="10"><text x="6" y="90">06</text><text x="120" y="90">12</text><text x="240" y="90">18</text><text x="336" y="90">00</text></g>
+      </svg>
+
+      <div class="days" data-daysel style="margin-top:6px">
+        <button class="day" aria-selected="true" data-day="0"><span class="adot s2"></span><div class="dn">Today</div><svg class="glyph"><use href="#g-wind"/></svg><div class="hl"><b>11°</b> <span>7°</span></div></button>
+        <button class="day" data-day="1"><span class="adot s2"></span><div class="dn">Tue</div><svg class="glyph"><use href="#g-rain"/></svg><div class="hl"><b>10°</b> <span>6°</span></div></button>
+        <button class="day" data-day="2"><div class="dn">Wed</div><svg class="glyph"><use href="#g-partly"/></svg><div class="hl"><b>13°</b> <span>5°</span></div></button>
+        <button class="day" data-day="3"><div class="dn">Thu</div><svg class="glyph"><use href="#g-sun"/></svg><div class="hl"><b>15°</b> <span>6°</span></div></button>
+      </div>
+      <div class="days" data-daysel style="margin-top:5px">
+        <button class="day" data-day="4"><div class="dn">Fri</div><svg class="glyph"><use href="#g-cloud"/></svg><div class="hl"><b>12°</b> <span>6°</span></div></button>
+        <button class="day" data-day="5"><div class="dn">Sat</div><svg class="glyph"><use href="#g-rain"/></svg><div class="hl"><b>11°</b> <span>5°</span></div></button>
+        <button class="day" data-day="6"><div class="dn">Sun</div><svg class="glyph"><use href="#g-partly"/></svg><div class="hl"><b>14°</b> <span>7°</span></div></button>
+        <button class="day" data-day="7"><div class="dn">Mon</div><svg class="glyph"><use href="#g-sun"/></svg><div class="hl"><b>16°</b> <span>8°</span></div></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MOCK B : extension card, chip ================= -->
+<section data-win="b" aria-label="Mock B">
+  <div style="width:392px;max-width:100%;margin:0 auto;border-radius:16px;overflow:hidden;
+       background:linear-gradient(180deg,#26344a 0%,#31445f 55%,#3c546f 100%);
+       border:1px solid rgba(255,255,255,.10);box-shadow:0 18px 50px rgba(0,0,0,.45)">
+    <div style="padding:14px 14px 12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:40px;font-weight:200;line-height:1;font-variant-numeric:tabular-nums">9°</div>
+          <div style="font-size:13px;color:var(--dim);margin-top:4px">Windy, showers</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:15px;font-weight:700">Berlin</div>
+          <div style="font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums">Mon 07:40</div>
+          <div style="font-size:11px;color:var(--faint);margin-top:5px">↻ ⚙</div>
+        </div>
+      </div>
+
+      <button class="chip" data-chip aria-expanded="false">
+        <svg><use href="#g-severe"/></svg>
+        <span><b>2 advisories</b> · Wind gusts warning until Tue 03:00</span>
+        <span style="margin-left:auto;color:var(--dim)">▾</span>
+      </button>
+      <div data-chiplist style="display:none">
+        <div class="adv s2">
+          <button class="adv-head" data-advtoggle aria-expanded="false">
+            <svg class="adv-ic"><use href="#g-severe"/></svg>
+            <span><span class="adv-title">Wind gusts warning</span>
+              <div class="adv-when">Orange · now until Tue 03:00</div></span>
+            <span class="adv-chev"><svg><use href="#g-pan"/></svg></span>
+          </button>
+          <div class="adv-body">
+            <p>Gusts of 85–100 km/h from the southwest, locally storm-force in showers.</p>
+            <p class="instr">Secure loose items outdoors. Take care near trees and scaffolding.</p>
+            <div class="adv-meta">Issued by <b>DWD via MeteoAlarm</b></div>
+          </div>
+        </div>
+        <div class="adv s1">
+          <button class="adv-head" data-advtoggle aria-expanded="false">
+            <svg class="adv-ic"><use href="#g-severe"/></svg>
+            <span><span class="adv-title">Persistent rain advisory</span>
+              <div class="adv-when">Yellow · starts tomorrow, Tue 09:00–18:00</div></span>
+            <span class="adv-chev"><svg><use href="#g-pan"/></svg></span>
+          </button>
+          <div class="adv-body">
+            <p>Prolonged rain, 25–35 mm in nine hours. Standing water on roads is possible.</p>
+            <div class="adv-meta">Issued by <b>DWD via MeteoAlarm</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin-top:14px">
+        <nav class="tabs"><button aria-selected="true">Temperature</button>
+          <button aria-selected="false">Precipitation</button><button aria-selected="false">Wind</button></nav>
+      </div>
+      <svg viewBox="0 0 360 96" style="width:100%;height:auto;display:block;margin-top:4px" role="img" aria-label="Chart placeholder">
+        <path d="M6 62 C60 50 110 66 160 44 S280 22 354 38" fill="none" stroke="#f5a524" stroke-width="2.6" stroke-linecap="round"/>
+        <g fill="rgba(255,255,255,.6)" font-size="10"><text x="6" y="90">06</text><text x="120" y="90">12</text><text x="240" y="90">18</text><text x="336" y="90">00</text></g>
+      </svg>
+      <div class="days" style="margin-top:6px">
+        <button class="day" aria-selected="true"><div class="dn">Today</div><svg class="glyph"><use href="#g-wind"/></svg><div class="hl"><b>11°</b> <span>7°</span></div></button>
+        <button class="day"><div class="dn">Tue</div><svg class="glyph"><use href="#g-rain"/></svg><div class="hl"><b>10°</b> <span>6°</span></div></button>
+        <button class="day"><div class="dn">Wed</div><svg class="glyph"><use href="#g-partly"/></svg><div class="hl"><b>13°</b> <span>5°</span></div></button>
+        <button class="day"><div class="dn">Thu</div><svg class="glyph"><use href="#g-sun"/></svg><div class="hl"><b>15°</b> <span>6°</span></div></button>
+      </div>
+      <p style="font-size:11.5px;color:var(--faint);margin:10px 2px 0">Trade-off shown on purpose: collapsed, this
+        card is only ~34 px taller than today — but nothing here says <i>orange</i> until the chip is opened.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MOCK C : app window ================= -->
+<section data-win="c" aria-label="Mock C">
+  <div style="width:min(1040px,100%);margin:0 auto;border-radius:14px;overflow:hidden;display:flex;
+       background:linear-gradient(180deg,#26344a 0%,#31445f 55%,#3c546f 100%);
+       border:1px solid rgba(255,255,255,.10);box-shadow:0 18px 50px rgba(0,0,0,.45)">
+    <aside style="width:248px;flex:none;background:rgba(8,12,18,.58);border-right:1px solid rgba(255,255,255,.10);padding-bottom:12px">
+      <div style="padding:12px 14px;font-weight:700;font-size:14px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between"><span>WeatherGlass</span><span style="color:#9aa4ae">☰</span></div>
+      <div style="display:flex;gap:10px;align-items:center;padding:9px 12px;margin:3px 8px;border-radius:9px;background:rgba(255,255,255,.11)">
+        <svg class="glyph"><use href="#g-wind"/></svg>
+        <div><div style="font-size:13.5px;font-weight:600">Berlin</div><div style="font-size:11px;color:#98a1ab">Berlin · DE</div></div>
+        <div style="margin-left:auto;text-align:right"><b style="font-size:15px">9°</b><div style="font-size:11px;color:#98a1ab">07:40</div></div>
+        <span title="Orange advisory" style="width:9px;height:9px;border-radius:50%;background:var(--sev2);flex:none"></span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;padding:9px 12px;margin:3px 8px;border-radius:9px">
+        <svg class="glyph"><use href="#g-partly"/></svg>
+        <div><div style="font-size:13.5px;font-weight:600">San Francisco</div><div style="font-size:11px;color:#98a1ab">California · US</div></div>
+        <div style="margin-left:auto;text-align:right"><b style="font-size:15px">14°</b><div style="font-size:11px;color:#98a1ab">22:40</div></div>
+        <span title="Yellow advisory" style="width:9px;height:9px;border-radius:50%;background:var(--sev1);flex:none"></span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;padding:9px 12px;margin:3px 8px;border-radius:9px">
+        <svg class="glyph"><use href="#g-sun"/></svg>
+        <div><div style="font-size:13.5px;font-weight:600">Bengaluru</div><div style="font-size:11px;color:#98a1ab">Karnataka · IN</div></div>
+        <div style="margin-left:auto;text-align:right"><b style="font-size:15px">29°</b><div style="font-size:11px;color:#98a1ab">12:10</div></div>
+      </div>
+      <p style="font-size:11px;color:#7e8894;margin:12px 14px 0;line-height:1.45">Sidebar dot = highest alert level per
+        city. No dot for Bengaluru — and nothing on its page either. No advisories, covered or not, renders nothing.</p>
+    </aside>
+
+    <div style="flex:1;min-width:0;padding:26px 24px 22px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:52px;font-weight:200;line-height:1;font-variant-numeric:tabular-nums">9°</div>
+          <div style="font-size:24px;font-weight:700;line-height:1.15;margin-top:8px">Berlin</div>
+          <div style="font-size:12.5px;color:var(--dim);margin-top:3px">Berlin, Germany · Windy, showers · Feels like 6°</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:650;font-variant-numeric:tabular-nums">07:40</div>
+          <div style="font-size:12.5px;color:var(--dim)">Mon 26 Oct</div>
+          <div style="font-size:11px;color:var(--faint);margin-top:6px">Updated 3 min ago</div>
+        </div>
+      </div>
+
+      <div data-advblock>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:20px">
+          <span data-advtitle style="font-size:12.5px;font-weight:750">Advisories</span>
+          <span data-advsub style="font-size:11px;color:var(--faint)">active and starting within 48 h · DWD via MeteoAlarm</span>
+        </div>
+        <div class="adv s2 open" data-alert data-days="0,1">
+          <button class="adv-head" data-advtoggle aria-expanded="true">
+            <svg class="adv-ic"><use href="#g-severe"/></svg>
+            <span><span class="adv-title">Wind gusts warning — Berlin and surroundings</span>
+              <div class="adv-when">Orange · now until Tue 27 Oct, 03:00</div></span>
+            <span class="adv-chev"><svg><use href="#g-pan"/></svg></span>
+          </button>
+          <div class="adv-body">
+            <p>Gusts of 85–100 km/h from the southwest, locally storm-force in showers. Loose objects may be blown about; branches can break and isolated trees may fall.</p>
+            <p class="instr"><b>What to do:</b> secure loose items outdoors, take care near trees and scaffolding, and expect disruption to cycling and high-sided vehicles.</p>
+            <div class="adv-meta">Issued <b>Mon 06:15</b> by <b>Deutscher Wetterdienst (DWD)</b>, via MeteoAlarm · likely · immediate · text as issued (English)</div>
+          </div>
+        </div>
+        <div class="adv s1" data-alert data-days="1">
+          <button class="adv-head" data-advtoggle aria-expanded="false">
+            <svg class="adv-ic"><use href="#g-severe"/></svg>
+            <span><span class="adv-title">Persistent rain advisory</span>
+              <div class="adv-when">Yellow · starts tomorrow, Tue 09:00–18:00</div></span>
+            <span class="adv-chev"><svg><use href="#g-pan"/></svg></span>
+          </button>
+          <div class="adv-body">
+            <p>Prolonged rain, 25–35 mm in nine hours. Standing water on roads and underpasses is possible.</p>
+            <div class="adv-meta">Issued by <b>DWD</b>, via MeteoAlarm</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:24px">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:8px">8-day forecast
+          <span style="font-size:11px;color:var(--faint);font-weight:400;margin-left:8px">dot = an advisory overlaps that day</span></div>
+        <div class="days" data-daysel>
+          <button class="day" aria-selected="true" data-day="0"><span class="adot s2"></span><div class="dn">Today 26</div><svg class="glyph"><use href="#g-wind"/></svg><div class="hl"><b>11°</b> <span>7°</span></div></button>
+          <button class="day" data-day="1"><span class="adot s2"></span><div class="dn">Tue 27</div><svg class="glyph"><use href="#g-rain"/></svg><div class="hl"><b>10°</b> <span>6°</span></div></button>
+          <button class="day" data-day="2"><div class="dn">Wed 28</div><svg class="glyph"><use href="#g-partly"/></svg><div class="hl"><b>13°</b> <span>5°</span></div></button>
+          <button class="day" data-day="3"><div class="dn">Thu 29</div><svg class="glyph"><use href="#g-sun"/></svg><div class="hl"><b>15°</b> <span>6°</span></div></button>
+          <button class="day" data-day="4"><div class="dn">Fri 30</div><svg class="glyph"><use href="#g-cloud"/></svg><div class="hl"><b>12°</b> <span>6°</span></div></button>
+          <button class="day" data-day="5"><div class="dn">Sat 31</div><svg class="glyph"><use href="#g-rain"/></svg><div class="hl"><b>11°</b> <span>5°</span></div></button>
+          <button class="day" data-day="6"><div class="dn">Sun 1</div><svg class="glyph"><use href="#g-partly"/></svg><div class="hl"><b>14°</b> <span>7°</span></div></button>
+          <button class="day" data-day="7"><div class="dn">Mon 2</div><svg class="glyph"><use href="#g-sun"/></svg><div class="hl"><b>16°</b> <span>8°</span></div></button>
+        </div>
+      </div>
+      <svg viewBox="0 0 720 130" style="width:100%;height:auto;display:block;margin-top:14px" role="img" aria-label="Chart placeholder">
+        <path d="M8 84 C120 66 240 90 360 52 S600 30 712 48" fill="none" stroke="#f5a524" stroke-width="3" stroke-linecap="round"/>
+        <g fill="rgba(255,255,255,.6)" font-size="11"><text x="8" y="122">06</text><text x="240" y="122">12</text><text x="470" y="122">18</text><text x="690" y="122">00</text></g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MOCK D : panel + states + interface ================= -->
+<section data-win="d" aria-label="Mock D">
+  <div style="max-width:880px;margin:0 auto;display:grid;gap:18px">
+
+    <div>
+      <div style="font-size:12.5px;font-weight:750;margin-bottom:8px">Top bar when the menu is closed</div>
+      <div class="topbar">
+        <span style="font-weight:600">Activities</span>
+        <span style="margin:0 auto;font-variant-numeric:tabular-nums;color:#cfd6dd">Mon 26 Oct&nbsp; 07:40</span>
+        <span class="panelbtn"><svg class="glyph" style="width:20px;height:20px"><use href="#g-sun"/></svg><span>18°</span></span>
+        <span style="color:#5a636d">│</span>
+        <span class="panelbtn"><svg class="glyph" style="width:20px;height:20px"><use href="#g-wind"/></svg><span>9°</span>
+          <span class="pbadge" style="background:var(--sev2)"><svg><use href="#g-warn"/></svg></span></span>
+        <span style="color:#5a636d">│</span>
+        <span class="panelbtn"><svg class="glyph" style="width:20px;height:20px"><use href="#g-storm"/></svg><span>21°</span>
+          <span class="pbadge" style="background:var(--sev3)"><svg><use href="#g-warn"/></svg></span></span>
+        <span style="color:#9aa4ae">🔊 ⚡</span>
+      </div>
+      <p style="font-size:12px;color:#aeb6bf;margin:8px 2px 0">Left to right: no alerts (unchanged), orange active,
+        red active. Badge colour = highest <b style="color:#fff">active</b> level only; a warning that merely starts
+        tomorrow does not badge the panel. Badge clears when the alert ends or is cancelled. No blinking, no sound.
+        The panel badge stays (the top bar has no background to tint), and the panel button's accessible name states
+        the level in words — in the card the subtitle line does that job (“Orange · now until…”), so no pill badge is
+        needed there. Colour is never the only channel anywhere.</p>
+    </div>
+
+    <div>
+      <div style="font-size:12.5px;font-weight:750;margin-bottom:8px">Common interface — every source maps into this</div>
+      <pre class="iface">// normalized forecast gains ONE new field, next to current/daily/hourly:
+alerts: [ {
+  id,                    // source id; dedupes updates of the same alert
+  event,                 // "Wind gusts warning" — issuer's words, not translated by us
+  headline,              // optional one-liner; falls back to event
+  level,                 // 1 yellow · 2 orange · 3 red · null = no colour (see note below)
+  severityLabel,         // issuer's own word: "Moderate", "Severe", "Warning"…
+  certainty, urgency,    // CAP words or null: "Likely", "Immediate"
+  startsAt, endsAt,      // validity window (city-local ISO, like hourly times)
+  issuedAt,
+  description,           // full text, issuer's language
+  instruction,           // "what to do", or null
+  areas,                 // ["Berlin and surroundings"] — display text
+  sender, source,        // "DWD", "MeteoAlarm" — shown in the meta line
+  language,              // "en", "de"… so the UI can label untranslated text
+} ]
+// plus, per location:  alertsCoverage: 'ok' | 'none' | 'failed'
+//   'none' = no source covers this place · 'failed' = fetch error, keep last good set</pre>
+      <table class="map" aria-label="Severity mapping">
+        <tr><th>Common</th><th>CAP severity</th><th>MeteoAlarm / MET</th><th>NWS</th></tr>
+        <tr><td><span class="swatch" style="background:var(--sev1)"></span>1 · Yellow</td><td>Minor</td><td>yellow</td><td>Minor</td></tr>
+        <tr><td><span class="swatch" style="background:var(--sev2)"></span>2 · Orange</td><td>Moderate</td><td>orange</td><td>Moderate</td></tr>
+        <tr><td><span class="swatch" style="background:var(--sev3)"></span>3 · Red</td><td>Severe / Extreme</td><td>red</td><td>Severe / Extreme</td></tr>
+        <tr><td><span class="swatch" style="background:#8a95a1"></span>null · no colour</td><td>Unknown</td><td>—</td><td>Unknown</td></tr>
+      </table>
+      <p style="font-size:12px;color:#aeb6bf;margin:8px 2px 0">Colour is <b style="color:#fff">not</b> universal. MeteoAlarm,
+        MET Norway and Canada issue a native colour (MET even sends <b style="color:#fff">riskMatrixColor</b>); use it
+        verbatim when present — it already folds impact × likelihood into one risk colour. CAP and NWS transport only a
+        severity <i>word</i>; the mapping above is then our display convention, not the issuer's colour. CAP also allows
+        <b style="color:#fff">Unknown</b>: level stays null, the row renders neutral with no level word, and sorts after every
+        coloured alert. Never guess a colour from the event name alone.</p>
+      <p style="font-size:12px;color:#aeb6bf;margin:8px 2px 0">Time mapping needs care: NWS sends both
+        <b style="color:#fff">ends</b> (event over) and <b style="color:#fff">expires</b> (message stale) — “until” must use
+        <b style="color:#fff">ends</b>, falling back to expires. CAP's <b style="color:#fff">onset/expires</b> pair maps directly.
+        Day overlap for tiles is computed from [startsAt, endsAt] against each daily date; sorting is level desc, then startsAt.</p>
+      <p style="font-size:12px;color:#aeb6bf;margin:8px 2px 0">Component mapping, per GNOME: the <b style="color:#fff">app</b>
+        builds each row as a real <b style="color:#fff">AdwExpanderRow</b> (title = event, subtitle = “Orange · until…”,
+        prefix <b style="color:#fff">weather-severe-alert-symbolic</b>) — the same widget already used for
+        “Add by coordinates”. The <b style="color:#fff">extension</b> cannot use libadwaita widgets inside gnome-shell,
+        so it imitates that anatomy with St: a focusable St.Button header, St.Icon prefix,
+        <b style="color:#fff">pan-down-symbolic</b> suffix rotating 180°, accessible name carrying the level word.
+        <b style="color:#fff">AdwBanner was rejected</b> for the list: HIG banners are a single short title plus one
+        optional button for a persistent view-level state — they cannot hold several alerts with long official text.
+        <b style="color:#fff">dialog-warning-symbolic was rejected</b> as the icon: it already means “the app hit an
+        error” (our stale-data banner), and weather-severe-alert says “hazard outside”, not “software problem”.</p>
+    </div>
+
+    <div>
+      <div style="font-size:12.5px;font-weight:750;margin-bottom:2px">Awkward states, decided in advance</div>
+      <div class="adv s3">
+        <button class="adv-head" data-advtoggle aria-expanded="false">
+          <svg class="adv-ic"><use href="#g-severe"/></svg>
+          <span><span class="adv-title">Amtliche UNWETTERWARNUNG vor schwerem Gewitter</span>
+            <div class="adv-when">Red · now until today 21:00 · text as issued (German)</div></span>
+          <span class="adv-chev"><svg><use href="#g-pan"/></svg></span>
+        </button>
+        <div class="adv-body">
+          <p>Issuer text is never machine-translated by the app. Where a feed offers several languages we request the
+             user's locale first, then English; the meta line always names the language actually shown.</p>
+          <div class="adv-meta">Issued by <b>DWD</b> · language: <b>de</b> (no English version in this feed)</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div style="grid-column:1/-1;background:#2b3036;border:1px solid #3a4046;border-radius:12px;padding:11px 13px;font-size:12.5px">
+          <b>No advisories — nothing renders</b>
+          <p style="color:#aeb6bf;margin:6px 0 0">One rule for every flavour of “none”: a covered place with nothing
+            active, a selected day no alert overlaps, and a place no source covers all render exactly nothing —
+            no heading, no empty-state box, no “all clear”, no “not available” line, no panel badge, no sidebar dot.
+            The card is byte-for-byte today's card. The distinction survives only inside
+            <span style="color:#fff">alertsCoverage</span>, for a future prefs/debug surface — never in the weather UI.</p>
+        </div>
+        <div style="background:#2b3036;border:1px solid #3a4046;border-radius:12px;padding:11px 13px;font-size:12.5px">
+          <b>Many alerts at once</b>
+          <p style="color:#aeb6bf;margin:6px 0 0">Show the top 3 by level, then “+2 more advisories” expanding the
+            rest. The card must not grow unboundedly during a storm outbreak.</p>
+        </div>
+        <div style="background:#2b3036;border:1px solid #3a4046;border-radius:12px;padding:11px 13px;font-size:12.5px">
+          <b>Alert fetch fails</b>
+          <p style="color:#aeb6bf;margin:6px 0 0">Keep showing the last good set until each alert's own end time,
+            with the stale-data note the forecast already uses. A network blip must not clear a live warning.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</main>
+
+<script>
+  // --- variant switcher (same pattern as main-panel-mocks.html) ---
+  const tabs = document.querySelectorAll('[data-mock]');
+  function showMock(key) {
+    tabs.forEach(b => b.setAttribute('aria-selected', String(b.dataset.mock === key)));
+    document.querySelectorAll('[data-win]').forEach(s =>
+      s.classList.toggle('on', s.dataset.win === key));
+    document.querySelectorAll('[data-note]').forEach(n =>
+      n.classList.toggle('on', n.dataset.note === key));
+  }
+  tabs.forEach(btn => btn.addEventListener('click', () => {
+    showMock(btn.dataset.mock);
+    history.replaceState(null, '', '#' + btn.dataset.mock);
+  }));
+  const fromHash = location.hash.replace('#', '');
+  if (['a', 'b', 'c', 'd'].includes(fromHash)) showMock(fromHash);
+
+  // --- advisory row expand / collapse ---
+  document.querySelectorAll('[data-advtoggle]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const row = btn.closest('.adv');
+      const open = row.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+    }));
+
+  // --- mock B chip ---
+  document.querySelectorAll('[data-chip]').forEach(chip =>
+    chip.addEventListener('click', () => {
+      const list = chip.parentElement.querySelector('[data-chiplist]');
+      const open = list.style.display !== 'block';
+      list.style.display = open ? 'block' : 'none';
+      chip.setAttribute('aria-expanded', String(open));
+    }));
+
+  // --- day selection: advisory block follows the overlap rule ---
+  // Today (day 0) = every active/upcoming alert we hold. Any later day =
+  // only alerts whose [startsAt, endsAt] overlaps that date (encoded here
+  // as data-days). A day with no overlapping alert renders NOTHING:
+  // the whole block, heading included, is removed — no empty state.
+  document.querySelectorAll('[data-win]').forEach(win => {
+    const block = win.querySelector('[data-advblock]');
+    const tiles = win.querySelectorAll('[data-daysel] .day');
+    if (!block || !tiles.length) return;
+    const title = block.querySelector('[data-advtitle]');
+    const sub = block.querySelector('[data-advsub]');
+    const defTitle = title.textContent, defSub = sub.textContent;
+    tiles.forEach(tile => tile.addEventListener('click', () => {
+      tiles.forEach(t => t.setAttribute('aria-selected', String(t === tile)));
+      const day = Number(tile.dataset.day);
+      const name = tile.querySelector('.dn').textContent.trim();
+      let visible = 0;
+      block.querySelectorAll('[data-alert]').forEach(row => {
+        const days = row.dataset.days.split(',').map(Number);
+        const show = day === 0 || days.includes(day);
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      if (day === 0) {
+        title.textContent = defTitle; sub.textContent = defSub;
+      } else {
+        title.textContent = 'Advisories · ' + name;
+        sub.textContent = 'overlapping this day';
+      }
+      block.style.display = visible === 0 ? 'none' : '';
+    }));
+  });
+</script>
+</body>
+</html>
