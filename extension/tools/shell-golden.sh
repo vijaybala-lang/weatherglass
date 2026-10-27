@@ -148,7 +148,7 @@ fi
 # GBM/EGL renderer but starts with ZERO monitors, which makes every
 # capture a 0x0 texture; --virtual-monitor gives it one.
 echo "==> headless nested gnome-shell -- $MODE/$VERB (${SLUGS[*]})"
-setsid dbus-run-session -- gnome-shell --wayland --headless --virtual-monitor 1024x768 \
+setsid dbus-run-session -- gnome-shell --wayland --headless --virtual-monitor 1024x1024 \
     >/tmp/opencode/wg-nested.log 2>&1 &
 SHELL_PID=$!
 

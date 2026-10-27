@@ -495,6 +495,7 @@ export class ForecastPanel {
             const icon = new St.Icon({
                 icon_name: 'weather-severe-alert-symbolic', icon_size: 16,
                 style_class: 'aw-adv-icon',
+                y_align: Clutter.ActorAlign.CENTER,
             });
             headRow.add_child(icon);
             const titleCol = new St.BoxLayout({ vertical: true, x_expand: true });
@@ -508,10 +509,11 @@ export class ForecastPanel {
             titleCol.add_child(sub);
             headRow.add_child(titleCol);
             const arrow = new St.Icon({
-                icon_name: 'pan-down-symbolic', icon_size: 16,
+                icon_name: expanded ? 'pan-up-symbolic' : 'pan-down-symbolic',
+                icon_size: 16,
                 style_class: 'aw-adv-arrow',
+                y_align: Clutter.ActorAlign.CENTER,
             });
-            arrow.rotation_angle_z = expanded ? 180 : 0;
             headRow.add_child(arrow);
 
             const body = column('aw-adv-body');
@@ -546,7 +548,7 @@ export class ForecastPanel {
             head.connect('clicked', () => {
                 const open = !body.visible;
                 body.visible = open;
-                arrow.rotation_angle_z = open ? 180 : 0;
+                arrow.icon_name = open ? 'pan-up-symbolic' : 'pan-down-symbolic';
                 if (open)
                     this._expandedAlerts.add(alert.id);
                 else
@@ -1028,7 +1030,10 @@ export class ForecastPanel {
                     .filter(a => alertOverlapsDay(a, dayItem.date))
                     .map(a => a.level ?? 0));
                 if (dayLevel > 0) {
-                    const dot = new St.Widget({ style_class: 'aw-day-dot' });
+                    const dot = new St.Widget({
+                        style_class: 'aw-day-dot',
+                        y_align: Clutter.ActorAlign.CENTER,
+                    });
                     dot.set_style(`background-color: ${['', '#f5c542', '#f07f2e', '#e5484d'][dayLevel]};`);
                     dayNameRow.add_child(dot);
                     const dayWord = { 1: _('Yellow'), 2: _('Orange'), 3: _('Red') }[dayLevel];

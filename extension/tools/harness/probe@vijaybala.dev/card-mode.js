@@ -161,6 +161,131 @@ export const FIXTURES = {
         local: '2026-11-03T14:10+01:00', condition: 'rain'},
     'ny-snow-day': {city: 'New York', lat: 40.71, lon: -74.01,
         local: '2027-01-19T10:20-05:00', condition: 'snow'},
+    /* advisory scenarios: level 1 (yellow, collapsed), level 2 (orange,
+     * auto-expanded), level 3 (red, auto-expanded), level null (neutral /
+     * Unknown severity, open-ended), and a 5-alert stack exercising all
+     * three colour tiers, the 3-row cap (+2 more advisories), and
+     * per-day red/orange/yellow tile dots across the 8-day grid */
+    'advisory-yellow': {city: 'San Francisco', lat: 37.77, lon: -122.42,
+        local: '2026-10-07T18:37-07:00', condition: 'partly',
+        alerts: [{
+            id: 'urn:nws:sf-flood-1',
+            event: 'Coastal Flood Advisory',
+            level: 1,
+            startsAt: '2026-10-07T14:00',
+            endsAt: '2026-10-09T13:00',
+            description: 'Minor coastal flooding expected along low-lying bayfront walkways during high tide.',
+            instruction: 'Do not drive around barricades or through standing saltwater.',
+            areas: ['San Francisco, CA'],
+            sender: 'NWS San Francisco CA',
+            source: 'NOAA NWS',
+        }]},
+    'advisory-orange': {city: 'Berlin', lat: 52.52, lon: 13.4,
+        local: '2026-11-03T14:10+01:00', condition: 'wind',
+        alerts: [{
+            id: 'de-dwd-wind-2',
+            event: 'Wind gusts warning',
+            level: 2,
+            startsAt: '2026-11-03T09:00',
+            endsAt: '2026-11-04T03:00',
+            description: 'Gusts of 85–100 km/h from the southwest, locally storm-force in showers. Loose objects may be blown about; branches can break.',
+            instruction: 'Secure loose items outdoors. Take care near trees and scaffolding.',
+            areas: ['Berlin'],
+            sender: 'DWD',
+            source: 'MeteoAlarm',
+        }]},
+    'advisory-red': {city: 'Tokyo', lat: 35.68, lon: 139.69,
+        local: '2026-07-18T21:40+09:00', condition: 'storm',
+        alerts: [{
+            id: 'jp-jma-storm-3',
+            event: 'Severe Thunderstorm Warning',
+            level: 3,
+            startsAt: '2026-07-18T20:30',
+            endsAt: '2026-07-19T02:00',
+            description: 'Destructive gusts over 110 km/h, large hail and frequent cloud-to-ground lightning moving east across the metropolitan area.',
+            instruction: 'Move indoors immediately and stay away from windows.',
+            areas: ['Tokyo'],
+            sender: 'JMA',
+            source: 'CAP',
+        }]},
+    'advisory-neutral': {city: 'New York', lat: 40.71, lon: -74.01,
+        local: '2027-01-19T10:20-05:00', condition: 'snow',
+        alerts: [{
+            id: 'urn:nws:ny-statement-0',
+            event: 'Frost Advisory',
+            level: null,
+            startsAt: '2027-01-19T06:00',
+            endsAt: null,
+            description: 'Sub-freezing temperatures expected across inland valleys.',
+            instruction: null,
+            areas: ['New York, NY'],
+            sender: 'NWS New York NY',
+            source: 'NOAA NWS',
+        }]},
+    'advisory-stack': {city: 'Berlin', lat: 52.52, lon: 13.4,
+        local: '2026-11-03T14:10+01:00', condition: 'rain',
+        alerts: [
+            {
+                id: 'stack-red-1',
+                event: 'Severe storm warning',
+                level: 3,
+                startsAt: '2026-11-03T12:00',
+                endsAt: '2026-11-03T23:00',
+                description: 'Squall line with hurricane-force gusts up to 120 km/h and torrential downpours crossing the region.',
+                instruction: 'Avoid outdoor activity and stay clear of trees and power lines.',
+                areas: ['Berlin'],
+                sender: 'DWD',
+                source: 'MeteoAlarm',
+            },
+            {
+                id: 'stack-orange-2',
+                event: 'Wind gusts warning',
+                level: 2,
+                startsAt: '2026-11-04T06:00',
+                endsAt: '2026-11-05T03:00',
+                description: 'Strong southwest gusts up to 90 km/h in wake of the cold front.',
+                instruction: null,
+                areas: ['Berlin'],
+                sender: 'DWD',
+                source: 'MeteoAlarm',
+            },
+            {
+                id: 'stack-yellow-3',
+                event: 'Persistent rain advisory',
+                level: 1,
+                startsAt: '2026-11-06T09:00',
+                endsAt: '2026-11-06T18:00',
+                description: 'Prolonged rain of 25–35 mm in nine hours.',
+                instruction: null,
+                areas: ['Berlin'],
+                sender: 'DWD',
+                source: 'MeteoAlarm',
+            },
+            {
+                id: 'stack-yellow-4',
+                event: 'Dense fog advisory',
+                level: 1,
+                startsAt: '2026-11-07T01:00',
+                endsAt: '2026-11-07T10:00',
+                description: 'Visibility below 150 m in freezing fog.',
+                instruction: null,
+                areas: ['Berlin'],
+                sender: 'DWD',
+                source: 'MeteoAlarm',
+            },
+            {
+                id: 'stack-neutral-5',
+                event: 'Frost advisory',
+                level: null,
+                startsAt: '2026-11-08T00:00',
+                endsAt: '2026-11-08T08:00',
+                description: 'Ground frost in sheltered spots.',
+                instruction: null,
+                areas: ['Berlin'],
+                sender: 'DWD',
+                source: 'MeteoAlarm',
+            },
+        ]},
 };
 
 /* card-demo's buildData, ported verbatim (consumes the pinned LCG) */
@@ -255,6 +380,7 @@ export function buildState(weather, moon, fx) {
         phase,
         latitude: fx.lat,
         longitude: fx.lon,
+        alerts: fx.alerts ?? [],
     };
 }
 
@@ -402,6 +528,7 @@ export async function renderCards(slugs, cssPath, pngFor, captureRegion) {
         steps.capture = cap.result;
         steps.bytes = cap.bytes ?? null;
 
+        panel.destroy();
         host.destroy();         // BinLayout owns panel.actor; one destroy
         cards[slug] = steps;
     }
