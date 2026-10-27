@@ -85,6 +85,18 @@ function silentCatches(name) {
 // are genuinely absent; the guide bans ?. on guaranteed methods and
 // built-in APIs, which is every other module's only use of it
 const CHAINING_EXEMPT = ['weather.js'];
+/* Issue #94: the Today tile once recomputed its hi/lo from the
+ * chart's rolling 24 h window, so at 4 PM it quoted TOMORROW
+ * afternoon's peak as today's high (31° against BOM's calendar-day
+ * 26°). Tiles quote the provider's calendar-day row, like every
+ * other weather surface; only the chart window rolls. The lock is
+ * the absence of the override mechanism itself. */
+test('day tiles quote calendar days, never the rolling chart window', () => {
+    silence(scan(/_dayHiLabels|hiLabel\.set_text/, ['menu.js']));
+    ok(sources['menu.js'].includes('text: fmtTemp(dayItem.tmax, units)'),
+        'tile high must come from the provider daily row');
+});
+
 test('no optional chaining in shell modules', () => {
     silence(scan(/\?\./, shipped.filter(n => !CHAINING_EXEMPT.includes(n))));
 });
@@ -386,6 +398,16 @@ test('enable() and disable() are adjacent', () => {
     const between = src.slice(first.index, second.index).split('\n').slice(2);
     const stranger = between.find(line => /^\s{4}[\w#]+\s*\([^)]*\)\s*\{/.test(line));
     ok(!stranger, `method between enable() and disable(): ${stranger?.trim()}`);
+});
+
+test('header decouples condition width from city column width', () => {
+    const menu = sources['menu.js'];
+    const css = read(`${ROOT}/stylesheet.css`);
+    ok(/style_class:\s*'aw-header'[\s\S]{0,120}Clutter\.BinLayout/.test(menu),
+        'aw-header must use Clutter.BinLayout so the city column cannot squeeze .aw-desc');
+    const descRule = css.match(/\.aw-desc\s*\{([^}]*)\}/);
+    ok(descRule && /max-width:\s*2\d\dpx/.test(descRule[1]),
+        '.aw-desc must declare a 200px+ max-width so long conditions do not truncate early');
 });
 
 report('guide');

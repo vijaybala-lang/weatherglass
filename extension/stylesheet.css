@@ -60,10 +60,12 @@
 }
 
 /* condition text under the big temp : sits close to the
- * numeral, keeps real air before the metric tabs */
+ * numeral, keeps real air before the metric tabs; max-width
+ * leaves 58px on the right for the refresh/settings buttons */
 .aw-desc {
     font-size: 0.85em;
     margin: 2px 0 4px 0;
+    max-width: 244px;
 }
 
 .aw-city-col {
@@ -73,6 +75,7 @@
 .aw-city {
     font-size: 1.15em;
     font-weight: bold;
+    max-width: 215px;
 }
 
 .aw-info-row {
@@ -87,6 +90,98 @@
 
 .aw-clockline {
     font-size: 0.85em;
+}
+
+/* -- advisories ------------------------------------------------------------
+ * Expander rows under the header. Each level gets a dark-tinted slab
+ * (level colour pre-mixed over the card's dark slab) so the light ink
+ * below clears every sky without another sampled-ground verdict;
+ * s0 is the colourless (severity Unknown) row. */
+
+.aw-alerts {
+    spacing: 6px;
+    padding: 2px 14px 4px 14px;
+}
+
+.aw-adv {
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    padding: 7px 9px;
+    color: #f4f7fa;
+}
+
+.aw-adv-s1 { background-color: rgba(122, 96, 22, 0.55); }
+.aw-adv-s2 { background-color: rgba(122, 63, 18, 0.58); }
+.aw-adv-s3 { background-color: rgba(116, 36, 40, 0.60); }
+.aw-adv-s0 { background-color: rgba(16, 20, 28, 0.52); }
+
+.aw-adv-s1 .aw-adv-icon { color: #f5c542; }
+.aw-adv-s2 .aw-adv-icon { color: #f07f2e; }
+.aw-adv-s3 .aw-adv-icon { color: #ff6b72; }
+.aw-adv-s0 .aw-adv-icon { color: #c9d2dd; }
+
+.aw-adv-head {
+    padding: 0;
+    min-height: 0;
+}
+
+.aw-adv-head-row {
+    spacing: 8px;
+}
+
+.aw-adv-title {
+    font-weight: bold;
+    font-size: 0.92em;
+}
+
+.aw-adv-when {
+    font-size: 0.8em;
+    color: rgba(244, 247, 250, 0.72);
+}
+
+.aw-adv-arrow {
+    color: rgba(244, 247, 250, 0.72);
+}
+
+.aw-adv-body {
+    spacing: 5px;
+    padding-top: 6px;
+}
+
+.aw-adv-text {
+    font-size: 0.85em;
+}
+
+.aw-adv-instr {
+    font-size: 0.85em;
+    background-color: rgba(10, 14, 20, 0.35);
+    border-radius: 8px;
+    padding: 6px 8px;
+}
+
+.aw-adv-meta {
+    font-size: 0.75em;
+    color: rgba(244, 247, 250, 0.55);
+}
+
+.aw-alerts-more {
+    padding: 1px 14px 5px 14px;
+    min-height: 0;
+}
+
+.aw-alerts-more-label {
+    font-size: 0.82em;
+    font-weight: bold;
+}
+
+.aw-day-namerow {
+    spacing: 3px;
+}
+
+.aw-day-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 99px;
 }
 
 /* -- metric tabs (pill style, like the day tiles) -------------------------

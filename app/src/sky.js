@@ -45,7 +45,7 @@ const SCENE_FEATURES = {
     snow: { clouds: 7, flakes: 72 },
     hail: { clouds: 7, drops: 42, hail: 28, bolt: 1 },
     storm: { clouds: 8, drops: 120, ripples: 34, bolt: 1 },
-    wind: { streaks: 18, leaves: 16, trees: 1 },
+    wind: { streaks: 18, leaves: 16, trees: 1, stars: 1, moon: 0.45 },
     error: {},
     loading: {},
 };
@@ -131,12 +131,12 @@ export function bodyOf(scene, night, width, height, glow = 0, solar = null, phas
     const features = SCENE_FEATURES[scene] ?? {};
     const baseRadius = 64 * height / 420;
     const [sunX, sunY] = sunSpot(width, height, night, solar);
-    if ((features.sun || features.moon) && !night)
+    if ((features.sun || features.moon === 1) && !night)
         return {
             x: sunX, y: sunY, r: baseRadius, soft: 12,
             col: mix([1, 0.8, 0.4], SUNSET_CORE, twilightOf(scene, glow)), max: 0.9,
         };
-    if (features.moon && night) {
+    if (features.moon === 1 && night) {
         const lunarPhase = Number.isFinite(phase) ? phase : moonPhase().phase;
         const illum = illumOf(lunarPhase);
         const max = 0.85 * illum;
@@ -432,13 +432,14 @@ function rebuild(sky, width, height, scene) {
         opacity: rand(0.18, 0.34), o: rand(0.18, 0.34),
         tone: i % 2, t: i % 2,
     }));
+    const starMaxY = scene === 'wind' ? 0.29 * height : 0.6 * height;
     sky.stars = createList(features.stars ? 70 : 0, () => {
         const isTwinkle = rand(0, 1) < 0.22;
         const radius = isTwinkle ? rand(3.0, 5.6) : rand(0.8, 2.0);
         const phase = rand(0, TWO_PI);
         const isCool = rand(0, 1) < 0.45;
         return {
-            x: rand(0, width), y: rand(0, 0.6 * height),
+            x: rand(0, width), y: rand(0, starMaxY),
             radius, r: radius, phase, ph: phase,
             isTwinkle, tw: isTwinkle, isCool, cool: isCool,
         };
@@ -726,11 +727,14 @@ function drawMoonSprited(cr, sky, moonX, moonY, radius, phase) {
     blitCentred(cr, sky.moonSprite.sprite, moonX, moonY);
 }
 
-function drawStars(cr, stars, time, twilight = 0, keepOut = null) {
-    const visibility = 1 - 0.85 * twilight;
-    if (visibility <= 0.02)
-        return;
+function drawStars(cr, stars, time, twilight = 0, keepOut = null, zenithHeight = 0) {
     for (const star of stars) {
+        const yFrac = zenithHeight > 0 ? Math.max(0, Math.min(1, star.y / zenithHeight)) : 1;
+        const visibility = zenithHeight > 0
+            ? 1 - (0.25 + 0.45 * yFrac) * twilight
+            : 1 - 0.85 * twilight;
+        if (visibility <= 0.02)
+            continue;
         const wave = Math.abs(Math.sin(time * 1.3 + (star.phase ?? star.ph)));
         const alpha = (0.25 + 0.5 * wave) * visibility;
         const radius = star.radius ?? star.r;
@@ -754,13 +758,18 @@ function drawStars(cr, stars, time, twilight = 0, keepOut = null) {
 }
 
 function drawBodies(cr, sky, width, height, scale, features, time, night, phase,
-    twilight, solar, noon) {
+    twilight, solar, noon, scene = '', clearSky = true) {
     const [sunX, sunY] = sunSpot(width, height, night, solar);
     const radius = 64 * scale;
-    if ((features.sun || features.moon) && !night)
+    if ((features.sun || features.moon === 1) && !night) {
         drawSun(cr, sky, sunX, sunY, radius, scale, time, twilight, noon);
-    else if (features.moon)
-        drawMoonSprited(cr, sky, sunX, sunY, radius, phase);
+    } else if (features.moon && night && clearSky) {
+        const moonScale = features.moon ?? 1;
+        const [mx, my] = scene === 'wind'
+            ? [width * 0.80, height * 0.125]
+            : [sunX, sunY];
+        drawMoonSprited(cr, sky, mx, my, radius * moonScale, phase);
+    }
 }
 
 function drawClouds(cr, sky, width, height, scale, dt, time, scene, night, twilight, hasBolt = false) {
@@ -1597,48 +1606,46 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
         cr.stroke();
     }
 
-    // 2. Swaying mixed woodland on rolling hilly terrain (colored in day, silhouette at night)
+    // 2. Swaying mixed woodland on rolling hilly terrain (colored in day, moonlit at night)
     if (sky.leaves.length) {
-        const backSil = [0.09, 0.15, 0.23];
-        const frontSil = [0.05, 0.09, 0.16];
         const treeLayers = [
             {
                 baseY: 0.29 * height, offset: 0.5,
-                hillRgb: night ? backSil : [0.24, 0.39, 0.33],
+                hillRgb: night ? [0.16, 0.25, 0.34] : [0.24, 0.39, 0.33],
                 pinePalette: {
-                    trunk: night ? backSil : [0.25, 0.18, 0.13],
-                    trunkHi: night ? backSil : [0.36, 0.26, 0.19],
-                    darkGreen: night ? backSil : [0.13, 0.23, 0.19],
-                    midGreen: night ? backSil : [0.20, 0.32, 0.25],
-                    lightGreen: night ? backSil : [0.27, 0.41, 0.31],
+                    trunk: night ? [0.16, 0.14, 0.16] : [0.25, 0.18, 0.13],
+                    trunkHi: night ? [0.24, 0.20, 0.22] : [0.36, 0.26, 0.19],
+                    darkGreen: night ? [0.11, 0.19, 0.25] : [0.13, 0.23, 0.19],
+                    midGreen: night ? [0.16, 0.27, 0.32] : [0.20, 0.32, 0.25],
+                    lightGreen: night ? [0.22, 0.35, 0.39] : [0.27, 0.41, 0.31],
                 },
                 decidPalette: {
-                    trunk: night ? backSil : [0.25, 0.18, 0.13],
-                    trunkHi: night ? backSil : [0.37, 0.27, 0.19],
-                    shadeLeaf: night ? backSil : [0.13, 0.23, 0.16],
-                    midLeaf: night ? backSil : [0.19, 0.33, 0.22],
-                    litLeaf: night ? backSil : [0.27, 0.42, 0.27],
-                    sunLeaf: night ? backSil : [0.36, 0.52, 0.31],
+                    trunk: night ? [0.16, 0.14, 0.16] : [0.25, 0.18, 0.13],
+                    trunkHi: night ? [0.24, 0.20, 0.22] : [0.37, 0.27, 0.19],
+                    shadeLeaf: night ? [0.11, 0.19, 0.24] : [0.13, 0.23, 0.16],
+                    midLeaf: night ? [0.16, 0.27, 0.30] : [0.19, 0.33, 0.22],
+                    litLeaf: night ? [0.22, 0.35, 0.37] : [0.27, 0.42, 0.27],
+                    sunLeaf: night ? [0.29, 0.43, 0.44] : [0.36, 0.52, 0.31],
                 },
                 treeScale: 1.05 * scale, seed: 37, count: 8, minH: 40, maxH: 56, bendMul: 0.80,
             },
             {
                 baseY: 0.35 * height, offset: 0.0,
-                hillRgb: night ? frontSil : [0.18, 0.32, 0.25],
+                hillRgb: night ? [0.12, 0.20, 0.27] : [0.18, 0.32, 0.25],
                 pinePalette: {
-                    trunk: night ? frontSil : [0.20, 0.13, 0.09],
-                    trunkHi: night ? frontSil : [0.31, 0.20, 0.14],
-                    darkGreen: night ? frontSil : [0.09, 0.18, 0.14],
-                    midGreen: night ? frontSil : [0.14, 0.27, 0.20],
-                    lightGreen: night ? frontSil : [0.20, 0.35, 0.25],
+                    trunk: night ? [0.13, 0.11, 0.12] : [0.20, 0.13, 0.09],
+                    trunkHi: night ? [0.20, 0.16, 0.17] : [0.31, 0.20, 0.14],
+                    darkGreen: night ? [0.08, 0.15, 0.20] : [0.09, 0.18, 0.14],
+                    midGreen: night ? [0.13, 0.23, 0.27] : [0.14, 0.27, 0.20],
+                    lightGreen: night ? [0.19, 0.31, 0.34] : [0.20, 0.35, 0.25],
                 },
                 decidPalette: {
-                    trunk: night ? frontSil : [0.20, 0.13, 0.09],
-                    trunkHi: night ? frontSil : [0.31, 0.21, 0.15],
-                    shadeLeaf: night ? frontSil : [0.08, 0.17, 0.12],
-                    midLeaf: night ? frontSil : [0.14, 0.27, 0.17],
-                    litLeaf: night ? frontSil : [0.21, 0.38, 0.22],
-                    sunLeaf: night ? frontSil : [0.31, 0.47, 0.26],
+                    trunk: night ? [0.13, 0.11, 0.12] : [0.20, 0.13, 0.09],
+                    trunkHi: night ? [0.20, 0.16, 0.17] : [0.31, 0.21, 0.15],
+                    shadeLeaf: night ? [0.08, 0.15, 0.19] : [0.08, 0.17, 0.12],
+                    midLeaf: night ? [0.13, 0.23, 0.25] : [0.14, 0.27, 0.17],
+                    litLeaf: night ? [0.19, 0.31, 0.32] : [0.21, 0.38, 0.22],
+                    sunLeaf: night ? [0.26, 0.39, 0.38] : [0.31, 0.47, 0.26],
                 },
                 treeScale: 1.25 * scale, seed: 53, count: 8, minH: 44, maxH: 60, bendMul: 1.05,
             },
@@ -1697,7 +1704,7 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
 
         cr.popGroupToSource();
         cr.setOperator(Cairo.Operator.OVER);
-        cr.paintWithAlpha(night ? 0.86 : 0.94);
+        cr.paintWithAlpha(night ? 0.92 : 0.94);
     }
 
     // 3. Larger 3D-tumbling wind-borne leaves with petiole stem + central midrib vein
@@ -1938,15 +1945,24 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
     fc.paint();
     fc.setOperator(Cairo.Operator.OVER);
 
+    const clearSky = code === null || code === undefined || code <= 2;
     drawHorizonGlow(fc, sky, rw, rh, twilight, night, time);
     if (!quiet) {
         drawBodies(fc, sky, rw, rh, scale, features, time, night, phase,
-            twilight, solar, noon);
-        const hasMoon = features.moon && night;
-        if (night && (features.stars || features.moon)) {
-            const [sx, sy] = sunSpot(rw, rh, night, solar);
+            twilight, solar, noon, scene, clearSky);
+        const hasMoon = Boolean(features.moon) && night && clearSky;
+        if (night && (features.stars || features.moon) && clearSky) {
+            const moonScale = features.moon ?? 1;
+            const [mx, my] = scene === 'wind'
+                ? [rw * 0.80, rh * 0.125]
+                : sunSpot(rw, rh, night, solar);
+            const keepOutR = scene === 'wind'
+                ? 64 * scale * moonScale * 0.95
+                : 64 * scale * 0.85;
+            const zenithH = scene === 'wind' ? 0.29 * rh : 0;
             drawStars(fc, sky.stars, time, twilight,
-                hasMoon ? { x: sx, y: sy, r: 64 * scale * 0.85 } : null);
+                hasMoon ? { x: mx, y: my, r: keepOutR } : null,
+                zenithH);
         }
         drawClouds(fc, sky, width, height, scale, dt, time, scene, night, twilight,
             Boolean(features.bolt));

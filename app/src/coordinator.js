@@ -80,7 +80,10 @@ export class Forecasts {
     async #fetchOne(city) {
         const state = this.#cache.get(city.id) ?? {};
         try {
-            const data = await fetchForecast(city.latitude, city.longitude);
+            const data = await fetchForecast(city.latitude, city.longitude, undefined, {
+                countryCode: city.countryCode ?? '',
+                placeNames: [city.name, city.admin1].filter(Boolean),
+            });
             this.#cache.set(city.id, { data, error: null, at: Date.now() });
             this.#bus.emit('forecast-updated', city.id, data);
             return true;

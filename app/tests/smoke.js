@@ -276,6 +276,54 @@ check('ink flip: hero ink over noon sun disc goes dark',
 
 
 
+// --- advisories: NWS ends-over-expires + MET native colour (live shapes) ---
+{
+    const nws = W.parseNwsAlerts({ features: [{ properties: {
+        id: 'a1', event: 'Coastal Flood Advisory', severity: 'Minor',
+        onset: '2026-10-25T18:12:00-07:00', expires: '2026-10-26T10:00:00-07:00',
+        ends: '2026-10-29T13:00:00-07:00', status: 'Actual',
+        messageType: 'Update', category: 'Met', senderName: 'NWS SF',
+        areaDesc: 'San Francisco, CA', description: 'd',
+    } }] });
+    check('alerts: NWS ends wins over expires', nws[0]?.endsAt === '2026-10-29T13:00', nws[0]?.endsAt);
+    const met = W.parseMetAlerts({ lang: 'en', features: [{ properties: {
+        id: 'm1', area: 'Stad', awareness_level: '2; yellow; Moderate',
+        severity: 'Severe', riskMatrixColor: 'Yellow', status: 'Actual', type: 'Alert',
+        event: 'gale', eventAwarenessName: 'Storm',
+        title: 'Storm, yellow level, Stad, 2026-10-26T21:00:00+00:00, 2026-10-27T13:00:00+00:00',
+        description: 'd',
+    } }] }, 3600e3);
+    check('alerts: MET native colour wins, UTC converted by city offset',
+        met[0]?.level === 1 && met[0]?.startsAt === '2026-10-26T22:00',
+        JSON.stringify(met[0]));
+    const daily = [{ date: '2026-10-26' }, { date: '2026-10-27' }, { date: '2026-10-28' }];
+    const a = { startsAt: '2026-10-26T07:00', endsAt: '2026-10-27T03:00' };
+    check('alerts: day overlap spans both days, not the third',
+        W.alertsForDay([a], daily, 1).length === 1 && W.alertsForDay([a], daily, 2).length === 0);
+    const eccc = W.parseEcccAlerts({ features: [{ properties: {
+        id: 'e1', alert_name_en: 'frost advisory', alert_text_en: 'Frost.',
+        risk_colour_en: 'yellow', status_en: 'continued',
+        validity_datetime: '2026-10-27T04:00:00.000Z', event_end_datetime: '2026-10-27T14:00:00.000Z',
+        feature_name_en: 'Toronto',
+    }, geometry: { type: 'Polygon', coordinates: [[[-79.6, 43.5], [-79.1, 43.5], [-79.1, 43.9], [-79.6, 43.9], [-79.6, 43.5]]] } }] },
+        { latitude: 43.7, longitude: -79.4, utcToLocal: iso => iso.slice(0, 16) });
+    check('alerts: ECCC point-in-polygon + native colour',
+        eccc.length === 1 && eccc[0].level === 1 && eccc[0].endsAt === '2026-10-27T14:00', JSON.stringify(eccc));
+    const cap = W.parseCapAlerts('<feed><entry>'
+        + '<cap:areaDesc>Berlin</cap:areaDesc><cap:event>wind gusts</cap:event>'
+        + '<cap:onset>2026-10-26T00:00:00+00:00</cap:onset><cap:expires>2026-10-27T00:00:00+00:00</cap:expires>'
+        + '<cap:severity>Moderate</cap:severity><cap:message_type>Alert</cap:message_type>'
+        + '<cap:status>Actual</cap:status><cap:identifier>x1</cap:identifier>'
+        + '<title>Orange Wind Warning issued for Germany - Berlin</title></entry></feed>',
+        { utcToLocal: iso => iso.slice(0, 16) });
+    check('alerts: CAP Atom groups + name match',
+        cap.length === 1 && cap[0].level === 2
+        && W.alertMatchesPoint(cap[0], { placeNames: ['Berlin'] })
+        && !W.alertMatchesPoint(cap[0], { placeNames: ['Munich'] }), JSON.stringify(cap));
+    check('alerts: registry spans four adapters',
+        W.ALERT_SOURCES.map(s => s.id).join(',') === 'noaa-nws,met-norway,eccc-canada,meteoalarm');
+}
+
 const rc = failures ? 1 : 0;
 print(failures ? `${failures} FAILURE(S)` : 'ALL CHECKS PASSED');
 imports.system.exit(rc);

@@ -24,6 +24,12 @@
       <summary>Place display name</summary>
     </key>
 
+    <key name="location-country-code" type="s">
+      <default>''</default>
+      <summary>ISO country code of the manual place</summary>
+      <description>Chooses country-scoped advisory feeds (e.g. MeteoAlarm); empty when unknown</description>
+    </key>
+
     <key name="units" type="s">
       <choices>
         <choice value="metric"/>

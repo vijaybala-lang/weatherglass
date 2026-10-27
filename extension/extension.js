@@ -218,6 +218,8 @@ class WeatherCoordinator {
                 auto: isAutoLocation,
                 latitude: this._settings.get_double('location-latitude'),
                 longitude: this._settings.get_double('location-longitude'),
+                countryCode: this._settings.get_string('location-country-code'),
+                placeName: this._settings.get_string('location-name'),
             });
             this._data = data;
             this._lastFetch = GLib.get_monotonic_time() / 1000000;
@@ -442,6 +444,7 @@ const WeatherIndicator = GObject.registerClass(
             this._panel.render({
                 current,
                 daily,
+                alerts: data.alerts ?? [],
                 hourly: data.hourly,
                 currentIso: current.timeIso,
                 units,
@@ -470,6 +473,7 @@ const WeatherIndicator = GObject.registerClass(
                 case 'location-latitude':
                 case 'location-longitude':
                 case 'location-name':
+                case 'location-country-code':
                 case 'units':
                     this._panel.setPlaceName(this._placeName());
                     this._coordinator.scheduleLocationFetch();

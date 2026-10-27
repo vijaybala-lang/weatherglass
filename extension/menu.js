@@ -16,7 +16,8 @@ import {
     paintChart, ease, lerp, morphPair, contrastSafe, lumOf, pickInk,
     judgeInk, INK_DARK, tileGlyphPale, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
 } from './chart.js';
-import { sceneFor, variantForCode, fmtTemp, dayName, daySlice, nowFracIn, sunGeometry } from './weather.js';
+import { sceneFor, variantForCode, fmtTemp, dayName, daySlice, nowFracIn, sunGeometry,
+         alertsForDay, alertOverlapsDay } from './weather.js';
 
 const SKY_FRAME_INTERVAL_MS = 50;         // sky: 20 fps is plenty
 const STATIC_TIME = 1.1;                  // frame that makes static mini icons look lively
@@ -86,10 +87,6 @@ function column(styleClass) {
     return new St.BoxLayout({ vertical: true, style_class: styleClass, x_expand: true });
 }
 
-function spacer() {
-    return new St.Widget({ x_expand: true, x_align: ACTOR_FILL });
-}
-
 /** '2026-09-25T15:00' -> '3PM' (or '15') for the chart axis. The next
  *  calendar day gets a one-letter flag (rolling windows run past midnight
  *  after 10 PM); the exact next date only, so stale data never mislabels. */
@@ -145,6 +142,7 @@ const SkyArea = GObject.registerClass(
                     w: surfaceWidth, h: surfaceHeight, time: this._time,
                     scene: skyOptions.scene, night: skyOptions.night, scrim: skyOptions.scrim,
                     sky: skyOptions.sky, radius: skyOptions.radius ?? 0, phase: skyOptions.phase ?? null,
+                    code: skyOptions.scene === 'wind' ? skyOptions.code : null,
                     glow, solar, fxScale: 1,
                 });
             }
@@ -276,10 +274,13 @@ export class ForecastPanel {
         this._shadeCache = { minute: -1, glow: 0, solar: null };
         this._dayButtons = [];             // day-tile rows, rebuilt by
         this._dayLowLabels = [];           // _buildDayTiles in lockstep
-        this._dayHiLabels = [];
         this._tileIcons = [];
         this._ghostIcons = [];
         this._tabButtons = {};
+        this._alertRows = [];            // [{actor, alert}], rebuilt per render
+        this._expandedAlerts = new Set(); // user toggles, survive refreshes
+        this._alertsSeedKey = '';        // id set the default expansion seeded
+        this._showAllAlerts = false;     // past the 3-row cap
         this._is24Hour = false;          // chart hours + city clock (setter drives)
         this._textScale = 1;           // 'data-text' emphasis (setter drives)
         this._textBold = false;
@@ -287,7 +288,7 @@ export class ForecastPanel {
         this._sky = createSky();
         // radius 18 matches the shell's polished-popup corner radius
         this._skyOpts = {
-            scene: 'loading', night: false, scrim: null,
+            scene: 'loading', night: false, scrim: null, code: null,
             sky: this._sky, radius: 18
         };
         this._nowFrac = null;
@@ -334,10 +335,20 @@ export class ForecastPanel {
         const main = column('aw-main');
         this._main = main;
 
-        const header = row('aw-header');
+        // BinLayout decouples the bottom condition line from the top-right
+        // city label's width so long city names ("Mount Kilimanjaro") never
+        // squeeze and truncate _descriptionLabel ("Fri: Heavy snow showers").
+        const header = new St.Widget({
+            style_class: 'aw-header',
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: true,
+            x_align: ACTOR_FILL,
+        });
 
         const leftCol = new St.BoxLayout({
             vertical: true, style_class: 'aw-temp-col',
+            x_expand: true,
+            x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.START
         });
         const tempWrap = row('aw-temp-line');
@@ -351,10 +362,9 @@ export class ForecastPanel {
         leftCol.add_child(this._descriptionLabel);
         header.add_child(leftCol);
 
-        header.add_child(spacer());
-
         const right = new St.BoxLayout({
             vertical: true, style_class: 'aw-city-col',
+            x_expand: true,
             x_align: Clutter.ActorAlign.END,
             y_align: Clutter.ActorAlign.START
         });
@@ -386,6 +396,22 @@ export class ForecastPanel {
         header.add_child(right);
         main.add_child(header);
 
+        // advisories: empty (zero height) when there are none -- the
+        // card is then exactly the card without this feature
+        this._alertsBox = column('aw-alerts');
+        main.add_child(this._alertsBox);
+        this._alertsMoreLabel = label('', 'aw-alerts-more-label');
+        this._alertsMore = new St.Button({
+            style_class: 'aw-alerts-more', can_focus: true,
+            child: this._alertsMoreLabel,
+        });
+        this._alertsMore.connect('clicked', () => {
+            this._showAllAlerts = true;
+            this._syncAlerts();
+        });
+        this._alertsMore.visible = false;
+        main.add_child(this._alertsMore);
+
         const tabs = row('aw-tabs');
         tabs.x_align = Clutter.ActorAlign.CENTER;
         this._tabButtons = {};
@@ -414,6 +440,147 @@ export class ForecastPanel {
         this._dayButtons = [];
 
         return main;
+    }
+
+    /* -- advisories: AdwExpanderRow anatomy in St (prefix icon,
+     * title + subtitle, rotating pan-down suffix). gnome-shell has
+     * no libadwaita widgets, so the anatomy is imitated, not used. */
+
+    _levelWord(alert) {
+        return { 1: _('Yellow'), 2: _('Orange'), 3: _('Red') }[alert.level] ?? '';
+    }
+
+    _alertTime(iso) {
+        const h = Number(iso.slice(11, 13)), m = iso.slice(14, 16);
+        if (this._is24Hour)
+            return `${String(h).padStart(2, '0')}:${m}`;
+        return `${h % 12 || 12}:${m} ${h < 12 ? 'AM' : 'PM'}`;
+    }
+
+    /** "now until Tue 03:00" / "starts Tue 09:00–18:00", city-local. */
+    _alertWhen(alert) {
+        const nowIso = this._state ? (this._state.currentIso ?? '') : '';
+        const startDay = _(dayName(alert.startsAt.slice(0, 10)));
+        if (!alert.endsAt)
+            return alert.startsAt <= nowIso
+                ? _('in effect now')
+                : `${_('starts')} ${startDay} ${this._alertTime(alert.startsAt)}`;
+        const endDay = _(dayName(alert.endsAt.slice(0, 10)));
+        if (alert.startsAt <= nowIso)
+            return `${_('now until')} ${endDay} ${this._alertTime(alert.endsAt)}`;
+        if (alert.startsAt.slice(0, 10) === alert.endsAt.slice(0, 10))
+            return `${_('starts')} ${startDay} ` +
+                `${this._alertTime(alert.startsAt)}–${this._alertTime(alert.endsAt)}`;
+        return `${_('starts')} ${startDay} ${this._alertTime(alert.startsAt)}, ` +
+            `${_('until')} ${endDay} ${this._alertTime(alert.endsAt)}`;
+    }
+
+    _buildAlerts() {
+        this._alertsBox.destroy_all_children();
+        this._alertRows = [];
+        const alerts = this._state ? (this._state.alerts ?? []) : [];
+        const seedKey = alerts.map(a => a.id).join('|');
+        if (seedKey !== this._alertsSeedKey) {
+            this._alertsSeedKey = seedKey;
+            this._showAllAlerts = false;
+            if (alerts.length && (alerts[0].level ?? 0) >= 2)
+                this._expandedAlerts.add(alerts[0].id);
+        }
+        for (const alert of alerts) {
+            const levelClass = `aw-adv-s${alert.level ?? 0}`;
+            const box = column(`aw-adv ${levelClass}`);
+            const expanded = this._expandedAlerts.has(alert.id);
+
+            const headRow = row('aw-adv-head-row');
+            const icon = new St.Icon({
+                icon_name: 'weather-severe-alert-symbolic', icon_size: 16,
+                style_class: 'aw-adv-icon',
+            });
+            headRow.add_child(icon);
+            const titleCol = new St.BoxLayout({ vertical: true, x_expand: true });
+            const title = label(alert.event, 'aw-adv-title');
+            title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+            titleCol.add_child(title);
+            const word = this._levelWord(alert);
+            const sub = label(word ? `${word} · ${this._alertWhen(alert)}`
+                                   : this._alertWhen(alert), 'aw-adv-when');
+            sub.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+            titleCol.add_child(sub);
+            headRow.add_child(titleCol);
+            const arrow = new St.Icon({
+                icon_name: 'pan-down-symbolic', icon_size: 16,
+                style_class: 'aw-adv-arrow',
+            });
+            arrow.rotation_angle_z = expanded ? 180 : 0;
+            headRow.add_child(arrow);
+
+            const body = column('aw-adv-body');
+            body.visible = expanded;
+            const clip = (text, max) => text.length > max
+                ? text.slice(0, max).trimEnd() + '…' : text;
+            if (alert.description) {
+                const desc = label(clip(alert.description, 340), 'aw-adv-text');
+                desc.clutter_text.line_wrap = true;
+                body.add_child(desc);
+            }
+            if (alert.instruction) {
+                const instr = label(clip(alert.instruction, 220), 'aw-adv-instr');
+                instr.clutter_text.line_wrap = true;
+                body.add_child(instr);
+            }
+            const issuedBy = alert.sender && alert.sender !== alert.source
+                ? `${alert.sender} · ${alert.source}` : alert.source;
+            const meta = label(
+                `${_('Issued by')} ${issuedBy}` +
+                (alert.areas.length ? ` · ${alert.areas.join('; ')}` : ''),
+                'aw-adv-meta');
+            meta.clutter_text.line_wrap = true;
+            body.add_child(meta);
+
+            const head = new St.Button({
+                style_class: 'aw-adv-head', can_focus: true, x_expand: true,
+                child: headRow,
+            });
+            head.set_accessible_name(
+                `${word ? word + ' ' : ''}${alert.event}, ${this._alertWhen(alert)}`);
+            head.connect('clicked', () => {
+                const open = !body.visible;
+                body.visible = open;
+                arrow.rotation_angle_z = open ? 180 : 0;
+                if (open)
+                    this._expandedAlerts.add(alert.id);
+                else
+                    this._expandedAlerts.delete(alert.id);
+            });
+            box.add_child(head);
+            box.add_child(body);
+            this._alertsBox.add_child(box);
+            this._alertRows.push({ actor: box, alert });
+        }
+    }
+
+    /** Day filter + 3-row cap. No visible alerts -> box and the
+     * "more" button take no space at all. */
+    _syncAlerts() {
+        if (!this._state)
+            return;
+        const forDay = new Set(alertsForDay(this._state.alerts ?? [],
+                                            this._state.daily, this._day)
+            .map(a => a.id));
+        let shown = 0, hidden = 0;
+        for (const { actor, alert } of this._alertRows) {
+            const inDay = forDay.has(alert.id);
+            const underCap = this._showAllAlerts || shown < 3;
+            actor.visible = inDay && underCap;
+            if (inDay && underCap)
+                shown++;
+            else if (inDay)
+                hidden++;
+        }
+        this._alertsBox.visible = shown > 0;
+        this._alertsMore.visible = hidden > 0;
+        if (hidden > 0)
+            this._alertsMoreLabel.set_text(`+${hidden} ${_('more advisories')}`);
     }
 
     _iconButton(iconName, name, callback, size = 16) {
@@ -625,6 +792,7 @@ export class ForecastPanel {
             this._refreshButton.set_accessible_name(
                 `${_('Refresh forecast — updated')} ${state.updated.format('%H:%M')}`);
 
+        this._buildAlerts();
         this._buildDayTiles();
         if (this._day >= daily.length)
             this._day = 0;
@@ -672,6 +840,7 @@ export class ForecastPanel {
         if (!state)
             return;
         this._syncHeader();
+        this._syncAlerts();
         this._morphTo(this._chartValues());
         this._updateSky();
         this._applyTileInk();          // day switch moves the glass tile and
@@ -755,21 +924,11 @@ export class ForecastPanel {
         // today's window starts 2 h early: the now marker sits that far in
         this._nowFrac = this._day === 0
             ? nowFracIn(state.hourly, hourlyIndices, state.currentIso) : null;
-        // each tile quotes the same hours its chart draw shows: today is
-        // the rolling 24 h (recomputed here, window crosses midnight after
-        // 10 PM), other days the exact calendar slice -- providers bucket
-        // their daily max/min over that same midnight-to-midnight window,
-        // so those tiles agree with their curves by construction
-        const hiLabel = this._dayHiLabels[this._day];
-        if (hiLabel && hourlyIndices.length) {
-            const temps = hourlyIndices
-                .map(i => state.hourly.temp[i])
-                .filter(Number.isFinite);
-            if (temps.length) {
-                hiLabel.set_text(fmtTemp(Math.max(...temps), units));
-                this._dayLowLabels[this._day].set_text(fmtTemp(Math.min(...temps), units));
-            }
-        }
+        // Tiles deliberately do NOT follow this window: a tile quotes
+        // its calendar day (the provider's daily row, set at build
+        // time), while only the chart rolls 24 h. Recomputing the
+        // Today tile from these rolling hours once quoted tomorrow
+        // afternoon's peak as today's high (issue #94).
         return hourlyIndices.map(i => state.hourly[field][i] ?? 0);
     }
 
@@ -777,16 +936,20 @@ export class ForecastPanel {
         const state = this._state;
         if (!state)
             return;
-        let scene, night;
+        let scene, night, code;
         if (this._day === 0) {
             scene = (state.effective ?? sceneFor(state.current.code, state.current.isDay)).scene;
             night = !state.current.isDay;
+            code = state.current.code;
         } else {
-            scene = sceneFor(state.daily[this._day].code, true).scene;
+            const dayData = state.daily[this._day];
+            scene = sceneFor(dayData.code, true).scene;
             night = false;
+            code = dayData.code;
         }
         this._skyOpts.scene = scene;
         this._skyOpts.night = night;
+        this._skyOpts.code = code;
         this._skyOpts.phase = Number.isFinite(state.phase) ? state.phase : null;
         this._sunCoords = Number.isFinite(state.latitude) && Number.isFinite(state.longitude)
             ? [state.latitude, state.longitude] : null;
@@ -834,7 +997,6 @@ export class ForecastPanel {
         this._dayButtons = [];
         this._hoverDay = -1;                       // old crossings are stale
         this._dayLowLabels = [];
-        this._dayHiLabels = [];
         this._tileIcons = [];
         const count = Math.min(daily.length, 8);
         for (let r = 0; r < count; r += 4) {
@@ -851,11 +1013,29 @@ export class ForecastPanel {
                     vertical: true, style_class: 'aw-day-col',
                     x_align: ACTOR_FILL
                 });
-                col.add_child(new St.Label({
+                const dayNameRow = new St.BoxLayout({
+                    style_class: 'aw-day-namerow',
+                    x_align: Clutter.ActorAlign.CENTER
+                });
+                dayNameRow.add_child(new St.Label({
                     text: i === 0 ? _('Today') : _(dayName(dayItem.date)),
                     style_class: 'aw-day-name',
                     x_align: Clutter.ActorAlign.CENTER
                 }));
+                // severity dot: highest alert level overlapping this
+                // calendar day (not the day-0 "everything" list rule)
+                const dayLevel = Math.max(0, ...(this._state.alerts ?? [])
+                    .filter(a => alertOverlapsDay(a, dayItem.date))
+                    .map(a => a.level ?? 0));
+                if (dayLevel > 0) {
+                    const dot = new St.Widget({ style_class: 'aw-day-dot' });
+                    dot.set_style(`background-color: ${['', '#f5c542', '#f07f2e', '#e5484d'][dayLevel]};`);
+                    dayNameRow.add_child(dot);
+                    const dayWord = { 1: _('Yellow'), 2: _('Orange'), 3: _('Red') }[dayLevel];
+                    btn.set_accessible_name(
+                        `${i === 0 ? _('Today') : _(dayName(dayItem.date))}, ${dayWord} ${_('advisory')}`);
+                }
+                col.add_child(dayNameRow);
                 const icon = new WeatherIcon({
                     size: 26, animate: false,
                     time: STATIC_TIME,
@@ -879,8 +1059,6 @@ export class ForecastPanel {
                     text: fmtTemp(dayItem.tmax, units),
                     style_class: 'aw-day-hi'
                 });
-                if (i === 0)
-                    this._dayHiLabels[i] = hiLabel;   // chart-window stats land here
                 hl.add_child(hiLabel);
                 const lowLabel = new St.Label({
                     text: fmtTemp(dayItem.tmin, units),
