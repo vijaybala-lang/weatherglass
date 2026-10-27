@@ -181,10 +181,11 @@ export function sunGeometry(lat, lon, ms) {
  * now through the next 24, backfilled before now (clamped at the array
  * start) so the curve stays full at every hour of the day -- at 23:30 the
  * tail is tomorrow's early hours, and just past midnight the window simply
- * becomes the new day plus its 2-hour backfill. Today's tile hi/lo follows
- * the window (menu recomputes it from the plotted hours), so tile, curve
- * and the now marker always describe the same hours across the midnight
- * boundary. Other days run exact calendar midnight-to-midnight slices. All
+ * becomes the new day plus its 2-hour backfill. Only the CHART rolls:
+ * day tiles always quote the provider's calendar-day hi/lo, because a
+ * rolling tile at 4 PM would quote tomorrow afternoon's peak as
+ * today's high (issue #94). Other days run exact calendar
+ * midnight-to-midnight slices. All
  * day arithmetic reads the DATE out of the provider's own stamps -- they
  * always carry the city's local date -- so neither the viewer's timezone
  * nor half-hour offsets can tip an edge across a day boundary. nowIso is

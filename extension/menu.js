@@ -274,7 +274,6 @@ export class ForecastPanel {
         this._shadeCache = { minute: -1, glow: 0, solar: null };
         this._dayButtons = [];             // day-tile rows, rebuilt by
         this._dayLowLabels = [];           // _buildDayTiles in lockstep
-        this._dayHiLabels = [];
         this._tileIcons = [];
         this._ghostIcons = [];
         this._tabButtons = {};
@@ -925,21 +924,11 @@ export class ForecastPanel {
         // today's window starts 2 h early: the now marker sits that far in
         this._nowFrac = this._day === 0
             ? nowFracIn(state.hourly, hourlyIndices, state.currentIso) : null;
-        // each tile quotes the same hours its chart draw shows: today is
-        // the rolling 24 h (recomputed here, window crosses midnight after
-        // 10 PM), other days the exact calendar slice -- providers bucket
-        // their daily max/min over that same midnight-to-midnight window,
-        // so those tiles agree with their curves by construction
-        const hiLabel = this._dayHiLabels[this._day];
-        if (hiLabel && hourlyIndices.length) {
-            const temps = hourlyIndices
-                .map(i => state.hourly.temp[i])
-                .filter(Number.isFinite);
-            if (temps.length) {
-                hiLabel.set_text(fmtTemp(Math.max(...temps), units));
-                this._dayLowLabels[this._day].set_text(fmtTemp(Math.min(...temps), units));
-            }
-        }
+        // Tiles deliberately do NOT follow this window: a tile quotes
+        // its calendar day (the provider's daily row, set at build
+        // time), while only the chart rolls 24 h. Recomputing the
+        // Today tile from these rolling hours once quoted tomorrow
+        // afternoon's peak as today's high (issue #94).
         return hourlyIndices.map(i => state.hourly[field][i] ?? 0);
     }
 
@@ -1008,7 +997,6 @@ export class ForecastPanel {
         this._dayButtons = [];
         this._hoverDay = -1;                       // old crossings are stale
         this._dayLowLabels = [];
-        this._dayHiLabels = [];
         this._tileIcons = [];
         const count = Math.min(daily.length, 8);
         for (let r = 0; r < count; r += 4) {
@@ -1071,8 +1059,6 @@ export class ForecastPanel {
                     text: fmtTemp(dayItem.tmax, units),
                     style_class: 'aw-day-hi'
                 });
-                if (i === 0)
-                    this._dayHiLabels[i] = hiLabel;   // chart-window stats land here
                 hl.add_child(hiLabel);
                 const lowLabel = new St.Label({
                     text: fmtTemp(dayItem.tmin, units),
