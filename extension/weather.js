@@ -1688,7 +1688,7 @@ export class WeatherClient {
         const alertCtx = {
             countryCode: alertCountry,
             placeNames: [alertPlace].filter(Boolean),
-            nowIso: GLib.DateTime.now_local().format('%Y-%m-%dT%H:%M'),
+            nowIso: GLib.DateTime.new_now_local().format('%Y-%m-%dT%H:%M'),
         };
         const [data, alertData] = await Promise.all([
             this.provider.forecast({latitude: lat, longitude: lon,

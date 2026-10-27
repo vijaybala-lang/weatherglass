@@ -97,6 +97,14 @@ test('day tiles quote calendar days, never the rolling chart window', () => {
         'tile high must come from the provider daily row');
 });
 
+/* v11 zipcheck caught GLib.DateTime.now_local() (does not exist;
+ * the constructor is new_now_local) throwing inside every fetch --
+ * invisible headless because no test drives WeatherClient.fetch.
+ * GJS renamed-constructor traps get a token lock, not a memory. */
+test('GLib.DateTime constructors use their GJS new_ names', () => {
+    silence(scan(/DateTime\.now_(local|utc)\(/));
+});
+
 test('no optional chaining in shell modules', () => {
     silence(scan(/\?\./, shipped.filter(n => !CHAINING_EXEMPT.includes(n))));
 });
