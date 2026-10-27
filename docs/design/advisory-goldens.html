@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeatherGlass — Advisory Golden Scenarios (HTML &amp; Shell Goldens)</title>
+<style>
+  :root {
+    --ink: #f4f7fa;
+    --dim: rgba(244, 247, 250, 0.72);
+    --faint: rgba(244, 247, 250, 0.55);
+    --line: rgba(255, 255, 255, 0.16);
+    --page: #181b20;
+    --bar: rgba(34, 39, 46, 0.94);
+    --card-bg: #232830;
+    --border: #363d47;
+    /* Exact shipped extension tokens from extension/stylesheet.css */
+    --s1-bg: rgba(122, 96, 22, 0.55);
+    --s2-bg: rgba(122, 63, 18, 0.58);
+    --s3-bg: rgba(116, 36, 40, 0.60);
+    --s0-bg: rgba(16, 20, 28, 0.52);
+    --s1-ic: #f5c542;
+    --s2-ic: #f07f2e;
+    --s3-ic: #ff6b72;
+    --s0-ic: #c9d2dd;
+    --dot-s1: #f5c542;
+    --dot-s2: #f07f2e;
+    --dot-s3: #e5484d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: Cantarell, "Inter", "Noto Sans", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  header.bar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--bar);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  header.bar h1 {
+    font-size: 15.5px;
+    margin: 0;
+    font-weight: 700;
+  }
+  header.bar p {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    color: #aeb6bf;
+  }
+  .controls {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .seg {
+    display: inline-flex;
+    background: #14171b;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 3px;
+    gap: 3px;
+  }
+  .seg button {
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #cfd6dd;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+  .seg button:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .seg button[aria-selected="true"] {
+    background: #e8edf1;
+    color: #14171b;
+    font-weight: 700;
+  }
+
+  main {
+    max-width: 1780px;
+    margin: 0 auto;
+    padding: 22px 18px 56px;
+  }
+
+  .legend-bar {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    color: #c5cdd6;
+  }
+  .swatch-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    font-weight: 600;
+    color: #f4f7fa;
+  }
+  .dot-sample {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* Scenarios grid */
+  .scenarios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(334px, 1fr));
+    gap: 20px;
+    align-items: start;
+  }
+  body[data-mode="compare"] .scenarios-grid {
+    grid-template-columns: repeat(auto-fit, minmax(700px, 1fr));
+  }
+
+  .scenario-col {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .scenario-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    padding: 0 2px;
+  }
+  .scenario-head h2 {
+    font-size: 14px;
+    margin: 0;
+    font-weight: 700;
+  }
+  .scenario-slug {
+    font-family: ui-monospace, monospace;
+    font-size: 11.5px;
+    color: #9aa4b0;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 7px;
+    border-radius: 5px;
+  }
+  .scenario-desc {
+    margin: -6px 2px 2px;
+    font-size: 12px;
+    color: #aeb6bf;
+    line-height: 1.4;
+  }
+
+  .pair-wrap {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .pane-label {
+    display: none;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #8f9aa6;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  body[data-mode="compare"] .pane-label {
+    display: block;
+  }
+  body[data-mode="html"] .golden-pane {
+    display: none;
+  }
+  body[data-mode="png"] .html-pane {
+    display: none;
+  }
+
+  /* ==========================================================================
+   * Shipped 330px Extension Card Anatomy (matches extension/stylesheet.css)
+   * ========================================================================== */
+  .aw-card {
+    width: 330px;
+    min-height: 430px;
+    padding: 12px 0 8px 0;
+    border-radius: 18px;
+    position: relative;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    user-select: none;
+  }
+  /* Sky backdrops matching the 5 golden scenes */
+  .sky-sf-sunset {
+    background:
+      radial-gradient(circle at 83% 21%, #fff3d1 0%, #ffbe55 12%, #f47b34 25%, rgba(244, 123, 52, 0) 46%),
+      linear-gradient(180deg, #4b507e 0%, #86627d 30%, #cf7d6c 58%, #eba066 100%);
+  }
+  .sky-berlin-wind {
+    background:
+      linear-gradient(180deg, #3c6088 0%, #4d7094 36%, #6a8aa8 64%, #9eb3c6 100%);
+  }
+  .sky-tokyo-storm {
+    background:
+      radial-gradient(ellipse at 52% 24%, rgba(92, 102, 122, 0.55) 0%, transparent 60%),
+      linear-gradient(180deg, #171c26 0%, #2b3240 34%, #1a202b 68%, #21262e 100%);
+  }
+  .sky-ny-snow {
+    background:
+      radial-gradient(ellipse at 65% 20%, rgba(210, 220, 232, 0.55) 0%, transparent 55%),
+      linear-gradient(180deg, #5c6a7d 0%, #7f8d9e 35%, #909eab 68%, #adb9c4 100%);
+  }
+  .sky-berlin-rain {
+    background:
+      radial-gradient(ellipse at 70% 20%, rgba(138, 152, 172, 0.38) 0%, transparent 55%),
+      linear-gradient(180deg, #313d4f 0%, #485669 38%, #546273 70%, #637181 100%);
+  }
+
+  .aw-header {
+    padding: 2px 14px 6px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .aw-current-temp {
+    font-size: 44px;
+    font-weight: 200;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .aw-desc {
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 4px 0 4px 0;
+  }
+  .aw-city-col {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .aw-city {
+    font-size: 16.5px;
+    font-weight: 700;
+  }
+  .aw-clockline {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.82);
+  }
+  .aw-btn-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 2px;
+    opacity: 0.9;
+  }
+  .aw-icon-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 99px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Advisories (.aw-alerts / .aw-adv) */
+  .aw-alerts {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 2px 14px 4px 14px;
+  }
+  .aw-alerts:empty {
+    display: none;
+  }
+  .aw-adv {
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    padding: 7px 9px;
+    color: #f4f7fa;
+    backdrop-filter: blur(4px);
+  }
+  .aw-adv-s1 { background-color: var(--s1-bg); }
+  .aw-adv-s2 { background-color: var(--s2-bg); }
+  .aw-adv-s3 { background-color: var(--s3-bg); }
+  .aw-adv-s0 { background-color: var(--s0-bg); }
+
+  .aw-adv-s1 .aw-adv-icon { color: var(--s1-ic); }
+  .aw-adv-s2 .aw-adv-icon { color: var(--s2-ic); }
+  .aw-adv-s3 .aw-adv-icon { color: var(--s3-ic); }
+  .aw-adv-s0 .aw-adv-icon { color: var(--s0-ic); }
+
+  .aw-adv-head {
+    width: 100%;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .aw-adv-icon {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+  .aw-adv-titlecol {
+    flex: 1;
+    min-width: 0;
+  }
+  .aw-adv-title {
+    font-weight: 700;
+    font-size: 13.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .aw-adv-when {
+    font-size: 11.5px;
+    color: var(--dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .aw-adv-arrow {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: var(--dim);
+    transition: transform 0.15s ease;
+  }
+  .aw-adv.open .aw-adv-arrow {
+    transform: rotate(180deg);
+  }
+  .aw-adv-body {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    padding-top: 6px;
+  }
+  .aw-adv.open .aw-adv-body {
+    display: flex;
+  }
+  .aw-adv-text {
+    font-size: 12.2px;
+    line-height: 1.38;
+  }
+  .aw-adv-instr {
+    font-size: 12.2px;
+    line-height: 1.38;
+    background-color: rgba(10, 14, 20, 0.35);
+    border-radius: 8px;
+    padding: 6px 8px;
+  }
+  .aw-adv-meta {
+    font-size: 10.8px;
+    color: var(--faint);
+  }
+  .aw-alerts-more {
+    display: block;
+    margin: 0 auto;
+    padding: 1px 14px 5px 14px;
+    background: none;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    font-size: 11.8px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .aw-alerts-more:hover {
+    text-decoration: underline;
+  }
+
+  /* Metric tabs */
+  .aw-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 4px 14px 4px 14px;
+  }
+  .aw-tab {
+    border: 1px solid transparent;
+    border-radius: 99px;
+    padding: 3px 10px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.72);
+  }
+  .aw-tab-active {
+    background-color: rgba(16, 20, 28, 0.45);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+  }
+  .dark-ink-tabs .aw-tab:not(.aw-tab-active) {
+    color: rgba(16, 24, 35, 0.78);
+  }
+
+  /* Chart area mock */
+  .aw-chart {
+    width: 100%;
+    height: 158px;
+    display: block;
+  }
+
+  /* Day tiles (2 rows x 4) */
+  .aw-days-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 7px;
+  }
+  .aw-days {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    padding: 0 14px;
+  }
+  .aw-day {
+    border-radius: 12px;
+    padding: 6px 2px 5px 2px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .aw-day:hover {
+    background-color: rgba(16, 20, 28, 0.28);
+  }
+  .aw-day-sel {
+    background-color: rgba(16, 20, 28, 0.45);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff !important;
+  }
+  .foot-dark-ink .aw-day:not(.aw-day-sel) {
+    color: #101823;
+  }
+  .aw-day-namerow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+  }
+  .aw-day-name {
+    font-size: 11.5px;
+    font-weight: 700;
+  }
+  .aw-day-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 99px;
+    flex: none;
+  }
+  .aw-day-hl {
+    display: flex;
+    gap: 4px;
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .aw-day-hi { font-weight: 600; }
+  .aw-day-lo { font-weight: 400; opacity: 0.82; }
+
+  /* Golden PNG frame */
+  .golden-img {
+    width: 330px;
+    height: auto;
+    display: block;
+    border-radius: 18px;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+    cursor: zoom-in;
+  }
+
+  /* Lightbox modal */
+  dialog#lightbox {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+  dialog#lightbox::backdrop {
+    background: rgba(8, 10, 14, 0.82);
+    backdrop-filter: blur(6px);
+  }
+  dialog#lightbox img {
+    display: block;
+    max-height: 92vh;
+    width: auto;
+    border-radius: 18px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75);
+    cursor: zoom-out;
+  }
+</style>
+</head>
+<body data-mode="compare">
+
+<!-- Shared SVG symbols (verbatim Adwaita symbolic icons + weather glyphs) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Adwaita weather-severe-alert-symbolic: cloud in currentColor, warning badge in #f57900 -->
+    <symbol id="ic-severe" viewBox="0 0 16 16">
+      <path fill="currentColor" d="M6.008 2.068C2.726 2.068.044 4.75.045 8.031c0 3.282 2.681 5.963 5.963 5.963L7 14v-2l-.986-.006h-.008a3.946 3.946 0 0 1-3.961-3.963c0-2.2 1.76-3.963 3.96-3.963a3.96 3.96 0 0 1 3.67 2.473 1 1 0 0 0 .393.453h5.057q.072.001.142.008a4.5 4.5 0 0 0-3.714-1.97c-.15 0-.29.047-.438.062-1.053-1.826-2.96-3.024-5.107-3.026Z"/>
+      <path fill="#f57900" d="M8.875 8A.864.864 0 0 0 8 8.875v6.25c0 .492.383.875.875.875h6.25a.864.864 0 0 0 .875-.875v-6.25A.864.864 0 0 0 15.125 8zM11 9h2v2.5s0 .5-.5.5h-1c-.5 0-.5-.5-.5-.5zm.5 4h1c.277 0 .5.223.5.5v1c0 .277-.223.5-.5.5h-1a.5.5 0 0 1-.5-.5v-1c0-.277.223-.5.5-.5m0 0"/>
+    </symbol>
+    <symbol id="ic-pan-down" viewBox="0 0 16 16">
+      <path fill="currentColor" d="m 3.292969 7.707031 l 4 4 c 0.390625 0.390625 1.023437 0.390625 1.414062 0 l 4 -4 c 0.390625 -0.390625 0.390625 -1.023437 0 -1.414062 s -1.023437 -0.390625 -1.414062 0 l -3.292969 3.292969 l -3.292969 -3.292969 c -0.390625 -0.390625 -1.023437 -0.390625 -1.414062 0 s -0.390625 1.023437 0 1.414062 z"/>
+    </symbol>
+    <symbol id="w-partly" viewBox="0 0 26 26">
+      <circle cx="9.5" cy="9.5" r="4" fill="#ffbe42"/>
+      <path d="M10.5 20.5h8.8a3.8 3.8 0 0 0 .5-7.5A5.6 5.6 0 0 0 9 13.6a3.5 3.5 0 0 0 1.5 6.9Z" fill="#6b7a8c"/>
+    </symbol>
+    <symbol id="w-partly-pale" viewBox="0 0 26 26">
+      <circle cx="9.5" cy="9.5" r="4" fill="#ffcf5c"/>
+      <path d="M10.5 20.5h8.8a3.8 3.8 0 0 0 .5-7.5A5.6 5.6 0 0 0 9 13.6a3.5 3.5 0 0 0 1.5 6.9Z" fill="#ced8e3"/>
+    </symbol>
+    <symbol id="w-cloud" viewBox="0 0 26 26">
+      <path d="M8 20h10a4.2 4.2 0 0 0 .6-8.3A6 6 0 0 0 6.6 13 3.8 3.8 0 0 0 8 20Z" fill="#606d7d"/>
+    </symbol>
+    <symbol id="w-rain" viewBox="0 0 26 26">
+      <path d="M8 16.5h10a4 4 0 0 0 .5-7.9A5.6 5.6 0 0 0 6.8 10 3.6 3.6 0 0 0 8 16.5Z" fill="#b7c6d6"/>
+      <g stroke="#5eb0ff" stroke-width="1.8" stroke-linecap="round">
+        <path d="M10 19l-1 3.2M13.5 19l-1 3.2M17 19l-1 3.2"/>
+      </g>
+    </symbol>
+    <symbol id="w-storm" viewBox="0 0 26 26">
+      <path d="M8 16h10a4 4 0 0 0 .5-7.9A5.6 5.6 0 0 0 6.8 9.5 3.6 3.6 0 0 0 8 16Z" fill="#b7c6d6"/>
+      <path d="M13.8 15.5 11 20h2.2l-1 3.5 3.8-4.8h-2.1l1.4-3.2Z" fill="#f7c331"/>
+    </symbol>
+    <symbol id="w-snow" viewBox="0 0 26 26">
+      <path d="M8 16.5h10a4 4 0 0 0 .5-7.9A5.6 5.6 0 0 0 6.8 10 3.6 3.6 0 0 0 8 16.5Z" fill="#617082"/>
+      <g fill="#7393b3">
+        <circle cx="10" cy="20" r="1.3"/><circle cx="13.5" cy="21" r="1.3"/><circle cx="17" cy="20" r="1.3"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="bar">
+  <div>
+    <h1>WeatherGlass — Advisory Golden Scenarios</h1>
+    <p>All 5 weather advisory states: interactive HTML cards paired with the pixel-locked headless GNOME Shell goldens (<code>extension/tools/golden/shell/advisory-*.png</code>).</p>
+  </div>
+  <div class="controls">
+    <div class="seg" role="tablist" aria-label="View mode">
+      <button role="tab" data-view="compare" aria-selected="true">Side-by-Side (HTML + Golden PNG)</button>
+      <button role="tab" data-view="html" aria-selected="false">Interactive HTML Only</button>
+      <button role="tab" data-view="png" aria-selected="false">Shell Goldens (PNG) Only</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="legend-bar">
+    <span><b>Severity Tiers &amp; Slabs:</b></span>
+    <span class="swatch-pill" style="background:var(--s1-bg)"><span class="dot-sample" style="background:var(--dot-s1)"></span>Level 1 · Yellow (<code>.aw-adv-s1</code>, collapsed by default)</span>
+    <span class="swatch-pill" style="background:var(--s2-bg)"><span class="dot-sample" style="background:var(--dot-s2)"></span>Level 2 · Orange (<code>.aw-adv-s2</code>, auto-expanded)</span>
+    <span class="swatch-pill" style="background:var(--s3-bg)"><span class="dot-sample" style="background:var(--dot-s3)"></span>Level 3 · Red (<code>.aw-adv-s3</code>, auto-expanded)</span>
+    <span class="swatch-pill" style="background:var(--s0-bg)">Level null · Neutral (<code>.aw-adv-s0</code>, Unknown severity, no dot)</span>
+    <span style="margin-left:auto;color:#9aa4b0">Tip: click any advisory row or day tile on the HTML cards to test expand/collapse &amp; day filtering.</span>
+  </div>
+
+  <div class="scenarios-grid" id="grid"></div>
+</main>
+
+<dialog id="lightbox" onclick="this.close()">
+  <img id="lightbox-img" src="" alt="Full-size golden screenshot">
+</dialog>
+
+<script>
+const SCENARIOS = [
+  {
+    slug: 'advisory-yellow',
+    title: '1. Yellow Advisory (Level 1 · Collapsed)',
+    desc: 'Level 1 (.aw-adv-s1) stays collapsed by default so minor advisories cost only 46 px. Yellow dots (#f5c542) mark overlapped days (Today, Thu, Fri).',
+    png: '../../extension/tools/golden/shell/advisory-yellow.png',
+    skyClass: 'sky-sf-sunset',
+    footDarkInk: true,
+    darkInkTabs: true,
+    temp: '15°',
+    cond: 'Now: Partly cloudy',
+    city: 'San Francisco',
+    clock: '6:37 PM',
+    chartCurve: 'M0,85 C45,95 90,104 140,102 C190,94 235,74 285,76 L330,84',
+    chartHours: ['7PM','10PM','1AM','4AM','7AM','10AM','1PM','4PM'],
+    chartTemps: ['15°','12°','11°','12°','15°','17°','18°','17°'],
+    alerts: [
+      {
+        id: 'sf-1', level: 1, open: false, days: [0, 1, 2],
+        event: 'Coastal Flood Advisory',
+        when: 'Yellow · now until Fri 1:00 PM',
+        desc: 'Minor tidal overflow expected along low-lying bayfront walkways during the evening high tide.',
+        instr: 'Do not drive around barricades or through water of unknown depth.',
+        meta: 'Issued by NWS Bay Area · NOAA NWS · San Francisco Bay Shoreline'
+      }
+    ],
+    days: [
+      { name: 'Today', dot: 1, icon: 'w-partly-pale', hi: '22°', lo: '12°' },
+      { name: 'Thu',   dot: 1, icon: 'w-cloud',       hi: '23°', lo: '12°' },
+      { name: 'Fri',   dot: 1, icon: 'w-partly',      hi: '19°', lo: '15°' },
+      { name: 'Sat',   dot: 0, icon: 'w-partly',      hi: '22°', lo: '12°' },
+      { name: 'Sun',   dot: 0, icon: 'w-cloud',       hi: '20°', lo: '14°' },
+      { name: 'Mon',   dot: 0, icon: 'w-partly',      hi: '22°', lo: '12°' },
+      { name: 'Tue',   dot: 0, icon: 'w-partly',      hi: '21°', lo: '13°' },
+      { name: 'Wed',   dot: 0, icon: 'w-cloud',       hi: '20°', lo: '14°' }
+    ]
+  },
+  {
+    slug: 'advisory-orange',
+    title: '2. Orange Warning (Level 2 · Auto-Expanded)',
+    desc: 'Level >= 2 (.aw-adv-s2) auto-expands the top alert on seed, showing description, dark instruction pill (.aw-adv-instr), and issuer metadata.',
+    png: '../../extension/tools/golden/shell/advisory-orange.png',
+    skyClass: 'sky-berlin-wind',
+    footDarkInk: true,
+    darkInkTabs: true,
+    temp: '11°',
+    cond: 'Now: Mainly clear',
+    city: 'Berlin',
+    clock: '5:10 AM',
+    chartCurve: 'M0,74 C50,78 95,98 145,96 C195,98 240,78 330,72',
+    chartHours: ['3PM','6PM','9PM','12AM','3AM','6AM','9AM','12PM'],
+    chartTemps: ['11°','8°','6°','7°','6°','9°','11°','12°'],
+    alerts: [
+      {
+        id: 'ber-2', level: 2, open: true, days: [0, 1],
+        event: 'Wind gusts warning',
+        when: 'Orange · now until Wed 3:00 AM',
+        desc: 'Gusts of 85–100 km/h from the southwest, locally storm-force in showers. Loose objects may be blown about; branches can break.',
+        instr: 'Secure loose items outdoors. Take care near trees and scaffolding.',
+        meta: 'Issued by DWD · MeteoAlarm · Berlin'
+      }
+    ],
+    days: [
+      { name: 'Today', dot: 2, icon: 'w-partly-pale', hi: '17°', lo: '7°' },
+      { name: 'Wed',   dot: 2, icon: 'w-partly',      hi: '18°', lo: '7°' },
+      { name: 'Thu',   dot: 0, icon: 'w-cloud',       hi: '14°', lo: '10°' },
+      { name: 'Fri',   dot: 0, icon: 'w-partly',      hi: '17°', lo: '7°' },
+      { name: 'Sat',   dot: 0, icon: 'w-partly',      hi: '15°', lo: '9°' },
+      { name: 'Sun',   dot: 0, icon: 'w-cloud',       hi: '17°', lo: '7°' },
+      { name: 'Mon',   dot: 0, icon: 'w-partly',      hi: '16°', lo: '8°' },
+      { name: 'Tue',   dot: 0, icon: 'w-partly',      hi: '15°', lo: '9°' }
+    ]
+  },
+  {
+    slug: 'advisory-red',
+    title: '3. Red Warning (Level 3 · Auto-Expanded)',
+    desc: 'Level 3 (.aw-adv-s3) severe warning slab over a dark thunderstorm scene, with red day-tile dots (#e5484d) on Today and Sun.',
+    png: '../../extension/tools/golden/shell/advisory-red.png',
+    skyClass: 'sky-tokyo-storm',
+    footDarkInk: false,
+    darkInkTabs: false,
+    temp: '12°',
+    cond: 'Now: Thunderstorm',
+    city: 'Tokyo',
+    clock: '5:40 AM',
+    chartCurve: 'M0,96 C50,98 110,88 185,72 C240,68 285,82 330,94',
+    chartHours: ['10PM','1AM','4AM','7AM','10AM','1PM','4PM','7PM'],
+    chartTemps: ['12°','11°','13°','17°','18°','18°','16°','14°'],
+    alerts: [
+      {
+        id: 'tyo-3', level: 3, open: true, days: [0, 1],
+        event: 'Severe Thunderstorm Warning',
+        when: 'Red · now until Sun 2:00 AM',
+        desc: 'Destructive gusts over 110 km/h, large hail and frequent cloud-to-ground lightning moving east across the metropolitan area.',
+        instr: 'Move indoors immediately and stay away from windows.',
+        meta: 'Issued by JMA · CAP · Tokyo'
+      }
+    ],
+    days: [
+      { name: 'Today', dot: 3, icon: 'w-storm', hi: '21°', lo: '11°' },
+      { name: 'Sun',   dot: 3, icon: 'w-rain',  hi: '22°', lo: '11°' },
+      { name: 'Mon',   dot: 0, icon: 'w-rain',  hi: '18°', lo: '14°' },
+      { name: 'Tue',   dot: 0, icon: 'w-storm', hi: '21°', lo: '11°' },
+      { name: 'Wed',   dot: 0, icon: 'w-rain',  hi: '19°', lo: '13°' },
+      { name: 'Thu',   dot: 0, icon: 'w-rain',  hi: '21°', lo: '11°' },
+      { name: 'Fri',   dot: 0, icon: 'w-storm', hi: '20°', lo: '12°' },
+      { name: 'Sat',   dot: 0, icon: 'w-rain',  hi: '19°', lo: '13°' }
+    ]
+  },
+  {
+    slug: 'advisory-neutral',
+    title: '4. Neutral Advisory (Level null · Unknown Severity)',
+    desc: 'CAP/NWS Unknown severity maps to level: null (.aw-adv-s0): neutral dark-glass slab, no colour word, open-ended "in effect now", and no day-tile dot.',
+    png: '../../extension/tools/golden/shell/advisory-neutral.png',
+    skyClass: 'sky-ny-snow',
+    footDarkInk: true,
+    darkInkTabs: true,
+    temp: '-3°',
+    cond: 'Now: Light snow',
+    city: 'New York',
+    clock: '7:20 AM',
+    chartCurve: 'M0,74 C55,70 110,98 185,98 C245,98 290,82 330,80',
+    chartHours: ['11AM','2PM','5PM','8PM','11PM','2AM','5AM','8AM'],
+    chartTemps: ['-3°','-3°','-6°','-8°','-9°','-9°','-7°','-4°'],
+    alerts: [
+      {
+        id: 'ny-0', level: 0, open: false, days: [0],
+        event: 'Frost Advisory',
+        when: 'in effect now',
+        desc: 'Sub-freezing temperatures expected across inland valleys.',
+        instr: null,
+        meta: 'Issued by NWS New York NY · NOAA NWS · New York, NY'
+      }
+    ],
+    days: [
+      { name: 'Today', dot: 0, icon: 'w-snow', hi: '2°',  lo: '-8°' },
+      { name: 'Wed',   dot: 0, icon: 'w-snow', hi: '3°',  lo: '-8°' },
+      { name: 'Thu',   dot: 0, icon: 'w-snow', hi: '-1°', lo: '-5°' },
+      { name: 'Fri',   dot: 0, icon: 'w-snow', hi: '2°',  lo: '-8°' },
+      { name: 'Sat',   dot: 0, icon: 'w-snow', hi: '0°',  lo: '-6°' },
+      { name: 'Sun',   dot: 0, icon: 'w-snow', hi: '2°',  lo: '-8°' },
+      { name: 'Mon',   dot: 0, icon: 'w-snow', hi: '1°',  lo: '-7°' },
+      { name: 'Tue',   dot: 0, icon: 'w-snow', hi: '0°',  lo: '-6°' }
+    ]
+  },
+  {
+    slug: 'advisory-stack',
+    title: '5. Stacked Multi-Alert + Overflow (+2 more)',
+    desc: '5 advisories across Red/Orange/Yellow/Neutral: shows top 3 sorted by level (Red open, Orange & Yellow closed), "+2 more advisories" button, and multi-day dots.',
+    png: '../../extension/tools/golden/shell/advisory-stack.png',
+    skyClass: 'sky-berlin-rain',
+    footDarkInk: false,
+    darkInkTabs: false,
+    temp: '10°',
+    cond: 'Now: Light rain',
+    city: 'Berlin',
+    clock: '5:10 AM',
+    chartCurve: 'M0,74 C50,78 95,98 145,96 C195,98 240,78 330,72',
+    chartHours: ['3PM','6PM','9PM','12AM','3AM','6AM','9AM','12PM'],
+    chartTemps: ['10°','7°','5°','6°','5°','8°','10°','11°'],
+    alerts: [
+      {
+        id: 'stk-1', level: 3, open: true, days: [0],
+        event: 'Severe storm warning',
+        when: 'Red · now until Tue 11:00 PM',
+        desc: 'Squall line with hurricane-force gusts up to 120 km/h and torrential downpours crossing the region.',
+        instr: 'Avoid outdoor activity and stay clear of trees and power lines.',
+        meta: 'Issued by DWD · MeteoAlarm · Berlin'
+      },
+      {
+        id: 'stk-2', level: 2, open: false, days: [1, 2],
+        event: 'Wind gusts warning',
+        when: 'Orange · starts Wed 6:00 AM, until Thu 3:00 AM',
+        desc: 'Strong southwest gusts up to 90 km/h in wake of the cold front.',
+        instr: null,
+        meta: 'Issued by DWD · MeteoAlarm · Berlin'
+      },
+      {
+        id: 'stk-3', level: 1, open: false, days: [3],
+        event: 'Persistent rain advisory',
+        when: 'Yellow · starts Fri 9:00 AM–6:00 PM',
+        desc: 'Prolonged rain of 25–35 mm in nine hours.',
+        instr: null,
+        meta: 'Issued by DWD · MeteoAlarm · Berlin'
+      },
+      {
+        id: 'stk-4', level: 1, open: false, days: [4],
+        event: 'Dense fog advisory',
+        when: 'Yellow · starts Sat 1:00 AM–10:00 AM',
+        desc: 'Visibility below 150 m in freezing fog.',
+        instr: null,
+        meta: 'Issued by DWD · MeteoAlarm · Berlin'
+      },
+      {
+        id: 'stk-5', level: 0, open: false, days: [5],
+        event: 'Frost advisory',
+        when: 'starts Sun 12:00 AM–8:00 AM',
+        desc: 'Ground frost in sheltered spots.',
+        instr: null,
+        meta: 'Issued by DWD · MeteoAlarm · Berlin'
+      }
+    ],
+    days: [
+      { name: 'Today', dot: 3, icon: 'w-rain', hi: '16°', lo: '6°' },
+      { name: 'Wed',   dot: 2, icon: 'w-rain', hi: '17°', lo: '6°' },
+      { name: 'Thu',   dot: 2, icon: 'w-rain', hi: '13°', lo: '9°' },
+      { name: 'Fri',   dot: 1, icon: 'w-rain', hi: '16°', lo: '6°' },
+      { name: 'Sat',   dot: 1, icon: 'w-rain', hi: '14°', lo: '8°' },
+      { name: 'Sun',   dot: 0, icon: 'w-rain', hi: '16°', lo: '6°' },
+      { name: 'Mon',   dot: 0, icon: 'w-rain', hi: '15°', lo: '7°' },
+      { name: 'Tue',   dot: 0, icon: 'w-rain', hi: '14°', lo: '8°' }
+    ]
+  }
+];
+
+const DOT_COLORS = ['', '#f5c542', '#f07f2e', '#e5484d'];
+
+function buildCardHTML(sc, idx) {
+  const alertsHTML = sc.alerts.map((a, ai) => `
+    <div class="aw-adv aw-adv-s${a.level} ${a.open ? 'open' : ''}" data-days="${a.days.join(',')}" data-idx="${ai}">
+      <button class="aw-adv-head" type="button" aria-expanded="${a.open}">
+        <svg class="aw-adv-icon"><use href="#ic-severe"/></svg>
+        <div class="aw-adv-titlecol">
+          <div class="aw-adv-title">${a.event}</div>
+          <div class="aw-adv-when">${a.when}</div>
+        </div>
+        <svg class="aw-adv-arrow"><use href="#ic-pan-down"/></svg>
+      </button>
+      <div class="aw-adv-body">
+        ${a.desc ? `<div class="aw-adv-text">${a.desc}</div>` : ''}
+        ${a.instr ? `<div class="aw-adv-instr">${a.instr}</div>` : ''}
+        <div class="aw-adv-meta">${a.meta}</div>
+      </div>
+    </div>
+  `).join('');
+
+  const renderDayRow = (slice, offset) => `
+    <div class="aw-days">
+      ${slice.map((d, di) => {
+        const dayIndex = offset + di;
+        const dotHTML = d.dot > 0
+          ? `<span class="aw-day-dot" style="background-color:${DOT_COLORS[d.dot]}"></span>`
+          : '';
+        return `
+          <button class="aw-day ${dayIndex === 0 ? 'aw-day-sel' : ''}" type="button" data-day="${dayIndex}">
+            <div class="aw-day-namerow">
+              <span class="aw-day-name">${d.name}</span>${dotHTML}
+            </div>
+            <svg width="26" height="26"><use href="#${d.icon}"/></svg>
+            <div class="aw-day-hl">
+              <span class="aw-day-hi">${d.hi}</span>
+              <span class="aw-day-lo">${d.lo}</span>
+            </div>
+          </button>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  const xs = [16, 58, 102, 146, 190, 234, 278, 314];
+  const labelsColor = sc.footDarkInk ? 'rgba(16,24,35,0.72)' : 'rgba(255,255,255,0.75)';
+
+  return `
+    <div class="aw-card ${sc.skyClass} ${sc.footDarkInk ? 'foot-dark-ink' : ''}" data-card="${idx}">
+      <div class="aw-header">
+        <div>
+          <div class="aw-current-temp">${sc.temp}</div>
+          <div class="aw-desc">${sc.cond}</div>
+        </div>
+        <div class="aw-city-col">
+          <div class="aw-city">${sc.city}</div>
+          <div class="aw-clockline">${sc.clock}</div>
+          <div class="aw-btn-row">
+            <span class="aw-icon-btn">↻</span>
+            <span class="aw-icon-btn">⚙</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="aw-alerts">${alertsHTML}</div>
+      <button class="aw-alerts-more" type="button" style="display:none"></button>
+
+      <div class="aw-tabs ${sc.darkInkTabs ? 'dark-ink-tabs' : ''}">
+        <span class="aw-tab aw-tab-active">Temperature</span>
+        <span class="aw-tab">Precipitation</span>
+        <span class="aw-tab">Wind</span>
+      </div>
+
+      <svg class="aw-chart" viewBox="0 0 330 158" aria-hidden="true">
+        <path d="${sc.chartCurve} L330,130 L0,130 Z" fill="rgba(245, 165, 36, 0.22)"/>
+        <path d="${sc.chartCurve}" fill="none" stroke="#f5a524" stroke-width="2.6" stroke-linecap="round"/>
+        ${xs.map((x, i) => `
+          <text x="${x}" y="58" text-anchor="middle" fill="${labelsColor}" font-size="10.5" font-weight="600">${sc.chartTemps[i]}</text>
+          <text x="${x}" y="148" text-anchor="middle" fill="${labelsColor}" font-size="10">${sc.chartHours[i]}</text>
+        `).join('')}
+      </svg>
+
+      <div class="aw-days-grid">
+        ${renderDayRow(sc.days.slice(0, 4), 0)}
+        ${renderDayRow(sc.days.slice(4, 8), 4)}
+      </div>
+    </div>
+  `;
+}
+
+const grid = document.getElementById('grid');
+grid.innerHTML = SCENARIOS.map((sc, idx) => `
+  <section class="scenario-col">
+    <div class="scenario-head">
+      <h2>${sc.title}</h2>
+      <span class="scenario-slug">${sc.slug}.png</span>
+    </div>
+    <p class="scenario-desc">${sc.desc}</p>
+    <div class="pair-wrap">
+      <div class="html-pane">
+        <div class="pane-label">Interactive HTML Replica</div>
+        ${buildCardHTML(sc, idx)}
+      </div>
+      <div class="golden-pane">
+        <div class="pane-label">Headless GNOME Shell Golden</div>
+        <img class="golden-img" src="${sc.png}" alt="${sc.title}" title="Click to zoom 1:1"
+             onclick="openLightbox(this.src)">
+      </div>
+    </div>
+  </section>
+`).join('');
+
+function syncCardAlerts(cardEl) {
+  const selBtn = cardEl.querySelector('.aw-day-sel');
+  const day = selBtn ? Number(selBtn.dataset.day) : 0;
+  const showAll = cardEl.dataset.showAll === 'true';
+  const rows = [...cardEl.querySelectorAll('.aw-adv')];
+  const matching = rows.filter(r => {
+    const days = r.dataset.days.split(',').map(Number);
+    return day === 0 || days.includes(day);
+  });
+  const limit = showAll ? matching.length : 3;
+  const shown = new Set(matching.slice(0, limit));
+  rows.forEach(r => { r.style.display = shown.has(r) ? '' : 'none'; });
+
+  const alertsBox = cardEl.querySelector('.aw-alerts');
+  alertsBox.style.display = matching.length > 0 ? '' : 'none';
+
+  const moreBtn = cardEl.querySelector('.aw-alerts-more');
+  const hidden = matching.length - shown.size;
+  if (hidden > 0) {
+    moreBtn.textContent = `+${hidden} more ${hidden === 1 ? 'advisory' : 'advisories'}`;
+    moreBtn.style.display = 'block';
+  } else {
+    moreBtn.style.display = 'none';
+  }
+}
+
+document.querySelectorAll('.aw-card').forEach(cardEl => {
+  syncCardAlerts(cardEl);
+
+  cardEl.querySelectorAll('.aw-adv-head').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const adv = btn.closest('.aw-adv');
+      const open = adv.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+    });
+  });
+
+  cardEl.querySelector('.aw-alerts-more').addEventListener('click', () => {
+    cardEl.dataset.showAll = 'true';
+    syncCardAlerts(cardEl);
+  });
+
+  cardEl.querySelectorAll('.aw-day').forEach(dayBtn => {
+    dayBtn.addEventListener('click', () => {
+      cardEl.querySelectorAll('.aw-day').forEach(b => b.classList.toggle('aw-day-sel', b === dayBtn));
+      cardEl.dataset.showAll = 'false';
+      syncCardAlerts(cardEl);
+    });
+  });
+});
+
+document.querySelectorAll('[data-view]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-view]').forEach(b =>
+      b.setAttribute('aria-selected', String(b === btn)));
+    document.body.dataset.mode = btn.dataset.view;
+  });
+});
+
+function openLightbox(src) {
+  const dlg = document.getElementById('lightbox');
+  document.getElementById('lightbox-img').src = src;
+  dlg.showModal();
+}
+</script>
+</body>
+</html>

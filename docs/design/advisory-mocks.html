@@ -112,6 +112,7 @@
     <button role="tab" aria-selected="false" data-mock="b">B · Extension chip</button>
     <button role="tab" aria-selected="false" data-mock="c">C · App window</button>
     <button role="tab" aria-selected="false" data-mock="d">D · Panel + states</button>
+    <button role="tab" aria-selected="false" data-mock="e">E · Shell goldens</button>
   </nav>
 </header>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -170,6 +171,11 @@
 <p class="note" data-note="d"><b>D · Panel + states.</b> What the top bar shows when the menu is closed, the common
   interface every provider maps into, and the awkward states: several alerts at once, alert text in the issuer's
   language, and the no-advisories rule: display nothing.</p>
+<p class="note" data-note="e"><b>E · Shell goldens.</b> The five pixel-locked headless GNOME Shell captures
+  (<code>extension/tools/golden/shell/advisory-*.png</code>) covering Yellow (level 1, collapsed), Orange (level 2,
+  auto-expanded), Red (level 3, auto-expanded), Neutral (unknown severity, open-ended), and Stacked (3 rows +
+  <code>+2 more advisories</code> overflow). See also <a href="advisory-goldens.html" style="color:#57a8ff">advisory-goldens.html</a>
+  for the side-by-side interactive HTML + golden comparison.</p>
 
 <!-- ================= MOCK A : extension card, banners ================= -->
 <section data-win="a" class="on" aria-label="Mock A">
@@ -530,6 +536,37 @@ alerts: [ {
 
   </div>
 </section>
+
+<!-- ================= MOCK E : shell golden screenshots ================= -->
+<section data-win="e" aria-label="Mock E: Shell Goldens">
+  <div style="max-width:1740px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px;align-items:start">
+    <div style="background:#2b3036;border:1px solid #3a4046;border-radius:14px;padding:12px;text-align:center">
+      <div style="font-size:13px;font-weight:700;margin-bottom:2px">Yellow (Level 1 · Collapsed)</div>
+      <div style="font-size:11.5px;color:#aeb6bf;margin-bottom:10px"><code>advisory-yellow.png</code> · San Francisco sunset</div>
+      <img src="../../extension/tools/golden/shell/advisory-yellow.png" alt="Yellow advisory golden" style="width:100%;max-width:330px;height:auto;border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.45)">
+    </div>
+    <div style="background:#2b3036;border:1px solid #3a4046;border-radius:14px;padding:12px;text-align:center">
+      <div style="font-size:13px;font-weight:700;margin-bottom:2px">Orange (Level 2 · Expanded)</div>
+      <div style="font-size:11.5px;color:#aeb6bf;margin-bottom:10px"><code>advisory-orange.png</code> · Berlin wind day</div>
+      <img src="../../extension/tools/golden/shell/advisory-orange.png" alt="Orange warning golden" style="width:100%;max-width:330px;height:auto;border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.45)">
+    </div>
+    <div style="background:#2b3036;border:1px solid #3a4046;border-radius:14px;padding:12px;text-align:center">
+      <div style="font-size:13px;font-weight:700;margin-bottom:2px">Red (Level 3 · Expanded)</div>
+      <div style="font-size:11.5px;color:#aeb6bf;margin-bottom:10px"><code>advisory-red.png</code> · Tokyo storm night</div>
+      <img src="../../extension/tools/golden/shell/advisory-red.png" alt="Red warning golden" style="width:100%;max-width:330px;height:auto;border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.45)">
+    </div>
+    <div style="background:#2b3036;border:1px solid #3a4046;border-radius:14px;padding:12px;text-align:center">
+      <div style="font-size:13px;font-weight:700;margin-bottom:2px">Neutral (Unknown Severity)</div>
+      <div style="font-size:11.5px;color:#aeb6bf;margin-bottom:10px"><code>advisory-neutral.png</code> · New York snow day</div>
+      <img src="../../extension/tools/golden/shell/advisory-neutral.png" alt="Neutral advisory golden" style="width:100%;max-width:330px;height:auto;border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.45)">
+    </div>
+    <div style="background:#2b3036;border:1px solid #3a4046;border-radius:14px;padding:12px;text-align:center">
+      <div style="font-size:13px;font-weight:700;margin-bottom:2px">Stacked (3 Rows + Overflow)</div>
+      <div style="font-size:11.5px;color:#aeb6bf;margin-bottom:10px"><code>advisory-stack.png</code> · Berlin rain day</div>
+      <img src="../../extension/tools/golden/shell/advisory-stack.png" alt="Stacked advisories golden" style="width:100%;max-width:330px;height:auto;border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.45)">
+    </div>
+  </div>
+</section>
 </main>
 
 <script>
@@ -547,7 +584,7 @@ alerts: [ {
     history.replaceState(null, '', '#' + btn.dataset.mock);
   }));
   const fromHash = location.hash.replace('#', '');
-  if (['a', 'b', 'c', 'd'].includes(fromHash)) showMock(fromHash);
+  if (['a', 'b', 'c', 'd', 'e'].includes(fromHash)) showMock(fromHash);
 
   // --- advisory row expand / collapse ---
   document.querySelectorAll('[data-advtoggle]').forEach(btn =>
