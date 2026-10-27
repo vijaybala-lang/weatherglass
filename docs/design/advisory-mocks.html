@@ -156,12 +156,12 @@
 </section>
 
 <p class="note on" data-note="a"><b>A · Extension banners (recommended).</b> One row per active alert, directly under the
-  header, sorted by level then start. Collapsed by default except the highest level. Day tiles carry a dot in the level
+  header, sorted by level then start. All advisories start collapsed by default. Day tiles carry a dot in the level
   colour when an alert overlaps that day; selecting a day lists only its overlapping alerts (try Wed — the whole
   block disappears). Height cost: ~46 px per collapsed alert. No advisories means nothing renders at all:
   no heading, no empty-state box. Rows follow <b>AdwExpanderRow</b> anatomy: prefix
   <code>weather-severe-alert-symbolic</code> (its warning badge takes the level colour), title + subtitle, <code>pan-down-symbolic</code>
-  suffix arrow that rotates — no bespoke triangle or disc.</p>
+  / <code>pan-up-symbolic</code> suffix arrow — no bespoke triangle or disc.</p>
 <p class="note" data-note="b"><b>B · Extension chip.</b> A single line under the condition text keeps the card short.
   Cheapest on height, weakest on urgency: a red warning looks like a yellow advisory until opened. Kept as the
   low-profile alternative; the expanded state reuses A's rows verbatim.</p>
@@ -172,9 +172,9 @@
   interface every provider maps into, and the awkward states: several alerts at once, alert text in the issuer's
   language, and the no-advisories rule: display nothing.</p>
 <p class="note" data-note="e"><b>E · Shell goldens.</b> The five pixel-locked headless GNOME Shell captures
-  (<code>extension/tools/golden/shell/advisory-*.png</code>) covering Yellow (level 1, collapsed), Orange (level 2,
-  auto-expanded), Red (level 3, auto-expanded), Neutral (unknown severity, open-ended), and Stacked (3 rows +
-  <code>+2 more advisories</code> overflow). See also <a href="advisory-goldens.html" style="color:#57a8ff">advisory-goldens.html</a>
+  (<code>extension/tools/golden/shell/advisory-*.png</code>) covering Yellow (level 1), Orange (level 2), Red (level 3),
+  Neutral (unknown severity, open-ended), and Stacked (3 rows + <code>+2 more advisories</code> overflow) — all
+  collapsed by default on initial view. See also <a href="advisory-goldens.html" style="color:#57a8ff">advisory-goldens.html</a>
   for the side-by-side interactive HTML + golden comparison.</p>
 
 <!-- ================= MOCK A : extension card, banners ================= -->
@@ -201,8 +201,8 @@
           <span data-advsub style="font-size:11px;color:var(--faint)">active and starting within 48 h</span>
         </div>
 
-        <div class="adv s2 open" data-alert data-days="0,1">
-          <button class="adv-head" data-advtoggle aria-expanded="true">
+        <div class="adv s2" data-alert data-days="0,1">
+          <button class="adv-head" data-advtoggle aria-expanded="false">
             <svg class="adv-ic"><use href="#g-severe"/></svg>
             <span><span class="adv-title">Wind gusts warning</span>
               <div class="adv-when">Orange · now until Tue 03:00</div></span>
@@ -373,8 +373,8 @@
           <span data-advtitle style="font-size:12.5px;font-weight:750">Advisories</span>
           <span data-advsub style="font-size:11px;color:var(--faint)">active and starting within 48 h · DWD via MeteoAlarm</span>
         </div>
-        <div class="adv s2 open" data-alert data-days="0,1">
-          <button class="adv-head" data-advtoggle aria-expanded="true">
+        <div class="adv s2" data-alert data-days="0,1">
+          <button class="adv-head" data-advtoggle aria-expanded="false">
             <svg class="adv-ic"><use href="#g-severe"/></svg>
             <span><span class="adv-title">Wind gusts warning — Berlin and surroundings</span>
               <div class="adv-when">Orange · now until Tue 27 Oct, 03:00</div></span>
@@ -546,12 +546,12 @@ alerts: [ {
       <img src="../../extension/tools/golden/shell/advisory-yellow.png" alt="Yellow advisory golden" style="width:100%;max-width:330px;height:auto;border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.45)">
     </div>
     <div style="background:#2b3036;border:1px solid #3a4046;border-radius:14px;padding:12px;text-align:center">
-      <div style="font-size:13px;font-weight:700;margin-bottom:2px">Orange (Level 2 · Expanded)</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:2px">Orange (Level 2 · Collapsed)</div>
       <div style="font-size:11.5px;color:#aeb6bf;margin-bottom:10px"><code>advisory-orange.png</code> · Berlin wind day</div>
       <img src="../../extension/tools/golden/shell/advisory-orange.png" alt="Orange warning golden" style="width:100%;max-width:330px;height:auto;border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.45)">
     </div>
     <div style="background:#2b3036;border:1px solid #3a4046;border-radius:14px;padding:12px;text-align:center">
-      <div style="font-size:13px;font-weight:700;margin-bottom:2px">Red (Level 3 · Expanded)</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:2px">Red (Level 3 · Collapsed)</div>
       <div style="font-size:11.5px;color:#aeb6bf;margin-bottom:10px"><code>advisory-red.png</code> · Tokyo storm night</div>
       <img src="../../extension/tools/golden/shell/advisory-red.png" alt="Red warning golden" style="width:100%;max-width:330px;height:auto;border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.45)">
     </div>

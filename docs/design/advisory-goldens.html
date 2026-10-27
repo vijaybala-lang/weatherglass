@@ -589,10 +589,10 @@
 
 <main>
   <div class="legend-bar">
-    <span><b>Severity Tiers &amp; Slabs:</b></span>
-    <span class="swatch-pill" style="background:var(--s1-bg)"><span class="dot-sample" style="background:var(--dot-s1)"></span>Level 1 · Yellow (<code>.aw-adv-s1</code>, collapsed by default)</span>
-    <span class="swatch-pill" style="background:var(--s2-bg)"><span class="dot-sample" style="background:var(--dot-s2)"></span>Level 2 · Orange (<code>.aw-adv-s2</code>, auto-expanded)</span>
-    <span class="swatch-pill" style="background:var(--s3-bg)"><span class="dot-sample" style="background:var(--dot-s3)"></span>Level 3 · Red (<code>.aw-adv-s3</code>, auto-expanded)</span>
+    <span><b>Severity Tiers &amp; Slabs (all collapsed by default):</b></span>
+    <span class="swatch-pill" style="background:var(--s1-bg)"><span class="dot-sample" style="background:var(--dot-s1)"></span>Level 1 · Yellow (<code>.aw-adv-s1</code>)</span>
+    <span class="swatch-pill" style="background:var(--s2-bg)"><span class="dot-sample" style="background:var(--dot-s2)"></span>Level 2 · Orange (<code>.aw-adv-s2</code>)</span>
+    <span class="swatch-pill" style="background:var(--s3-bg)"><span class="dot-sample" style="background:var(--dot-s3)"></span>Level 3 · Red (<code>.aw-adv-s3</code>)</span>
     <span class="swatch-pill" style="background:var(--s0-bg)">Level null · Neutral (<code>.aw-adv-s0</code>, Unknown severity, no dot)</span>
     <span style="margin-left:auto;color:#9aa4b0">Tip: click any advisory row or day tile on the HTML cards to test expand/collapse &amp; day filtering.</span>
   </div>
@@ -644,8 +644,8 @@ const SCENARIOS = [
   },
   {
     slug: 'advisory-orange',
-    title: '2. Orange Warning (Level 2 · Auto-Expanded)',
-    desc: 'Level >= 2 (.aw-adv-s2) auto-expands the top alert on seed, showing description, dark instruction pill (.aw-adv-instr), and issuer metadata.',
+    title: '2. Orange Warning (Level 2 · Collapsed)',
+    desc: 'Level 2 (.aw-adv-s2) warning slab over a daytime wind scene, collapsed by default with orange day-tile dots (#f07f2e) on Today and Wed.',
     png: '../../extension/tools/golden/shell/advisory-orange.png',
     skyClass: 'sky-berlin-wind',
     footDarkInk: true,
@@ -659,7 +659,7 @@ const SCENARIOS = [
     chartTemps: ['11°','8°','6°','7°','6°','9°','11°','12°'],
     alerts: [
       {
-        id: 'ber-2', level: 2, open: true, days: [0, 1],
+        id: 'ber-2', level: 2, open: false, days: [0, 1],
         event: 'Wind gusts warning',
         when: 'Orange · now until Wed 3:00 AM',
         desc: 'Gusts of 85–100 km/h from the southwest, locally storm-force in showers. Loose objects may be blown about; branches can break.',
@@ -680,8 +680,8 @@ const SCENARIOS = [
   },
   {
     slug: 'advisory-red',
-    title: '3. Red Warning (Level 3 · Auto-Expanded)',
-    desc: 'Level 3 (.aw-adv-s3) severe warning slab over a dark thunderstorm scene, with red day-tile dots (#e5484d) on Today and Sun.',
+    title: '3. Red Warning (Level 3 · Collapsed)',
+    desc: 'Level 3 (.aw-adv-s3) severe warning slab over a dark thunderstorm scene, collapsed by default with red day-tile dots (#e5484d) on Today and Sun.',
     png: '../../extension/tools/golden/shell/advisory-red.png',
     skyClass: 'sky-tokyo-storm',
     footDarkInk: false,
@@ -695,7 +695,7 @@ const SCENARIOS = [
     chartTemps: ['12°','11°','13°','17°','18°','18°','16°','14°'],
     alerts: [
       {
-        id: 'tyo-3', level: 3, open: true, days: [0, 1],
+        id: 'tyo-3', level: 3, open: false, days: [0, 1],
         event: 'Severe Thunderstorm Warning',
         when: 'Red · now until Sun 2:00 AM',
         desc: 'Destructive gusts over 110 km/h, large hail and frequent cloud-to-ground lightning moving east across the metropolitan area.',
@@ -753,7 +753,7 @@ const SCENARIOS = [
   {
     slug: 'advisory-stack',
     title: '5. Stacked Multi-Alert + Overflow (+2 more)',
-    desc: '5 advisories across Red/Orange/Yellow/Neutral: shows top 3 sorted by level (Red open, Orange & Yellow closed), "+2 more advisories" button, and multi-day dots.',
+    desc: '5 advisories across Red/Orange/Yellow/Neutral: shows top 3 sorted by level (all collapsed by default), "+2 more advisories" button, and multi-day dots.',
     png: '../../extension/tools/golden/shell/advisory-stack.png',
     skyClass: 'sky-berlin-rain',
     footDarkInk: false,
@@ -767,7 +767,7 @@ const SCENARIOS = [
     chartTemps: ['10°','7°','5°','6°','5°','8°','10°','11°'],
     alerts: [
       {
-        id: 'stk-1', level: 3, open: true, days: [0],
+        id: 'stk-1', level: 3, open: false, days: [0],
         event: 'Severe storm warning',
         when: 'Red · now until Tue 11:00 PM',
         desc: 'Squall line with hurricane-force gusts up to 120 km/h and torrential downpours crossing the region.',

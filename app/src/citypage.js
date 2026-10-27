@@ -777,8 +777,7 @@ class CityPage extends Gtk.Box {
         if (seedKey !== this.#alertsSeedKey) {
             this.#alertsSeedKey = seedKey;
             this.#showAllAlerts = false;
-            if (alerts.length && (alerts[0].level ?? 0) >= 2)
-                this.#expandedAlerts.add(alerts[0].id);
+            this.#expandedAlerts.clear();
         }
         for (const alert of alerts) {
             const lvl = alert.level ?? 0;

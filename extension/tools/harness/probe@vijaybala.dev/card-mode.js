@@ -161,11 +161,11 @@ export const FIXTURES = {
         local: '2026-11-03T14:10+01:00', condition: 'rain'},
     'ny-snow-day': {city: 'New York', lat: 40.71, lon: -74.01,
         local: '2027-01-19T10:20-05:00', condition: 'snow'},
-    /* advisory scenarios: level 1 (yellow, collapsed), level 2 (orange,
-     * auto-expanded), level 3 (red, auto-expanded), level null (neutral /
-     * Unknown severity, open-ended), and a 5-alert stack exercising all
-     * three colour tiers, the 3-row cap (+2 more advisories), and
-     * per-day red/orange/yellow tile dots across the 8-day grid */
+    /* advisory scenarios: level 1 (yellow), level 2 (orange), level 3 (red),
+     * level null (neutral / Unknown severity, open-ended), and a 5-alert
+     * stack exercising all three colour tiers, the 3-row cap (+2 more
+     * advisories), and per-day red/orange/yellow tile dots across the
+     * 8-day grid. All advisories start collapsed on initial view. */
     'advisory-yellow': {city: 'San Francisco', lat: 37.77, lon: -122.42,
         local: '2026-10-07T18:37-07:00', condition: 'partly',
         alerts: [{
@@ -512,6 +512,20 @@ export async function renderCards(slugs, cssPath, pngFor, captureRegion) {
         Main.uiGroup.add_child(host);
         host.set_position(100, 120);   // clear of the topbar's shadow edge
         panel.render(buildState(weather, moon, fx));
+        if (panel._alertRows.length > 0) {
+            // Prove all advisories start collapsed and clicking .aw-adv-head
+            // cleanly expands and re-collapses the row.
+            const first = panel._alertRows[0];
+            const [, body] = first.actor.get_children();
+            if (body.visible)
+                throw new Error(`${slug}: advisory started expanded; all must start collapsed`);
+            first.head.emit('clicked', 1);
+            if (!body.visible)
+                throw new Error(`${slug}: clicking .aw-adv-head did not expand advisory`);
+            first.head.emit('clicked', 1);
+            if (body.visible)
+                throw new Error(`${slug}: clicking .aw-adv-head did not collapse advisory`);
+        }
         steps.rendered = true;
 
         await wait(400);        // one layout + several paint cycles

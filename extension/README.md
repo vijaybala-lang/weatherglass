@@ -175,20 +175,20 @@ accent:
 ### Weather advisories
 
 Active weather alerts (NOAA NWS, MET Norway, MeteoAlarm / CAP) appear as
-expandable rows directly under the header and place severity dots on
-overlapped forecast days -- Yellow (level&nbsp;1, collapsed by default),
-Orange (level&nbsp;2, auto-expanded), Red (level&nbsp;3, auto-expanded),
-Neutral (unknown severity), and multi-alert stacks with overflow:
+expandable rows directly under the header (collapsed by default) and place
+severity dots on overlapped forecast days -- Yellow (level&nbsp;1),
+Orange (level&nbsp;2), Red (level&nbsp;3), Neutral (unknown severity),
+and multi-alert stacks with overflow:
 
 <table>
 <tr valign="top">
-<td><img src="tools/golden/shell/advisory-yellow.png" width="160" alt="Yellow advisory (level 1, collapsed)"></td>
-<td><img src="tools/golden/shell/advisory-orange.png" width="160" alt="Orange warning (level 2, expanded)"></td>
-<td><img src="tools/golden/shell/advisory-red.png" width="160" alt="Red warning (level 3, expanded)"></td>
+<td><img src="tools/golden/shell/advisory-yellow.png" width="160" alt="Yellow advisory (level 1)"></td>
+<td><img src="tools/golden/shell/advisory-orange.png" width="160" alt="Orange warning (level 2)"></td>
+<td><img src="tools/golden/shell/advisory-red.png" width="160" alt="Red warning (level 3)"></td>
 <td><img src="tools/golden/shell/advisory-neutral.png" width="160" alt="Neutral advisory (unknown severity)"></td>
 <td><img src="tools/golden/shell/advisory-stack.png" width="160" alt="Stacked advisories with +2 more overflow"></td>
 </tr>
-<tr><td align="middle"><b>Yellow</b><br>level 1, collapsed</td><td align="middle"><b>Orange</b><br>level 2, expanded</td><td align="middle"><b>Red</b><br>level 3, expanded</td><td align="middle"><b>Neutral</b><br>unknown severity</td><td align="middle"><b>Stacked</b><br>3 rows + overflow</td></tr>
+<tr><td align="middle"><b>Yellow</b><br>level 1</td><td align="middle"><b>Orange</b><br>level 2</td><td align="middle"><b>Red</b><br>level 3</td><td align="middle"><b>Neutral</b><br>unknown severity</td><td align="middle"><b>Stacked</b><br>3 rows + overflow</td></tr>
 </table>
 
 ### Preferences & the live demo

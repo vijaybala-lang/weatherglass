@@ -106,7 +106,7 @@
 .aw-adv {
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.16);
-    padding: 7px 9px;
+    padding: 0;
     color: #f4f7fa;
 }
 
@@ -121,7 +121,7 @@
 .aw-adv-s0 .aw-adv-icon { color: #c9d2dd; }
 
 .aw-adv-head {
-    padding: 0;
+    padding: 7px 9px;
     min-height: 0;
 }
 
@@ -145,7 +145,7 @@
 
 .aw-adv-body {
     spacing: 5px;
-    padding-top: 6px;
+    padding: 0 9px 7px 9px;
 }
 
 .aw-adv-text {

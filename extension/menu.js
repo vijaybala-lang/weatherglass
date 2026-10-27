@@ -483,8 +483,7 @@ export class ForecastPanel {
         if (seedKey !== this._alertsSeedKey) {
             this._alertsSeedKey = seedKey;
             this._showAllAlerts = false;
-            if (alerts.length && (alerts[0].level ?? 0) >= 2)
-                this._expandedAlerts.add(alerts[0].id);
+            this._expandedAlerts.clear();
         }
         for (const alert of alerts) {
             const levelClass = `aw-adv-s${alert.level ?? 0}`;
@@ -492,6 +491,7 @@ export class ForecastPanel {
             const expanded = this._expandedAlerts.has(alert.id);
 
             const headRow = row('aw-adv-head-row');
+            headRow.x_align = ACTOR_FILL;
             const icon = new St.Icon({
                 icon_name: 'weather-severe-alert-symbolic', icon_size: 16,
                 style_class: 'aw-adv-icon',
@@ -540,7 +540,8 @@ export class ForecastPanel {
             body.add_child(meta);
 
             const head = new St.Button({
-                style_class: 'aw-adv-head', can_focus: true, x_expand: true,
+                style_class: 'aw-adv-head', can_focus: true,
+                x_expand: true, x_align: ACTOR_FILL,
                 child: headRow,
             });
             head.set_accessible_name(
@@ -557,7 +558,7 @@ export class ForecastPanel {
             box.add_child(head);
             box.add_child(body);
             this._alertsBox.add_child(box);
-            this._alertRows.push({ actor: box, alert });
+            this._alertRows.push({ actor: box, head, alert });
         }
     }
 
