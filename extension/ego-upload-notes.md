@@ -95,13 +95,14 @@ What's inside:
 * Hourly chart: switch between temperature, precipitation or wind
 * The moon carries the real lunar phase at night; sunrise and sunset bathe the card in golden-hour light
 * Eight days of forecast tiles, current conditions at a glance
+* Official weather advisories where a public source covers your location (US, Canada, Norway, most of Europe)
 * 21 languages with full bidirectional support: the entire card mirrors in Arabic, Hebrew, Persian and Urdu
 * Metric or imperial units, 12- or 24-hour clock, live scene previews in preferences
 * Three backdrop styles: animated sky, solid, or theme background with accent charts
 
 Weather data from Open-Meteo (global), Met.no (ECMWF) and NOAA NWS - choose your favourite forecaster, no API keys needed. Location: detected automatically through GNOME's own location service (IP lookup where none is available), or a city you pick.
 
-No accounts, no tracking, no analytics: weather requests go straight from your machine to the provider you choose. Automatic detection prefers the system location service, with the standard GNOME prompt naming this extension; its IP-lookup and city-label fallbacks each contact one free keyless endpoint and are used only when needed. Nothing is cached on disk.
+No accounts, no tracking, no analytics: weather requests go straight from your machine to the provider you choose. Official weather advisories are fetched for your location from the responsible public services (NOAA NWS, Met.no, Environment Canada or MeteoAlarm) - also keyless and direct. Automatic detection prefers the system location service, with the standard GNOME prompt naming this extension; its IP-lookup and city-label fallbacks each contact one free keyless endpoint and are used only when needed. Nothing is cached on disk.
 
 Demo: https://github.com/vijaybala-lang/weatherglass/releases/download/v8/weatherglass-demo-card.mp4
 
