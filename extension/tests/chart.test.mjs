@@ -19,7 +19,7 @@ const fmtHour = i => {
 const KILI = [76, 75, 77, 75, 65, 51, 39, 26, 14, 14, 38, 74,
     100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 99, 97];
 
-function runSlots(values, fmt, unit, { w, fontSize, textScale, stripBottom = true }) {
+function runSlots(values, fmt, unit, { w, fontSize, textScale, stripBottom = true, fmtHourFn = fmtHour }) {
     const kept = [], dropped = [];
     const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, w, 150);
     const cr = new Cairo.Context(surf);
@@ -27,7 +27,7 @@ function runSlots(values, fmt, unit, { w, fontSize, textScale, stripBottom = tru
         w, h: 150, values,
         fmtValue: (i, v) => fmt(v),
         fmtValueUnit: unit ? () => unit : null,
-        fmtHour,
+        fmtHour: fmtHourFn,
         valueSamples: [...new Set(values.map(v => fmt(v) + (unit || '')))],
         accent: [0.13, 0.59, 0.95], ink: [1, 1, 1], nowFrac: null,
         scenes: Array(values.length).fill('rain'),
@@ -50,6 +50,25 @@ test('the Kilimanjaro plateau keeps every hour column (the incident)', () => {
     ok(dropped.length === 0, `dropped hours: ${JSON.stringify(dropped)}`);
     ok(kept.includes(4), '4 AM slot vanished (plateau regression)');
     ok(kept.includes(22), '10 PM slot vanished (plateau regression)');
+});
+
+test('rolling 26-point day at menu width keeps the 1 PM column', () => {
+    // operator screenshot 2026-10-25, Mount Kilimanjaro precip tab:
+    // 330 px card, 8 pt at scale 1, rolling window from 3 AM -- 1 PM
+    // (i=10, value 100%) vanished whole (glyph, hour and number) while
+    // its ink still stood ~4 px clear of 10 AM's: the keep rule charged
+    // each column's +3 padding AND a further +6 between padded edges,
+    // a budget stricter than the stride stage that chose 3 h spacing
+    const rolling = [4, 3, 5, 2, 1, 3, 12, 40, 75, 96, 100, 100, 100, 99,
+        97, 92, 87, 80, 70, 61, 55, 47, 43, 40, 38, 36];
+    const from3am = i => {
+        const h = (i + 3) % 24, am = h < 12, hh = h % 12 === 0 ? 12 : h % 12;
+        return `${hh}${am ? 'AM' : 'PM'}`;
+    };
+    const { kept, dropped } = runSlots(rolling, v => `${v}%`, null,
+        { w: 330, fontSize: 8, textScale: 1, fmtHourFn: from3am, stripBottom: false });
+    ok(dropped.length === 0, `dropped hours: ${JSON.stringify(dropped)}`);
+    ok(kept.includes(10), '1 PM slot vanished (rolling-window regression)');
 });
 
 test('giant labels thin by stride and never overlap', () => {

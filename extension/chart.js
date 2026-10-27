@@ -530,15 +530,21 @@ export function paintChart(cr, opts) {
             // hours whose printed labels still stood ~20 px apart (a flat
             // 100% precip plateau killed the 4 AM and 10 PM slots on a
             // 400 px-wide card -- the widest floor then inflated every
-            // column and neighbours double-charged one another)
-            const own = Math.max(iconHalf, hourNeed + 3, valueNeed + 3);
-            const need = Math.max(own, globalValueNeed + 3);
+            // column and neighbours double-charged one another). Padding
+            // is charged ONCE: ink half-widths carry none, the keep rule
+            // asks 4 px between ink edges (the edge clamps keep their
+            // +3). Charging both -- +3 inside each column and +6 between
+            // the padded edges -- dropped 1 PM off a 330 px rolling day
+            // whose ink stood 4 px clear of 10 AM's, a budget stricter
+            // than the stride stage that had just approved 3 h spacing.
+            const inkHalf = Math.max(iconHalf, hourNeed, valueNeed);
+            const need = Math.max(inkHalf + 3, globalValueNeed + 3);
             const labelX = Math.min(Math.max(anchorX, need), width - need);
-            const left = labelX - own, right = labelX + own;
+            const left = labelX - inkHalf, right = labelX + inkHalf;
             // the keep/drop rule is the certification target for the
             // plateau regression (see opts.slotsProbe)
-            const slotKeep = left > lastSlotRight + 6 && i - lastIndex >= 2;
-            slotsProbe({ i, keep: slotKeep, left, own, lastSlotRight });
+            const slotKeep = left > lastSlotRight + 4 && i - lastIndex >= 2;
+            slotsProbe({ i, keep: slotKeep, left, own: inkHalf, lastSlotRight });
             if (slotKeep) {
                 iconSlots.push({
                     i, labelX, iconX: Math.min(Math.max(anchorX, iconHalf), width - iconHalf),
