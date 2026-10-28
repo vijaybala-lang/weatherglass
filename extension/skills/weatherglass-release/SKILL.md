@@ -228,8 +228,21 @@ installed metadata; check the served integer at
 https://extensions.gnome.org/api/v1/extensions/ before the last login):
 
 ```sh
-sed -i 's/"version": 8/"version": 99/' ~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev/metadata.json
+sed -i 's/"version": *[0-9][0-9]*/"version": 99/' ~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev/metadata.json
+rm -rf ~/.local/share/gnome-shell/extension-updates/weatherglass@vijaybala.dev
 ```
+
+Note: when `weatherglass@vijaybala.dev` is already enabled in the live
+session, `gnome-extensions install --force <zip>` stages the zip inside
+`~/.local/share/gnome-shell/extension-updates/weatherglass@vijaybala.dev/`
+for unpacking at next login rather than updating `extensions/` in place
+-- and that staged copy carries the zip's real `"version": N` (which is
+lower than EGO's served serial `19+`), causing GNOME Shell's session-start
+updater to overwrite it with the older EGO build on login. Either run
+`./install.sh` (which syncs `extensions/`, stamps `"version": 99`, and
+clears `extension-updates/`) or unpack the certified zip directly into
+`~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev/`,
+compile schemas, stamp `"version": 99`, and remove `extension-updates/`.
 
 Do not try to rush the load with a runtime toggle either: GJS caches
 modules per process, and toggling races destroy and wedges the state

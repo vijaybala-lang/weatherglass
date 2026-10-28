@@ -11,6 +11,18 @@ verification gates, codebase rules, and pre-upload release review. If a
 workflow rule conflicts, this root file wins; if an extension-specific
 technical rule conflicts, the extension file wins.
 
+## Common tasks & entry points
+
+| Task | Canonical entry point / guide |
+|------|-------------------------------|
+| Install extension locally for live testing | [`extension/install.sh`](extension/install.sh) — compiles schemas, syncs into `~/.local/share/gnome-shell/extensions/weatherglass@vijaybala.dev/`, stamps `"version": 99`, and clears `extension-updates/` so GNOME Shell's session-start EGO updater never overwrites local builds with an older EGO serial on login |
+| Cut, certify, or install a release | [`extension/skills/weatherglass-release/SKILL.md`](extension/skills/weatherglass-release/SKILL.md) — mandatory reading before any version bump, `certify.sh` run, or release install |
+| Full extension certification gate | [`extension/tools/certify.sh`](extension/tools/certify.sh) (host shell) and [`extension/tools/certify-all-shells.sh`](extension/tools/certify-all-shells.sh) (all declared Shell majors) |
+| Headless GNOME Shell goldens & UI captures | [`extension/tools/shell-golden.sh`](extension/tools/shell-golden.sh) (`card check` / `card bless`) and fixtures in [`extension/tools/harness/probe@vijaybala.dev/card-mode.js`](extension/tools/harness/probe@vijaybala.dev/card-mode.js) |
+| Rebuild i18n catalogs (`po/*.po` → `locale/*.mo`) | [`extension/tools/i18n-build.sh`](extension/tools/i18n-build.sh) |
+| Check design & canvas parity (`extension` ↔ `shared/art` ↔ `app`) | `python3 scripts/check-design-parity.py` ([`scripts/check-design-parity.py`](scripts/check-design-parity.py)) |
+| Cast demo video / transition GIFs | [`extension/skills/weatherglass-demo/SKILL.md`](extension/skills/weatherglass-demo/SKILL.md) and [`extension/tools/film.sh`](extension/tools/film.sh) |
+
 ## Worktree discipline (mandatory)
 
 **Never write code in this main checkout.** It is the deployment tree: the
