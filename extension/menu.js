@@ -1114,7 +1114,7 @@ export class ForecastPanel {
                         y_expand: true,
                         x_align: Clutter.ActorAlign.END,
                         y_align: Clutter.ActorAlign.START,
-                        translation_y: -4,
+                        translation_y: -8,
                     });
                     dot.set_style(`background-color: ${['', '#f5c542', '#f07f2e', '#e5484d'][dayLevel]};`);
                     tileWrap.add_child(dot);

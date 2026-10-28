@@ -217,7 +217,7 @@ test('narrow card height expansion (advisory expand/collapse) preserves sky clou
     const ripplesBefore = sky.ripples.map(r => ({ x: r.x, y: r.y }));
     const floorBefore = sky.drops.map(d => d.floorY);
     for (const r of ripplesBefore)
-        ok(r.y >= H_COLLAPSED - 0.32 * 455,
+        ok(r.y >= H_COLLAPSED - 0.32 * 477,
             `collapsed ripple y=${r.y} climbed above day-tile floor`);
 
     const surf2 = new Cairo.ImageSurface(Cairo.Format.ARGB32, W, H_EXPANDED);
@@ -238,7 +238,7 @@ test('narrow card height expansion (advisory expand/collapse) preserves sky clou
     sky.ripples.forEach((r, i) => {
         near(r.x, ripplesBefore[i].x, 1e-6);
         near(r.y, ripplesBefore[i].y + deltaH, 1e-6);
-        ok(r.y >= H_EXPANDED - 0.32 * 455,
+        ok(r.y >= H_EXPANDED - 0.32 * 477,
             `expanded ripple y=${r.y} climbed into chart above day-tile floor`);
     });
     sky.drops.forEach((d, i) => {

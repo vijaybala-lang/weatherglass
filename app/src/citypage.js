@@ -1006,8 +1006,8 @@ class CityPage extends Gtk.Box {
                     label: '●',
                     halign: Gtk.Align.END,
                     valign: Gtk.Align.START,
-                    margin_top: 4,
-                    margin_end: 6,
+                    margin_top: 6,
+                    margin_end: 8,
                     css_classes: [`adv-dot-s${dayLevel}`],
                 });
                 dot.set_can_target(false);

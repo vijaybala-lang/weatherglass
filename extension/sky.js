@@ -87,7 +87,7 @@ function noonOf(scene, night, solar) {
     return clamp01(solar) ** 2 * (NOON_CLARITY[scene] ?? 0);
 }
 
-const CARD_SCENE_H = 455;
+const CARD_SCENE_H = 477;
 const sceneHeight = (width, height) =>
     width <= 360 ? Math.min(height, CARD_SCENE_H) : height;
 
