@@ -409,6 +409,9 @@ export class ForecastPanel {
         this._alertsMore.connect('clicked', () => {
             this._showAllAlerts = true;
             this._syncAlerts();
+            this._skyArea.queue_repaint();
+            this._chart.queue_repaint();
+            this._applyTileInk();
         });
         this._alertsMore.visible = false;
         main.add_child(this._alertsMore);
@@ -584,6 +587,9 @@ export class ForecastPanel {
                     this._expandedAlerts.add(alert.id);
                 else
                     this._expandedAlerts.delete(alert.id);
+                this._skyArea.queue_repaint();
+                this._chart.queue_repaint();
+                this._applyTileInk();
             });
             box.add_child(head);
             box.add_child(body);
