@@ -1,4 +1,4 @@
-# EGO upload kit -- integer 10
+# EGO upload kit -- integer 12
 
 The release ritual (every command, in order: review, bump, certify,
 GitHub release, live gate, captures, publish, README links, upload)
@@ -7,26 +7,26 @@ EGO-page material: the artifact identity, the capture list, the
 canonical description block, and the standing reviewer answers.
 
 Upload at: https://extensions.gnome.org/upload/
-Artifact:  dist/weatherglass@vijaybala.dev.zip  (integer 10; sha256
-ccde0833f233359fd16c81b2eebc7f0ebcdf2bd2b4021f0df6b2aa1c38b950a2,
-certified on every declared shell; the EGO-served bytes must match).
+Artifact:  dist/weatherglass@vijaybala.dev.zip  (integer 12; certified
+on every declared shell; the EGO-served bytes must match).
 
 ## Last shipped (the step-0 audit anchor; update at every upload)
 
-Last shipped commit: f3adfd6
-(integer 10, pending upload as the next serial after 16; serial 16's
-exact build commit was never recorded -- the gap this section ends.
-The integer-10 audit used 558f319, the release-v9 merge, as its base:
-shipped changes since are only the two #89 theme fixes, dead-code
-sweep clean.)
+Last shipped commit: 8853f45
+(integer 11, EGO serial 19 / pk 77151; the integer-12 audit used
+8853f45, the release-v11 merge, as its base: shipped changes since are
+only the advisory expander/dot layout fixes in menu.js and
+stylesheet.css, plus the 5 advisory shell goldens and click-toggle
+harness lock; dead-code sweep clean.)
 
-Integer 10 ships the #89 theme fixes: light mode works on GNOME 50
-(the watcher no longer reads a settings key schemas 50 removed), the
-solid style's city/clock no longer ink black over a dimmed sun, and
-the theme-background style judges its ink by the shell surface
-variant. The upload imagery is the goldens, so the v7-era lesson --
-live-photo sets that "photograph whatever bugs shipped then" -- no
-longer applies: see skill step 5.
+Integer 12 fixes weather advisory rows starting expanded and having a
+misaligned/unclickable expander chevron (`pan-down-symbolic` /
+`pan-up-symbolic` with center alignment and full-header click padding)
+plus day-tile severity dot vertical centering, locked by 5 new advisory
+shell goldens (`advisory-yellow`, `advisory-orange`, `advisory-red`,
+`advisory-neutral`, `advisory-stack`). The upload imagery is the goldens,
+so the v7-era lesson -- live-photo sets that "photograph whatever bugs
+shipped then" -- no longer applies: see skill step 5.
 
 ## Before uploading (manual verification gate)
 
@@ -175,4 +175,4 @@ way during the v8 review round:
 - The metadata "url" points at the GitHub repo per the EGO review
   guidelines (must be a GitHub/GitLab project URL) -- keep it there even
   after approval; link the EGO page from the repo README instead.
-- Keep integer version bumps for every future upload (next: 11).
+- Keep integer version bumps for every future upload (next: 13).
