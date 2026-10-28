@@ -15,7 +15,7 @@ import { HourlyChart, CHART_SERIES } from './chart.js';
 import { judgeBoxes, judgeInk, lineInk, applyInk, lumOf } from './ink.js';
 import {
     effectiveScene, precipIntensity, sceneFor, moonPhase, daySlice, cityWallMs,
-    alertsForDay, alertOverlapsDay,
+    alertsForDay, alertOverlapsDay, alertUrl,
     sunShade, dayName, fmtTemp, fmtWind, fmtPressure, fmtVisibility, fmtPrecipRate,
     fmtPrecipTotal, fmtDuration, fmtClock, fmtDayStamp, fmtLocalIso, compass,
     uvBand, relTime, locationLabel,
@@ -789,7 +789,7 @@ class CityPage extends Gtk.Box {
                 expanded: this.#expandedAlerts.has(alert.id),
             });
             row.add_prefix(new Gtk.Image({
-                icon_name: 'weather-severe-alert-symbolic',
+                icon_name: 'dialog-warning-symbolic',
                 css_classes: [`adv-icon-s${lvl}`],
             }));
             const body = new Gtk.Box({
@@ -811,11 +811,20 @@ class CityPage extends Gtk.Box {
             }
             const issuedBy = alert.sender && alert.sender !== alert.source
                 ? `${alert.sender} · ${alert.source}` : alert.source;
-            body.append(new Gtk.Label({
+            const foot = new Gtk.Box({
+                orientation: Gtk.Orientation.HORIZONTAL, spacing: 8,
+            });
+            foot.append(new Gtk.Label({
                 label: `Issued by ${issuedBy}`
                     + (alert.areas.length ? ` · ${alert.areas.join('; ')}` : ''),
-                xalign: 0, wrap: true, css_classes: ['adv-meta'],
+                xalign: 0, hexpand: true, wrap: true, css_classes: ['adv-meta'],
             }));
+            foot.append(new Gtk.LinkButton({
+                label: 'Full advisory',
+                uri: alertUrl(alert, this.#data),
+                valign: Gtk.Align.CENTER,
+            }));
+            body.append(foot);
             row.add_row(body);
             row.connect('notify::expanded', () => {
                 if (row.expanded) this.#expandedAlerts.add(alert.id);
@@ -954,31 +963,18 @@ class CityPage extends Gtk.Box {
             if (i === this.#dayIndex) btn.set_active(true);
             if (i > 0) btn.set_group(this.#dayTiles[i - 1].btn);
 
+            const overlay = new Gtk.Overlay();
             const col = new Gtk.Box({
                 orientation: Gtk.Orientation.VERTICAL,
                 spacing: 2,
                 margin_top: 10, margin_bottom: 9,
             });
             const dateNum = dateParts(day.date)?.day;
-            const nameBox = new Gtk.Box({
-                orientation: Gtk.Orientation.HORIZONTAL, spacing: 4,
-                halign: Gtk.Align.CENTER,
-            });
-            nameBox.append(new Gtk.Label({
+            col.append(new Gtk.Label({
                 label: `${i === 0 ? 'Today' : dayName(day.date)}${dateNum ? ` ${dateNum}` : ''}`,
+                halign: Gtk.Align.CENTER,
                 css_classes: ['day-name'],
             }));
-            const dayLevel = Math.max(0, ...(this.#data.alerts ?? [])
-                .filter(a => alertOverlapsDay(a, day.date))
-                .map(a => a.level ?? 0));
-            if (dayLevel > 0) {
-                nameBox.append(new Gtk.Label({
-                    label: '●', css_classes: [`adv-dot-s${dayLevel}`],
-                }));
-                btn.tooltip_text =
-                    `${{ 1: 'Yellow', 2: 'Orange', 3: 'Red' }[dayLevel]} advisory`;
-            }
-            col.append(nameBox);
             const glyphState = {
                 scene: info.scene,
                 night: false,
@@ -1001,7 +997,25 @@ class CityPage extends Gtk.Box {
                 label: fmtTemp(day.tmin, units), css_classes: ['day-lo'],
             }));
             col.append(hl);
-            btn.set_child(col);
+            overlay.set_child(col);
+            const dayLevel = Math.max(0, ...(this.#data.alerts ?? [])
+                .filter(a => alertOverlapsDay(a, day.date))
+                .map(a => a.level ?? 0));
+            if (dayLevel > 0) {
+                const dot = new Gtk.Label({
+                    label: '●',
+                    halign: Gtk.Align.END,
+                    valign: Gtk.Align.START,
+                    margin_top: 4,
+                    margin_end: 6,
+                    css_classes: [`adv-dot-s${dayLevel}`],
+                });
+                dot.set_can_target(false);
+                overlay.add_overlay(dot);
+                btn.tooltip_text =
+                    `${{ 1: 'Yellow', 2: 'Orange', 3: 'Red' }[dayLevel]} advisory`;
+            }
+            btn.set_child(overlay);
             btn.connect('toggled', () => {
                 if (!btn.active) return;
                 this.#dayIndex = i;

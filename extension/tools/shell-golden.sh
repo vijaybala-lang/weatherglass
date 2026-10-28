@@ -112,12 +112,13 @@ mkdir -p "$DATA/gnome-shell/extensions"
 cp -r "tools/harness/$PROBE" "$DATA/gnome-shell/extensions/"
 
 if [ "$MODE" = card ]; then
-    # the panel's whole module graph, copied next to the probe so its
-    # relative imports resolve inside the extension sandbox
+    # the panel's whole module graph + po catalogs, copied next to the
+    # probe so relative imports and i18n-<lang> goldens resolve in-box
     for m in menu.js chart.js sky.js painter.js moon.js weather.js \
              animation.js ink-policy.js; do
         cp "$m" "$DATA/gnome-shell/extensions/$PROBE/"
     done
+    cp -r po "$DATA/gnome-shell/extensions/$PROBE/"
 fi
 
 # keyfile gsettings backend: the nested shell enables only our probe --

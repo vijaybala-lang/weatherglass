@@ -385,9 +385,36 @@
     border-radius: 8px;
     padding: 6px 8px;
   }
+  .aw-adv-foot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
   .aw-adv-meta {
     font-size: 10.8px;
     color: var(--faint);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .aw-adv-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    border-radius: 99px;
+    background-color: rgba(255, 255, 255, 0.10);
+    color: rgba(244, 247, 250, 0.88);
+    font-size: 10.5px;
+    font-weight: 700;
+    text-decoration: none;
+    flex: none;
+  }
+  .aw-adv-link:hover {
+    background-color: rgba(255, 255, 255, 0.20);
+    color: #ffffff;
   }
   .aw-alerts-more {
     display: block;
@@ -450,6 +477,7 @@
     padding: 0 14px;
   }
   .aw-day {
+    position: relative;
     border-radius: 12px;
     padding: 6px 2px 5px 2px;
     border: 1px solid transparent;
@@ -477,13 +505,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 3px;
   }
   .aw-day-name {
     font-size: 11.5px;
     font-weight: 700;
   }
   .aw-day-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
     width: 7px;
     height: 7px;
     border-radius: 99px;
@@ -535,10 +565,9 @@
 <!-- Shared SVG symbols (verbatim Adwaita symbolic icons + weather glyphs) -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <!-- Adwaita weather-severe-alert-symbolic: cloud in currentColor, warning badge in #f57900 -->
+    <!-- Adwaita dialog-warning-symbolic: rounded warning triangle with cutout ! in currentColor -->
     <symbol id="ic-severe" viewBox="0 0 16 16">
-      <path fill="currentColor" d="M6.008 2.068C2.726 2.068.044 4.75.045 8.031c0 3.282 2.681 5.963 5.963 5.963L7 14v-2l-.986-.006h-.008a3.946 3.946 0 0 1-3.961-3.963c0-2.2 1.76-3.963 3.96-3.963a3.96 3.96 0 0 1 3.67 2.473 1 1 0 0 0 .393.453h5.057q.072.001.142.008a4.5 4.5 0 0 0-3.714-1.97c-.15 0-.29.047-.438.062-1.053-1.826-2.96-3.024-5.107-3.026Z"/>
-      <path fill="#f57900" d="M8.875 8A.864.864 0 0 0 8 8.875v6.25c0 .492.383.875.875.875h6.25a.864.864 0 0 0 .875-.875v-6.25A.864.864 0 0 0 15.125 8zM11 9h2v2.5s0 .5-.5.5h-1c-.5 0-.5-.5-.5-.5zm.5 4h1c.277 0 .5.223.5.5v1c0 .277-.223.5-.5.5h-1a.5.5 0 0 1-.5-.5v-1c0-.277.223-.5.5-.5m0 0"/>
+      <path fill="currentColor" d="m 7.90625 0.09375 c -0.527344 -0.0273438 -1.039062 0.28125 -1.4375 0.96875 l -6.25 11.59375 c -0.535156 0.964844 0.046875 2.34375 1.09375 2.34375 h 13.15625 c 0.980469 0 1.902344 -1.160156 1.21875 -2.34375 l -6.3125 -11.53125 c -0.398438 -0.644531 -0.941406 -1.003906 -1.46875 -1.03125 z m 1.09375 3.90625 v 5 c 0.007812 0.527344 -0.472656 1 -1 1 s -1.007812 -0.472656 -1 -1 v -5 z m -1 7 c 0.550781 0 1 0.449219 1 1 s -0.449219 1 -1 1 s -1 -0.449219 -1 -1 s 0.449219 -1 1 -1 z m 0 0"/>
     </symbol>
     <symbol id="ic-pan-down" viewBox="0 0 16 16">
       <path fill="currentColor" d="m 3.292969 7.707031 l 4 4 c 0.390625 0.390625 1.023437 0.390625 1.414062 0 l 4 -4 c 0.390625 -0.390625 0.390625 -1.023437 0 -1.414062 s -1.023437 -0.390625 -1.414062 0 l -3.292969 3.292969 l -3.292969 -3.292969 c -0.390625 -0.390625 -1.023437 -0.390625 -1.414062 0 s -0.390625 1.023437 0 1.414062 z"/>
@@ -836,7 +865,10 @@ function buildCardHTML(sc, idx) {
       <div class="aw-adv-body">
         ${a.desc ? `<div class="aw-adv-text">${a.desc}</div>` : ''}
         ${a.instr ? `<div class="aw-adv-instr">${a.instr}</div>` : ''}
-        <div class="aw-adv-meta">${a.meta}</div>
+        <div class="aw-adv-foot">
+          <div class="aw-adv-meta">${a.meta}</div>
+          <a class="aw-adv-link" href="https://www.weather.gov/alerts" target="_blank" rel="noopener">Full advisory ›</a>
+        </div>
       </div>
     </div>
   `).join('');

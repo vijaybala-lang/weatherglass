@@ -204,6 +204,18 @@ export function normalize(j, receivedWallMs = Date.now()) {
 const SEVERITY_LEVEL = { Minor: 1, Moderate: 2, Severe: 3, Extreme: 3 };
 const COLOUR_LEVEL = { yellow: 1, orange: 2, red: 3 };
 
+function cleanAlertText(raw) {
+    if (!raw)
+        return '';
+    return String(raw)
+        .replace(/\r\n?/g, '\n')
+        .trim()
+        .split(/\n\s*\n|\n(?=\s*[*•-]\s)/)
+        .map(para => para.replace(/\s*\n\s*/g, ' ').replace(/ {2,}/g, ' ').trim())
+        .filter(Boolean)
+        .join('\n\n');
+}
+
 export function parseNwsAlerts(raw) {
     const alerts = [];
     for (const feature of raw?.features ?? []) {
@@ -226,8 +238,8 @@ export function parseNwsAlerts(raw) {
             // ends (event over) wins over expires (message stale)
             endsAt: String(p.ends ?? p.expires ?? '').slice(0, 16) || null,
             issuedAt: String(p.sent ?? '').slice(0, 16) || null,
-            description: (p.description ?? '').trim(),
-            instruction: (p.instruction ?? '').trim() || null,
+            description: cleanAlertText(p.description),
+            instruction: cleanAlertText(p.instruction) || null,
             areas: String(p.areaDesc ?? '').split(';').map(s => s.trim()).filter(Boolean),
             sender: p.senderName ?? '',
             source: 'NOAA NWS',
@@ -262,8 +274,8 @@ export function parseMetAlerts(raw, cityOffsetMs = 0) {
             startsAt: toCity(onsetUtc),
             endsAt: endsUtc ? toCity(endsUtc) : null,
             issuedAt: null,
-            description: (p.description ?? '').trim(),
-            instruction: (p.instruction ?? '').trim() || null,
+            description: cleanAlertText(p.description),
+            instruction: cleanAlertText(p.instruction) || null,
             areas: [p.area].filter(Boolean),
             sender: 'MET Norway',
             source: 'MET Norway',
@@ -326,7 +338,7 @@ export function parseEcccAlerts(raw, ctx = {}) {
             startsAt: utcToLocal(p.validity_datetime ?? p.publication_datetime),
             endsAt: p.event_end_datetime ? utcToLocal(p.event_end_datetime) : null,
             issuedAt: p.publication_datetime ? utcToLocal(p.publication_datetime) : null,
-            description: (p[`alert_text_${lang}`] ?? '').trim(),
+            description: cleanAlertText(p[`alert_text_${lang}`]),
             instruction: null,
             areas: [p[`feature_name_${lang}`]].filter(Boolean),
             sender: 'Environment and Climate Change Canada',
@@ -441,8 +453,8 @@ export function parseCapAlerts(xml, ctx = {}) {
                 startsAt: capTime(xmlTag(info, 'onset') || xmlTag(doc, 'sent'), utcToLocal),
                 endsAt: capTime(xmlTag(info, 'expires'), utcToLocal),
                 issuedAt: capTime(xmlTag(doc, 'sent'), utcToLocal),
-                description: xmlTag(info, 'description'),
-                instruction: xmlTag(info, 'instruction') || null,
+                description: cleanAlertText(xmlTag(info, 'description')),
+                instruction: cleanAlertText(xmlTag(info, 'instruction')) || null,
                 areas: geo.areas,
                 sender: xmlTag(info, 'senderName'),
                 source: 'CAP',
@@ -549,6 +561,29 @@ export function alertsForDay(alerts, daily, dayIndex) {
     const date = daily?.[dayIndex]?.date ?? '';
     if (!date) return [];
     return (alerts ?? []).filter(a => alertOverlapsDay(a, date));
+}
+
+export function alertUrl(alert, coords = null) {
+    const lat = Array.isArray(coords) ? coords[0] : coords?.latitude;
+    const lon = Array.isArray(coords) ? coords[1] : coords?.longitude;
+    const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
+    const src = alert?.source ?? '';
+    if (src === 'NOAA NWS') {
+        return hasCoords
+            ? `https://forecast.weather.gov/MapClick.php?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`
+            : 'https://www.weather.gov/alerts';
+    }
+    if (src === 'MET Norway') {
+        return hasCoords
+            ? `https://www.yr.no/en/forecast/daily-table/${lat.toFixed(4)},${lon.toFixed(4)}`
+            : 'https://www.yr.no/en';
+    }
+    if (src === 'ECCC GeoMet') {
+        return hasCoords
+            ? `https://weather.gc.ca/?layers=alert&center=${lat.toFixed(4)},${lon.toFixed(4)}&zoom=9`
+            : 'https://weather.gc.ca/';
+    }
+    return 'https://meteoalarm.org/en/live/';
 }
 
 // One adapter per advisory source, same contract as the extension:

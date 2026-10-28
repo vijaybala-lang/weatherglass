@@ -15,16 +15,25 @@ on every declared shell; the EGO-served bytes must match).
 Last shipped commit: 8853f45
 (integer 11, EGO serial 19 / pk 77151; the integer-12 audit used
 8853f45, the release-v11 merge, as its base: shipped changes since are
-only the advisory expander/dot layout fixes in menu.js and
-stylesheet.css, plus the 5 advisory shell goldens and click-toggle
-harness lock; dead-code sweep clean.)
+the advisory layout, icon, text-unwrap/summary, day-tile dot, and RTL
+chart slot fixes in menu.js, stylesheet.css, weather.js, chart.js, and
+po/locale, plus 5 advisory shell goldens and 21 per-language clear-day
+goldens; dead-code sweep clean.)
 
 Integer 12 fixes weather advisory rows starting expanded and having a
 misaligned/unclickable expander chevron (`pan-down-symbolic` /
-`pan-up-symbolic` with center alignment and full-header click padding)
-plus day-tile severity dot vertical centering, locked by 5 new advisory
-shell goldens (`advisory-yellow`, `advisory-orange`, `advisory-red`,
-`advisory-neutral`, `advisory-stack`). The upload imagery is the goldens,
+`pan-up-symbolic` with center alignment and full-header click padding),
+switches the advisory prefix icon to the warning triangle with
+exclamation (`dialog-warning-symbolic`), moves the day-tile severity
+circle to a top-right corner overlay (`Clutter.BinLayout`) so day labels
+stay centered and unaffected, unwraps hard-wrapped NWS teletype newlines
+into a concise popup summary with a `Full advisory` link button, fixes
+RTL chart hour-column retention (`chart.js`), translates advisory UI
+strings across all 21 catalogs, and locks 5 advisory shell goldens
+(`advisory-yellow`, `advisory-orange`, `advisory-red`,
+`advisory-neutral`, `advisory-stack`) plus 21 per-language clear-day
+goldens (`i18n-ar` .. `i18n-zh_CN`).
+The upload imagery is the goldens,
 so the v7-era lesson -- live-photo sets that "photograph whatever bugs
 shipped then" -- no longer applies: see skill step 5.
 

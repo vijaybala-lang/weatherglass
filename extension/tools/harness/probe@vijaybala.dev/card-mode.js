@@ -135,7 +135,75 @@ export function allFixtures(weather, moon) {
         all[slug] = {city: berlin.city, lat: berlin.lat, lon: berlin.lon,
             ms: sunB.sunset + dMin * 60000, tzMin: berlin.tzMin,
             condition: 'clear'};
+    /* One clear-day golden per supported language (all 21 po/LINGUAS
+     * catalogs, including RTL ar/fa/he/ur), carrying a level-2 advisory
+     * across Today..Fri so every locale's header, tabs, advisory banner
+     * and day-tile top-right severity dot are pixel-locked on clear day. */
+    for (const [lang, event] of Object.entries(I18N_EVENTS))
+        all[`i18n-${lang}`] = {
+            city: 'San Francisco', lat: 37.77, lon: -122.42,
+            local: '2026-10-07T13:00-07:00', condition: 'clear',
+            lang,
+            alerts: [{
+                id: `i18n-${lang}-adv`,
+                event,
+                level: 2,
+                startsAt: '2026-10-07T09:00',
+                endsAt: '2026-10-09T18:00',
+                description: event,
+                instruction: null,
+                areas: ['San Francisco'],
+                sender: 'NWS',
+                source: 'NOAA NWS',
+            }],
+        };
     return all;
+}
+
+const RTL_LANGS = new Set(['ar', 'fa', 'he', 'ur']);
+const I18N_EVENTS = {
+    ar: 'تحذير من رياح شديدة وأمواج عالية على الساحل',
+    bn: 'উপকূলীয় অঞ্চলে তীব্র ঝড়ো হাওয়ার সতর্কতা',
+    de: 'Amtliche UNWETTERWARNUNG vor schwerem Gewitter mit extremen Orkanböen',
+    es: 'Aviso naranja por rachas de viento muy fuertes en la costa',
+    eu: 'Abisu laranja haize-bolada oso gogorrengatik kostaldean',
+    fa: 'هشدار سطح نارنجی وزش بادهای شدید و مواج بودن دریا',
+    fr: 'Vigilance orange vent violent et vagues-submersion sur le littoral',
+    he: 'אזהרת רוחות חזקות וגלים גבוהים לאורך מישור החוף',
+    hi: 'तटीय क्षेत्रों में तेज़ हवाओं और ऊँची लहरों की चेतावनी',
+    id: 'Peringatan dini angin kencang dan gelombang tinggi di pesisir',
+    it: 'Avviso arancione per vento forte e mareggiate lungo le coste',
+    ja: '暴風および高波に関する気象警報（沿岸部）',
+    ko: '해안 지역 강풍 및 높은 파도 주의보 발효',
+    pt: 'Aviso laranja de vento forte e agitação marítima na costa',
+    pt_BR: 'Aviso laranja de ventos costeiros intensos e ressaca no litoral',
+    ru: 'Штормовое предупреждение об опасных метеорологических явлениях',
+    ta: 'கடலோரப் பகுதிகளில் பலத்த காற்று மற்றும் உயர் அலை எச்சரிக்கை',
+    tr: 'Kıyı kesimlerde kuvvetli rüzgar ve fırtına uyarısı',
+    ur: 'ساحلی علاقوں میں تیز ہواؤں اور اونچی لہروں کا انتباہ',
+    vi: 'Cảnh báo gió mạnh và sóng lớn trên vùng biển ven bờ',
+    zh_CN: '大风橙色预警信号：沿海地区阵风可达10至11级',
+};
+
+function loadPoDict(lang) {
+    const here = GLib.filename_from_uri(import.meta.url)[0];
+    const poPath = GLib.build_filenamev([GLib.path_get_dirname(here), 'po', `${lang}.po`]);
+    const text = new TextDecoder().decode(Gio.File.new_for_path(poPath).load_contents(null)[1]);
+    const dict = {};
+    const unq = s => s.slice(1, -1).replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    for (const block of text.split(/\n\n+/)) {
+        if (block.includes('#, fuzzy'))
+            continue;
+        const idMatch = block.match(/msgid\s+((?:"(?:[^"\\]|\\.)*"\s*)+)/);
+        const strMatch = block.match(/msgstr\s+((?:"(?:[^"\\]|\\.)*"\s*)+)/);
+        if (!idMatch || !strMatch)
+            continue;
+        const msgid = [...idMatch[1].matchAll(/"(?:[^"\\]|\\.)*"/g)].map(m => unq(m[0])).join('');
+        const msgstr = [...strMatch[1].matchAll(/"(?:[^"\\]|\\.)*"/g)].map(m => unq(m[0])).join('');
+        if (msgid && msgstr)
+            dict[msgid] = msgstr;
+    }
+    return dict;
 }
 
 /* the style/session quartet + two preset cities (presets also live in
@@ -484,6 +552,12 @@ export async function renderCards(slugs, cssPath, pngFor, captureRegion) {
             return s / 4294967296;
         };
         const steps = {};
+        globalThis.__wgPoDict = fx.lang ? loadPoDict(fx.lang) : null;
+        const setTreeDir = (actor, dir) => {
+            actor.set_text_direction(dir);
+            for (const ch of actor.get_children())
+                setTreeDir(ch, dir);
+        };
         const panel = new ForecastPanel({animate: false});
         panel.setPlaceName(fx.city);
         // canvas default is animated (a frozen STATIC_TIME frame with
@@ -512,6 +586,8 @@ export async function renderCards(slugs, cssPath, pngFor, captureRegion) {
         Main.uiGroup.add_child(host);
         host.set_position(100, 120);   // clear of the topbar's shadow edge
         panel.render(buildState(weather, moon, fx));
+        if (fx.lang && RTL_LANGS.has(fx.lang))
+            setTreeDir(panel.actor, Clutter.TextDirection.RTL);
         if (panel._alertRows.length > 0) {
             // Prove all advisories start collapsed and clicking .aw-adv-head
             // cleanly expands and re-collapses the row.
@@ -544,6 +620,7 @@ export async function renderCards(slugs, cssPath, pngFor, captureRegion) {
 
         panel.destroy();
         host.destroy();         // BinLayout owns panel.actor; one destroy
+        globalThis.__wgPoDict = null;
         cards[slug] = steps;
     }
     return {css: css.attempts, cards};

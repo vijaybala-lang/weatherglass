@@ -1,6 +1,7 @@
 /* menu.js -- forecast dropdown panel */
 
 import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Pango from 'gi://Pango';
@@ -17,7 +18,7 @@ import {
     judgeInk, INK_DARK, tileGlyphPale, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
 } from './chart.js';
 import { sceneFor, variantForCode, fmtTemp, dayName, daySlice, nowFracIn, sunGeometry,
-         alertsForDay, alertOverlapsDay } from './weather.js';
+         alertsForDay, alertOverlapsDay, compactAlertSummary, alertUrl } from './weather.js';
 
 const SKY_FRAME_INTERVAL_MS = 50;         // sky: 20 fps is plenty
 const STATIC_TIME = 1.1;                  // frame that makes static mini icons look lively
@@ -216,7 +217,7 @@ const ChartArea = GObject.registerClass(
                 // the right, now-fade covering the RIGHT half). St widgets
                 // around this canvas already flip via the toolkit; the painted
                 // surface has to be told explicitly.
-                rtl: Clutter.get_default_text_direction() === Clutter.TextDirection.RTL,
+                rtl: this.get_text_direction() === Clutter.TextDirection.RTL,
                 stripBottom: panel._condPos === 'bottom',
                 // over the sky (animated/solid): pills take the day-tile hover
                 // glass; the accent style keeps the accent tint on its calm
@@ -493,12 +494,14 @@ export class ForecastPanel {
             const headRow = row('aw-adv-head-row');
             headRow.x_align = ACTOR_FILL;
             const icon = new St.Icon({
-                icon_name: 'weather-severe-alert-symbolic', icon_size: 16,
+                icon_name: 'dialog-warning-symbolic', icon_size: 16,
                 style_class: 'aw-adv-icon',
                 y_align: Clutter.ActorAlign.CENTER,
             });
             headRow.add_child(icon);
-            const titleCol = new St.BoxLayout({ vertical: true, x_expand: true });
+            const titleCol = new St.BoxLayout({
+                vertical: true, x_expand: true, x_align: ACTOR_FILL,
+            });
             const title = label(alert.event, 'aw-adv-title');
             title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
             titleCol.add_child(title);
@@ -518,26 +521,53 @@ export class ForecastPanel {
 
             const body = column('aw-adv-body');
             body.visible = expanded;
-            const clip = (text, max) => text.length > max
-                ? text.slice(0, max).trimEnd() + '…' : text;
-            if (alert.description) {
-                const desc = label(clip(alert.description, 340), 'aw-adv-text');
+            const summaryText = compactAlertSummary(alert.description, 175);
+            if (summaryText) {
+                const desc = label(summaryText, 'aw-adv-text');
                 desc.clutter_text.line_wrap = true;
+                desc.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
                 body.add_child(desc);
             }
-            if (alert.instruction) {
-                const instr = label(clip(alert.instruction, 220), 'aw-adv-instr');
+            const instrText = compactAlertSummary(alert.instruction, 110);
+            if (instrText) {
+                const instr = label(instrText, 'aw-adv-instr');
                 instr.clutter_text.line_wrap = true;
+                instr.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
                 body.add_child(instr);
             }
             const issuedBy = alert.sender && alert.sender !== alert.source
                 ? `${alert.sender} · ${alert.source}` : alert.source;
+            const footRow = row('aw-adv-foot');
+            footRow.x_align = ACTOR_FILL;
             const meta = label(
                 `${_('Issued by')} ${issuedBy}` +
                 (alert.areas.length ? ` · ${alert.areas.join('; ')}` : ''),
                 'aw-adv-meta');
-            meta.clutter_text.line_wrap = true;
-            body.add_child(meta);
+            meta.x_expand = true;
+            meta.y_align = Clutter.ActorAlign.CENTER;
+            meta.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+            footRow.add_child(meta);
+            const linkBox = row('aw-adv-link-box');
+            linkBox.add_child(label(_('Full advisory'), 'aw-adv-link-label'));
+            linkBox.add_child(new St.Icon({
+                icon_name: 'go-next-symbolic', icon_size: 10,
+                y_align: Clutter.ActorAlign.CENTER,
+            }));
+            const linkBtn = new St.Button({
+                style_class: 'aw-adv-link', can_focus: true,
+                y_align: Clutter.ActorAlign.CENTER,
+                child: linkBox,
+            });
+            linkBtn.connect('clicked', () => {
+                const url = alertUrl(alert, this._state);
+                try {
+                    Gio.AppInfo.launch_default_for_uri(url, null);
+                } catch (err) {
+                    console.warn(`Weatherglass: failed to open ${url}: ${err}`);
+                }
+            });
+            footRow.add_child(linkBtn);
+            body.add_child(footRow);
 
             const head = new St.Button({
                 style_class: 'aw-adv-head', can_focus: true,
@@ -1025,22 +1055,6 @@ export class ForecastPanel {
                     style_class: 'aw-day-name',
                     x_align: Clutter.ActorAlign.CENTER
                 }));
-                // severity dot: highest alert level overlapping this
-                // calendar day (not the day-0 "everything" list rule)
-                const dayLevel = Math.max(0, ...(this._state.alerts ?? [])
-                    .filter(a => alertOverlapsDay(a, dayItem.date))
-                    .map(a => a.level ?? 0));
-                if (dayLevel > 0) {
-                    const dot = new St.Widget({
-                        style_class: 'aw-day-dot',
-                        y_align: Clutter.ActorAlign.CENTER,
-                    });
-                    dot.set_style(`background-color: ${['', '#f5c542', '#f07f2e', '#e5484d'][dayLevel]};`);
-                    dayNameRow.add_child(dot);
-                    const dayWord = { 1: _('Yellow'), 2: _('Orange'), 3: _('Red') }[dayLevel];
-                    btn.set_accessible_name(
-                        `${i === 0 ? _('Today') : _(dayName(dayItem.date))}, ${dayWord} ${_('advisory')}`);
-                }
                 col.add_child(dayNameRow);
                 const icon = new WeatherIcon({
                     size: 26, animate: false,
@@ -1073,7 +1087,38 @@ export class ForecastPanel {
                 this._dayLowLabels.push(lowLabel);   // smart ink dims it slightly
                 hl.add_child(lowLabel);
                 col.add_child(hl);
-                btn.set_child(col);
+                // severity dot: highest alert level overlapping this
+                // calendar day (not the day-0 "everything" list rule),
+                // overlaid in the top-right corner of the tile so the
+                // day label stays dead-centre
+                const dayLevel = Math.max(0, ...(this._state.alerts ?? [])
+                    .filter(a => alertOverlapsDay(a, dayItem.date))
+                    .map(a => a.level ?? 0));
+                if (dayLevel > 0) {
+                    const tileWrap = new St.Widget({
+                        layout_manager: new Clutter.BinLayout(),
+                        x_expand: true,
+                        x_align: ACTOR_FILL,
+                    });
+                    col.x_expand = true;
+                    tileWrap.add_child(col);
+                    const dot = new St.Widget({
+                        style_class: 'aw-day-dot',
+                        x_expand: true,
+                        y_expand: true,
+                        x_align: Clutter.ActorAlign.END,
+                        y_align: Clutter.ActorAlign.START,
+                        translation_y: -4,
+                    });
+                    dot.set_style(`background-color: ${['', '#f5c542', '#f07f2e', '#e5484d'][dayLevel]};`);
+                    tileWrap.add_child(dot);
+                    const dayWord = { 1: _('Yellow'), 2: _('Orange'), 3: _('Red') }[dayLevel];
+                    btn.set_accessible_name(
+                        `${i === 0 ? _('Today') : _(dayName(dayItem.date))}, ${dayWord} ${_('advisory')}`);
+                    btn.set_child(tileWrap);
+                } else {
+                    btn.set_child(col);
+                }
                 btn.connect('clicked', () => this._selectDay(i));
                 // St.Button has no 'hovered' property -- hover is a
                 // Clutter state flag CSS sees but JS notify never fires

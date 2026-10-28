@@ -66,8 +66,8 @@
   .adv.s3{background:var(--sev3bg);border-color:rgba(229,72,77,.45)}
   .adv-head{display:flex;gap:9px;align-items:flex-start;width:100%;font:inherit;color:inherit;
     background:none;border:0;padding:0;cursor:pointer;text-align:left}
-  /* prefix icon: Adwaita weather-severe-alert-symbolic — main shape in ink,
-     warning badge in the level colour (real code: Gtk.Image / St.Icon) */
+  /* prefix icon: Adwaita dialog-warning-symbolic — rounded warning triangle
+     with cutout ! in the level colour (real code: Gtk.Image / St.Icon) */
   .adv-ic{width:22px;height:22px;flex:none;margin-top:1px}
   .s1 .adv-ic{color:var(--sev1)} .s2 .adv-ic{color:var(--sev2)} .s3 .adv-ic{color:var(--sev3)}
   .adv-title{font-size:13.5px;font-weight:700;line-height:1.25}
@@ -118,8 +118,8 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <symbol id="g-warn" viewBox="0 0 24 24"><path d="M12 3 22 20H2Z" fill="#171b1f"/><rect x="11.1" y="9.5" width="1.8" height="5.4" rx=".9" fill="#fff"/><circle cx="12" cy="17.4" r="1.15" fill="#fff"/></symbol>
-    <!-- verbatim Adwaita weather-severe-alert-symbolic (16px grid), fill -> currentColor -->
-    <symbol id="g-severe" viewBox="0 0 16 16"><path fill="#f4f7fa" d="M6.008 2.068C2.726 2.068.044 4.75.045 8.031c0 3.282 2.681 5.963 5.963 5.963L7 14v-2l-.986-.006h-.008a3.946 3.946 0 0 1-3.961-3.963c0-2.2 1.76-3.963 3.96-3.963a3.96 3.96 0 0 1 3.67 2.473 1 1 0 0 0 .393.453h5.057q.072.001.142.008a4.5 4.5 0 0 0-3.714-1.97c-.15 0-.29.047-.438.062-1.053-1.826-2.96-3.024-5.107-3.026Z"/><path fill="currentColor" d="M8.875 8A.864.864 0 0 0 8 8.875v6.25c0 .492.383.875.875.875h6.25a.864.864 0 0 0 .875-.875v-6.25A.864.864 0 0 0 15.125 8zM11 9h2v2.5s0 .5-.5.5h-1c-.5 0-.5-.5-.5-.5zm.5 4h1c.277 0 .5.223.5.5v1c0 .277-.223.5-.5.5h-1a.5.5 0 0 1-.5-.5v-1c0-.277.223-.5.5-.5m0 0"/></symbol>
+    <!-- verbatim Adwaita dialog-warning-symbolic (16px grid), fill -> currentColor -->
+    <symbol id="g-severe" viewBox="0 0 16 16"><path fill="currentColor" d="m 7.90625 0.09375 c -0.527344 -0.0273438 -1.039062 0.28125 -1.4375 0.96875 l -6.25 11.59375 c -0.535156 0.964844 0.046875 2.34375 1.09375 2.34375 h 13.15625 c 0.980469 0 1.902344 -1.160156 1.21875 -2.34375 l -6.3125 -11.53125 c -0.398438 -0.644531 -0.941406 -1.003906 -1.46875 -1.03125 z m 1.09375 3.90625 v 5 c 0.007812 0.527344 -0.472656 1 -1 1 s -1.007812 -0.472656 -1 -1 v -5 z m -1 7 c 0.550781 0 1 0.449219 1 1 s -0.449219 1 -1 1 s -1 -0.449219 -1 -1 s 0.449219 -1 1 -1 z m 0 0"/></symbol>
     <!-- verbatim Adwaita pan-down-symbolic (16px grid), fill -> currentColor -->
     <symbol id="g-pan" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="m 3.292969 7.707031 l 4 4 c 0.390625 0.390625 1.023437 0.390625 1.414062 0 l 4 -4 c 0.390625 -0.390625 0.390625 -1.023437 0 -1.414062 s -1.023437 -0.390625 -1.414062 0 l -3.292969 3.292969 l -3.292969 -3.292969 c -0.390625 -0.390625 -1.023437 -0.390625 -1.414062 0 s -0.390625 1.023437 0 1.414062 z m 0 0"/></symbol>
     <symbol id="g-sun" viewBox="0 0 24 24"><g stroke="#f7b733" stroke-width="1.7" stroke-linecap="round"><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.5 4.5l2 2M17.5 17.5l2 2M19.5 4.5l-2 2M6.5 17.5l-2 2"/></g><circle cx="12" cy="12" r="4.6" fill="#ffcf5c"/></symbol>
@@ -160,8 +160,8 @@
   colour when an alert overlaps that day; selecting a day lists only its overlapping alerts (try Wed — the whole
   block disappears). Height cost: ~46 px per collapsed alert. No advisories means nothing renders at all:
   no heading, no empty-state box. Rows follow <b>AdwExpanderRow</b> anatomy: prefix
-  <code>weather-severe-alert-symbolic</code> (its warning badge takes the level colour), title + subtitle, <code>pan-down-symbolic</code>
-  / <code>pan-up-symbolic</code> suffix arrow — no bespoke triangle or disc.</p>
+  <code>dialog-warning-symbolic</code> (warning triangle with cutout <code>!</code> in the level colour), title + subtitle, <code>pan-down-symbolic</code>
+  / <code>pan-up-symbolic</code> suffix arrow.</p>
 <p class="note" data-note="b"><b>B · Extension chip.</b> A single line under the condition text keeps the card short.
   Cheapest on height, weakest on urgency: a red warning looks like a yellow advisory until opened. Kept as the
   low-profile alternative; the expanded state reuses A's rows verbatim.</p>
@@ -487,14 +487,15 @@ alerts: [ {
         Day overlap for tiles is computed from [startsAt, endsAt] against each daily date; sorting is level desc, then startsAt.</p>
       <p style="font-size:12px;color:#aeb6bf;margin:8px 2px 0">Component mapping, per GNOME: the <b style="color:#fff">app</b>
         builds each row as a real <b style="color:#fff">AdwExpanderRow</b> (title = event, subtitle = “Orange · until…”,
-        prefix <b style="color:#fff">weather-severe-alert-symbolic</b>) — the same widget already used for
+        prefix <b style="color:#fff">dialog-warning-symbolic</b>) — the same widget already used for
         “Add by coordinates”. The <b style="color:#fff">extension</b> cannot use libadwaita widgets inside gnome-shell,
         so it imitates that anatomy with St: a focusable St.Button header, St.Icon prefix,
-        <b style="color:#fff">pan-down-symbolic</b> suffix rotating 180°, accessible name carrying the level word.
+        <b style="color:#fff">pan-down-symbolic</b> / <b style="color:#fff">pan-up-symbolic</b> suffix arrow, accessible name carrying the level word.
         <b style="color:#fff">AdwBanner was rejected</b> for the list: HIG banners are a single short title plus one
         optional button for a persistent view-level state — they cannot hold several alerts with long official text.
-        <b style="color:#fff">dialog-warning-symbolic was rejected</b> as the icon: it already means “the app hit an
-        error” (our stale-data banner), and weather-severe-alert says “hazard outside”, not “software problem”.</p>
+        <b style="color:#fff">weather-severe-alert-symbolic was replaced</b> by <b style="color:#fff">dialog-warning-symbolic</b>:
+        Adwaita's severe-alert icon hardcodes <code>class="warning"</code> (yellow) on its tiny corner square so orange/red
+        rows got a two-colour clash, whereas the single-path warning triangle takes the exact severity tint cleanly.</p>
     </div>
 
     <div>
