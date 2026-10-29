@@ -294,7 +294,7 @@ class WeatherCoordinator {
 const WeatherIndicator = GObject.registerClass(
     class WeatherIndicator extends PanelMenu.Button {
         _init(extension) {
-            super._init(0.0, _('Weatherglass'), false);
+            super._init(0.5, _('Weatherglass'), false);
 
             this._ext = extension;
             this._settings = extension.getSettings();
