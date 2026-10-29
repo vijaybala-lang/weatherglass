@@ -328,6 +328,10 @@ export default class WgProbe extends Extension {
         });
     }
 
+    gettext(str) {
+        return globalThis.__wgPoDict?.[str] || super.gettext(str);
+    }
+
     disable() {
         report({ ...globalProbe, phase: 'disable', disabled: true });
     }

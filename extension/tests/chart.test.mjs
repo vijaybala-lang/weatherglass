@@ -146,4 +146,29 @@ test('Today\'s rolling window morphs into a calendar day (length-mismatched pair
     eq(morphPair(today, []), null, 'empty target snaps');
 });
 
+test('RTL chart keeps the same hour columns as LTR (right-to-left progression)', () => {
+    const calm = [62, 61, 59, 57, 56, 55, 54, 55, 58, 61, 64, 66,
+        68, 69, 70, 70, 69, 67, 65, 63, 61, 60, 59, 58];
+    const keptLtr = [], keptRtl = [], droppedRtl = [];
+    for (const [rtl, kept, dropped] of [[false, keptLtr, []], [true, keptRtl, droppedRtl]]) {
+        const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 150);
+        const cr = new Cairo.Context(surf);
+        paintChart(cr, {
+            w: 330, h: 150, values: calm,
+            fmtValue: (i, v) => `${v}\u00b0`,
+            fmtHour,
+            valueSamples: [...new Set(calm.map(v => `${v}\u00b0`))],
+            accent: [0.96, 0.65, 0.14], ink: [1, 1, 1], nowFrac: 0.02,
+            scenes: Array(24).fill('sun'), nights: Array(24).fill(false),
+            pills: false, dark: true, rtl, stripBottom: true,
+            bgFn: () => [0.5, 0.5, 0.55],
+            fontSize: 8, textScale: 1, textBold: false,
+            slotsProbe: s => (s.keep ? kept : dropped).push(s.i),
+        });
+        cr.$dispose();
+    }
+    eq(droppedRtl.length, 0, `RTL dropped hours: ${JSON.stringify(droppedRtl)}`);
+    eq(keptRtl.join(','), keptLtr.join(','), 'RTL must keep the exact same hour indices as LTR');
+});
+
 report('chart');

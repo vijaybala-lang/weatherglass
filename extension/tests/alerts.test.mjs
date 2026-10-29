@@ -9,7 +9,7 @@
 import { file, test, eq, ok, report } from './harness.mjs';
 import { parseNwsAlerts, parseMetAlerts, parseEcccAlerts, parseCapAlerts,
          alertMatchesPoint, pointInPolygon, mergeAlerts, alertsForDay,
-         ALERT_SOURCES } from '../weather.js';
+         compactAlertSummary, alertUrl, ALERT_SOURCES } from '../weather.js';
 
 file('alerts');
 
@@ -242,6 +242,31 @@ test('CAP doc: English info wins, polygon decides the match', () => {
     eq(alertMatchesPoint(cand, { latitude: 52.52, longitude: 13.405 }), true);
     eq(alertMatchesPoint(cand, { latitude: 48.14, longitude: 11.58 }), false);
     eq(pointInPolygon(52.52, 13.405, cand._polygons[0]), true);
+});
+
+test('NWS hard-wrapped teletype lines unwrap cleanly and summarize without WHERE/WHEN bloat', () => {
+    const wrapped = [
+        '* WHAT...Flooding continues, especially',
+        'along and near the Rio Grande',
+        'and Conejos River.',
+        '',
+        '* WHERE...Northeastern Conejos County,',
+        'West Central Costilla County.',
+        '',
+        '* WHEN...Until 745 PM MDT.',
+        '',
+        '* IMPACTS...Flooding of rivers, creeks,',
+        'streams, and other low-lying',
+        'and flood-prone locations.',
+    ].join('\n');
+    const summary = compactAlertSummary(wrapped, 175);
+    ok(!summary.includes('\n'), 'summary must unwrap single teletype newlines');
+    ok(!summary.includes('WHERE'), 'summary must drop redundant * WHERE block');
+    ok(!summary.includes('WHEN'), 'summary must drop redundant * WHEN block');
+    ok(summary.startsWith('Flooding continues, especially along and near the Rio Grande and Conejos River.'),
+       `unexpected summary: ${summary}`);
+    eq(alertUrl({ source: 'NOAA NWS' }, { latitude: 37.4694, longitude: -105.87 }),
+       'https://forecast.weather.gov/MapClick.php?lat=37.4694&lon=-105.8700');
 });
 
 report('alerts');

@@ -275,16 +275,22 @@ function sampleCurveBounds(pts) {
     return { curveMin, curveMax };
 }
 
-function drawTimeFade(cr, width, height, fadeX, pastKeepAlpha) {
+function drawTimeFade(cr, width, height, fadeX, pastKeepAlpha, isRtl = false) {
     cr.save();
     cr.rectangle(0, 0, fadeX, height);
     cr.clip();
-    cr.paintWithAlpha(pastKeepAlpha);
+    if (isRtl)
+        cr.paint();
+    else
+        cr.paintWithAlpha(pastKeepAlpha);
     cr.restore();
     cr.save();
     cr.rectangle(fadeX, 0, width - fadeX, height);
     cr.clip();
-    cr.paint();
+    if (isRtl)
+        cr.paintWithAlpha(pastKeepAlpha);
+    else
+        cr.paint();
     cr.restore();
 }
 
@@ -511,10 +517,10 @@ export function paintChart(cr, opts) {
         if (fmtUnit)
             globalValueNeed = Math.max(globalValueNeed,
                 textPx(cr, fmtUnit(0, values[0]), unitSize, false, 0)[0] / 2);
-        let lastSlotRight = -Infinity, lastIndex = -Infinity;
+        let lastSlotRight = -Infinity, lastSlotLeft = Infinity, lastIndex = -Infinity;
         for (let i = firstLabelIndex; i < pointCount; i += iconStep) {
             const anchorX = mapX(i);
-            if (anchorX > width - edgeGutter)
+            if (isRtl ? anchorX < edgeGutter : anchorX > width - edgeGutter)
                 continue;
             const hourText = fmtHour ? fmtHour(i) : '';
             const valueText = fmtValue ? fmtValue(i, values[i]) : '';
@@ -543,13 +549,15 @@ export function paintChart(cr, opts) {
             const left = labelX - inkHalf, right = labelX + inkHalf;
             // the keep/drop rule is the certification target for the
             // plateau regression (see opts.slotsProbe)
-            const slotKeep = left > lastSlotRight + 4 && i - lastIndex >= 2;
+            const slotKeep = (isRtl ? right < lastSlotLeft - 4 : left > lastSlotRight + 4) &&
+                i - lastIndex >= 2;
             slotsProbe({ i, keep: slotKeep, left, own: inkHalf, lastSlotRight });
             if (slotKeep) {
                 iconSlots.push({
                     i, labelX, iconX: Math.min(Math.max(anchorX, iconHalf), width - iconHalf),
                 });
                 lastSlotRight = right;
+                lastSlotLeft = left;
                 lastIndex = i;
             }
         }
@@ -758,13 +766,13 @@ export function paintChart(cr, opts) {
 
     cr.popGroupToSource();
     if (hasNow && nowFrac > 0)
-        drawTimeFade(cr, width, height, plotStartX + nowFrac * (plotEndX - plotStartX), opts.pastKeep ?? 0.55);
+        drawTimeFade(cr, width, height, scaleX(nowFrac), opts.pastKeep ?? 0.55, isRtl);
     else
         cr.paint();
     cr.restore();
 
     if (nowFrac !== null && nowFrac >= 0 && nowFrac <= 1)
-        drawNowMarker(cr, plotStartX + nowFrac * (plotEndX - plotStartX), height);
+        drawNowMarker(cr, scaleX(nowFrac), height);
 
     // accent label riding the now marker, above the veil -- drawn at the
     // exact slot reserved in the label pass (curve-cleared baseline, inward

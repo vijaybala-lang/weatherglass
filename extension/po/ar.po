@@ -2,313 +2,362 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-06 14:56-0400\n"
+"POT-Creation-Date: 2026-10-27 19:25-0700\n"
 "Language: ar\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:280 prefs.js:782
+#: extension.js:297 prefs.js:812
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
-#: extension.js:299 menu.js:275
+#: extension.js:318 menu.js:329
 msgid "Fetching weather…"
 msgstr "جارٍ جلب الطقس…"
 
-#: extension.js:369
+#: extension.js:391
 msgid "My location"
 msgstr "موقعي"
 
-#: extension.js:370
+#: extension.js:392
 msgid "Custom location"
 msgstr "موقع مخصص"
 
-#: menu.js:25
+#: menu.js:28
 msgid "Temperature"
 msgstr "درجة الحرارة"
 
-#: menu.js:26
+#: menu.js:29
 msgid "Precipitation"
 msgstr "الهطول"
 
-#: menu.js:27
+#: menu.js:30
 msgid "Wind"
 msgstr "الرياح"
 
-#: menu.js:309 menu.js:390 menu.js:394
+#: menu.js:372 menu.js:648 menu.js:652
 msgid "Weather"
 msgstr "الطقس"
 
-#: menu.js:322
+#: menu.js:385
 msgid "Refresh now"
 msgstr "تحديث الآن"
 
-#: menu.js:328
+#: menu.js:391
 msgid "Preferences"
 msgstr "التفضيلات"
 
-#: menu.js:346
+#: menu.js:425
 msgid "Show"
 msgstr "إظهار"
 
-#: menu.js:346
+#: menu.js:425
 msgid "chart"
 msgstr "الرسم البياني"
 
-#: menu.js:395
+#: menu.js:451 menu.js:1118
+msgid "Orange"
+msgstr "برتقالي"
+
+#: menu.js:451 menu.js:1118
+msgid "Red"
+msgstr "أحمر"
+
+#: menu.js:451 menu.js:1118
+msgid "Yellow"
+msgstr "أصفر"
+
+#: menu.js:467
+msgid "in effect now"
+msgstr "ساري المفعول الآن"
+
+#: menu.js:468 menu.js:473 menu.js:475
+msgid "starts"
+msgstr "يبدأ"
+
+#: menu.js:471
+msgid "now until"
+msgstr "الآن حتى"
+
+#: menu.js:476
+msgid "until"
+msgstr "حتى"
+
+#: menu.js:549
+msgid "Issued by"
+msgstr "صادر عن"
+
+#: menu.js:557
+msgid "Full advisory"
+msgstr "التحذير الكامل"
+
+#: menu.js:622
+msgid "more advisories"
+msgstr "تحذيرات أخرى"
+
+#: menu.js:653
 msgid "Could not load the forecast"
 msgstr "تعذر تحميل التوقعات"
 
-#: menu.js:542
+#: menu.js:832
 msgid "Refresh forecast — updated"
 msgstr "تحديث التوقعات — آخر تحديث"
 
-#: menu.js:605
+#: menu.js:898
 msgid "Now"
 msgstr "الآن"
 
-#: menu.js:708
+#: menu.js:1062 menu.js:1120
 msgid "Today"
 msgstr "اليوم"
 
-#: prefs.js:238
+#: menu.js:1120
+msgid "advisory"
+msgstr "تحذير"
+
+#: prefs.js:92
+#, fuzzy
+msgid "Use Location"
+msgstr "الموقع"
+
+#: prefs.js:244
 msgid "Location"
 msgstr "الموقع"
 
-#: prefs.js:254
+#: prefs.js:271
 msgid "Automatic"
 msgstr "تلقائي"
 
-#: prefs.js:255
-msgid "Coordinates are detected from your public IP address"
-msgstr "يتم اكتشاف الإحداثيات من عنوان IP العام الخاص بك"
+#: prefs.js:272
+msgid "Uses system location when available, otherwise your public IP address"
+msgstr ""
 
-#: prefs.js:258
+#: prefs.js:275
 msgid "Detect location automatically"
 msgstr "اكتشاف الموقع تلقائيًا"
 
-#: prefs.js:266
+#: prefs.js:285
 msgid "Search a city"
 msgstr "ابحث عن مدينة"
 
-#: prefs.js:268
+#: prefs.js:287
 msgid "City name — press Enter to search"
 msgstr "اسم المدينة — اضغط Enter للبحث"
 
-#: prefs.js:273
+#: prefs.js:292
 msgid "Results"
 msgstr "النتائج"
 
-#: prefs.js:303
+#: prefs.js:323
 msgid "No matches"
 msgstr "لا توجد نتائج مطابقة"
 
-#: prefs.js:329
+#: prefs.js:349
 msgid "Manual"
 msgstr "يدوي"
 
-#: prefs.js:330
+#: prefs.js:350
 msgid "Saved when you press Enter in a field"
 msgstr "يُحفظ عند الضغط على Enter في أي حقل"
 
-#: prefs.js:333
+#: prefs.js:353
 msgid "Latitude"
 msgstr "خط العرض"
 
-#: prefs.js:334
+#: prefs.js:354
 msgid "Longitude"
 msgstr "خط الطول"
 
-#: prefs.js:335
+#: prefs.js:355
 msgid "Display name"
 msgstr "الاسم المعروض"
 
-#: prefs.js:381
+#: prefs.js:403
 msgid "Display"
 msgstr "العرض"
 
-#: prefs.js:391
+#: prefs.js:413
 msgid "Units"
 msgstr "الوحدات"
 
-#: prefs.js:393
+#: prefs.js:415
 msgid "Measurement system"
 msgstr "نظام القياس"
 
-#: prefs.js:395
+#: prefs.js:417
 msgid "Imperial (°F, mph)"
 msgstr "إمبراطوري (°F، ميل/س)"
 
-#: prefs.js:395
+#: prefs.js:417
 msgid "Metric (°C, km/h)"
 msgstr "متري (°C، كم/س)"
 
-#: prefs.js:404
+#: prefs.js:426
 msgid "Hour format"
 msgstr "تنسيق الساعة"
 
-#: prefs.js:405
+#: prefs.js:427
 msgid "Clock style for chart hours and the preview clock"
 msgstr "نمط الساعة لساعات المخطط والمعاينة"
 
-#: prefs.js:407
+#: prefs.js:429
 msgid "12-hour"
 msgstr "12 ساعة"
 
-#: prefs.js:407
+#: prefs.js:429
 msgid "24-hour"
 msgstr "24 ساعة"
 
-#: prefs.js:407
+#: prefs.js:429
 msgid "Automatic (system)"
 msgstr "تلقائي (النظام)"
 
-#: prefs.js:418
+#: prefs.js:440
 msgid "Panel indicator"
 msgstr "مؤشر اللوحة"
 
-#: prefs.js:419
+#: prefs.js:441
 msgid "Show animated icon"
 msgstr "إظهار الأيقونة المتحركة"
 
-#: prefs.js:420
+#: prefs.js:442
 msgid "Show temperature"
 msgstr "إظهار درجة الحرارة"
 
-#: prefs.js:422
+#: prefs.js:444
 msgid "Animate the icon"
 msgstr "تحريك الأيقونة"
 
-#: prefs.js:423
+#: prefs.js:445
 msgid "Turn off to save a little battery"
 msgstr "أوقفها لتوفير قليل من البطارية"
 
-#: prefs.js:435
+#: prefs.js:457
 msgid "Menu background"
 msgstr "خلفية القائمة"
 
-#: prefs.js:437
+#: prefs.js:459
 msgid "Background style"
 msgstr "نمط الخلفية"
 
-#: prefs.js:438
+#: prefs.js:460
 msgid "How the dropdown fills itself behind the forecast"
 msgstr "كيف يملأ القائمة المنسدلة نفسه خلف التوقعات"
 
-#: prefs.js:441
+#: prefs.js:463
 msgid "Animated sky (translucent)"
 msgstr "سماء متحركة (شبه شفافة)"
 
-#: prefs.js:442
+#: prefs.js:464
 msgid "Solid (sky dimmed under a wash)"
 msgstr "ساتر (سماء معتمة تحت طبقة)"
 
-#: prefs.js:443
+#: prefs.js:465
 msgid "Theme background, accent charts"
 msgstr "خلفية السمة، رسوم بيانية بلون التمييز"
 
-#: prefs.js:453
+#: prefs.js:475
 msgid "Text emboss"
 msgstr "بروز النص"
 
-#: prefs.js:454
+#: prefs.js:476
 msgid "Soft shadow under card text and icons over the sky"
 msgstr "ظل ناعم خلف نص البطاقة والأيقونات فوق السماء"
 
-#: prefs.js:461
+#: prefs.js:483
 msgid "Weather conditions"
 msgstr "أحوال الطقس"
 
-#: prefs.js:462
+#: prefs.js:484
 msgid "How hourly conditions ride the chart"
 msgstr "كيف تتحرك أحوال الساعة على الرسم البياني"
 
-#: prefs.js:464
+#: prefs.js:486
 msgid "Grouped pills"
 msgstr "كبسولات مجمعة"
 
-#: prefs.js:464
+#: prefs.js:486
 msgid "Hourly icons"
 msgstr "أيقونات كل ساعة"
 
-#: prefs.js:464
+#: prefs.js:486
 msgid "Off"
 msgstr "إيقاف"
 
-#: prefs.js:475
+#: prefs.js:497
 msgid "Condition band position"
 msgstr "موضع شريط الأحوال"
 
-#: prefs.js:476
+#: prefs.js:498
 msgid "Along the chart top, or above the hour labels"
 msgstr "على طول أعلى الرسم البياني، أو فوق تسميات الساعات"
 
-#: prefs.js:478
+#: prefs.js:500
 msgid "Above hours"
 msgstr "فوق الساعات"
 
-#: prefs.js:478
+#: prefs.js:500
 msgid "Chart top"
 msgstr "أعلى الرسم البياني"
 
-#: prefs.js:489
+#: prefs.js:511
 msgid "Data text"
 msgstr "نص البيانات"
 
-#: prefs.js:490
+#: prefs.js:512
 msgid "Bolder or larger metric values and chart hours"
 msgstr "جعل قيم المخطط وساعاته أعرض أو أكبر"
 
-#: prefs.js:492
+#: prefs.js:514
 msgid "Bold"
 msgstr "غامق"
 
-#: prefs.js:492
+#: prefs.js:514
 msgid "Bold & large"
 msgstr "غامق وكبير"
 
-#: prefs.js:492
+#: prefs.js:514
 msgid "Large"
 msgstr "كبير"
 
-#: prefs.js:492
+#: prefs.js:514
 msgid "Normal"
 msgstr "عادي"
 
-#: prefs.js:505
+#: prefs.js:527
 msgid "Data"
 msgstr "البيانات"
 
-#: prefs.js:514
+#: prefs.js:536
 msgid "Data source"
 msgstr "مصدر البيانات"
 
-#: prefs.js:516
+#: prefs.js:538
 msgid "Weather provider"
 msgstr "مزود الطقس"
 
-#: prefs.js:517
+#: prefs.js:539
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "جميعها بلا مفتاح · بيانات MET Norway مرخصة CC BY-SA 4.0"
 
-#: prefs.js:520
+#: prefs.js:542
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo (افتراضي)"
 
-#: prefs.js:521
+#: prefs.js:543
 msgid "MET Norway (api.met.no)"
 msgstr "MET Norway (api.met.no)"
 
-#: prefs.js:522
+#: prefs.js:544
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS (مواقع الولايات المتحدة فقط)"
 
-#: prefs.js:534
+#: prefs.js:556
 msgid "Forecast model"
 msgstr "نموذج التوقعات"
 
-#: prefs.js:535
+#: prefs.js:557
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
@@ -316,99 +365,118 @@ msgstr ""
 "Open-Meteo فقط · إلى أسبوع تتباين النماذج — إن بدى عطلة نهاية الأسبوع غريبًا، "
 "جرّب نموذجًا آخر"
 
-#: prefs.js:538
+#: prefs.js:560
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "الأفضل مطابقةً (اختيار Open-Meteo الإقليمي؛ الولايات المتحدة → GFS)"
 
-#: prefs.js:539
-msgid "ECMWF IFS (recommended)"
+#: prefs.js:561
+#, fuzzy
+msgid "ECMWF IFS high-res (recommended)"
 msgstr "ECMWF IFS (مستحسن)"
 
-#: prefs.js:540
+#: prefs.js:562
+#, fuzzy
+msgid "ECMWF IFS (0.25° grid)"
+msgstr "ECMWF IFS (مستحسن)"
+
+#: prefs.js:563
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON (مدى أقصر)"
 
-#: prefs.js:541
+#: prefs.js:564
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:559
+#: prefs.js:565
+msgid "GEM global (Canada)"
+msgstr ""
+
+#: prefs.js:566
+msgid "JMA (Japan · rain chance derived)"
+msgstr ""
+
+#: prefs.js:567
+msgid "UK Met Office global (10 km)"
+msgstr ""
+
+#: prefs.js:587
 msgid "Updates"
 msgstr "التحديثات"
 
-#: prefs.js:561
+#: prefs.js:589
 msgid "Refresh interval (minutes)"
 msgstr "فاصل التحديث (بالدقائق)"
 
-#: prefs.js:570
+#: prefs.js:598
 msgid "Wind animation threshold (km/h)"
 msgstr "حد تحريك الرياح (كم/س)"
 
-#: prefs.js:571
+#: prefs.js:599
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "الأيام الأكثر رياحًا تبدل الأيقونة إلى حركة الرياح"
 
-#: prefs.js:585
+#: prefs.js:613
 msgid "Preview"
 msgstr "معاينة"
 
-#: prefs.js:606
+#: prefs.js:636
 msgid "Panel preview"
 msgstr "معاينة اللوحة"
 
-#: prefs.js:607
+#: prefs.js:637
+#, fuzzy
 msgid ""
-"How the panel button looks for this scene — mock temperature, real icon "
+"How the panel button looks for this scene — sample temperature, real icon "
 "animation"
 msgstr ""
 "كيف يبدو زر اللوحة لهذا المشهد — درجة حرارة تجريبية، وحركة أيقونة حقيقية"
 
-#: prefs.js:612
+#: prefs.js:642
 msgid "Menu backdrop preview"
 msgstr "معاينة خلفية القائمة"
 
-#: prefs.js:613
+#: prefs.js:643
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr "سماء قائمتك الحالية مباشرة — اختر حالًا أعلاه لتحريكها هنا"
 
-#: prefs.js:640
+#: prefs.js:670
 msgid "Preview scene"
 msgstr "مشهد المعاينة"
 
-#: prefs.js:641
+#: prefs.js:671
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "تتكرر هنا لمدة ~12 ثانية — لوحتك الحقيقية تبقى كما هي"
 
-#: prefs.js:673
+#: prefs.js:703
 msgid "Scene"
 msgstr "المشهد"
 
-#: prefs.js:777
+#: prefs.js:808
 msgid "About"
 msgstr "حول"
 
-#: prefs.js:784
+#: prefs.js:814
 msgid "Version"
 msgstr "الإصدار"
 
-#: prefs.js:788
+#: prefs.js:818
 msgid "Contact"
 msgstr "للتواصل"
 
-#: prefs.js:792
+#: prefs.js:822
 msgid "Free and open source"
 msgstr "مجاني ومفتوح المصدر"
 
-#: prefs.js:793
+#: prefs.js:823
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "بلا إعلانات، بلا حسابات، بلا جمع بيانات — السماء ينبغي أن تعمل فحسب"
 
-#: prefs.js:798
+#: prefs.js:828
 msgid "Support the development"
 msgstr "ادعم التطوير"
 
-#: prefs.js:799
+#: prefs.js:829
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -416,149 +484,156 @@ msgstr ""
 "Weatherglass مجاني إلى الأبد. إن جعل سطح مكتبك أجمل، فقهوة تُبقي هذه النقاط "
 "متساقطة."
 
-#: prefs.js:802
+#: prefs.js:842
 msgid "Buy me a coffee"
 msgstr "اشتَرِ لي قهوة"
 
-#: weather.js:19
+#: prefs.js:843
+msgid "PayPal"
+msgstr ""
+
+#: weather.js:26
 msgid "Clear sky"
 msgstr "صحو"
 
-#: weather.js:20
+#: weather.js:27
 msgid "Mainly clear"
 msgstr "صحو في الغالب"
 
-#: weather.js:21
+#: weather.js:28
 msgid "Partly cloudy"
 msgstr "غائم جزئيًا"
 
-#: weather.js:22
+#: weather.js:29
 msgid "Overcast"
 msgstr "غائم"
 
-#: weather.js:23 weather.js:73
+#: weather.js:30 weather.js:107
 msgid "Fog"
 msgstr "ضباب"
 
-#: weather.js:24
+#: weather.js:31
 msgid "Rime fog"
 msgstr "ضباب متجمد"
 
-#: weather.js:25
+#: weather.js:32
 msgid "Light drizzle"
 msgstr "رذاذ خفيف"
 
-#: weather.js:26
+#: weather.js:33
 msgid "Drizzle"
 msgstr "رذاذ"
 
-#: weather.js:27
+#: weather.js:34
 msgid "Dense drizzle"
 msgstr "رذاذ كثيف"
 
-#: weather.js:28 weather.js:29
+#: weather.js:35 weather.js:36
 msgid "Freezing drizzle"
 msgstr "رذاذ متجمد"
 
-#: weather.js:30
+#: weather.js:37
 msgid "Light rain"
 msgstr "مطر خفيف"
 
-#: weather.js:31
+#: weather.js:38
 msgid "Rain"
 msgstr "مطر"
 
-#: weather.js:32
+#: weather.js:39
 msgid "Heavy rain"
 msgstr "مطر غزير"
 
-#: weather.js:33 weather.js:34
+#: weather.js:40 weather.js:41
 msgid "Freezing rain"
 msgstr "مطر متجمد"
 
-#: weather.js:35
+#: weather.js:42
 msgid "Light snow"
 msgstr "ثلج خفيف"
 
-#: weather.js:36
+#: weather.js:43
 msgid "Snow"
 msgstr "ثلج"
 
-#: weather.js:37
+#: weather.js:44
 msgid "Heavy snow"
 msgstr "ثلج غزير"
 
-#: weather.js:38
+#: weather.js:45
 msgid "Snow grains"
 msgstr "حبيبات ثلج"
 
-#: weather.js:39
+#: weather.js:46
 msgid "Light showers"
 msgstr "زخات خفيفة"
 
-#: weather.js:40
+#: weather.js:47
 msgid "Showers"
 msgstr "زخات"
 
-#: weather.js:41
+#: weather.js:48
 msgid "Violent showers"
 msgstr "زخات عنيفة"
 
-#: weather.js:42
+#: weather.js:49
 msgid "Snow showers"
 msgstr "زخات ثلجية"
 
-#: weather.js:43
+#: weather.js:50
 msgid "Heavy snow showers"
 msgstr "زخات ثلجية غزيرة"
 
-#: weather.js:44 weather.js:69
+#: weather.js:51 weather.js:103
 msgid "Thunderstorm"
 msgstr "عاصفة رعدية"
 
-#: weather.js:45 weather.js:46 weather.js:67
+#: weather.js:52 weather.js:53 weather.js:99
 msgid "Thunderstorm, hail"
 msgstr "عاصفة رعدية، بَرَد"
 
-#: weather.js:50
+#: weather.js:77
 msgid "Unknown"
 msgstr "غير معروف"
 
-#: weather.js:90
+#: weather.js:118
 msgid "Mon"
 msgstr "اثنين"
 
-#: weather.js:90
+#: weather.js:118
 msgid "Sun"
 msgstr "أحد"
 
-#: weather.js:90
+#: weather.js:118
 msgid "Tue"
 msgstr "ثلاثاء"
 
-#: weather.js:90
+#: weather.js:118
 msgid "Wed"
 msgstr "أربعاء"
 
-#: weather.js:91
+#: weather.js:119
 msgid "Fri"
 msgstr "جمعة"
 
-#: weather.js:91
+#: weather.js:119
 msgid "Sat"
 msgstr "سبت"
 
-#: weather.js:91
+#: weather.js:119
 msgid "Thu"
 msgstr "خميس"
 
-#: weather.js:558
+#: weather.js:703
 msgid "NOAA NWS covers US locations only — pick another provider"
 msgstr "NOAA NWS يغطي مواقع الولايات المتحدة فقط — اختر مزودًا آخر"
 
-#: weather.js:563
+#: weather.js:708
 msgid "NOAA NWS returned no forecast for this location"
 msgstr "لم يُرجع NOAA NWS أي توقعات لهذا الموقع"
+
+#~ msgid "Coordinates are detected from your public IP address"
+#~ msgstr "يتم اكتشاف الإحداثيات من عنوان IP العام الخاص بك"
 
 #~ msgid "IP geolocation failed"
 #~ msgstr "فشل تحديد الموقع عبر IP"

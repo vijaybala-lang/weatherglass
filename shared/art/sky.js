@@ -87,9 +87,14 @@ function noonOf(scene, night, solar) {
     return clamp01(solar) ** 2 * (NOON_CLARITY[scene] ?? 0);
 }
 
+const CARD_SCENE_H = 477;
+const sceneHeight = (width, height) =>
+    width <= 360 ? Math.min(height, CARD_SCENE_H) : height;
+
 function sunSpot(width, height, night, solar) {
+    const sh = sceneHeight(width, height);
     const y = !night && Number.isFinite(solar) ? 0.21 - 0.09 * clamp01(solar) : 0.16;
-    return [width * 0.82, height * y];
+    return [width * 0.82, sh * y];
 }
 
 function skyStops(scene, night, glow, solar) {
@@ -128,8 +133,9 @@ const SUNSET_RAY = [1.0, 0.52, 0.30];
 /* The disc the INK judge must believe exists: same position AND core
  * radius as drawCelestial paints (64 * scale). */
 export function bodyOf(scene, night, width, height, glow = 0, solar = null, phase = null) {
+    const sh = sceneHeight(width, height);
     const features = SCENE_FEATURES[scene] ?? {};
-    const baseRadius = 64 * height / 420;
+    const baseRadius = 64 * sh / 420;
     const [sunX, sunY] = sunSpot(width, height, night, solar);
     if ((features.sun || features.moon === 1) && !night)
         return {
@@ -142,7 +148,7 @@ export function bodyOf(scene, night, width, height, glow = 0, solar = null, phas
         const max = 0.85 * illum;
         if (max > 0.02)
             return {
-                x: width * 0.82, y: height * 0.16, r: baseRadius * 0.85, soft: 12,
+                x: width * 0.82, y: sh * 0.16, r: baseRadius * 0.85, soft: 12,
                 col: [0.93, 0.94, 0.96], max,
             };
     }
@@ -325,8 +331,10 @@ export function createSky() {
 }
 
 function rebuild(sky, width, height, scene) {
+    const sh = sceneHeight(width, height);
+    const groundOffset = height - sh;
     const features = SCENE_FEATURES[scene] ?? {};
-    const areaScaleFactor = Math.max(0.5, Math.min(1.5, (width * height) / (1050 * 420)));
+    const areaScaleFactor = Math.max(0.5, Math.min(1.5, (width * sh) / (1050 * 420)));
     const createList = (count, factory) =>
         Array.from({ length: Math.round(count * areaScaleFactor) }, (_, i) => factory(i));
 
@@ -334,9 +342,9 @@ function rebuild(sky, width, height, scene) {
         const layer = i % 20 < 5 ? 2 : (i % 20 < 13 ? 1 : 0);
         const length = layer === 2 ? rand(24, 38) : (layer === 1 ? rand(16, 26) : rand(10, 17));
         const speed = layer === 2 ? rand(400, 540) : (layer === 1 ? rand(300, 410) : rand(210, 290));
-        const floorY = layer === 0
-            ? rand(0.685 * height, 0.80 * height)
-            : (layer === 1 ? rand(0.80 * height, 0.915 * height) : rand(0.915 * height, 0.992 * height));
+        const floorY = groundOffset + (layer === 0
+            ? rand(0.685 * sh, 0.80 * sh)
+            : (layer === 1 ? rand(0.80 * sh, 0.915 * sh) : rand(0.915 * sh, 0.992 * sh)));
         return {
             x: rand(-60, width + 60), y: rand(-height, floorY),
             length, l: length, speed, sp: speed, layer, floorY,
@@ -351,7 +359,7 @@ function rebuild(sky, width, height, scene) {
         const yMax = band === 0 ? 0.795 : (band === 1 ? 0.905 : 0.990);
         return {
             x: ((i + rand(0.15, 0.85)) / Math.max(1, rippleCount)) * (width * 0.90) + width * 0.05,
-            y: rand(yMin * height, yMax * height),
+            y: groundOffset + rand(yMin * sh, yMax * sh),
             band,
             phase: ((i * 0.618034) + rand(0, 0.08)) % 1,
             speed: rand(1.10, 1.70),
@@ -380,8 +388,8 @@ function rebuild(sky, width, height, scene) {
         const band = i % 3;
         const yMin = band === 0 ? 0.70 : (band === 1 ? 0.81 : 0.91);
         const yMax = band === 0 ? 0.81 : (band === 1 ? 0.91 : 0.99);
-        const floorY = rand(yMin * height, yMax * height);
-        const depth = Math.max(0, Math.min(1, (floorY - 0.68 * height) / (0.31 * height)));
+        const floorY = groundOffset + rand(yMin * sh, yMax * sh);
+        const depth = Math.max(0, Math.min(1, (floorY - (groundOffset + 0.68 * sh)) / (0.31 * sh)));
         const radius = rand(2.5, 4.2) * (0.62 + 0.42 * depth);
         const slotX = ((i + rand(0.18, 0.82)) / Math.max(1, hailTotal)) * (width * 0.88) + width * 0.06;
         if (i % 2 === 0) {
@@ -391,7 +399,7 @@ function rebuild(sky, width, height, scene) {
             const dScale = 0.62 + 0.42 * depth;
             const vx = (bounceIdx % 2 === 0 ? 1 : -1) * rand(70, 110) * dScale;
             const vy0 = -rand(140, 180) * dScale;
-            const gs = height / 420;
+            const gs = sh / 420;
             return {
                 x: impactX + vx * bounceAge * gs,
                 y: Math.min(floorY - radius * gs,
@@ -432,7 +440,7 @@ function rebuild(sky, width, height, scene) {
         opacity: rand(0.18, 0.34), o: rand(0.18, 0.34),
         tone: i % 2, t: i % 2,
     }));
-    const starMaxY = scene === 'wind' ? 0.29 * height : 0.6 * height;
+    const starMaxY = scene === 'wind' ? 0.29 * sh : 0.6 * sh;
     sky.stars = createList(features.stars ? 70 : 0, () => {
         const isTwinkle = rand(0, 1) < 0.22;
         const radius = isTwinkle ? rand(3.0, 5.6) : rand(0.8, 2.0);
@@ -459,8 +467,8 @@ function rebuild(sky, width, height, scene) {
         const startX = isPrecip ? -110 : -80;
         const slotX = startX + ((i + rand(0.12, 0.88)) / Math.max(1, cloudCount)) * spanW;
         const y = isPrecip
-            ? (isBack ? rand(-0.03 * height, 0.08 * height) : rand(0.05 * height, 0.16 * height))
-            : rand(0.01 * height, 0.20 * height);
+            ? (isBack ? rand(-0.03 * sh, 0.08 * sh) : rand(0.05 * sh, 0.16 * sh))
+            : rand(0.01 * sh, 0.20 * sh);
         return {
             x: slotX, y,
             scale, s: scale, speed, sp: speed,
@@ -468,6 +476,47 @@ function rebuild(sky, width, height, scene) {
         };
     });
     sky.w = width; sky.h = height; sky.scene = scene; sky.lastTime = null; sky.lastT = null;
+}
+
+function adjustSkyHeight(sky, width, height) {
+    const oldH = sky.h;
+    const deltaH = height - oldH;
+    if (deltaH === 0)
+        return;
+    const sh = sceneHeight(width, height);
+    const gs = sh / 420;
+    const anchorY = 0.25 * sh;
+    for (const drop of sky.drops) {
+        const oldFloorY = drop.floorY ?? (oldH + 24 * gs);
+        drop.floorY = oldFloorY + deltaH;
+        if (drop.y > anchorY && oldFloorY > anchorY)
+            drop.y = anchorY + ((drop.y - anchorY) / (oldFloorY - anchorY)) * (drop.floorY - anchorY);
+    }
+    for (const rp of sky.ripples)
+        rp.y += deltaH;
+    for (const stone of sky.hail) {
+        const oldFloorY = stone.floorY ?? (oldH - 14 * gs);
+        stone.floorY = oldFloorY + deltaH;
+        if ((stone.bounces ?? stone.b) >= 1)
+            stone.y += deltaH;
+        else if (stone.y > anchorY && oldFloorY > anchorY)
+            stone.y = anchorY + ((stone.y - anchorY) / (oldFloorY - anchorY)) * (stone.floorY - anchorY);
+    }
+    const stretch = list => {
+        if (oldH <= anchorY)
+            return;
+        const ratio = (height - anchorY) / (oldH - anchorY);
+        for (const item of list) {
+            if (item.y > anchorY)
+                item.y = anchorY + (item.y - anchorY) * ratio;
+        }
+    };
+    stretch(sky.flakes);
+    stretch(sky.pellets);
+    stretch(sky.fog);
+    stretch(sky.streaks);
+    stretch(sky.leaves);
+    sky.h = height;
 }
 
 /* 4-point star flare: slim crossed diamond + bright core */
@@ -759,6 +808,7 @@ function drawStars(cr, stars, time, twilight = 0, keepOut = null, zenithHeight =
 
 function drawBodies(cr, sky, width, height, scale, features, time, night, phase,
     twilight, solar, noon, scene = '', clearSky = true) {
+    const sh = sceneHeight(width, height);
     const [sunX, sunY] = sunSpot(width, height, night, solar);
     const radius = 64 * scale;
     if ((features.sun || features.moon === 1) && !night) {
@@ -766,7 +816,7 @@ function drawBodies(cr, sky, width, height, scale, features, time, night, phase,
     } else if (features.moon && night && clearSky) {
         const moonScale = features.moon ?? 1;
         const [mx, my] = scene === 'wind'
-            ? [width * 0.80, height * 0.125]
+            ? [width * 0.80, sh * 0.125]
             : [sunX, sunY];
         drawMoonSprited(cr, sky, mx, my, radius * moonScale, phase);
     }
@@ -912,8 +962,9 @@ function drawPineTree(cr, x, baseY, treeHeight, rgb, alpha, bend = 0) {
 /* F2 Fog background: veiled sun/moon halo + two receding horizon pine
  * treelines emerging from billowing ground mist (zero star sparkles). */
 function drawFogHills(cr, width, height, night) {
-    const scale = height / 420;
-    const sunX = width * 0.76, sunY = height * 0.16;
+    const sh = sceneHeight(width, height);
+    const scale = sh / 420;
+    const sunX = width * 0.76, sunY = sh * 0.16;
     const haloRadius = 125 * scale;
     const haloCol = night ? [0.74, 0.82, 0.95] : [1.0, 0.99, 0.93];
     const haloAlpha = night ? 0.26 : 0.44;
@@ -929,13 +980,13 @@ function drawFogHills(cr, width, height, night) {
     const mistRgb = night ? [0.46, 0.52, 0.62] : [0.85, 0.88, 0.91];
     const treeLayers = [
         {
-            baseY: 0.29 * height, skirtH: 48 * scale, offset: 0.5,
+            baseY: 0.29 * sh, skirtH: 48 * scale, offset: 0.5,
             rgb: night ? [0.10, 0.13, 0.18] : [0.38, 0.43, 0.50],
             alpha: night ? 0.56 : 0.48,
             treeScale: 1.18 * scale, seed: 31, count: 8, minH: 46, maxH: 68,
         },
         {
-            baseY: 0.35 * height, skirtH: 56 * scale, offset: 0.0,
+            baseY: 0.35 * sh, skirtH: 56 * scale, offset: 0.0,
             rgb: night ? [0.06, 0.08, 0.13] : [0.27, 0.32, 0.39],
             alpha: night ? 0.74 : 0.62,
             treeScale: 1.48 * scale, seed: 73, count: 8, minH: 50, maxH: 74,
@@ -1051,6 +1102,8 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null) {
     }
 
     // Perspective-graded ground splashes & ripples from day-tiles top (0.685h) to card floor (0.99h)
+    const sh = sceneHeight(width, height);
+    const groundOffset = height - sh;
     for (const rp of sky.ripples) {
         rp.phase += rp.speed * dt;
         if (rp.phase >= 1) {
@@ -1059,9 +1112,9 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null) {
             const yMin = band === 0 ? 0.685 : (band === 1 ? 0.795 : 0.905);
             const yMax = band === 0 ? 0.795 : (band === 1 ? 0.905 : 0.990);
             rp.x = rand(0.05 * width, 0.95 * width);
-            rp.y = rand(yMin * height, yMax * height);
+            rp.y = groundOffset + rand(yMin * sh, yMax * sh);
         }
-        const depth = Math.max(0, Math.min(1, (rp.y - 0.68 * height) / (0.31 * height)));
+        const depth = Math.max(0, Math.min(1, (rp.y - (groundOffset + 0.68 * sh)) / (0.31 * sh)));
         const pScale = (0.52 + 0.54 * depth) * scale;
         const pAlpha = 0.52 + 0.38 * depth;
         const squash = 0.28 + 0.10 * depth;
@@ -1231,11 +1284,13 @@ function drawSleetPellets(cr, sky, width, height, scale, dt) {
 
 /* Rimmed & glinting bouncing hailstones with floor impact rings and ice-chip bursts */
 function drawHail(cr, sky, width, height, dt) {
-    const gs = height / 420;
+    const sh = sceneHeight(width, height);
+    const groundOffset = height - sh;
+    const gs = sh / 420;
     for (const stone of sky.hail) {
         const radius = (stone.radius ?? stone.r) * gs;
         const floorY = stone.floorY ?? (height - 14 * gs);
-        const depth = Math.max(0, Math.min(1, (floorY - 0.68 * height) / (0.31 * height)));
+        const depth = Math.max(0, Math.min(1, (floorY - (groundOffset + 0.68 * sh)) / (0.31 * sh)));
         const dScale = (0.62 + 0.42 * depth) * gs;
         const dAlpha = 0.60 + 0.38 * depth;
         stone.vy += 780 * (0.62 + 0.42 * depth) * gs * dt;
@@ -1261,8 +1316,8 @@ function drawHail(cr, sky, width, height, dt) {
             const band = stone.band ?? 2;
             const yMin = band === 0 ? 0.70 : (band === 1 ? 0.81 : 0.91);
             const yMax = band === 0 ? 0.81 : (band === 1 ? 0.91 : 0.99);
-            const nextFloor = rand(yMin * height, yMax * height);
-            const nextDepth = Math.max(0, Math.min(1, (nextFloor - 0.68 * height) / (0.31 * height)));
+            const nextFloor = groundOffset + rand(yMin * sh, yMax * sh);
+            const nextDepth = Math.max(0, Math.min(1, (nextFloor - (groundOffset + 0.68 * sh)) / (0.31 * sh)));
             const nextRad = rand(2.5, 4.2) * (0.62 + 0.42 * nextDepth);
             Object.assign(stone, {
                 x: rand(0.06 * width, 0.94 * width), y: -10, vx: rand(-38, 38),
@@ -1608,9 +1663,10 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
 
     // 2. Swaying mixed woodland on rolling hilly terrain (colored in day, moonlit at night)
     if (sky.leaves.length) {
+        const sh = sceneHeight(width, height);
         const treeLayers = [
             {
-                baseY: 0.29 * height, offset: 0.5,
+                baseY: 0.29 * sh, offset: 0.5,
                 hillRgb: night ? [0.16, 0.25, 0.34] : [0.24, 0.39, 0.33],
                 pinePalette: {
                     trunk: night ? [0.16, 0.14, 0.16] : [0.25, 0.18, 0.13],
@@ -1630,7 +1686,7 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
                 treeScale: 1.05 * scale, seed: 37, count: 8, minH: 40, maxH: 56, bendMul: 0.80,
             },
             {
-                baseY: 0.35 * height, offset: 0.0,
+                baseY: 0.35 * sh, offset: 0.0,
                 hillRgb: night ? [0.12, 0.20, 0.27] : [0.18, 0.32, 0.25],
                 pinePalette: {
                     trunk: night ? [0.13, 0.11, 0.12] : [0.20, 0.13, 0.09],
@@ -1651,7 +1707,7 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
             },
         ];
         const crownTop = 0;
-        const skirtBot = 0.46 * height;
+        const skirtBot = 0.46 * sh;
         cr.pushGroup();
         for (const layer of treeLayers) {
             const r = seededRand(layer.seed);
@@ -1692,7 +1748,7 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
             }
         }
         cr.setOperator(Cairo.Operator.DEST_IN);
-        const fade = new Cairo.LinearGradient(0, 0.28 * height, 0, skirtBot);
+        const fade = new Cairo.LinearGradient(0, 0.28 * sh, 0, skirtBot);
         fade.addColorStopRGBA(0.0, 0, 0, 0, 1.0);
         fade.addColorStopRGBA(0.42, 0, 0, 0, 0.96);
         fade.addColorStopRGBA(0.75, 0, 0, 0, 0.32);
@@ -1757,6 +1813,7 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
 const BOLT_ORIGINS = [0.46, 0.56, 0.64];
 
 function drawLightning(cr, width, height, scale, time) {
+    const sh = sceneHeight(width, height);
     const shifted = time + 2.08;
     const cycleTime = ((shifted % 3.1) + 3.1) % 3.1;
     let flashIntensity = 0;
@@ -1773,7 +1830,7 @@ function drawLightning(cr, width, height, scale, time) {
     if (flashIntensity <= 0 && cycleTime > 1.65 && cycleTime < 1.95) {
         const sheet = Math.sin(((cycleTime - 1.65) / 0.30) * Math.PI);
         const sx = width * BOLT_ORIGINS[(Math.floor(Math.max(0, shifted) / 3.1) + 1) % 3];
-        const sy = height * 0.18;
+        const sy = sh * 0.18;
         const rad = 125 * scale;
         const g = new Cairo.RadialGradient(sx, sy, 4 * scale, sx, sy, rad);
         g.addColorStopRGBA(0, 0.92, 0.90, 1.0, 0.32 * sheet);
@@ -1789,7 +1846,7 @@ function drawLightning(cr, width, height, scale, time) {
 
     const strikeIdx = Math.floor(Math.max(0, shifted) / 3.1) % 3;
     const originX = width * BOLT_ORIGINS[strikeIdx];
-    const originY = height * 0.25;
+    const originY = sh * 0.25;
 
     // Sky-wide flash + internal cloud-underbelly illumination
     cr.setSourceRGBA(1, 0.99, 0.92, 0.07 * flashIntensity);
@@ -1886,8 +1943,11 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
     code = null, variant = null, quiet = false, fxScale = null }) {
     const tStartMs = Date.now();
     const rw = Math.round(width), rh = Math.round(height);
-    if (sky.scene !== scene || sky.w !== rw || sky.h !== rh)
+    const sh = sceneHeight(width, height);
+    if (sky.scene !== scene || sky.w !== rw || sky.h <= 0)
         rebuild(sky, rw, rh, scene);
+    else if (sky.h !== rh)
+        adjustSkyHeight(sky, rw, rh);
 
     const lastTime = sky.lastTime ?? sky.lastT;
     const dt = lastTime === null ? 0 : Math.min(0.1, time - lastTime);
@@ -1896,7 +1956,7 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
     const features = SCENE_FEATURES[scene] ?? {};
     const twilight = twilightOf(scene, glow);
     const noon = noonOf(scene, night, solar);
-    const scale = height / 420;
+    const scale = sh / 420;
 
     const key = `${scene}|${night ? 'n' : 'd'}|${Number(glow).toFixed(3)}`
         + `|${Number.isFinite(solar) ? solar.toFixed(3) : '-'}|`
@@ -1954,12 +2014,12 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
         if (night && (features.stars || features.moon) && clearSky) {
             const moonScale = features.moon ?? 1;
             const [mx, my] = scene === 'wind'
-                ? [rw * 0.80, rh * 0.125]
+                ? [rw * 0.80, sh * 0.125]
                 : sunSpot(rw, rh, night, solar);
             const keepOutR = scene === 'wind'
                 ? 64 * scale * moonScale * 0.95
                 : 64 * scale * 0.85;
-            const zenithH = scene === 'wind' ? 0.29 * rh : 0;
+            const zenithH = scene === 'wind' ? 0.29 * sh : 0;
             drawStars(fc, sky.stars, time, twilight,
                 hasMoon ? { x: mx, y: my, r: keepOutR } : null,
                 zenithH);

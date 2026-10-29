@@ -202,4 +202,54 @@ test('wind night: moonlit woodland separates from twilight sky, zenith stars + 4
     ok(skyOvercast.moonSprite === null, 'overcast wind night must not paint moon');
 });
 
+test('narrow card height expansion (advisory expand/collapse) preserves sky clouds, scale and floor ripples', () => {
+    const W = 330, H_COLLAPSED = 514, H_EXPANDED = 615;
+    const sky = createSky();
+    const surf1 = new Cairo.ImageSurface(Cairo.Format.ARGB32, W, H_COLLAPSED);
+    const cr1 = new Cairo.Context(surf1);
+    paintSky(cr1, {
+        w: W, h: H_COLLAPSED, time: 1.1, scene: 'storm', night: false,
+        sky, fxScale: 1,
+    });
+    cr1.$dispose();
+
+    const cloudsBefore = sky.clouds.map(c => ({ x: c.x, y: c.y, scale: c.scale }));
+    const ripplesBefore = sky.ripples.map(r => ({ x: r.x, y: r.y }));
+    const floorBefore = sky.drops.map(d => d.floorY);
+    for (const r of ripplesBefore)
+        ok(r.y >= H_COLLAPSED - 0.32 * 477,
+            `collapsed ripple y=${r.y} climbed above day-tile floor`);
+
+    const surf2 = new Cairo.ImageSurface(Cairo.Format.ARGB32, W, H_EXPANDED);
+    const cr2 = new Cairo.Context(surf2);
+    paintSky(cr2, {
+        w: W, h: H_EXPANDED, time: 1.1, scene: 'storm', night: false,
+        sky, fxScale: 1,
+    });
+    cr2.$dispose();
+
+    const deltaH = H_EXPANDED - H_COLLAPSED;
+    ok(sky.clouds.length === cloudsBefore.length, 'cloud count must not change on height expand');
+    sky.clouds.forEach((c, i) => {
+        near(c.x, cloudsBefore[i].x, 1e-6);
+        near(c.y, cloudsBefore[i].y, 1e-6);
+        near(c.scale, cloudsBefore[i].scale, 1e-6);
+    });
+    sky.ripples.forEach((r, i) => {
+        near(r.x, ripplesBefore[i].x, 1e-6);
+        near(r.y, ripplesBefore[i].y + deltaH, 1e-6);
+        ok(r.y >= H_EXPANDED - 0.32 * 477,
+            `expanded ripple y=${r.y} climbed into chart above day-tile floor`);
+    });
+    sky.drops.forEach((d, i) => {
+        near(d.floorY, floorBefore[i] + deltaH, 1e-6);
+    });
+
+    const b1 = bodyOf('sun', false, W, H_COLLAPSED, 0, 0.5);
+    const b2 = bodyOf('sun', false, W, H_EXPANDED, 0, 0.5);
+    near(b1.x, b2.x, 1e-6);
+    near(b1.y, b2.y, 1e-6);
+    near(b1.r, b2.r, 1e-6);
+});
+
 report('ink');

@@ -2,313 +2,362 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-06 14:56-0400\n"
+"POT-Creation-Date: 2026-10-27 19:25-0700\n"
 "Language: ja\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:280 prefs.js:782
+#: extension.js:297 prefs.js:812
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
-#: extension.js:299 menu.js:275
+#: extension.js:318 menu.js:329
 msgid "Fetching weather…"
 msgstr "天気を取得中…"
 
-#: extension.js:369
+#: extension.js:391
 msgid "My location"
 msgstr "現在地"
 
-#: extension.js:370
+#: extension.js:392
 msgid "Custom location"
 msgstr "カスタム位置"
 
-#: menu.js:25
+#: menu.js:28
 msgid "Temperature"
 msgstr "気温"
 
-#: menu.js:26
+#: menu.js:29
 msgid "Precipitation"
 msgstr "降水量"
 
-#: menu.js:27
+#: menu.js:30
 msgid "Wind"
 msgstr "風"
 
-#: menu.js:309 menu.js:390 menu.js:394
+#: menu.js:372 menu.js:648 menu.js:652
 msgid "Weather"
 msgstr "天気"
 
-#: menu.js:322
+#: menu.js:385
 msgid "Refresh now"
 msgstr "今すぐ更新"
 
-#: menu.js:328
+#: menu.js:391
 msgid "Preferences"
 msgstr "設定"
 
-#: menu.js:346
+#: menu.js:425
 msgid "Show"
 msgstr "表示"
 
-#: menu.js:346
+#: menu.js:425
 msgid "chart"
 msgstr "グラフ"
 
-#: menu.js:395
+#: menu.js:451 menu.js:1118
+msgid "Orange"
+msgstr "オレンジ"
+
+#: menu.js:451 menu.js:1118
+msgid "Red"
+msgstr "赤色"
+
+#: menu.js:451 menu.js:1118
+msgid "Yellow"
+msgstr "黄色"
+
+#: menu.js:467
+msgid "in effect now"
+msgstr "現在発令中"
+
+#: menu.js:468 menu.js:473 menu.js:475
+msgid "starts"
+msgstr "開始"
+
+#: menu.js:471
+msgid "now until"
+msgstr "現在〜"
+
+#: menu.js:476
+msgid "until"
+msgstr "〜"
+
+#: menu.js:549
+msgid "Issued by"
+msgstr "発表"
+
+#: menu.js:557
+msgid "Full advisory"
+msgstr "詳細を見る"
+
+#: menu.js:622
+msgid "more advisories"
+msgstr "件の他の警報"
+
+#: menu.js:653
 msgid "Could not load the forecast"
 msgstr "予報を読み込めませんでした"
 
-#: menu.js:542
+#: menu.js:832
 msgid "Refresh forecast — updated"
 msgstr "予報を更新 — 最終更新"
 
-#: menu.js:605
+#: menu.js:898
 msgid "Now"
 msgstr "現在"
 
-#: menu.js:708
+#: menu.js:1062 menu.js:1120
 msgid "Today"
 msgstr "今日"
 
-#: prefs.js:238
+#: menu.js:1120
+msgid "advisory"
+msgstr "警報"
+
+#: prefs.js:92
+#, fuzzy
+msgid "Use Location"
+msgstr "場所"
+
+#: prefs.js:244
 msgid "Location"
 msgstr "場所"
 
-#: prefs.js:254
+#: prefs.js:271
 msgid "Automatic"
 msgstr "自動"
 
-#: prefs.js:255
-msgid "Coordinates are detected from your public IP address"
-msgstr "座標は公開 IP アドレスから検出されます"
+#: prefs.js:272
+msgid "Uses system location when available, otherwise your public IP address"
+msgstr ""
 
-#: prefs.js:258
+#: prefs.js:275
 msgid "Detect location automatically"
 msgstr "位置を自動検出"
 
-#: prefs.js:266
+#: prefs.js:285
 msgid "Search a city"
 msgstr "都市を検索"
 
-#: prefs.js:268
+#: prefs.js:287
 msgid "City name — press Enter to search"
 msgstr "都市名 — Enter キーで検索"
 
-#: prefs.js:273
+#: prefs.js:292
 msgid "Results"
 msgstr "検索結果"
 
-#: prefs.js:303
+#: prefs.js:323
 msgid "No matches"
 msgstr "該当なし"
 
-#: prefs.js:329
+#: prefs.js:349
 msgid "Manual"
 msgstr "手動"
 
-#: prefs.js:330
+#: prefs.js:350
 msgid "Saved when you press Enter in a field"
 msgstr "フィールドで Enter を押すと保存されます"
 
-#: prefs.js:333
+#: prefs.js:353
 msgid "Latitude"
 msgstr "緯度"
 
-#: prefs.js:334
+#: prefs.js:354
 msgid "Longitude"
 msgstr "経度"
 
-#: prefs.js:335
+#: prefs.js:355
 msgid "Display name"
 msgstr "表示名"
 
-#: prefs.js:381
+#: prefs.js:403
 msgid "Display"
 msgstr "表示"
 
-#: prefs.js:391
+#: prefs.js:413
 msgid "Units"
 msgstr "単位"
 
-#: prefs.js:393
+#: prefs.js:415
 msgid "Measurement system"
 msgstr "単位系"
 
-#: prefs.js:395
+#: prefs.js:417
 msgid "Imperial (°F, mph)"
 msgstr "ヤード・ポンド法 (°F, mph)"
 
-#: prefs.js:395
+#: prefs.js:417
 msgid "Metric (°C, km/h)"
 msgstr "メートル法 (°C, km/h)"
 
-#: prefs.js:404
+#: prefs.js:426
 msgid "Hour format"
 msgstr "時刻の形式"
 
-#: prefs.js:405
+#: prefs.js:427
 msgid "Clock style for chart hours and the preview clock"
 msgstr "グラフの時刻とプレビューの時計の表記スタイル"
 
-#: prefs.js:407
+#: prefs.js:429
 msgid "12-hour"
 msgstr "12時間制"
 
-#: prefs.js:407
+#: prefs.js:429
 msgid "24-hour"
 msgstr "24時間制"
 
-#: prefs.js:407
+#: prefs.js:429
 msgid "Automatic (system)"
 msgstr "自動（システム）"
 
-#: prefs.js:418
+#: prefs.js:440
 msgid "Panel indicator"
 msgstr "パネル表示"
 
-#: prefs.js:419
+#: prefs.js:441
 msgid "Show animated icon"
 msgstr "アニメーションアイコンを表示"
 
-#: prefs.js:420
+#: prefs.js:442
 msgid "Show temperature"
 msgstr "温度を表示"
 
-#: prefs.js:422
+#: prefs.js:444
 msgid "Animate the icon"
 msgstr "アイコンをアニメーション化"
 
-#: prefs.js:423
+#: prefs.js:445
 msgid "Turn off to save a little battery"
 msgstr "オフにするとバッテリーを少し節約できます"
 
-#: prefs.js:435
+#: prefs.js:457
 msgid "Menu background"
 msgstr "メニューの背景"
 
-#: prefs.js:437
+#: prefs.js:459
 msgid "Background style"
 msgstr "背景スタイル"
 
-#: prefs.js:438
+#: prefs.js:460
 msgid "How the dropdown fills itself behind the forecast"
 msgstr "ドロップダウンが予報の背后にどう重なるか"
 
-#: prefs.js:441
+#: prefs.js:463
 msgid "Animated sky (translucent)"
 msgstr "アニメーション空（半透明）"
 
-#: prefs.js:442
+#: prefs.js:464
 msgid "Solid (sky dimmed under a wash)"
 msgstr "単色（洗いの下で空を暗く）"
 
-#: prefs.js:443
+#: prefs.js:465
 msgid "Theme background, accent charts"
 msgstr "テーマ背景、アクセントチャート"
 
-#: prefs.js:453
+#: prefs.js:475
 msgid "Text emboss"
 msgstr "テキストの浮き出し"
 
-#: prefs.js:454
+#: prefs.js:476
 msgid "Soft shadow under card text and icons over the sky"
 msgstr "空の上でカードのテキストとアイコンの下にソフトシャドウ"
 
-#: prefs.js:461
+#: prefs.js:483
 msgid "Weather conditions"
 msgstr "天気状況"
 
-#: prefs.js:462
+#: prefs.js:484
 msgid "How hourly conditions ride the chart"
 msgstr "1 時間ごとの状況がチャートにどう表示されるか"
 
-#: prefs.js:464
+#: prefs.js:486
 msgid "Grouped pills"
 msgstr "グループ化ピル"
 
-#: prefs.js:464
+#: prefs.js:486
 msgid "Hourly icons"
 msgstr "1 時間ごとアイコン"
 
-#: prefs.js:464
+#: prefs.js:486
 msgid "Off"
 msgstr "オフ"
 
-#: prefs.js:475
+#: prefs.js:497
 msgid "Condition band position"
 msgstr "状況バンドの位置"
 
-#: prefs.js:476
+#: prefs.js:498
 msgid "Along the chart top, or above the hour labels"
 msgstr "チャート上部沿い、または時刻ラベルの上"
 
-#: prefs.js:478
+#: prefs.js:500
 msgid "Above hours"
 msgstr "時刻の上"
 
-#: prefs.js:478
+#: prefs.js:500
 msgid "Chart top"
 msgstr "チャート上部"
 
-#: prefs.js:489
+#: prefs.js:511
 msgid "Data text"
 msgstr "データ文字"
 
-#: prefs.js:490
+#: prefs.js:512
 msgid "Bolder or larger metric values and chart hours"
 msgstr "指標の値とグラフの時刻を太字または大きく表示"
 
-#: prefs.js:492
+#: prefs.js:514
 msgid "Bold"
 msgstr "太字"
 
-#: prefs.js:492
+#: prefs.js:514
 msgid "Bold & large"
 msgstr "太字＋大きく"
 
-#: prefs.js:492
+#: prefs.js:514
 msgid "Large"
 msgstr "大きめ"
 
-#: prefs.js:492
+#: prefs.js:514
 msgid "Normal"
 msgstr "標準"
 
-#: prefs.js:505
+#: prefs.js:527
 msgid "Data"
 msgstr "データ"
 
-#: prefs.js:514
+#: prefs.js:536
 msgid "Data source"
 msgstr "データソース"
 
-#: prefs.js:516
+#: prefs.js:538
 msgid "Weather provider"
 msgstr "天気プロバイダー"
 
-#: prefs.js:517
+#: prefs.js:539
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "すべてキー不要 · MET Norway データは CC BY-SA 4.0 ライセンス"
 
-#: prefs.js:520
+#: prefs.js:542
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo（既定）"
 
-#: prefs.js:521
+#: prefs.js:543
 msgid "MET Norway (api.met.no)"
 msgstr "MET Norway (api.met.no)"
 
-#: prefs.js:522
+#: prefs.js:544
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS（米国のみ）"
 
-#: prefs.js:534
+#: prefs.js:556
 msgid "Forecast model"
 msgstr "予報モデル"
 
-#: prefs.js:535
+#: prefs.js:557
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
@@ -316,98 +365,117 @@ msgstr ""
 "Open-Meteo専用 · 1週間先はモデル間で見解が分かれます — 週末が不自然なら他をお"
 "試しください"
 
-#: prefs.js:538
+#: prefs.js:560
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "ベストマッチ（Open-Meteo の地域選択、米国 → GFS）"
 
-#: prefs.js:539
-msgid "ECMWF IFS (recommended)"
+#: prefs.js:561
+#, fuzzy
+msgid "ECMWF IFS high-res (recommended)"
 msgstr "ECMWF IFS（推奨）"
 
-#: prefs.js:540
+#: prefs.js:562
+#, fuzzy
+msgid "ECMWF IFS (0.25° grid)"
+msgstr "ECMWF IFS（推奨）"
+
+#: prefs.js:563
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON（予報期間が短い）"
 
-#: prefs.js:541
+#: prefs.js:564
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:559
+#: prefs.js:565
+msgid "GEM global (Canada)"
+msgstr ""
+
+#: prefs.js:566
+msgid "JMA (Japan · rain chance derived)"
+msgstr ""
+
+#: prefs.js:567
+msgid "UK Met Office global (10 km)"
+msgstr ""
+
+#: prefs.js:587
 msgid "Updates"
 msgstr "更新"
 
-#: prefs.js:561
+#: prefs.js:589
 msgid "Refresh interval (minutes)"
 msgstr "更新間隔（分）"
 
-#: prefs.js:570
+#: prefs.js:598
 msgid "Wind animation threshold (km/h)"
 msgstr "風のアニメーション閾値 (km/h)"
 
-#: prefs.js:571
+#: prefs.js:599
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "風の強い日はアイコンが風のアニメーションに切り替わります"
 
-#: prefs.js:585
+#: prefs.js:613
 msgid "Preview"
 msgstr "プレビュー"
 
-#: prefs.js:606
+#: prefs.js:636
 msgid "Panel preview"
 msgstr "パネルプレビュー"
 
-#: prefs.js:607
+#: prefs.js:637
+#, fuzzy
 msgid ""
-"How the panel button looks for this scene — mock temperature, real icon "
+"How the panel button looks for this scene — sample temperature, real icon "
 "animation"
 msgstr "このシーンでのパネルボタンの見た目 — 温度は模擬、アイコンの動きは本物"
 
-#: prefs.js:612
+#: prefs.js:642
 msgid "Menu backdrop preview"
 msgstr "メニュー背景プレビュー"
 
-#: prefs.js:613
+#: prefs.js:643
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr "メニューの現在の空をライブ表示 — 上で状況を選ぶとここで動き出します"
 
-#: prefs.js:640
+#: prefs.js:670
 msgid "Preview scene"
 msgstr "プレビューシーン"
 
-#: prefs.js:641
+#: prefs.js:671
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "ここで約 12 秒ループします — 実際のパネルはそのままです"
 
-#: prefs.js:673
+#: prefs.js:703
 msgid "Scene"
 msgstr "シーン"
 
-#: prefs.js:777
+#: prefs.js:808
 msgid "About"
 msgstr "情報"
 
-#: prefs.js:784
+#: prefs.js:814
 msgid "Version"
 msgstr "バージョン"
 
-#: prefs.js:788
+#: prefs.js:818
 msgid "Contact"
 msgstr "お問い合わせ"
 
-#: prefs.js:792
+#: prefs.js:822
 msgid "Free and open source"
 msgstr "無料かつオープンソース"
 
-#: prefs.js:793
+#: prefs.js:823
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "広告なし、アカウントなし、データ収集なし — 空はただ動くべきです"
 
-#: prefs.js:798
+#: prefs.js:828
 msgid "Support the development"
 msgstr "開発を支援"
 
-#: prefs.js:799
+#: prefs.js:829
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -415,150 +483,157 @@ msgstr ""
 "Weatherglass は永久に無料です。デスクトップが少し素敵になったら、コーヒー一杯"
 "でピクセルを動かし続けられます。"
 
-#: prefs.js:802
+#: prefs.js:842
 msgid "Buy me a coffee"
 msgstr "コーヒーを 1 杯"
 
-#: weather.js:19
+#: prefs.js:843
+msgid "PayPal"
+msgstr ""
+
+#: weather.js:26
 msgid "Clear sky"
 msgstr "快晴"
 
-#: weather.js:20
+#: weather.js:27
 msgid "Mainly clear"
 msgstr "晴れ"
 
-#: weather.js:21
+#: weather.js:28
 msgid "Partly cloudy"
 msgstr "一部曇り"
 
-#: weather.js:22
+#: weather.js:29
 msgid "Overcast"
 msgstr "曇り"
 
-#: weather.js:23 weather.js:73
+#: weather.js:30 weather.js:107
 msgid "Fog"
 msgstr "霧"
 
-#: weather.js:24
+#: weather.js:31
 msgid "Rime fog"
 msgstr "霧氷の霧"
 
-#: weather.js:25
+#: weather.js:32
 msgid "Light drizzle"
 msgstr "弱い霧雨"
 
-#: weather.js:26
+#: weather.js:33
 msgid "Drizzle"
 msgstr "霧雨"
 
-#: weather.js:27
+#: weather.js:34
 msgid "Dense drizzle"
 msgstr "強い霧雨"
 
-#: weather.js:28 weather.js:29
+#: weather.js:35 weather.js:36
 msgid "Freezing drizzle"
 msgstr "着氷性の霧雨"
 
-#: weather.js:30
+#: weather.js:37
 msgid "Light rain"
 msgstr "弱い雨"
 
-#: weather.js:31
+#: weather.js:38
 msgid "Rain"
 msgstr "雨"
 
-#: weather.js:32
+#: weather.js:39
 msgid "Heavy rain"
 msgstr "強い雨"
 
-#: weather.js:33 weather.js:34
+#: weather.js:40 weather.js:41
 msgid "Freezing rain"
 msgstr "着氷性の雨"
 
-#: weather.js:35
+#: weather.js:42
 msgid "Light snow"
 msgstr "弱い雪"
 
-#: weather.js:36
+#: weather.js:43
 msgid "Snow"
 msgstr "雪"
 
-#: weather.js:37
+#: weather.js:44
 msgid "Heavy snow"
 msgstr "強い雪"
 
-#: weather.js:38
+#: weather.js:45
 msgid "Snow grains"
 msgstr "雪粒"
 
-#: weather.js:39
+#: weather.js:46
 msgid "Light showers"
 msgstr "弱いにわか雨"
 
-#: weather.js:40
+#: weather.js:47
 msgid "Showers"
 msgstr "にわか雨"
 
-#: weather.js:41
+#: weather.js:48
 msgid "Violent showers"
 msgstr "激しいにわか雨"
 
-#: weather.js:42
+#: weather.js:49
 msgid "Snow showers"
 msgstr "にわか雪"
 
-#: weather.js:43
+#: weather.js:50
 msgid "Heavy snow showers"
 msgstr "激しいにわか雪"
 
-#: weather.js:44 weather.js:69
+#: weather.js:51 weather.js:103
 msgid "Thunderstorm"
 msgstr "雷雨"
 
-#: weather.js:45 weather.js:46 weather.js:67
+#: weather.js:52 weather.js:53 weather.js:99
 msgid "Thunderstorm, hail"
 msgstr "雷雨、ひょう"
 
-#: weather.js:50
+#: weather.js:77
 msgid "Unknown"
 msgstr "不明"
 
-#: weather.js:90
+#: weather.js:118
 msgid "Mon"
 msgstr "月"
 
-#: weather.js:90
+#: weather.js:118
 msgid "Sun"
 msgstr "日"
 
-#: weather.js:90
+#: weather.js:118
 msgid "Tue"
 msgstr "火"
 
-#: weather.js:90
+#: weather.js:118
 msgid "Wed"
 msgstr "水"
 
-#: weather.js:91
+#: weather.js:119
 msgid "Fri"
 msgstr "金"
 
-#: weather.js:91
+#: weather.js:119
 msgid "Sat"
 msgstr "土"
 
-#: weather.js:91
+#: weather.js:119
 msgid "Thu"
 msgstr "木"
 
-#: weather.js:558
+#: weather.js:703
 msgid "NOAA NWS covers US locations only — pick another provider"
 msgstr ""
 "NOAA NWS は米国の場所のみ対応しています — 別プロバイダーを選択してください"
 
-#: weather.js:563
+#: weather.js:708
 msgid "NOAA NWS returned no forecast for this location"
 msgstr "NOAA NWS はこの場所の予報を返しませんでした"
+
+#~ msgid "Coordinates are detected from your public IP address"
+#~ msgstr "座標は公開 IP アドレスから検出されます"
 
 #~ msgid "IP geolocation failed"
 #~ msgstr "IP 位置情報の取得に失敗しました"
