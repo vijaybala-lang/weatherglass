@@ -14,7 +14,7 @@ import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/
 
 import { WeatherIcon } from './animation.js';
 import { ForecastPanel } from './menu.js';
-import { WeatherClient, deriveScene, fmtTemp,
+import { WeatherClient, deriveScene, fmtTemp, alertsWithinHours,
          ensureDesktopEntry, removeDesktopEntry } from './weather.js';
 import { moonPhase } from './moon.js';
 import { resolveIsDark, resolveShellDark } from './theme.js';
@@ -325,6 +325,7 @@ const WeatherIndicator = GObject.registerClass(
             this._coordinator.onError(err => {
                 this._icon.setScene('error');
                 if (!this._coordinator.data) {
+                    this._alertIcon.visible = false;
                     this._temperatureLabel.set_text('');
                     this._panel.setError(`Weather unavailable: ${err.message}`);
                 }
@@ -334,6 +335,13 @@ const WeatherIndicator = GObject.registerClass(
                 style_class: 'aw-panel-box',
                 y_align: Clutter.ActorAlign.CENTER,
             });
+            this._alertIcon = new St.Icon({
+                icon_name: 'dialog-warning-symbolic',
+                icon_size: 16,
+                style_class: 'aw-panel-alert',
+                y_align: Clutter.ActorAlign.CENTER,
+                visible: false,
+            });
             this._icon = new WeatherIcon({
                 size: PANEL_ICON_SIZE,
                 animate: this._settings.get_boolean('animate'),
@@ -342,6 +350,7 @@ const WeatherIndicator = GObject.registerClass(
                 text: '', style_class: 'aw-temp',
                 y_align: Clutter.ActorAlign.CENTER,
             });
+            panelButtonBox.add_child(this._alertIcon);
             panelButtonBox.add_child(this._icon);
             panelButtonBox.add_child(this._temperatureLabel);
             this._icon.visible = this._settings.get_boolean('show-icon');
@@ -436,6 +445,15 @@ const WeatherIndicator = GObject.registerClass(
                 phase,
                 variant: effective.variant ?? null,
             });
+
+            const nearAlerts = alertsWithinHours(data.alerts, current.timeIso, 24);
+            if (nearAlerts.length > 0) {
+                const topLevel = Math.max(0, ...nearAlerts.map(a => a.level ?? 0));
+                this._alertIcon.style_class = `aw-panel-alert aw-panel-alert-s${topLevel}`;
+                this._alertIcon.visible = true;
+            } else {
+                this._alertIcon.visible = false;
+            }
 
             this._temperatureLabel.set_text(
                 this._settings.get_boolean('show-temperature')

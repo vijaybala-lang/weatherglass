@@ -9,7 +9,8 @@
 import { file, test, eq, ok, report } from './harness.mjs';
 import { parseNwsAlerts, parseMetAlerts, parseEcccAlerts, parseCapAlerts,
          alertMatchesPoint, pointInPolygon, mergeAlerts, alertsForDay,
-         compactAlertSummary, alertUrl, ALERT_SOURCES } from '../weather.js';
+         alertsWithinHours, compactAlertSummary, alertUrl,
+         ALERT_SOURCES } from '../weather.js';
 
 file('alerts');
 
@@ -267,6 +268,20 @@ test('NWS hard-wrapped teletype lines unwrap cleanly and summarize without WHERE
        `unexpected summary: ${summary}`);
     eq(alertUrl({ source: 'NOAA NWS' }, { latitude: 37.4694, longitude: -105.87 }),
        'https://forecast.weather.gov/MapClick.php?lat=37.4694&lon=-105.8700');
+});
+
+test('panel badge window: keeps active and next-24h alerts (including overnight), drops expired and >24h watches', () => {
+    const nowIso = '2026-10-26T21:00';
+    const alerts = [
+        { id: 'active', level: 1, startsAt: '2026-10-26T15:00', endsAt: '2026-10-26T23:00' },
+        { id: 'overnight', level: 2, startsAt: '2026-10-27T02:00', endsAt: '2026-10-27T09:00' },
+        { id: 'edge-24h', level: 3, startsAt: '2026-10-27T21:00', endsAt: '2026-10-28T06:00' },
+        { id: 'distant-watch', level: 2, startsAt: '2026-10-28T06:00', endsAt: '2026-10-28T18:00' },
+        { id: 'expired', level: 3, startsAt: '2026-10-26T10:00', endsAt: '2026-10-26T21:00' },
+        { id: 'endless-today', level: 1, startsAt: '2026-10-26T08:00', endsAt: null },
+    ];
+    const near = alertsWithinHours(alerts, nowIso, 24);
+    eq(near.map(a => a.id).join(','), 'active,overnight,edge-24h,endless-today');
 });
 
 report('alerts');

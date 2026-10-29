@@ -5,6 +5,11 @@
     padding: 0 2px;
 }
 
+.aw-panel-alert-s1 { color: #f5c542; }
+.aw-panel-alert-s2 { color: #f07f2e; }
+.aw-panel-alert-s3 { color: #ff6b72; }
+.aw-panel-alert-s0 { color: #c9d2dd; }
+
 .aw-temp {
     font-weight: bold;
 }
