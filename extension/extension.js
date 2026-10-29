@@ -351,7 +351,7 @@ const WeatherIndicator = GObject.registerClass(
                 x_expand: true,
                 y_expand: true,
                 x_align: Clutter.ActorAlign.START,
-                y_align: Clutter.ActorAlign.CENTER,
+                y_align: Clutter.ActorAlign.START,
                 visible: false,
             });
             iconStack.add_child(this._icon);
