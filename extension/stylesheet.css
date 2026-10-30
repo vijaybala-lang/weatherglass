@@ -5,6 +5,10 @@
     padding: 0 2px;
 }
 
+.aw-panel-icon-offset {
+    margin-left: 5px;
+}
+
 .aw-temp {
     font-weight: bold;
 }

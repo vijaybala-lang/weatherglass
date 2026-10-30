@@ -1252,6 +1252,26 @@ export function alertsForDay(alerts, daily, dayIndex) {
     return (alerts ?? []).filter(a => alertOverlapsDay(a, date));
 }
 
+/** Alerts currently active or starting within `hours` of `nowIso`
+ *  ('YYYY-MM-DDTHH:mm') for the top-bar indicator badge. */
+export function alertsWithinHours(alerts, nowIso, hours = 24) {
+    if (!alerts?.length)
+        return [];
+    const now = String(nowIso ?? '').slice(0, 16);
+    const baseMs = Date.parse(`${now}Z`);
+    if (!Number.isFinite(baseMs))
+        return alerts;
+    const horizon = new Date(baseMs + hours * 3600000).toISOString().slice(0, 16);
+    return alerts.filter(alert => {
+        const start = String(alert.startsAt ?? '').slice(0, 16);
+        if (!start || start > horizon)
+            return false;
+        if (!alert.endsAt)
+            return start.slice(0, 10) >= now.slice(0, 10);
+        return String(alert.endsAt).slice(0, 16) > now;
+    });
+}
+
 /** Concise single-paragraph summary for the compact top-bar menu:
  *  unwraps hard line breaks, drops NWS * WHERE / * WHEN blocks that
  *  duplicate the card header, strips * WHAT... / * IMPACTS... prefixes,

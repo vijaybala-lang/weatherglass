@@ -12,9 +12,9 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import { WeatherIcon } from './animation.js';
+import { WeatherIcon, WarningIcon } from './animation.js';
 import { ForecastPanel } from './menu.js';
-import { WeatherClient, deriveScene, fmtTemp,
+import { WeatherClient, deriveScene, fmtTemp, alertsWithinHours,
          ensureDesktopEntry, removeDesktopEntry } from './weather.js';
 import { moonPhase } from './moon.js';
 import { resolveIsDark, resolveShellDark } from './theme.js';
@@ -294,7 +294,7 @@ class WeatherCoordinator {
 const WeatherIndicator = GObject.registerClass(
     class WeatherIndicator extends PanelMenu.Button {
         _init(extension) {
-            super._init(0.0, _('Weatherglass'), false);
+            super._init(0.5, _('Weatherglass'), false);
 
             this._ext = extension;
             this._settings = extension.getSettings();
@@ -325,6 +325,8 @@ const WeatherIndicator = GObject.registerClass(
             this._coordinator.onError(err => {
                 this._icon.setScene('error');
                 if (!this._coordinator.data) {
+                    this._alertIcon.visible = false;
+                    this._icon.remove_style_class_name('aw-panel-icon-offset');
                     this._temperatureLabel.set_text('');
                     this._panel.setError(`Weather unavailable: ${err.message}`);
                 }
@@ -334,15 +336,31 @@ const WeatherIndicator = GObject.registerClass(
                 style_class: 'aw-panel-box',
                 y_align: Clutter.ActorAlign.CENTER,
             });
+            const iconStack = new St.Widget({
+                layout_manager: new Clutter.BinLayout(),
+                y_align: Clutter.ActorAlign.CENTER,
+            });
             this._icon = new WeatherIcon({
                 size: PANEL_ICON_SIZE,
                 animate: this._settings.get_boolean('animate'),
             });
+            this._alertIcon = new WarningIcon({
+                size: PANEL_ICON_SIZE / 2,
+                shadow: true,
+                style_class: 'aw-panel-alert',
+                x_expand: true,
+                y_expand: true,
+                x_align: Clutter.ActorAlign.START,
+                y_align: Clutter.ActorAlign.START,
+                visible: false,
+            });
+            iconStack.add_child(this._icon);
+            iconStack.add_child(this._alertIcon);
             this._temperatureLabel = new St.Label({
                 text: '', style_class: 'aw-temp',
                 y_align: Clutter.ActorAlign.CENTER,
             });
-            panelButtonBox.add_child(this._icon);
+            panelButtonBox.add_child(iconStack);
             panelButtonBox.add_child(this._temperatureLabel);
             this._icon.visible = this._settings.get_boolean('show-icon');
             this.add_child(panelButtonBox);
@@ -437,6 +455,20 @@ const WeatherIndicator = GObject.registerClass(
                 variant: effective.variant ?? null,
             });
 
+            const nearAlerts = alertsWithinHours(data.alerts, current.timeIso, 24);
+            if (nearAlerts.length > 0) {
+                const topLevel = Math.max(0, ...nearAlerts.map(a => a.level ?? 0));
+                this._alertIcon.setLevel(topLevel);
+                this._alertIcon.visible = true;
+                if (this._icon.visible)
+                    this._icon.add_style_class_name('aw-panel-icon-offset');
+                else
+                    this._icon.remove_style_class_name('aw-panel-icon-offset');
+            } else {
+                this._alertIcon.visible = false;
+                this._icon.remove_style_class_name('aw-panel-icon-offset');
+            }
+
             this._temperatureLabel.set_text(
                 this._settings.get_boolean('show-temperature')
                     ? fmtTemp(current.temp, units) : '');
@@ -492,6 +524,10 @@ const WeatherIndicator = GObject.registerClass(
                 }
                 case 'show-icon':
                     this._icon.visible = this._settings.get_boolean('show-icon');
+                    if (this._icon.visible && this._alertIcon.visible)
+                        this._icon.add_style_class_name('aw-panel-icon-offset');
+                    else
+                        this._icon.remove_style_class_name('aw-panel-icon-offset');
                     break;
                 case 'show-temperature':
                 case 'windy-threshold':

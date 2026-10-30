@@ -418,4 +418,13 @@ test('header decouples condition width from city column width', () => {
         '.aw-desc must declare a 200px+ max-width so long conditions do not truncate early');
 });
 
+test('prefs splits Use system theme toggle from sky background style dropdown', () => {
+    const prefs = sources['prefs.js'];
+    ok(prefs.includes("_('Use system theme')") &&
+       prefs.includes("_('Animated sky')") &&
+       prefs.includes("_('Animated sky with theme tint')") &&
+       prefs.includes('styleRow.visible = !themeRow.active'),
+       'prefs must expose a Use system theme switch that hides the sky style dropdown when active');
+});
+
 report('guide');
