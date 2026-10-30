@@ -15,32 +15,37 @@ on every declared shell; the EGO-served bytes must match).
 Last shipped commit: 8853f45
 (integer 11, EGO serial 19 / pk 77151; the integer-12 audit used
 8853f45, the release-v11 merge, as its base: shipped changes since are
-the top-bar next-24h advisory icon, advisory layout, icon,
-text-unwrap/summary, symmetric day-tile corner dot, narrow-card sky
-height-resize scale/floor-ripple preservation, and RTL chart slot fixes
-in extension.js, menu.js, sky.js, stylesheet.css, weather.js, chart.js,
-and po/locale, plus 5 advisory shell goldens and 21 per-language
-clear-day goldens; dead-code sweep clean.)
+the top-bar next-24h advisory icon, centered popup alignment, bolder
+Cairo `WarningIcon` badge in panel and menu, `notify::mapped` + adaptive
+FPS timer gating for `WeatherIcon` and `_cityClockTimerId`, advisory
+layout, text-unwrap/summary, symmetric day-tile corner dot, narrow-card
+sky height-resize scale/floor-ripple preservation, and RTL chart slot
+fixes in animation.js, extension.js, menu.js, sky.js, stylesheet.css,
+weather.js, chart.js, and po/locale, plus 5 advisory shell goldens and
+21 per-language clear-day goldens; dead-code sweep clean.)
 
-Integer 12 adds a severity-colored top-bar advisory icon
-(`dialog-warning-symbolic` before the weather icon when an advisory is
-active or starts within the next 24 hours), fixes weather advisory rows
-starting expanded and having a misaligned/unclickable expander chevron
-(`pan-down-symbolic` / `pan-up-symbolic` with center alignment and
-full-header click padding), switches the advisory prefix icon to the
-warning triangle with exclamation (`dialog-warning-symbolic`), moves the
-day-tile severity circle to a top-right corner overlay
-(`Clutter.BinLayout`) with symmetric 4px top/right corner inset and
-vertical clearance above day labels, unwraps hard-wrapped NWS teletype
-newlines into a concise popup summary with a `Full advisory` link button,
-anchors narrow-card (`width <= 360`) sky feature scale (`CARD_SCENE_H`)
-and shifts puddle ripples / raindrop splash floors (`adjustSkyHeight`)
-across advisory height changes without re-randomizing clouds or drops,
-fixes RTL chart hour-column retention (`chart.js`), translates advisory
-UI strings across all 21 catalogs, and locks 5 advisory shell goldens
-(`advisory-yellow`, `advisory-orange`, `advisory-red`,
-`advisory-neutral`, `advisory-stack`) plus 21 per-language clear-day
-goldens (`i18n-ar` .. `i18n-zh_CN`).
+Integer 12 adds a severity-colored 50% (`10px`) top-bar advisory badge
+(`WarningIcon` overlaid top-left on the weather icon when an advisory is
+active or starts within the next 24 hours), centers the popup card under
+the top-bar indicator (`0.5` menu alignment), gates `WeatherIcon` and
+`_cityClockTimerId` timers on `notify::mapped` with adaptive 5/10 FPS
+top-bar frame rates to reduce background CPU/GPU wakeups when the menu
+is closed, fixes weather advisory rows starting expanded and having a
+misaligned/unclickable expander chevron (`pan-down-symbolic` /
+`pan-up-symbolic` with center alignment and full-header click padding),
+draws a bolder warning triangle with exclamation (`WarningIcon`) in both
+the top bar and menu advisory rows, moves the day-tile severity circle
+to a top-right corner overlay (`Clutter.BinLayout`) with symmetric 4px
+top/right corner inset and vertical clearance above day labels, unwraps
+hard-wrapped NWS teletype newlines into a concise popup summary with a
+`Full advisory` link button, anchors narrow-card (`width <= 360`) sky
+feature scale (`CARD_SCENE_H`) and shifts puddle ripples / raindrop
+splash floors (`adjustSkyHeight`) across advisory height changes without
+re-randomizing clouds or drops, fixes RTL chart hour-column retention
+(`chart.js`), translates advisory UI strings across all 21 catalogs, and
+locks 5 advisory shell goldens (`advisory-yellow`, `advisory-orange`,
+`advisory-red`, `advisory-neutral`, `advisory-stack`) plus 21
+per-language clear-day goldens (`i18n-ar` .. `i18n-zh_CN`).
 The upload imagery is the goldens,
 so the v7-era lesson -- live-photo sets that "photograph whatever bugs
 shipped then" -- no longer applies: see skill step 5.

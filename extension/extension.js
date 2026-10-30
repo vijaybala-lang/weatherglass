@@ -12,7 +12,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import { WeatherIcon } from './animation.js';
+import { WeatherIcon, WarningIcon } from './animation.js';
 import { ForecastPanel } from './menu.js';
 import { WeatherClient, deriveScene, fmtTemp, alertsWithinHours,
          ensureDesktopEntry, removeDesktopEntry } from './weather.js';
@@ -344,9 +344,9 @@ const WeatherIndicator = GObject.registerClass(
                 size: PANEL_ICON_SIZE,
                 animate: this._settings.get_boolean('animate'),
             });
-            this._alertIcon = new St.Icon({
-                icon_name: 'dialog-warning-symbolic',
-                icon_size: PANEL_ICON_SIZE / 2,
+            this._alertIcon = new WarningIcon({
+                size: PANEL_ICON_SIZE / 2,
+                shadow: true,
                 style_class: 'aw-panel-alert',
                 x_expand: true,
                 y_expand: true,
@@ -458,7 +458,7 @@ const WeatherIndicator = GObject.registerClass(
             const nearAlerts = alertsWithinHours(data.alerts, current.timeIso, 24);
             if (nearAlerts.length > 0) {
                 const topLevel = Math.max(0, ...nearAlerts.map(a => a.level ?? 0));
-                this._alertIcon.style_class = `aw-panel-alert aw-panel-alert-s${topLevel}`;
+                this._alertIcon.setLevel(topLevel);
                 this._alertIcon.visible = true;
                 if (this._icon.visible)
                     this._icon.add_style_class_name('aw-panel-icon-offset');

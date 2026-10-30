@@ -10,7 +10,7 @@ import St from 'gi://St';
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const N_ = s => s;
-import { WeatherIcon } from './animation.js';
+import { WeatherIcon, WarningIcon } from './animation.js';
 import { paintSky, createSky, sampleSky, bodyOf } from './sky.js';
 import { chromeVerdicts, boxSampleFractions, compositeGround } from './ink-policy.js';
 import {
@@ -315,6 +315,31 @@ export class ForecastPanel {
         this._content.add_child(this._buildPlaceholder());
         this._content.add_child(this._buildMain());
         this._showBody(false);
+
+        this.actor.connect('notify::mapped', () => {
+            if (this.actor.mapped) {
+                this._tickClock();
+                this._startCityClock();
+            } else {
+                this._stopCityClock();
+            }
+        });
+    }
+
+    _startCityClock() {
+        if (this._cityClockTimerId || !this.actor.mapped || !this._cityEpochMs)
+            return;
+        this._cityClockTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 20, () => {
+            this._tickClock();
+            return GLib.SOURCE_CONTINUE;
+        });
+    }
+
+    _stopCityClock() {
+        if (this._cityClockTimerId) {
+            GLib.source_remove(this._cityClockTimerId);
+            this._cityClockTimerId = 0;
+        }
     }
 
     _buildPlaceholder() {
@@ -496,8 +521,9 @@ export class ForecastPanel {
 
             const headRow = row('aw-adv-head-row');
             headRow.x_align = ACTOR_FILL;
-            const icon = new St.Icon({
-                icon_name: 'dialog-warning-symbolic', icon_size: 16,
+            const icon = new WarningIcon({
+                size: 16,
+                level: alert.level ?? 0,
                 style_class: 'aw-adv-icon',
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -818,12 +844,7 @@ export class ForecastPanel {
         this._cityEpochMs = state.currentIso ? Date.parse(state.currentIso) : 0;
         this._cityBaseTime = GLib.get_monotonic_time();
         this._tickClock();
-        if (!this._cityClockTimerId) {
-            this._cityClockTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 20, () => {
-                this._tickClock();
-                return GLib.SOURCE_CONTINUE;
-            });
-        }
+        this._startCityClock();
 
         // no visible "updated" row -- keep it as the refresh button's
         // accessible name instead of visible clutter
