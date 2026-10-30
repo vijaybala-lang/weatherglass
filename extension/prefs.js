@@ -45,7 +45,7 @@ const is24HourFor = settings => {
     }
 };
 
-const STYLES = ['animated', 'solid', 'accent'];
+const SKY_STYLES = ['animated', 'solid'];
 
 const LEGEND = [
     ['sun', 'Clear sky'],
@@ -455,20 +455,32 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
     _buildBackgroundGroup(settings) {
         const bgGroup = new Adw.PreferencesGroup({ title: _('Menu background') });
+        const initialStyle = settings.get_string('menu-style');
+        const themeRow = new Adw.SwitchRow({
+            title: _('Use system theme'),
+            subtitle: _('Match GNOME popup background and system accent color'),
+            active: initialStyle === 'accent',
+        });
         const styleRow = new Adw.ComboRow({
             title: _('Background style'),
             subtitle: _('How the dropdown fills itself behind the forecast'),
             model: new Gtk.StringList({
                 strings: [
-                    _('Animated sky (translucent)'),
-                    _('Solid (sky dimmed under a wash)'),
-                    _('Theme background, accent charts'),
+                    _('Animated sky'),
+                    _('Animated sky with theme tint'),
                 ],
             }),
+            visible: initialStyle !== 'accent',
         });
-        styleRow.set_selected(STYLES.indexOf(settings.get_string('menu-style')));
-        styleRow.connect('notify::selected', () =>
-            settings.set_string('menu-style', STYLES[styleRow.get_selected()] ?? 'animated'));
+        styleRow.set_selected(initialStyle === 'solid' ? 1 : 0);
+        const syncStyle = () => {
+            styleRow.visible = !themeRow.active;
+            settings.set_string('menu-style', themeRow.active
+                ? 'accent' : (SKY_STYLES[styleRow.get_selected()] ?? 'animated'));
+        };
+        themeRow.connect('notify::active', syncStyle);
+        styleRow.connect('notify::selected', syncStyle);
+        bgGroup.add(themeRow);
         bgGroup.add(styleRow);
 
         const embossRow = new Adw.SwitchRow({
