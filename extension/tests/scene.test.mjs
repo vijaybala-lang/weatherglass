@@ -84,6 +84,12 @@ test('daySlice carves a whole calendar day from rolling hourly data', () => {
     eq(slice.length, 24, 'Oct 9 slice length');
     eq(slice[0], 24, 'slice must start at the first hour of the day');
     eq(temp[slice[23]], 50 + 47, 'slice indexes must stay in range of the series');
+
+    const chartToday = daySlice({ time, temperature_2m: temp }, daily, 0, '2026-10-08T14:15');
+    eq(chartToday[0], 12, 'line chart Today slice keeps 2-hour backfill');
+    const pillsToday = daySlice({ time, temperature_2m: temp }, daily, 0, '2026-10-08T14:15', 0);
+    eq(pillsToday[0], 14, 'hourly pills Today slice starts at the current hour (Now) with no past hours');
+    eq(pillsToday.length, 24, 'hourly pills Today slice spans 24 hours from Now forward');
 });
 
 report('scene');

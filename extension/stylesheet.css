@@ -313,6 +313,28 @@
     border: none;
 }
 
+/* -- hourly pills vertical overlay stepper buttons (< / >) ---------------- */
+
+.aw-hour-nav {
+    width: 22px;
+    height: 74px;
+    min-width: 22px;
+    min-height: 74px;
+    border-radius: 99px;
+    padding: 0;
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+}
+
+.aw-hour-nav-prev {
+    margin-left: 16px;
+}
+
+.aw-hour-nav-next {
+    margin-right: 16px;
+}
+
 /* -- placeholder (loading / error) ---------------------------------------- */
 
 .aw-placeholder {
@@ -496,7 +518,8 @@
 /* keyboard focus: theme's own ring recipe -- accent at 20% */
 .aw-theme .aw-tab:focus,
 .aw-theme .aw-day:focus,
-.aw-theme .aw-icon-btn:focus {
+.aw-theme .aw-icon-btn:focus,
+.aw-theme .aw-hour-nav:focus {
     box-shadow: inset 0 0 0 2px rgba(50, 128, 220, 0.8);
     box-shadow: inset 0 0 0 2px st-mix(-st-accent-color, transparent, 80%);
 }

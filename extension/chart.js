@@ -785,6 +785,392 @@ export function paintChart(cr, opts) {
                 : (opts.nowLabel ?? [accentR, accentG, accentB])), 1]);
 }
 
+export function hourlyPillsMetrics(width, count, mode) {
+    const isRich = mode === 'rich-pills';
+    const padX = 14;
+    const availW = Math.max(1, width - padX * 2);
+    const pillW = isRich ? 62 : 50;
+    const gap = isRich ? 6.5 : 6;
+    const pillH = isRich ? 164 : 142;
+    const topY = 4;
+    const navW = 22;
+    const navH = isRich ? 84 : 74;
+    const totalW = count > 0 ? count * pillW + (count - 1) * gap : 0;
+    const maxScroll = Math.max(0, totalW - availW);
+    const stepPx = 3 * (pillW + gap);
+    return { padX, availW, pillW, gap, pillH, topY, navW, navH, totalW, maxScroll, stepPx };
+}
+
+function drawDroplet(cr, cx, cy, r, rgba) {
+    cr.save();
+    cr.setSourceRGBA(...rgba);
+    cr.newPath();
+    cr.moveTo(cx, cy - r * 1.35);
+    cr.curveTo(cx + r * 1.15, cy - r * 0.1, cx + r * 1.05, cy + r * 1.1, cx, cy + r * 1.1);
+    cr.curveTo(cx - r * 1.05, cy + r * 1.1, cx - r * 1.15, cy - r * 0.1, cx, cy - r * 1.35);
+    cr.closePath();
+    cr.fill();
+    cr.restore();
+}
+
+function applyPillEdgeFade(cr, width, padX, topY, pillH, fadeLeft, fadeRight) {
+    cr.save();
+    cr.setOperator(Cairo.Operator.DEST_OUT);
+    const fadeW = 36;
+    if (fadeRight) {
+        const grad = new Cairo.LinearGradient(width - padX - fadeW, 0, width - padX, 0);
+        grad.addColorStopRGBA(0, 0, 0, 0, 0);
+        grad.addColorStopRGBA(0.65, 0, 0, 0, 0.55);
+        grad.addColorStopRGBA(1, 0, 0, 0, 0.96);
+        cr.setSource(grad);
+        cr.rectangle(width - padX - fadeW, topY - 2, fadeW + padX + 2, pillH + 4);
+        cr.fill();
+    }
+    if (fadeLeft) {
+        const grad = new Cairo.LinearGradient(padX + fadeW, 0, padX, 0);
+        grad.addColorStopRGBA(0, 0, 0, 0, 0);
+        grad.addColorStopRGBA(0.65, 0, 0, 0, 0.55);
+        grad.addColorStopRGBA(1, 0, 0, 0, 0.96);
+        cr.setSource(grad);
+        cr.rectangle(0, topY - 2, padX + fadeW, pillH + 4);
+        cr.fill();
+    }
+    cr.restore();
+}
+
+function drawVerticalOverlayPill(cr, x, cy, w, h, dir, isDark, hovered) {
+    const topY = cy - h / 2;
+    const r = w / 2;
+    cr.save();
+    pillPath(cr, x - 1, topY + 1.5, x + w + 1, topY + h + 2.5, r + 1);
+    cr.setSourceRGBA(0, 0, 0, isDark ? 0.38 : 0.18);
+    cr.fill();
+
+    pillPath(cr, x + 0.5, topY + 0.5, x + w - 0.5, topY + h - 0.5, r);
+    if (isDark)
+        cr.setSourceRGBA(12 / 255, 16 / 255, 24 / 255, hovered ? 0.88 : 0.78);
+    else
+        cr.setSourceRGBA(1, 1, 1, hovered ? 0.94 : 0.84);
+    cr.fillPreserve();
+    if (isDark)
+        cr.setSourceRGBA(1, 1, 1, hovered ? 0.48 : 0.34);
+    else
+        cr.setSourceRGBA(16 / 255, 24 / 255, 35 / 255, hovered ? 0.42 : 0.28);
+    cr.setLineWidth(1.2);
+    cr.stroke();
+
+    const cx = x + w / 2;
+    const s = 4.6;
+    if (isDark)
+        cr.setSourceRGBA(1, 1, 1, 0.96);
+    else
+        cr.setSourceRGBA(16 / 255, 24 / 255, 35 / 255, 0.92);
+    cr.setLineWidth(1.9);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.setLineJoin(Cairo.LineJoin.ROUND);
+    cr.newPath();
+    if (dir < 0) {
+        cr.moveTo(cx + s * 0.45, cy - s);
+        cr.lineTo(cx - s * 0.55, cy);
+        cr.lineTo(cx + s * 0.45, cy + s);
+    } else {
+        cr.moveTo(cx - s * 0.45, cy - s);
+        cr.lineTo(cx + s * 0.55, cy);
+        cr.lineTo(cx - s * 0.45, cy + s);
+    }
+    cr.stroke();
+    cr.restore();
+}
+
+export function paintHourlyPills(cr, opts) {
+    const { w: width, values, fmtValue, fmtHour, accent } = opts;
+    const mode = opts.mode === 'rich-pills' ? 'rich-pills' : 'gauge-pills';
+    const isRich = mode === 'rich-pills';
+    const pillData = opts.pillData || null;
+    const count = isRich && pillData && Array.isArray(pillData.temps)
+        ? pillData.temps.length : (values ? values.length : 0);
+    if (count < 1)
+        return;
+
+    const m = hourlyPillsMetrics(width, count, mode);
+    const scrollPx = Math.max(0, Math.min(m.maxScroll, opts.scrollPx ?? 0));
+    const canScrollBack = scrollPx > 0.5;
+    const canScrollFwd = scrollPx < m.maxScroll - 0.5;
+    const isRtl = !!opts.rtl;
+    const fadeLeft = isRtl ? canScrollFwd : canScrollBack;
+    const fadeRight = isRtl ? canScrollBack : canScrollFwd;
+
+    const baseFontSize = opts.fontSize ?? 8.5;
+    const textScale = opts.textScale ?? 1;
+    const textBold = !!opts.textBold;
+    const isDark = opts.dark !== false;
+    const isGlass = opts.pillGlass !== false;
+    const bgFn = opts.bgFn || null;
+    const defaultInk = opts.ink ?? [0.96, 0.97, 0.98];
+    const fmtUnit = opts.fmtValueUnit || null;
+
+    const scenes = Array.isArray(opts.scenes) ? opts.scenes : null;
+    const nights = Array.isArray(opts.nights) ? opts.nights : null;
+    const intensities = Array.isArray(opts.iconIntensities) ? opts.iconIntensities : null;
+    const variants = Array.isArray(opts.iconVariants) ? opts.iconVariants : null;
+
+    let minVal = 0, maxVal = 100;
+    if (!isRich && values && values.length) {
+        if (opts.metric === 'precip') {
+            minVal = 0;
+            maxVal = 100;
+        } else {
+            minVal = Math.min(...values);
+            maxVal = Math.max(...values);
+            if (maxVal - minVal < 1e-6) {
+                minVal -= 1;
+                maxVal += 1;
+            } else {
+                const span = maxVal - minVal;
+                minVal -= span * 0.14;
+                maxVal += span * 0.05;
+            }
+        }
+    }
+
+    const midY = m.topY + m.pillH / 2;
+    const radius = 16;
+    const pillsProbe = opts.pillsProbe || NOOP_OBSERVER;
+    const visiblePills = [];
+
+    cr.save();
+    cr.pushGroup();
+    pillPath(cr, m.padX, m.topY, width - m.padX, m.topY + m.pillH, radius);
+    cr.clip();
+
+    for (let i = 0; i < count; i++) {
+        const x = isRtl
+            ? width - m.padX - m.pillW + scrollPx - i * (m.pillW + m.gap)
+            : m.padX - scrollPx + i * (m.pillW + m.gap);
+        if (x + m.pillW < m.padX - 2 || x > width - m.padX + 2)
+            continue;
+
+        const cx = x + m.pillW / 2;
+        const isNow = !!opts.isToday && i === 0;
+        const rawBg = bgFn ? bgFn(midY, cx) : null;
+        const slabRgb = isDark ? [16 / 255, 20 / 255, 28 / 255] : [1, 1, 1];
+        const slabAlpha = isDark ? (isNow ? 0.50 : 0.28) : (isNow ? 0.68 : 0.44);
+        const compBg = rawBg
+            ? rawBg.map((ch, k) => ch * (1 - slabAlpha) + slabRgb[k] * slabAlpha)
+            : null;
+        const pillInk = compBg ? pickInk(compBg) : defaultInk;
+
+        const fillRgba = isGlass
+            ? [slabRgb[0], slabRgb[1], slabRgb[2], slabAlpha]
+            : (isNow
+                ? [accent[0], accent[1], accent[2], isDark ? 0.20 : 0.16]
+                : (isDark ? [1, 1, 1, 0.07] : [0, 0, 0, 0.05]));
+        const borderRgba = isGlass
+            ? (isDark
+                ? [1, 1, 1, isNow ? 0.30 : 0.14]
+                : [16 / 255, 24 / 255, 35 / 255, isNow ? 0.36 : 0.18])
+            : (isNow
+                ? [accent[0], accent[1], accent[2], 0.45]
+                : (isDark ? [1, 1, 1, 0.14] : [0, 0, 0, 0.12]));
+
+        pillPath(cr, x + 0.5, m.topY + 0.5, x + m.pillW - 0.5, m.topY + m.pillH - 0.5, radius);
+        cr.setSourceRGBA(...fillRgba);
+        cr.fill();
+
+        const hourText = isNow && opts.nowText ? opts.nowText : (fmtHour ? fmtHour(i) : '');
+        const hourWeight = isNow || textBold ? Pango.Weight.BOLD : Pango.Weight.MEDIUM;
+
+        const scene = scenes && scenes[i] ? scenes[i] : 'cloud';
+        const isNight = nights ? !!nights[i] : false;
+        const intensity = intensities && intensities[i] !== null && intensities[i] !== undefined
+            ? intensities[i] : (STRIP_PRECIP_INTENSITY[scene] ?? 0);
+        const variant = variants ? (variants[i] ?? null) : null;
+        const bgLum = compBg ? lumOf(compBg) : -1;
+        const pale = compBg
+            ? tileGlyphPale(compBg, { selected: isNow, solidDark: !!opts.solidDark })
+            : isDark;
+        const iconDark = compBg ? (pickInk(compBg) !== INK_DARK || pale) : isDark;
+
+        if (!isRich) {
+            // Option B1: Segmented Lower Chamber (upper icon chamber + lower gauge chamber)
+            const chamberTop = m.topY + 62;
+            cr.setSourceRGBA(pillInk[0], pillInk[1], pillInk[2], 0.10);
+            cr.setLineWidth(1);
+            cr.moveTo(x + 6, chamberTop);
+            cr.lineTo(x + m.pillW - 6, chamberTop);
+            cr.stroke();
+
+            const val = values[i] ?? 0;
+            const rawFrac = (val - minVal) / Math.max(1e-6, maxVal - minVal);
+            const frac = Math.max(0.08, Math.min(1, rawFrac));
+            const barH = 22 + frac * 44;
+            const inset = 3.5;
+            const barTop = m.topY + m.pillH - inset - barH;
+            const barBottom = m.topY + m.pillH - inset;
+            visiblePills.push({ i, x, pillW: m.pillW, chamberTop, barTop, barH });
+
+            pillPath(cr, x + inset, barTop, x + m.pillW - inset, barBottom, radius - 3);
+            const barGrad = new Cairo.LinearGradient(0, barTop, 0, barBottom);
+            barGrad.addColorStopRGBA(0, accent[0], accent[1], accent[2], isNow ? 0.56 : 0.42);
+            barGrad.addColorStopRGBA(1, accent[0], accent[1], accent[2], isNow ? 0.20 : 0.14);
+            cr.setSource(barGrad);
+            cr.fillPreserve();
+            cr.setSourceRGBA(accent[0], accent[1], accent[2], isNow ? 0.85 : 0.58);
+            cr.setLineWidth(1.1);
+            cr.stroke();
+
+            pillPath(cr, x + 0.5, m.topY + 0.5, x + m.pillW - 0.5, m.topY + m.pillH - 0.5, radius);
+            cr.setSourceRGBA(...borderRgba);
+            cr.setLineWidth(isNow ? 1.3 : 1);
+            cr.stroke();
+
+            drawText(cr, hourText, cx, 0, {
+                size: (baseFontSize + 0.3) * textScale,
+                weight: hourWeight,
+                rgba: [pillInk[0], pillInk[1], pillInk[2], isNow ? 1 : 0.88],
+                anchor: 'middle',
+                vcenter: m.topY + 15,
+            });
+
+            const iconScale = 23 / 24;
+            cr.save();
+            cr.translate(cx - 12 * iconScale, m.topY + 41 - 12 * iconScale);
+            cr.scale(iconScale, iconScale);
+            paintWeather(cr, {
+                scene, time: 4.1, phase: opts.phase ?? null,
+                night: isNight, dark: iconDark,
+                intensity, variant, staticPose: true,
+                seed: Math.round((i + 1) * 37),
+                groundLum: bgLum, pale,
+            });
+            cr.restore();
+
+            const valBg = compBg
+                ? compBg.map((ch, k) => ch * 0.72 + accent[k] * 0.28)
+                : null;
+            const valInk = valBg ? pickInk(valBg) : pillInk;
+            const valText = fmtValue ? fmtValue(i, val) : '';
+            const unitText = fmtUnit ? (fmtUnit(i, val) || '') : '';
+            if (unitText) {
+                drawText(cr, valText, cx, 0, {
+                    size: (baseFontSize + 1.8) * textScale,
+                    weight: Pango.Weight.BOLD,
+                    rgba: [valInk[0], valInk[1], valInk[2], 0.98],
+                    anchor: 'middle',
+                    vcenter: m.topY + m.pillH - 23,
+                });
+                drawText(cr, unitText, cx, 0, {
+                    size: (baseFontSize - 1.4) * textScale,
+                    weight: Pango.Weight.MEDIUM,
+                    rgba: [valInk[0], valInk[1], valInk[2], 0.82],
+                    anchor: 'middle',
+                    vcenter: m.topY + m.pillH - 10,
+                });
+            } else {
+                drawText(cr, valText, cx, 0, {
+                    size: (baseFontSize + 2.2) * textScale,
+                    weight: Pango.Weight.BOLD,
+                    rgba: [valInk[0], valInk[1], valInk[2], 0.98],
+                    anchor: 'middle',
+                    vcenter: m.topY + m.pillH - 17,
+                });
+            }
+        } else {
+            // Option C: All-in-One Rich Pills (Time + Icon + Temp + Precip% + Wind)
+            visiblePills.push({ i, x, pillW: m.pillW });
+            pillPath(cr, x + 0.5, m.topY + 0.5, x + m.pillW - 0.5, m.topY + m.pillH - 0.5, radius);
+            cr.setSourceRGBA(...borderRgba);
+            cr.setLineWidth(isNow ? 1.3 : 1);
+            cr.stroke();
+
+            drawText(cr, hourText, cx, 0, {
+                size: (baseFontSize + 0.4) * textScale,
+                weight: hourWeight,
+                rgba: [pillInk[0], pillInk[1], pillInk[2], isNow ? 1 : 0.88],
+                anchor: 'middle',
+                vcenter: m.topY + 16,
+            });
+
+            const iconScale = 25 / 24;
+            cr.save();
+            cr.translate(cx - 12 * iconScale, m.topY + 48 - 12 * iconScale);
+            cr.scale(iconScale, iconScale);
+            paintWeather(cr, {
+                scene, time: 4.1, phase: opts.phase ?? null,
+                night: isNight, dark: iconDark,
+                intensity, variant, staticPose: true,
+                seed: Math.round((i + 1) * 37),
+                groundLum: bgLum, pale,
+            });
+            cr.restore();
+
+            const tempStr = pillData && pillData.temps ? (pillData.temps[i] ?? '') : '';
+            drawText(cr, tempStr, cx, 0, {
+                size: (baseFontSize + 3.4) * textScale,
+                weight: Pango.Weight.BOLD,
+                rgba: [pillInk[0], pillInk[1], pillInk[2], 1],
+                anchor: 'middle',
+                vcenter: m.topY + 84,
+            });
+
+            cr.setSourceRGBA(pillInk[0], pillInk[1], pillInk[2], 0.13);
+            cr.setLineWidth(1);
+            cr.moveTo(x + 9, m.topY + 104);
+            cr.lineTo(x + m.pillW - 9, m.topY + 104);
+            cr.stroke();
+
+            const precipVal = pillData && pillData.precips ? (pillData.precips[i] ?? 0) : 0;
+            const precipStr = `${precipVal}%`;
+            const wet = precipVal >= 20;
+            const pSize = (baseFontSize - 0.6) * textScale;
+            const pWeight = wet || textBold ? Pango.Weight.BOLD : Pango.Weight.NORMAL;
+            const pColor = wet
+                ? (pillInk === INK_DARK ? [0.08, 0.42, 0.82, 0.96] : [0.52, 0.84, 1.0, 0.96])
+                : [pillInk[0], pillInk[1], pillInk[2], 0.65];
+            const [pW] = textPx(cr, precipStr, pSize, false, pWeight);
+            const dropR = 2.8;
+            const totalPW = dropR * 2 + 4 + pW;
+            const startPX = cx - totalPW / 2;
+            drawDroplet(cr, startPX + dropR, m.topY + 121, dropR, pColor);
+            drawText(cr, precipStr, startPX + dropR * 2 + 4, 0, {
+                size: pSize,
+                weight: pWeight,
+                rgba: pColor,
+                anchor: 'start',
+                vcenter: m.topY + 121,
+            });
+
+            const windStr = pillData && pillData.winds ? (pillData.winds[i] ?? '') : '';
+            drawText(cr, windStr, cx, 0, {
+                size: (baseFontSize - 1.1) * textScale,
+                weight: textBold ? Pango.Weight.MEDIUM : Pango.Weight.NORMAL,
+                rgba: [pillInk[0], pillInk[1], pillInk[2], 0.78],
+                anchor: 'middle',
+                vcenter: m.topY + 144,
+            });
+        }
+    }
+
+    applyPillEdgeFade(cr, width, m.padX, m.topY, m.pillH, fadeLeft, fadeRight);
+    cr.popGroupToSource();
+    cr.paint();
+    cr.restore();
+
+    if (canScrollBack) {
+        const backX = isRtl ? width - m.padX - m.navW - 2 : m.padX + 2;
+        const backDir = isRtl ? 1 : -1;
+        drawVerticalOverlayPill(cr, backX, midY, m.navW, m.navH, backDir, isDark,
+            opts.hoverNav === 'prev');
+    }
+    if (canScrollFwd) {
+        const fwdX = isRtl ? m.padX + 2 : width - m.padX - m.navW - 2;
+        const fwdDir = isRtl ? -1 : 1;
+        drawVerticalOverlayPill(cr, fwdX, midY, m.navW, m.navH, fwdDir, isDark,
+            opts.hoverNav === 'next');
+    }
+    pillsProbe({ mode, scrollPx, canScrollBack, canScrollFwd, visiblePills });
+}
+
 /** ease-out cubic, 0..1 */
 export function ease(progress) {
     return 1 - Math.pow(1 - progress, 3);

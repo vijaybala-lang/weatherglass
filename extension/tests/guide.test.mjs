@@ -427,4 +427,17 @@ test('prefs splits Use system theme toggle from sky background style dropdown', 
        'prefs must expose a Use system theme switch that hides the sky style dropdown when active');
 });
 
+test('the hourly-view picker mirrors the schema choices', () => {
+    const prefs = read(`${ROOT}/prefs.js`);
+    const xml = read(`${ROOT}/schemas/org.gnome.shell.extensions.weatherglass.gschema.xml`);
+    const views = [...prefs.matchAll(/const HOURLY_VIEWS = \[([^\]]+)\]/g)][0][1]
+        .split(',').map(s => s.trim().replace(/'/g, ''));
+    const choices = [...xml.matchAll(/name="hourly-view"[\s\S]*?<choices>([\s\S]*?)<\/choices>/g)][0][1]
+        .match(/value="([^"]+)"/g).map(m => m.slice(7, -1));
+    eq(JSON.stringify(views), JSON.stringify(['chart', 'gauge-pills', 'rich-pills']),
+        'prefs must offer chart, gauge-pills, and rich-pills');
+    eq(JSON.stringify(choices), JSON.stringify(views),
+        'gschema hourly-view choices must match prefs HOURLY_VIEWS');
+});
+
 report('guide');

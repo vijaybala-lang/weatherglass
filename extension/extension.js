@@ -421,6 +421,7 @@ const WeatherIndicator = GObject.registerClass(
             this._panel.setHourFormat(this._resolveHour24());
             this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
             this._panel.setStyle(this._settings.get_string('menu-style'));
+            this._panel.setHourlyView(this._settings.get_string('hourly-view'));
             this._panel.setConditions(this._settings.get_string('condition-strip'));
             this._panel.setCondPos(this._settings.get_string('condition-pos'));
             this._panel.setEmboss(this._settings.get_boolean('text-emboss'));
@@ -542,6 +543,9 @@ const WeatherIndicator = GObject.registerClass(
                     break;
                 case 'menu-style':
                     this._panel.setStyle(this._settings.get_string('menu-style'));
+                    break;
+                case 'hourly-view':
+                    this._panel.setHourlyView(this._settings.get_string('hourly-view'));
                     break;
                 case 'condition-strip':
                     this._panel.setConditions(this._settings.get_string('condition-strip'));
