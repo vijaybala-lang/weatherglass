@@ -394,6 +394,7 @@ function renderCard(p, outDir, probe = null) {
         paintSky(cr, {w: W, h: H,
             time: style === 'solid' ? STATIC_TIME : 2.9,   // solid = frozen frame
             scene, night, sky: pool, scrim,
+            code: scene === 'wind' || scene === 'rain' ? wmo : null,
             radius: RADIUS, glow, solar, phase: mPhase});
     }
 

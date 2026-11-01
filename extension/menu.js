@@ -143,7 +143,8 @@ const SkyArea = GObject.registerClass(
                     w: surfaceWidth, h: surfaceHeight, time: this._time,
                     scene: skyOptions.scene, night: skyOptions.night, scrim: skyOptions.scrim,
                     sky: skyOptions.sky, radius: skyOptions.radius ?? 0, phase: skyOptions.phase ?? null,
-                    code: skyOptions.scene === 'wind' ? skyOptions.code : null,
+                    code: skyOptions.scene === 'wind' || skyOptions.scene === 'rain'
+                        ? skyOptions.code : null,
                     glow, solar, fxScale: 1,
                 });
             }

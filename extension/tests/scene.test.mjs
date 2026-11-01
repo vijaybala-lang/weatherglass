@@ -3,8 +3,10 @@
  * slicer. These are the inputs the pixel matrix paints, certified at
  * the source so a wrong scene never reaches a correct-looking cell.
  */
+import Cairo from 'gi://cairo';
 import { file, test, ok, near, eq, report } from './harness.mjs';
 import { sceneFor, fmtTemp, sunGeometry, daySlice } from '../weather.js';
+import { createSky, paintSky } from '../sky.js';
 
 file('scene');
 
@@ -90,6 +92,73 @@ test('daySlice carves a whole calendar day from rolling hourly data', () => {
     const pillsToday = daySlice({ time, temperature_2m: temp }, daily, 0, '2026-10-08T14:15', 0);
     eq(pillsToday[0], 14, 'hourly pills Today slice starts at the current hour (Now) with no past hours');
     eq(pillsToday.length, 24, 'hourly pills Today slice spans 24 hours from Now forward');
+});
+
+// -- rain intensity tiers, connected splash ripples, & submerged koi pond ----
+
+test('rain sky scales active drops across 3 WMO intensity tiers and connects ripples', () => {
+    const countMovedDrops = code => {
+        const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
+        const cr = new Cairo.Context(surf);
+        const sky = createSky();
+        paintSky(cr, { w: 330, h: 472, time: 1.0, scene: 'rain', night: false, sky, code });
+        const beforeY = sky.drops.map(d => d.y);
+        paintSky(cr, { w: 330, h: 472, time: 1.05, scene: 'rain', night: false, sky, code });
+        cr.$dispose();
+        return sky.drops.filter((d, i) => d.y !== beforeY[i]).length;
+    };
+    const lightMoved = countMovedDrops(61);
+    const modMoved = countMovedDrops(63);
+    const heavyMoved = countMovedDrops(65);
+    ok(lightMoved > 0 && lightMoved < modMoved,
+        `1-drop light rain (${lightMoved}) must animate fewer drops than 2-drop moderate (${modMoved})`);
+    ok(modMoved < heavyMoved,
+        `2-drop moderate rain (${modMoved}) must animate fewer drops than 3-drop heavy (${heavyMoved})`);
+});
+
+test('rain sky initializes submerged Nishikigoi pond floor and connects drop impacts to ripples', () => {
+    const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
+    const cr = new Cairo.Context(surf);
+    const sky = createSky();
+    paintSky(cr, { w: 330, h: 472, time: 1.0, scene: 'rain', night: false, sky, code: 63 });
+
+    eq(sky.koi.length, 2, 'rain pond must initialize two Nishikigoi');
+    eq(sky.koi[0].variant, 'kohaku');
+    eq(sky.koi[1].variant, 'sanke');
+    eq(sky.koi[0].pathSpine.length, 16, 'each koi must have a 16-joint spine');
+    ok(sky.koi[0].headZ < 0.12 && sky.koi[1].headZ > 0.45,
+        'kohaku starts in surface-kiss depth while sanke glides deeper');
+    eq(sky.pads.length, 2, 'rain pond must initialize two floating lotus pads');
+    eq(sky.spriteBuilds, 0, 'koi pond must not allocate offscreen sprite surfaces');
+
+    // Force an expired ripple and a single drop about to cross floorY, then step one frame
+    for (const d of sky.drops)
+        d.y = 0;
+    sky.ripples[0].phase = 1.5;
+    const drop0 = sky.drops[0];
+    drop0.x = 180;
+    drop0.y = drop0.floorY - 2;
+    paintSky(cr, { w: 330, h: 472, time: 1.05, scene: 'rain', night: false, sky, code: 63 });
+    near(sky.ripples[0].phase, 0.02, 1e-6, 'falling drop impact must reset expired ripple phase');
+    near(sky.ripples[0].y, drop0.floorY, 1e-6, 'spawned ripple must sit at the drop floorY');
+
+    // Step 120 frames (6.0 s) and verify pathSpine never accumulates runaway bend
+    for (let f = 1; f <= 120; f++)
+        paintSky(cr, { w: 330, h: 472, time: 1.05 + f * 0.05, scene: 'rain', night: false, sky, code: 63 });
+    for (const koi of sky.koi) {
+        for (let i = 2; i < koi.pathSpine.length; i++) {
+            const p0 = koi.pathSpine[i - 2], p1 = koi.pathSpine[i - 1], p2 = koi.pathSpine[i];
+            const a1 = Math.atan2(p0.y - p1.y, p0.x - p1.x);
+            const a2 = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+            let diff = a2 - a1;
+            while (diff > Math.PI)
+                diff -= Math.PI * 2;
+            while (diff < -Math.PI)
+                diff += Math.PI * 2;
+            ok(Math.abs(diff) <= 0.15, `koi spine joint ${i} bend ${diff} exceeded gentle cap`);
+        }
+    }
+    cr.$dispose();
 });
 
 report('scene');

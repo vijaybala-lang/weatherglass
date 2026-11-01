@@ -322,7 +322,7 @@ export function createSky() {
         precipSprite: null, precipSpriteAlt: null, precipSpriteScene: '',
         w: 0, h: 0, scene: '', night: null,
         lastTime: null, lastT: null,
-        drops: [], ripples: [], flakes: [], pellets: [],
+        drops: [], ripples: [], koi: [], pads: [], flakes: [], pellets: [],
         hail: [], clouds: [], stars: [], streaks: [], leaves: [], fog: [],
         cache: null, cacheKey: '', builds: 0, blits: 0,
         fx: null, fxW: 0, fxH: 0, fxScale: null, frameMs: null, _fxFrames: 0,
@@ -475,6 +475,36 @@ function rebuild(sky, width, height, scene) {
             variant: i % 2, isBack,
         };
     });
+    const gs = sh / 420;
+    if (scene === 'rain') {
+        sky.koi = [
+            {
+                variant: 'kohaku',
+                angle: -0.32, turnBend: 0.20,
+                length: 58, maxWidth: 7.4,
+                baseDepth: 0.28, headZ: 0.05, tailZ: 0.45,
+                swimPhase: 1.0, speed: 22, kissClock: 1.2, patrolPhase: 0.4,
+                pathSpine: buildInitialKoiSpine(
+                    width * 0.50, height - 86 * gs, -0.32, 0.20, 58 * gs, 0.05, 0.45),
+            },
+            {
+                variant: 'sanke',
+                angle: Math.PI - 0.22, turnBend: -0.15,
+                length: 50, maxWidth: 6.4,
+                baseDepth: 0.56, headZ: 0.54, tailZ: 0.64,
+                swimPhase: 2.1, speed: 18, kissClock: 4.5, patrolPhase: 2.6,
+                pathSpine: buildInitialKoiSpine(
+                    width * 0.73, height - 24 * gs, Math.PI - 0.22, -0.15, 50 * gs, 0.54, 0.64),
+            },
+        ];
+        sky.pads = [
+            { x: width * 0.08, y: height - 72 * gs, r: 18, notch: 0.4, hasFlower: false },
+            { x: width * 0.91, y: height - 22 * gs, r: 19, notch: 2.4, hasFlower: true },
+        ];
+    } else {
+        sky.koi = [];
+        sky.pads = [];
+    }
     sky.w = width; sky.h = height; sky.scene = scene; sky.lastTime = null; sky.lastT = null;
 }
 
@@ -494,6 +524,12 @@ function adjustSkyHeight(sky, width, height) {
     }
     for (const rp of sky.ripples)
         rp.y += deltaH;
+    for (const koi of sky.koi ?? []) {
+        for (const pt of koi.pathSpine)
+            pt.y += deltaH;
+    }
+    for (const pad of sky.pads ?? [])
+        pad.y += deltaH;
     for (const stone of sky.hail) {
         const oldFloorY = stone.floorY ?? (oldH - 14 * gs);
         stone.floorY = oldFloorY + deltaH;
@@ -1063,19 +1099,559 @@ function drawFog(cr, sky, width, dt, time, night, scale = 1) {
     }
 }
 
-/* Rain, Drizzle & Showers: diagonal rain curtains + 3-plane tapered streaks + splash ripples */
-function drawRain(cr, sky, width, height, scale, dt, scene, code = null) {
+const KOI_SPINE_COUNT = 16;
+const KOI_BODY_END_IDX = 12;
+const KOI_BODY_PROFILE = [
+    0.38, 0.64, 0.84, 0.97, 1.00, 0.93, 0.82, 0.68,
+    0.53, 0.39, 0.26, 0.17, 0.11, 0.07, 0.04, 0.02,
+];
+
+function buildInitialKoiSpine(headX, headY, baseAngle, turnBend, length, headZ, tailZ) {
+    const segLen = length / (KOI_SPINE_COUNT - 1);
+    const pathSpine = [{ x: headX, y: headY, z: headZ }];
+    for (let i = 1; i < KOI_SPINE_COUNT; i++) {
+        const s = i / (KOI_SPINE_COUNT - 1);
+        const a = baseAngle + turnBend * (s ** 1.15) * 0.32;
+        const prev = pathSpine[i - 1];
+        pathSpine.push({
+            x: prev.x - Math.cos(a) * segLen,
+            y: prev.y - Math.sin(a) * segLen,
+            z: headZ + (tailZ - headZ) * s,
+        });
+    }
+    return pathSpine;
+}
+
+function stepKoi(koi, dt, width, height, pondTopY, scale) {
+    if (dt <= 0)
+        return;
+    koi.swimPhase += dt * 2.65;
+    koi.patrolPhase += dt * 0.22;
+    koi.kissClock += dt;
+
+    const cycle = koi.kissClock % 9.0;
+    const kissLift = koi.baseDepth < 0.40 && cycle < 2.4
+        ? Math.sin((cycle / 2.4) * Math.PI) ** 1.3
+        : 0;
+    koi.headZ = koi.baseDepth - kissLift * (koi.baseDepth - 0.04);
+    koi.tailZ = koi.baseDepth + 0.10 + kissLift * 0.07;
+
+    const head = koi.pathSpine[0];
+    const cx = width * 0.50 + Math.cos(koi.patrolPhase) * (width * 0.30);
+    const cy = (pondTopY + height) * 0.52
+        + Math.sin(koi.patrolPhase * 2) * ((height - pondTopY) * 0.26);
+    const desired = Math.atan2(cy - head.y, cx - head.x);
+    let diff = desired - koi.angle;
+    while (diff > Math.PI)
+        diff -= TWO_PI;
+    while (diff < -Math.PI)
+        diff += TWO_PI;
+    const maxTurn = 0.85 * dt;
+    koi.angle += Math.max(-maxTurn, Math.min(maxTurn, diff * 1.8 * dt));
+    koi.turnBend = koi.turnBend * Math.max(0, 1 - dt * 3)
+        + (diff * 0.35) * Math.min(1, dt * 3);
+
+    const stepDist = koi.speed * scale * dt;
+    head.x = Math.max(width * 0.08, Math.min(width * 0.92,
+        head.x + Math.cos(koi.angle) * stepDist));
+    head.y = Math.max(pondTopY + 14 * scale, Math.min(height - 12 * scale,
+        head.y + Math.sin(koi.angle) * stepDist));
+    head.z = koi.headZ;
+
+    const segLen = (koi.length * scale) / (KOI_SPINE_COUNT - 1);
+    let prevAngle = koi.angle;
+    for (let i = 1; i < KOI_SPINE_COUNT; i++) {
+        const prev = koi.pathSpine[i - 1];
+        const cur = koi.pathSpine[i];
+        let segAngle = Math.atan2(prev.y - cur.y, prev.x - cur.x);
+        let bDiff = segAngle - prevAngle;
+        while (bDiff > Math.PI)
+            bDiff -= TWO_PI;
+        while (bDiff < -Math.PI)
+            bDiff += TWO_PI;
+        if (Math.abs(bDiff) > 0.14)
+            segAngle = prevAngle + Math.sign(bDiff) * 0.14;
+        cur.x = prev.x - Math.cos(segAngle) * segLen;
+        cur.y = prev.y - Math.sin(segAngle) * segLen;
+        cur.z = koi.headZ + (koi.tailZ - koi.headZ) * (i / (KOI_SPINE_COUNT - 1));
+        prevAngle = segAngle;
+    }
+}
+
+function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity) {
+    const maxWidth = koi.maxWidth * scale;
+    const pathSpine = koi.pathSpine;
+    const sp = [];
+    for (let i = 0; i < KOI_SPINE_COUNT; i++) {
+        const s = i / (KOI_SPINE_COUNT - 1);
+        const prev = pathSpine[Math.max(0, i - 1)];
+        const next = pathSpine[Math.min(KOI_SPINE_COUNT - 1, i + 1)];
+        const tx = prev.x - next.x;
+        const ty = prev.y - next.y;
+        const len = Math.hypot(tx, ty) || 1;
+        const nx = -ty / len;
+        const ny = tx / len;
+        const env = s < 0.22 ? 0 : ((s - 0.22) / 0.78) ** 1.9;
+        const waveOffset = Math.sin(koi.swimPhase - s * 4.0) * (maxWidth * 0.17) * env;
+        sp.push({
+            x: pathSpine[i].x + nx * waveOffset,
+            y: pathSpine[i].y + ny * waveOffset,
+            z: pathSpine[i].z,
+        });
+    }
+
+    const leftPts = [], rightPts = [], angles = [];
+    for (let i = 0; i < KOI_SPINE_COUNT; i++) {
+        const pPrev = sp[Math.max(0, i - 1)];
+        const pNext = sp[Math.min(KOI_SPINE_COUNT - 1, i + 1)];
+        let tx = pPrev.x - pNext.x, ty = pPrev.y - pNext.y;
+        const len = Math.hypot(tx, ty) || 1;
+        tx /= len; ty /= len;
+        const nx = -ty, ny = tx;
+        angles.push(Math.atan2(ty, tx));
+        const zScale = 1.06 - sp[i].z * 0.18;
+        const hw = KOI_BODY_PROFILE[i] * maxWidth * zScale;
+        leftPts.push({ x: sp[i].x + nx * hw, y: sp[i].y + ny * hw, nx, ny, hw, z: sp[i].z });
+        rightPts.push({ x: sp[i].x - nx * hw, y: sp[i].y - ny * hw, nx: -nx, ny: -ny, hw, z: sp[i].z });
+    }
+
+    const headZ = sp[0].z, midZ = sp[5].z, tailZ = sp[KOI_SPINE_COUNT - 1].z;
+    const subRgb = (rgb, z) => mix(rgb, waterRgb, Math.min(0.90, z * turbidity * 0.90 + 0.12));
+    const subAlpha = (a, z) => a * Math.max(0.24, 1 - z * turbidity * 0.56);
+
+    const traceFusiformBody = () => {
+        const noseExtend = maxWidth * 0.36;
+        const noseTipX = sp[0].x + Math.cos(angles[0]) * noseExtend;
+        const noseTipY = sp[0].y + Math.sin(angles[0]) * noseExtend;
+        const noseLeftX = noseTipX + leftPts[0].nx * leftPts[0].hw * 0.68;
+        const noseLeftY = noseTipY + leftPts[0].ny * leftPts[0].hw * 0.68;
+        const noseRightX = noseTipX + rightPts[0].nx * rightPts[0].hw * 0.68;
+        const noseRightY = noseTipY + rightPts[0].ny * rightPts[0].hw * 0.68;
+
+        cr.newPath();
+        cr.moveTo(noseTipX, noseTipY);
+        cr.curveTo(noseLeftX, noseLeftY, leftPts[0].x, leftPts[0].y, leftPts[0].x, leftPts[0].y);
+        for (let i = 1; i <= KOI_BODY_END_IDX; i++)
+            cr.lineTo(leftPts[i].x, leftPts[i].y);
+        cr.lineTo(sp[KOI_BODY_END_IDX].x, sp[KOI_BODY_END_IDX].y);
+        for (let i = KOI_BODY_END_IDX; i >= 0; i--)
+            cr.lineTo(rightPts[i].x, rightPts[i].y);
+        cr.curveTo(rightPts[0].x, rightPts[0].y, noseRightX, noseRightY, noseTipX, noseTipY);
+        cr.closePath();
+    };
+
+    // 1. Detached pond-bed shadow
+    const heightAboveBed = Math.max(0.08, 1.0 - midZ);
+    const shOffX = (4 + heightAboveBed * 8) * scale;
+    const shOffY = (7 + heightAboveBed * 13) * scale;
+    const shAlpha = 0.32 - heightAboveBed * 0.15;
+    if (shAlpha > 0.03) {
+        cr.save();
+        cr.translate(shOffX, shOffY);
+        cr.setSourceRGBA(0.01, 0.03, 0.07, shAlpha);
+        traceFusiformBody();
+        cr.fill();
+        cr.restore();
+    }
+
+    // 2. Swept-back teardrop pectoral fins (Munabire) with leading Oyabone ray + pelvic fins
+    const fBase = [0.97, 0.96, 0.94];
+    const jt3 = sp[3], ang3 = angles[3], z3 = jt3.z;
+    const fCol = subRgb(fBase, z3);
+    const leadCol = subRgb([1.0, 0.99, 0.97], z3);
+    const fA = subAlpha(0.56, z3);
+    const finSpan = maxWidth * 1.42;
+    const finSweep = maxWidth * 1.25;
+    for (const side of [-1, 1]) {
+        const anchor = side > 0 ? leftPts[2] : rightPts[2];
+        cr.save();
+        cr.translate(anchor.x * 0.78 + jt3.x * 0.22, anchor.y * 0.78 + jt3.y * 0.22);
+        cr.rotate(ang3);
+        const fg = new Cairo.RadialGradient(0, 0, 1, -finSweep * 0.4, side * finSpan * 0.45, finSpan * 1.15);
+        fg.addColorStopRGBA(0, fCol[0], fCol[1], fCol[2], fA);
+        fg.addColorStopRGBA(0.65, fCol[0], fCol[1], fCol[2], fA * 0.58);
+        fg.addColorStopRGBA(1, fCol[0], fCol[1], fCol[2], fA * 0.06);
+        cr.setSource(fg);
+        cr.newPath();
+        cr.moveTo(0, 0);
+        cr.curveTo(-finSweep * 0.05, side * finSpan * 0.55,
+            -finSweep * 0.48, side * finSpan * 0.98, -finSweep * 0.88, side * finSpan * 0.78);
+        cr.curveTo(-finSweep * 1.15, side * finSpan * 0.48,
+            -finSweep * 0.95, side * finSpan * 0.14, -finSweep * 0.65, 0);
+        cr.closePath();
+        cr.fill();
+
+        cr.setSourceRGBA(leadCol[0], leadCol[1], leadCol[2], fA * 0.92);
+        cr.setLineWidth(Math.max(0.85, 1.15 * scale));
+        cr.setLineCap(Cairo.LineCap.ROUND);
+        cr.newPath();
+        cr.moveTo(0, 0);
+        cr.curveTo(-finSweep * 0.08, side * finSpan * 0.42,
+            -finSweep * 0.35, side * finSpan * 0.72, -finSweep * 0.72, side * finSpan * 0.82);
+        cr.stroke();
+        cr.restore();
+    }
+
+    const jt7 = sp[7], ang7 = angles[7], z7 = jt7.z;
+    const pCol = subRgb(fBase, z7);
+    const pA = subAlpha(0.38, z7);
+    const pSpan = maxWidth * 0.72, pSweep = maxWidth * 0.68;
+    for (const side of [-1, 1]) {
+        const anchor = side > 0 ? leftPts[7] : rightPts[7];
+        cr.save();
+        cr.translate(anchor.x * 0.80 + jt7.x * 0.20, anchor.y * 0.80 + jt7.y * 0.20);
+        cr.rotate(ang7);
+        cr.setSourceRGBA(pCol[0], pCol[1], pCol[2], pA);
+        cr.newPath();
+        cr.moveTo(0, 0);
+        cr.curveTo(-pSweep * 0.1, side * pSpan * 0.5,
+            -pSweep * 0.4, side * pSpan * 0.75, -pSweep * 0.75, side * pSpan * 0.65);
+        cr.curveTo(-pSweep * 0.95, side * pSpan * 0.35,
+            -pSweep * 0.75, side * pSpan * 0.15, -pSweep * 0.55, 0);
+        cr.closePath();
+        cr.fill();
+        cr.restore();
+    }
+
+    // 3. Vertical-plane caudal fin (Obire) — slender silk brush along joints 11..15
+    const tCol = subRgb(fBase, tailZ);
+    const p11 = sp[11], p13 = sp[13], p15 = sp[15];
+    const n13x = leftPts[13].nx, n13y = leftPts[13].ny;
+    const n15x = leftPts[15].nx, n15y = leftPts[15].ny;
+    const tailAng = angles[14];
+    const backX = -Math.cos(tailAng), backY = -Math.sin(tailAng);
+    const flareMid = maxWidth * 0.34, flareTip = maxWidth * 0.42, brushExt = maxWidth * 0.36;
+    const tg = new Cairo.LinearGradient(
+        p11.x, p11.y, p15.x + backX * brushExt, p15.y + backY * brushExt);
+    tg.addColorStopRGBA(0, tCol[0], tCol[1], tCol[2], subAlpha(0.72, tailZ));
+    tg.addColorStopRGBA(0.55, tCol[0], tCol[1], tCol[2], subAlpha(0.42, tailZ));
+    tg.addColorStopRGBA(1, tCol[0], tCol[1], tCol[2], subAlpha(0.04, tailZ));
+    cr.setSource(tg);
+    cr.newPath();
+    cr.moveTo(leftPts[11].x, leftPts[11].y);
+    cr.curveTo(
+        p13.x + n13x * flareMid, p13.y + n13y * flareMid,
+        p15.x + n15x * flareTip, p15.y + n15y * flareTip,
+        p15.x + backX * brushExt + n15x * flareTip, p15.y + backY * brushExt + n15y * flareTip);
+    cr.lineTo(p15.x - backX * brushExt * 0.1, p15.y - backY * brushExt * 0.1);
+    cr.lineTo(
+        p15.x + backX * brushExt * 0.85 - n15x * flareTip * 0.88,
+        p15.y + backY * brushExt * 0.85 - n15y * flareTip * 0.88);
+    cr.curveTo(
+        p15.x - n15x * flareTip * 0.8, p15.y - n15y * flareTip * 0.8,
+        p13.x - n13x * flareMid * 0.9, p13.y - n13y * flareMid * 0.9,
+        rightPts[11].x, rightPts[11].y);
+    cr.closePath();
+    cr.fill();
+
+    // 4. Main fusiform body + organic rounded saddle islands over porcelain-white Shiroji skin
+    cr.save();
+    traceFusiformBody();
+    const hCol = subRgb(fBase, headZ);
+    const mCol = subRgb(fBase, midZ);
+    const bg = new Cairo.LinearGradient(sp[0].x, sp[0].y, sp[KOI_BODY_END_IDX].x, sp[KOI_BODY_END_IDX].y);
+    bg.addColorStopRGBA(0, hCol[0], hCol[1], hCol[2], subAlpha(0.95, headZ));
+    bg.addColorStopRGBA(0.65, mCol[0], mCol[1], mCol[2], subAlpha(0.90, midZ));
+    bg.addColorStopRGBA(1, tCol[0], tCol[1], tCol[2], subAlpha(0.78, tailZ));
+    cr.setSource(bg);
+    cr.fillPreserve();
+    cr.clip();
+
+    const markings = koi.variant === 'kohaku' ? [
+        { s: 0.09, off: 0.0, rx: 0.62, ry: 0.52, col: [0.88, 0.19, 0.09] },
+        { s: 0.34, off: 0.12, rx: 0.92, ry: 0.78, col: [0.88, 0.19, 0.09] },
+        { s: 0.60, off: -0.10, rx: 0.72, ry: 0.64, col: [0.88, 0.19, 0.09] },
+    ] : [
+        { s: 0.11, off: 0.0, rx: 0.58, ry: 0.48, col: [0.87, 0.18, 0.09] },
+        { s: 0.40, off: -0.14, rx: 0.88, ry: 0.72, col: [0.87, 0.18, 0.09] },
+        { s: 0.25, off: 0.30, rx: 0.46, ry: 0.38, col: [0.07, 0.09, 0.12] },
+        { s: 0.56, off: 0.22, rx: 0.52, ry: 0.42, col: [0.07, 0.09, 0.12] },
+        { s: 0.70, off: -0.16, rx: 0.40, ry: 0.34, col: [0.07, 0.09, 0.12] },
+    ];
+    for (const mk of markings) {
+        const fIdx = mk.s * (KOI_SPINE_COUNT - 1);
+        const i0 = Math.min(KOI_BODY_END_IDX - 1, Math.floor(fIdx));
+        const frac = fIdx - i0;
+        const cx = sp[i0].x + (sp[i0 + 1].x - sp[i0].x) * frac;
+        const cy = sp[i0].y + (sp[i0 + 1].y - sp[i0].y) * frac;
+        const jz = sp[i0].z + (sp[i0 + 1].z - sp[i0].z) * frac;
+        const nx = leftPts[i0].nx, ny = leftPts[i0].ny;
+        const sCol = subRgb(mk.col, jz);
+        const sA = subAlpha(0.92, jz);
+        cr.save();
+        cr.translate(cx + nx * mk.off * maxWidth, cy + ny * mk.off * maxWidth);
+        cr.rotate(angles[i0]);
+        cr.scale(mk.rx * maxWidth, mk.ry * maxWidth);
+        cr.setSourceRGBA(sCol[0], sCol[1], sCol[2], sA);
+        cr.arc(0, 0, 1, 0, TWO_PI);
+        cr.fill();
+        cr.restore();
+    }
+
+    const flCol = subRgb([0.03, 0.09, 0.14], midZ);
+    cr.setSourceRGBA(flCol[0], flCol[1], flCol[2], subAlpha(0.30, midZ));
+    cr.setLineWidth(maxWidth * 0.30);
+    traceFusiformBody();
+    cr.stroke();
+
+    const dCol = subRgb([1, 1, 1], midZ);
+    cr.setSourceRGBA(dCol[0], dCol[1], dCol[2], subAlpha(0.14, midZ));
+    cr.setLineWidth(maxWidth * 0.60);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.newPath();
+    for (let i = 1; i <= 8; i++) {
+        if (i === 1)
+            cr.moveTo(sp[i].x, sp[i].y);
+        else
+            cr.lineTo(sp[i].x, sp[i].y);
+    }
+    cr.stroke();
+
+    const vg = new Cairo.LinearGradient(sp[0].x, sp[0].y, sp[KOI_BODY_END_IDX].x, sp[KOI_BODY_END_IDX].y);
+    vg.addColorStopRGBA(0, waterRgb[0], waterRgb[1], waterRgb[2], headZ * turbidity * 0.38);
+    vg.addColorStopRGBA(1, waterRgb[0], waterRgb[1], waterRgb[2], tailZ * turbidity * 0.68);
+    cr.setSource(vg);
+    cr.paint();
+    cr.restore();
+
+    // 5. Delicate dorsal fin membrane (joints 5..9)
+    const dfCol = subRgb([0.98, 0.97, 0.95], midZ);
+    cr.setSourceRGBA(dfCol[0], dfCol[1], dfCol[2], subAlpha(0.36, midZ));
+    cr.setLineWidth(Math.max(0.85, maxWidth * 0.12));
+    cr.newPath();
+    for (let i = 5; i <= 9; i++) {
+        const sway = Math.sin(koi.swimPhase - i * 0.35) * 0.55 * scale;
+        const dx = sp[i].x + leftPts[i].nx * sway;
+        const dy = sp[i].y + leftPts[i].ny * sway;
+        if (i === 5)
+            cr.moveTo(dx, dy);
+        else
+            cr.lineTo(dx, dy);
+    }
+    cr.stroke();
+
+    // 6. Inset lateral eyes & sensory barbels (hige)
+    if (headZ < 0.72) {
+        const eyeA = subAlpha(0.72, headZ);
+        const p1 = sp[1];
+        const nx = leftPts[1].nx, ny = leftPts[1].ny;
+        const hw = leftPts[1].hw * 0.82;
+        const mouthX = sp[0].x + Math.cos(angles[0]) * maxWidth * 0.30;
+        const mouthY = sp[0].y + Math.sin(angles[0]) * maxWidth * 0.30;
+        const bCol = subRgb([0.92, 0.76, 0.68], headZ);
+        cr.setSourceRGBA(bCol[0], bCol[1], bCol[2], subAlpha(0.58, headZ));
+        cr.setLineWidth(Math.max(0.65, 0.85 * scale));
+        for (const side of [-1, 1]) {
+            const bx0 = mouthX + nx * side * leftPts[0].hw * 0.55;
+            const by0 = mouthY + ny * side * leftPts[0].hw * 0.55;
+            const bAng = angles[0] + side * 0.75;
+            cr.newPath();
+            cr.moveTo(bx0, by0);
+            cr.lineTo(bx0 + Math.cos(bAng) * 3.8 * scale, by0 + Math.sin(bAng) * 3.8 * scale);
+            cr.stroke();
+        }
+        cr.setSourceRGBA(0.06, 0.08, 0.11, eyeA);
+        for (const side of [-1, 1]) {
+            cr.arc(p1.x + nx * hw * side, p1.y + ny * hw * side,
+                Math.max(0.85, maxWidth * 0.12), 0, TWO_PI);
+            cr.fill();
+        }
+    }
+
+    // 7. Surface-kiss meniscus & concentric rings when headZ < 0.12
+    if (headZ < 0.12) {
+        const kissT = 1 - headZ / 0.12;
+        const noseX = sp[0].x + Math.cos(angles[0]) * maxWidth * 0.38;
+        const noseY = sp[0].y + Math.sin(angles[0]) * maxWidth * 0.38;
+        cr.save();
+        cr.translate(noseX, noseY);
+        cr.scale(1, 0.38);
+        cr.setSourceRGBA(1.0, 0.95, 0.78, 0.82 * kissT);
+        cr.setLineWidth(1.5 * scale);
+        cr.arc(0, 0, 6.5 * scale, 0, TWO_PI);
+        cr.stroke();
+        cr.setSourceRGBA(0.92, 0.96, 1.0, 0.56 * kissT);
+        cr.setLineWidth(1.1 * scale);
+        cr.arc(0, 0, 15.5 * scale, 0, TWO_PI);
+        cr.stroke();
+        cr.setSourceRGBA(0.88, 0.95, 1.0, 0.32 * kissT);
+        cr.setLineWidth(0.9 * scale);
+        cr.arc(0, 0, 26.5 * scale, 0, TWO_PI);
+        cr.stroke();
+        cr.restore();
+    }
+}
+
+/* Layered Submersion + Surface Kiss Koi Pond Floor (0.685h .. 1.0h) */
+function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
+    if (!sky.koi || !sky.koi.length)
+        return;
+    const sh = sceneHeight(width, height);
+    const groundOffset = height - sh;
+    const pondTopY = groundOffset + 0.685 * sh;
+    const pondH = height - pondTopY;
+    if (pondH <= 4)
+        return;
+    const waterRgb = night ? [0.03, 0.10, 0.15] : [0.07, 0.22, 0.28];
+    const turbidity = night ? 0.58 : 0.64;
+
+    // Pass 1: Feathered pond-water depth wash (0 alpha at pondTopY so no horizon seam)
+    const bedGrad = new Cairo.LinearGradient(0, pondTopY - 12 * scale, 0, height);
+    bedGrad.addColorStopRGBA(0, waterRgb[0], waterRgb[1], waterRgb[2], 0);
+    bedGrad.addColorStopRGBA(0.32, waterRgb[0], waterRgb[1], waterRgb[2], night ? 0.18 : 0.22);
+    bedGrad.addColorStopRGBA(1, waterRgb[0] * 0.7, waterRgb[1] * 0.8, waterRgb[2] * 0.85,
+        night ? 0.30 : 0.36);
+    cr.setSource(bedGrad);
+    cr.rectangle(0, pondTopY - 12 * scale, width, pondH + 12 * scale);
+    cr.fill();
+
+    // Pass 2: Step & render submerged Nishikigoi sorted back-to-front by midZ
+    for (const koi of sky.koi)
+        stepKoi(koi, dt, width, height, pondTopY, scale);
+    const orderedKoi = sky.koi.slice().sort((a, b) => b.pathSpine[5].z - a.pathSpine[5].z);
+    for (const koi of orderedKoi)
+        drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity);
+
+    // Pass 3: Underwater shadows cast by floating lotus pads onto the water & koi below
+    const pads = sky.pads ?? [];
+    for (const pad of pads) {
+        const pr = pad.r * scale;
+        cr.save();
+        cr.translate(pad.x + 4 * scale, pad.y + 8 * scale);
+        cr.scale(1, 0.55);
+        cr.setSourceRGBA(0.01, 0.04, 0.08, 0.40);
+        cr.arc(0, 0, pr * 1.04, 0, TWO_PI);
+        cr.fill();
+        cr.restore();
+    }
+
+    // Pass 4: Feathered underwater caustic light web + surface reflection veil + sky glare
+    cr.save();
+    cr.rectangle(0, pondTopY, width, pondH);
+    cr.clip();
+    cr.setLineWidth(1.6 * scale);
+    for (let r = 0; r < 5; r++) {
+        const by = pondTopY + (22 + r * 19) * scale;
+        const vFade = Math.sin(((r + 0.5) / 5) * Math.PI);
+        cr.setSourceRGBA(0.85, 0.97, 1.0, (night ? 0.045 : 0.07) * vFade);
+        cr.newPath();
+        for (let dx = 0; dx <= width; dx += 10) {
+            const py = by
+                + Math.sin(dx * 0.045 + time * 1.1 + r * 1.2) * 4.2 * scale
+                + Math.cos(dx * 0.028 - time * 0.8 - r * 1.8) * 2.8 * scale;
+            if (dx === 0)
+                cr.moveTo(dx, py);
+            else
+                cr.lineTo(dx, py);
+        }
+        cr.stroke();
+    }
+    const veilGrad = new Cairo.LinearGradient(0, pondTopY, 0, height);
+    veilGrad.addColorStopRGBA(0, waterRgb[0], waterRgb[1], waterRgb[2], 0);
+    veilGrad.addColorStopRGBA(0.38, waterRgb[0], waterRgb[1], waterRgb[2], turbidity * 0.20);
+    veilGrad.addColorStopRGBA(1, waterRgb[0], waterRgb[1], waterRgb[2], turbidity * 0.34);
+    cr.setSource(veilGrad);
+    cr.rectangle(0, pondTopY, width, pondH);
+    cr.fill();
+    cr.restore();
+
+    // Pass 5: Floating foreshortened lotus pads & lotus blossom on the water surface
+    for (const pad of pads) {
+        const pr = pad.r * scale;
+        cr.save();
+        cr.translate(pad.x, pad.y);
+        cr.scale(1, 0.55);
+        const pg = new Cairo.RadialGradient(-3 * scale, -3 * scale, 1.5 * scale, 0, 0, pr);
+        if (night) {
+            pg.addColorStopRGBA(0, 0.14, 0.30, 0.22, 0.94);
+            pg.addColorStopRGBA(1, 0.07, 0.17, 0.12, 0.94);
+        } else {
+            pg.addColorStopRGBA(0, 0.25, 0.50, 0.34, 0.94);
+            pg.addColorStopRGBA(1, 0.13, 0.29, 0.19, 0.94);
+        }
+        cr.setSource(pg);
+        cr.newPath();
+        cr.moveTo(0, 0);
+        cr.arc(0, 0, pr, pad.notch + 0.26, pad.notch + TWO_PI - 0.26);
+        cr.closePath();
+        cr.fillPreserve();
+        cr.setSourceRGBA(0.72, 0.92, 0.76, night ? 0.22 : 0.32);
+        cr.setLineWidth(Math.max(0.75, scale));
+        cr.stroke();
+        cr.restore();
+
+        if (pad.hasFlower) {
+            cr.save();
+            cr.translate(pad.x + 3.5 * scale, pad.y - 3.5 * scale);
+            for (let p = 0; p < 8; p++) {
+                cr.save();
+                cr.rotate((p / 8) * TWO_PI);
+                cr.scale(2.9 * scale, 6.8 * scale);
+                cr.setSourceRGBA(1.0, 0.76, 0.85, night ? 0.82 : 0.94);
+                cr.arc(0, -0.8, 1, 0, TWO_PI);
+                cr.fill();
+                cr.restore();
+            }
+            cr.setSourceRGBA(0.96, 0.77, 0.26, night ? 0.88 : 0.98);
+            cr.arc(0, -0.8 * scale, 2.8 * scale, 0, TWO_PI);
+            cr.fill();
+            cr.restore();
+        }
+    }
+}
+
+/* Rain, Drizzle & Showers: 3-tier WMO intensity + connected raindrop-to-ripple impacts + koi pond */
+function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 0, night = false) {
     if (!sky.drops.length)
         return;
-    const isDrizzle = code === 51 || code === 53 || code === 55;
-    const speedMul = isDrizzle ? 0.68 : 1.0;
-    const lenMul = isDrizzle ? 0.65 : 1.0;
-    const slant = scene === 'sleet' ? 0.34 : (isDrizzle ? 0.18 : 0.28);
+    if (scene === 'rain')
+        drawKoiPond(cr, sky, width, height, scale, dt, time, night);
 
+    const isLightRain = code === 51 || code === 56 || code === 61 || code === 80;
+    const isModRain = code === 53 || code === 63 || code === 66 || code === 81;
+    const isHeavyRain = code === 55 || code === 57 || code === 65 || code === 67
+        || code === 82 || (code !== null && code >= 95);
+    const isDrizzle = code === 51 || code === 53 || code === 55;
+    const activeFrac = isLightRain ? 0.32 : (isModRain ? 0.64 : 1.0);
+    const speedMul = isDrizzle ? 0.68 : (isLightRain ? 0.74 : (isHeavyRain ? 1.26 : 1.0));
+    const lenMul = isDrizzle ? 0.65 : (isLightRain ? 0.72 : (isHeavyRain ? 1.18 : 1.0));
+    const slant = scene === 'sleet'
+        ? 0.34
+        : (isDrizzle || isLightRain ? 0.17 : (isHeavyRain ? 0.32 : (code === null ? 0.28 : 0.25)));
+    const isSlotActive = i => i === 0 || Math.floor((i + 1) * activeFrac) > Math.floor(i * activeFrac);
+
+    for (let i = 0; i < sky.ripples.length; i++) {
+        if (!isSlotActive(i))
+            continue;
+        sky.ripples[i].phase += sky.ripples[i].speed * dt;
+    }
+
+    const spawnImpactRipple = (impactX, impactY, layer) => {
+        let bestRp = null;
+        let bestPhase = 0.45;
+        for (let i = 0; i < sky.ripples.length; i++) {
+            if (!isSlotActive(i))
+                continue;
+            const rp = sky.ripples[i];
+            if (rp.phase > bestPhase) {
+                bestPhase = rp.phase;
+                bestRp = rp;
+            }
+        }
+        if (bestRp) {
+            bestRp.x = Math.max(0.05 * width, Math.min(0.95 * width, impactX));
+            bestRp.y = impactY;
+            bestRp.band = layer;
+            bestRp.phase = 0.02;
+        }
+    };
 
     const rainColor = scene === 'sleet' ? [0.66, 0.82, 0.95] : [0.74, 0.85, 0.96];
     cr.setLineCap(Cairo.LineCap.ROUND);
-    for (const drop of sky.drops) {
+    for (let i = 0; i < sky.drops.length; i++) {
+        if (!isSlotActive(i))
+            continue;
+        const drop = sky.drops[i];
         const speed = (drop.speed ?? drop.sp) * speedMul;
         const length = (drop.length ?? drop.l) * lenMul * scale;
         const layer = drop.layer ?? 1;
@@ -1083,6 +1659,10 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null) {
         drop.y += speed * dt * scale;
         drop.x -= speed * slant * dt * scale;
         if (drop.y + length > maxFloorY) {
+            if (dt > 0) {
+                const impactX = drop.x - Math.max(0, maxFloorY - drop.y) * slant;
+                spawnImpactRipple(impactX, maxFloorY, layer);
+            }
             drop.y = rand(-45 * scale, -10 * scale);
             drop.x = rand(-20 * scale, width + 110 * scale);
         }
@@ -1104,16 +1684,12 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null) {
     // Perspective-graded ground splashes & ripples from day-tiles top (0.685h) to card floor (0.99h)
     const sh = sceneHeight(width, height);
     const groundOffset = height - sh;
-    for (const rp of sky.ripples) {
-        rp.phase += rp.speed * dt;
-        if (rp.phase >= 1) {
-            rp.phase -= 1;
-            const band = rp.band ?? 2;
-            const yMin = band === 0 ? 0.685 : (band === 1 ? 0.795 : 0.905);
-            const yMax = band === 0 ? 0.795 : (band === 1 ? 0.905 : 0.990);
-            rp.x = rand(0.05 * width, 0.95 * width);
-            rp.y = groundOffset + rand(yMin * sh, yMax * sh);
-        }
+    for (let i = 0; i < sky.ripples.length; i++) {
+        if (!isSlotActive(i))
+            continue;
+        const rp = sky.ripples[i];
+        if (rp.phase >= 1)
+            continue;
         const depth = Math.max(0, Math.min(1, (rp.y - (groundOffset + 0.68 * sh)) / (0.31 * sh)));
         const pScale = (0.52 + 0.54 * depth) * scale;
         const pAlpha = 0.52 + 0.38 * depth;
@@ -2027,7 +2603,7 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
         drawClouds(fc, sky, width, height, scale, dt, time, scene, night, twilight,
             Boolean(features.bolt));
         drawFog(fc, sky, width, dt, time, night, scale);
-        drawRain(fc, sky, width, height, scale, dt, scene, code);
+        drawRain(fc, sky, width, height, scale, dt, scene, code, time, night);
         drawSnow(fc, sky, width, height, scale, dt, time, code, variant);
         drawSleetPellets(fc, sky, width, height, scale, dt);
         drawHail(fc, sky, width, height, dt);
