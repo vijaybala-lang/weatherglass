@@ -3279,7 +3279,7 @@ function drawStormReedClump(cr, x, y, sc, dir, stalkCount, sway) {
     // Concentric surface ripple at reed base (outer radius 1.0, inner radius 1/phi = 0.618)
     cr.save();
     cr.scale(9.8, 2.7);
-    cr.setSourceRGBA(0.58, 0.82, 0.92, 0.36);
+    cr.setSourceRGBA(0.38, 0.56, 0.64, 0.24);
     cr.setLineWidth(0.08);
     cr.newPath();
     cr.arc(0, 0.4, 1, 0, TWO_PI);
@@ -3288,21 +3288,21 @@ function drawStormReedClump(cr, x, y, sc, dir, stalkCount, sway) {
     cr.stroke();
     cr.restore();
 
-    // Upright-fanning sheathing ribbon leaves (staying compactly inside the 44px alley)
+    // Upright-fanning sheathing ribbon leaves (dimmed for atmospheric depth)
     const leaves = stalkCount >= 3 ? [
-        [-4.2, 2, -5.8, -7.5, -5.2 + sway * 0.4, -15.0, -3.5 + sway, -21.5, [0.16, 0.38, 0.26]],
-        [-1.5, 2, -1.0, -8.5, 0.5 + sway * 0.5, -16.5, 2.2 + sway, -22.5, [0.22, 0.48, 0.32]],
-        [2.2, 2, 3.8, -7.0, 5.0 + sway * 0.5, -13.5, 6.2 + sway, -18.0, [0.26, 0.54, 0.36]],
-        [-5.2, 2, -6.8, -5.5, -6.5 + sway * 0.3, -11.5, -5.5 + sway * 0.6, -15.8, [0.18, 0.42, 0.28]],
-        [3.5, 2, 5.2, -5.0, 6.5 + sway * 0.4, -10.0, 7.2 + sway * 0.7, -14.0, [0.20, 0.44, 0.30]],
+        [-4.2, 2, -5.8, -7.5, -5.2 + sway * 0.4, -15.0, -3.5 + sway, -21.5, [0.10, 0.24, 0.18]],
+        [-1.5, 2, -1.0, -8.5, 0.5 + sway * 0.5, -16.5, 2.2 + sway, -22.5, [0.14, 0.30, 0.21]],
+        [2.2, 2, 3.8, -7.0, 5.0 + sway * 0.5, -13.5, 6.2 + sway, -18.0, [0.16, 0.34, 0.24]],
+        [-5.2, 2, -6.8, -5.5, -6.5 + sway * 0.3, -11.5, -5.5 + sway * 0.6, -15.8, [0.11, 0.26, 0.19]],
+        [3.5, 2, 5.2, -5.0, 6.5 + sway * 0.4, -10.0, 7.2 + sway * 0.7, -14.0, [0.13, 0.28, 0.20]],
     ] : [
-        [-2.5, 2, -3.5, -7.0, -2.2 + sway * 0.4, -14.0, -0.8 + sway, -19.5, [0.18, 0.42, 0.28]],
-        [1.2, 2, 2.8, -6.5, 4.0 + sway * 0.5, -12.5, 5.0 + sway, -16.5, [0.24, 0.50, 0.34]],
-        [-3.6, 2, -4.5, -5.0, -3.8 + sway * 0.3, -10.0, -2.6 + sway * 0.6, -13.6, [0.16, 0.38, 0.26]],
+        [-2.5, 2, -3.5, -7.0, -2.2 + sway * 0.4, -14.0, -0.8 + sway, -19.5, [0.11, 0.26, 0.19]],
+        [1.2, 2, 2.8, -6.5, 4.0 + sway * 0.5, -12.5, 5.0 + sway, -16.5, [0.15, 0.32, 0.22]],
+        [-3.6, 2, -4.5, -5.0, -3.8 + sway * 0.3, -10.0, -2.6 + sway * 0.6, -13.6, [0.10, 0.24, 0.18]],
     ];
     for (const [x0, y0, x1, y1, x2, y2, x3, y3, col] of leaves) {
         drawSmoothLimb(cr, x0, y0, 1.10, x1, y1, x2, y2, x3, y3, 0.15);
-        cr.setSourceRGBA(col[0], col[1], col[2], 0.94);
+        cr.setSourceRGBA(col[0], col[1], col[2], 0.72);
         cr.fill();
     }
 
@@ -3314,7 +3314,7 @@ function drawStormReedClump(cr, x, y, sc, dir, stalkCount, sway) {
     ];
     for (let i = 0; i < stalkCount; i++) {
         const [x0, y0, x1, y1, x2, y2, x3, y3, wScale] = allStalks[i];
-        cr.setSourceRGBA(0.30, 0.58, 0.38, 0.96);
+        cr.setSourceRGBA(0.19, 0.37, 0.25, 0.75);
         cr.setLineWidth(1.0 * wScale);
         cr.newPath();
         cr.moveTo(x0, y0);
@@ -3326,20 +3326,20 @@ function drawStormReedClump(cr, x, y, sc, dir, stalkCount, sway) {
         cr.save();
         cr.translate(sx, sy);
         cr.rotate(ang);
-        cr.setSourceRGBA(0.32, 0.16, 0.08, 0.98);
+        cr.setSourceRGBA(0.22, 0.12, 0.07, 0.78);
         cr.setLineCap(Cairo.LineCap.ROUND);
         cr.setLineWidth(2.9 * wScale);
         cr.newPath();
         cr.moveTo(-2.8 * wScale, 0);
         cr.lineTo(2.1 * wScale, 0);
         cr.stroke();
-        cr.setSourceRGBA(0.56, 0.34, 0.18, 0.85);
+        cr.setSourceRGBA(0.36, 0.22, 0.13, 0.64);
         cr.setLineWidth(0.88 * wScale);
         cr.newPath();
         cr.moveTo(-2.6 * wScale, -0.68 * wScale);
         cr.lineTo(1.9 * wScale, -0.68 * wScale);
         cr.stroke();
-        cr.setSourceRGBA(0.78, 0.66, 0.44, 0.92);
+        cr.setSourceRGBA(0.48, 0.42, 0.29, 0.68);
         cr.setLineWidth(0.78 * wScale);
         cr.newPath();
         cr.moveTo(2.1 * wScale, 0);
@@ -3370,7 +3370,7 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
 
     cr.save();
     cr.scale(12.2, 3.4);
-    cr.setSourceRGBA(0.58, 0.82, 0.92, 0.32);
+    cr.setSourceRGBA(0.38, 0.56, 0.64, 0.22);
     cr.setLineWidth(0.08);
     cr.newPath();
     cr.arc(0, 0.2, 1, 0, TWO_PI);
@@ -3381,7 +3381,7 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
 
     cr.save();
     cr.scale(10.5, 4.3);
-    cr.setSourceRGBA(0.18, 0.46, 0.28, 0.94);
+    cr.setSourceRGBA(0.12, 0.30, 0.19, 0.72);
     cr.newPath();
     cr.moveTo(0, 0);
     cr.arc(0, 0, 1, 0.25, TWO_PI - 0.25);
@@ -3389,7 +3389,7 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.fill();
     cr.restore();
 
-    cr.setSourceRGBA(0.24, 0.52, 0.32, 0.95);
+    cr.setSourceRGBA(0.16, 0.34, 0.22, 0.74);
     cr.setLineWidth(1.2);
     cr.newPath();
     cr.moveTo(6.2, 0);
@@ -3399,17 +3399,17 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.save();
     cr.translate(7.5, -8.2);
     for (const [ang, len, wid, cTop, cBot] of [
-        [-0.55, 6.0, 2.1, [0.88, 0.42, 0.58], [0.62, 0.26, 0.40]],
-        [0.55, 6.0, 2.1, [0.88, 0.42, 0.58], [0.62, 0.26, 0.40]],
-        [-0.26, 6.6, 2.2, [0.96, 0.58, 0.72], [0.76, 0.34, 0.50]],
-        [0.26, 6.6, 2.2, [0.96, 0.58, 0.72], [0.76, 0.34, 0.50]],
-        [0.00, 7.0, 2.3, [1.00, 0.76, 0.86], [0.84, 0.42, 0.58]],
+        [-0.55, 6.0, 2.1, [0.54, 0.27, 0.37], [0.38, 0.17, 0.26]],
+        [0.55, 6.0, 2.1, [0.54, 0.27, 0.37], [0.38, 0.17, 0.26]],
+        [-0.26, 6.6, 2.2, [0.59, 0.36, 0.45], [0.46, 0.22, 0.32]],
+        [0.26, 6.6, 2.2, [0.59, 0.36, 0.45], [0.46, 0.22, 0.32]],
+        [0.00, 7.0, 2.3, [0.64, 0.47, 0.54], [0.52, 0.27, 0.37]],
     ]) {
         cr.save();
         cr.rotate(ang);
         const pg = new Cairo.LinearGradient(0, -len, 0, 0);
-        pg.addColorStopRGBA(0, cTop[0], cTop[1], cTop[2], 0.98);
-        pg.addColorStopRGBA(1, cBot[0], cBot[1], cBot[2], 0.96);
+        pg.addColorStopRGBA(0, cTop[0], cTop[1], cTop[2], 0.76);
+        pg.addColorStopRGBA(1, cBot[0], cBot[1], cBot[2], 0.74);
         cr.setSource(pg);
         cr.newPath();
         cr.moveTo(0, 0);
@@ -3421,34 +3421,34 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     }
     cr.restore();
 
-    cr.setSourceRGBA(0.38, 0.76, 0.34, 0.96);
+    cr.setSourceRGBA(0.24, 0.48, 0.23, 0.74);
     cr.newPath();
     cr.moveTo(-4.2, -0.5);
     cr.curveTo(-2.5, -4.6, 1.5, -5.2, 4.2, -3.2);
     cr.curveTo(4.6, -1.2, 1.5, 0.5, -4.2, -0.5);
     cr.closePath();
     cr.fill();
-    cr.setSourceRGBA(0.98, 0.82, 0.28, 0.98);
+    cr.setSourceRGBA(0.60, 0.50, 0.19, 0.76);
     cr.newPath();
     cr.arc(2.6, -4.4, 1.2, 0, TWO_PI);
     cr.fill();
     cr.restore();
 
-    // 2. Golden-Ratio Cattail Reeds: Primary 1.0 Phi clump in 1-2-X pocket + Balancing 0.618 Phi clump in Sat-Sun Alley 3
+    // 2. Golden-Ratio Cattail Reeds: Primary 1.0 Phi clump left of Thu tile + Balancing 0.618 Phi clump right of Sun tile
     const reedSway = 0.6 + Math.sin((time - 1.1) * 2.5) * 0.9;
-    drawStormReedClump(cr, width * 0.733, height - 12 * scale, 1.11 * scale, -1, 2, reedSway);
-    drawStormReedClump(cr, width * 0.267, height - 82 * scale, 1.56 * scale, 1, 3, reedSway);
+    drawStormReedClump(cr, width * 0.948, height - 14 * scale, 1.11 * scale, -1, 2, reedSway);
+    drawStormReedClump(cr, width * 0.052, height - 16 * scale, 1.56 * scale, 1, 3, reedSway);
 
-    // 3. Foreground Hero Frog & Cupped 11-Veined Peltate Lotus Umbrella lower in Alley 2 (between Fri & Sat: 1.0 Phi)
+    // 3. Foreground Hero Frog & Cupped 11-Veined Peltate Lotus Umbrella centered in Mon-Tue-Fri-Sat intersection (x = 0.50w, y = h - 72*scale)
     const sac = Math.pow(0.5 + 0.5 * Math.cos((time - 1.1) * 3.0), 1.5);
     cr.save();
-    cr.translate(width * 0.50, height - 10 * scale);
+    cr.translate(width * 0.50, height - 72 * scale);
     cr.scale(1.62 * scale, 1.62 * scale);
 
     // Concentric ripple around boulder
     cr.save();
     cr.scale(13.5, 3.6);
-    cr.setSourceRGBA(0.58, 0.82, 0.92, 0.36);
+    cr.setSourceRGBA(0.38, 0.56, 0.64, 0.24);
     cr.setLineWidth(0.07);
     cr.newPath();
     cr.arc(0, 0.3, 1, 0, TWO_PI);
@@ -3459,9 +3459,9 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
 
     // Wet stratified river boulder
     const rg = new Cairo.RadialGradient(-3, -1, 1, 0, 2, 12.0);
-    rg.addColorStopRGBA(0, 0.28, 0.38, 0.40, 0.98);
-    rg.addColorStopRGBA(0.7, 0.16, 0.24, 0.28, 0.98);
-    rg.addColorStopRGBA(1, 0.08, 0.14, 0.18, 0.98);
+    rg.addColorStopRGBA(0, 0.19, 0.26, 0.28, 0.78);
+    rg.addColorStopRGBA(0.7, 0.11, 0.17, 0.20, 0.78);
+    rg.addColorStopRGBA(1, 0.06, 0.10, 0.13, 0.78);
     cr.save();
     cr.scale(11.6, 4.2);
     cr.setSource(rg);
@@ -3473,7 +3473,7 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.restore();
 
     // Curving lotus petiole stem (golden height -16.8)
-    cr.setSourceRGBA(0.18, 0.42, 0.28, 0.96);
+    cr.setSourceRGBA(0.12, 0.27, 0.19, 0.74);
     cr.setLineWidth(1.55);
     cr.newPath();
     cr.moveTo(4.8, 1.6);
@@ -3485,7 +3485,7 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.translate(1.8, -16.8);
     cr.rotate(-0.10 + Math.sin((time - 1.1) * 2.2) * 0.03);
 
-    cr.setSourceRGBA(0.12, 0.30, 0.20, 0.95);
+    cr.setSourceRGBA(0.08, 0.20, 0.14, 0.74);
     cr.newPath();
     cr.moveTo(-11.8, 0.5);
     cr.curveTo(-5.6, 2.9, 5.6, 2.9, 11.8, 0.5);
@@ -3494,9 +3494,9 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.fill();
 
     const lg = new Cairo.RadialGradient(0, -1.0, 0.8, 0, -1.0, 12.2);
-    lg.addColorStopRGBA(0, 0.36, 0.72, 0.44, 0.98);
-    lg.addColorStopRGBA(0.65, 0.20, 0.52, 0.32, 0.98);
-    lg.addColorStopRGBA(1, 0.14, 0.38, 0.24, 0.98);
+    lg.addColorStopRGBA(0, 0.23, 0.45, 0.29, 0.76);
+    lg.addColorStopRGBA(0.65, 0.13, 0.33, 0.21, 0.76);
+    lg.addColorStopRGBA(1, 0.09, 0.24, 0.16, 0.76);
     cr.setSource(lg);
     cr.newPath();
     cr.moveTo(-12.2, 0.2);
@@ -3507,7 +3507,7 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.closePath();
     cr.fill();
 
-    cr.setSourceRGBA(0.64, 0.90, 0.68, 0.55);
+    cr.setSourceRGBA(0.40, 0.56, 0.44, 0.38);
     cr.setLineWidth(0.5);
     cr.newPath();
     for (const [vx, vy] of [[-10.2, -0.2], [-7.9, -2.0], [-4.6, -3.5], [0, -4.0],
@@ -3518,7 +3518,7 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.stroke();
 
     // Quicksilver rainwater beads on lotus leaf
-    cr.setSourceRGBA(0.86, 0.97, 1.0, 0.94);
+    cr.setSourceRGBA(0.56, 0.64, 0.68, 0.68);
     cr.newPath();
     cr.arc(-4.8, -1.8, 1.0, 0, TWO_PI);
     cr.newSubPath();
@@ -3529,7 +3529,7 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.restore();
 
     // Anatomical Green Tree Frog (Dryophytes) with Z-folded hind leg & inflating amber vocal sac
-    cr.setSourceRGBA(0.24, 0.58, 0.28, 0.98);
+    cr.setSourceRGBA(0.15, 0.37, 0.19, 0.76);
     cr.setLineWidth(1.9);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineJoin(Cairo.LineJoin.ROUND);
@@ -3543,9 +3543,9 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     if (sac > 0.05) {
         const sr = 1.2 + sac * 1.9;
         const sg = new Cairo.RadialGradient(-6.4, -1.8, 0.3, -5.8, -1.4, sr);
-        sg.addColorStopRGBA(0, 1.0, 0.95, 0.68, 0.94);
-        sg.addColorStopRGBA(0.6, 0.95, 0.72, 0.26, 0.90);
-        sg.addColorStopRGBA(1, 0.76, 0.48, 0.14, 0.85);
+        sg.addColorStopRGBA(0, 0.62, 0.58, 0.42, 0.72);
+        sg.addColorStopRGBA(0.6, 0.58, 0.45, 0.18, 0.70);
+        sg.addColorStopRGBA(1, 0.46, 0.30, 0.11, 0.66);
         cr.setSource(sg);
         cr.newPath();
         cr.arc(-5.8, -1.4, sr, 0, TWO_PI);
@@ -3553,9 +3553,9 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     }
 
     const fg = new Cairo.LinearGradient(-6, -6.4, 4, 0.5);
-    fg.addColorStopRGBA(0, 0.52, 0.88, 0.38, 0.99);
-    fg.addColorStopRGBA(0.55, 0.28, 0.68, 0.32, 0.99);
-    fg.addColorStopRGBA(1, 0.16, 0.46, 0.24, 0.99);
+    fg.addColorStopRGBA(0, 0.32, 0.55, 0.25, 0.78);
+    fg.addColorStopRGBA(0.55, 0.18, 0.43, 0.21, 0.78);
+    fg.addColorStopRGBA(1, 0.10, 0.29, 0.16, 0.78);
     cr.setSource(fg);
     cr.newPath();
     cr.moveTo(3.4, -0.4);
@@ -3566,14 +3566,14 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.closePath();
     cr.fill();
 
-    cr.setSourceRGBA(0.94, 0.96, 0.72, 0.90);
+    cr.setSourceRGBA(0.58, 0.60, 0.46, 0.65);
     cr.setLineWidth(0.75);
     cr.newPath();
     cr.moveTo(-7.2, -3.4);
     cr.curveTo(-3.8, -3.4, -0.5, -2.2, 2.6, -0.8);
     cr.stroke();
 
-    cr.setSourceRGBA(0.32, 0.70, 0.34, 0.98);
+    cr.setSourceRGBA(0.20, 0.44, 0.22, 0.76);
     cr.setLineWidth(1.35);
     cr.newPath();
     cr.moveTo(-3.2, -2.2);
@@ -3585,11 +3585,11 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
         cr.fill();
     }
 
-    cr.setSourceRGBA(0.98, 0.82, 0.28, 0.98);
+    cr.setSourceRGBA(0.60, 0.50, 0.19, 0.76);
     cr.newPath();
     cr.arc(-5.1, -5.4, 1.5, 0, TWO_PI);
     cr.fill();
-    cr.setSourceRGBA(0.06, 0.08, 0.10, 0.98);
+    cr.setSourceRGBA(0.05, 0.07, 0.09, 0.80);
     cr.save();
     cr.translate(-5.2, -5.4);
     cr.scale(1.0, 0.46);
@@ -3598,6 +3598,15 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.fill();
     cr.restore();
     cr.restore();
+
+    // Feathered storm-atmosphere veil to recess floor elements behind foreground UI labels
+    const veilG = new Cairo.LinearGradient(0, floorTop - 12 * scale, 0, height);
+    veilG.addColorStopRGBA(0, 0.03, 0.08, 0.12, 0.0);
+    veilG.addColorStopRGBA(0.22, 0.03, 0.08, 0.12, night ? 0.24 : 0.16);
+    veilG.addColorStopRGBA(1, 0.02, 0.06, 0.10, night ? 0.28 : 0.20);
+    cr.setSource(veilG);
+    cr.rectangle(0, floorTop - 12 * scale, width, height - floorTop + 12 * scale);
+    cr.fill();
 }
 
 /* C1 (Clear Day 55–75°F): Sunlit Pastoral Hills, Dutch Lattice-Sail Windmill, Woodland & High Hot-Air Balloon */
