@@ -480,26 +480,26 @@ function rebuild(sky, width, height, scene) {
         sky.koi = [
             {
                 variant: 'kohaku',
-                angle: -0.32, turnBend: 0.20,
-                length: 58, maxWidth: 7.4,
+                angle: -0.14, turnBend: 0.16,
+                length: 54, maxWidth: 7.0,
                 baseDepth: 0.28, headZ: 0.05, tailZ: 0.45,
                 swimPhase: 1.0, speed: 22, kissClock: 1.2, patrolPhase: 0.4,
                 pathSpine: buildInitialKoiSpine(
-                    width * 0.50, height - 86 * gs, -0.32, 0.20, 58 * gs, 0.05, 0.45),
+                    width * 0.48, height - 83 * gs, -0.14, 0.16, 54 * gs, 0.05, 0.45),
             },
             {
                 variant: 'sanke',
-                angle: Math.PI - 0.22, turnBend: -0.15,
-                length: 50, maxWidth: 6.4,
-                baseDepth: 0.56, headZ: 0.54, tailZ: 0.64,
+                angle: Math.PI + 0.12, turnBend: -0.12,
+                length: 42, maxWidth: 5.6,
+                baseDepth: 0.62, headZ: 0.60, tailZ: 0.70,
                 swimPhase: 2.1, speed: 18, kissClock: 4.5, patrolPhase: 2.6,
                 pathSpine: buildInitialKoiSpine(
-                    width * 0.73, height - 24 * gs, Math.PI - 0.22, -0.15, 50 * gs, 0.54, 0.64),
+                    width * 0.675, height - 45 * gs, Math.PI + 0.12, -0.12, 42 * gs, 0.60, 0.70),
             },
         ];
         sky.pads = [
-            { x: width * 0.08, y: height - 72 * gs, r: 18, notch: 0.4, hasFlower: false },
-            { x: width * 0.91, y: height - 22 * gs, r: 19, notch: 2.4, hasFlower: true },
+            { x: width * 0.048, y: height - 47 * gs, r: 14.5, notch: 0.4, hasFlower: false },
+            { x: width * 0.948, y: height - 47 * gs, r: 15.0, notch: 2.4, hasFlower: true },
         ];
     } else {
         sky.koi = [];
@@ -1137,9 +1137,9 @@ function stepKoi(koi, dt, width, height, pondTopY, scale) {
     koi.tailZ = koi.baseDepth + 0.10 + kissLift * 0.07;
 
     const head = koi.pathSpine[0];
-    const cx = width * 0.50 + Math.cos(koi.patrolPhase) * (width * 0.30);
-    const cy = (pondTopY + height) * 0.52
-        + Math.sin(koi.patrolPhase * 2) * ((height - pondTopY) * 0.26);
+    const cx = width * 0.50 + Math.cos(koi.patrolPhase) * (width * 0.28);
+    const laneY = height - (koi.baseDepth < 0.40 ? 82 : 48) * scale;
+    const cy = laneY + Math.sin(koi.patrolPhase * 2) * (10 * scale);
     const desired = Math.atan2(cy - head.y, cx - head.x);
     let diff = desired - koi.angle;
     while (diff > Math.PI)
@@ -1154,7 +1154,7 @@ function stepKoi(koi, dt, width, height, pondTopY, scale) {
     const stepDist = koi.speed * scale * dt;
     head.x = Math.max(width * 0.08, Math.min(width * 0.92,
         head.x + Math.cos(koi.angle) * stepDist));
-    head.y = Math.max(pondTopY + 14 * scale, Math.min(height - 12 * scale,
+    head.y = Math.max(pondTopY + 14 * scale, Math.min(height - 36 * scale,
         head.y + Math.sin(koi.angle) * stepDist));
     head.z = koi.headZ;
 
@@ -1216,8 +1216,8 @@ function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity) {
     }
 
     const headZ = sp[0].z, midZ = sp[5].z, tailZ = sp[KOI_SPINE_COUNT - 1].z;
-    const subRgb = (rgb, z) => mix(rgb, waterRgb, Math.min(0.90, z * turbidity * 0.90 + 0.12));
-    const subAlpha = (a, z) => a * Math.max(0.24, 1 - z * turbidity * 0.56);
+    const subRgb = (rgb, z) => mix(rgb, waterRgb, Math.min(0.92, z * turbidity * 0.92 + 0.22));
+    const subAlpha = (a, z) => a * Math.max(0.22, 0.90 - z * turbidity * 0.58);
 
     const traceFusiformBody = () => {
         const noseExtend = maxWidth * 0.36;
@@ -1255,10 +1255,10 @@ function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity) {
     }
 
     // 2. Swept-back teardrop pectoral fins (Munabire) with leading Oyabone ray + pelvic fins
-    const fBase = [0.97, 0.96, 0.94];
+    const fBase = [0.90, 0.91, 0.90];
     const jt3 = sp[3], ang3 = angles[3], z3 = jt3.z;
     const fCol = subRgb(fBase, z3);
-    const leadCol = subRgb([1.0, 0.99, 0.97], z3);
+    const leadCol = subRgb([0.93, 0.94, 0.93], z3);
     const fA = subAlpha(0.56, z3);
     const finSpan = maxWidth * 1.42;
     const finSweep = maxWidth * 1.25;
@@ -1395,7 +1395,7 @@ function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity) {
     cr.stroke();
 
     const dCol = subRgb([1, 1, 1], midZ);
-    cr.setSourceRGBA(dCol[0], dCol[1], dCol[2], subAlpha(0.14, midZ));
+    cr.setSourceRGBA(dCol[0], dCol[1], dCol[2], subAlpha(0.09, midZ));
     cr.setLineWidth(maxWidth * 0.60);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.newPath();
@@ -1408,15 +1408,15 @@ function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity) {
     cr.stroke();
 
     const vg = new Cairo.LinearGradient(sp[0].x, sp[0].y, sp[KOI_BODY_END_IDX].x, sp[KOI_BODY_END_IDX].y);
-    vg.addColorStopRGBA(0, waterRgb[0], waterRgb[1], waterRgb[2], headZ * turbidity * 0.38);
-    vg.addColorStopRGBA(1, waterRgb[0], waterRgb[1], waterRgb[2], tailZ * turbidity * 0.68);
+    vg.addColorStopRGBA(0, waterRgb[0], waterRgb[1], waterRgb[2], Math.max(0.14, headZ * turbidity * 0.48));
+    vg.addColorStopRGBA(1, waterRgb[0], waterRgb[1], waterRgb[2], Math.max(0.28, tailZ * turbidity * 0.76));
     cr.setSource(vg);
     cr.paint();
     cr.restore();
 
     // 5. Delicate dorsal fin membrane (joints 5..9)
-    const dfCol = subRgb([0.98, 0.97, 0.95], midZ);
-    cr.setSourceRGBA(dfCol[0], dfCol[1], dfCol[2], subAlpha(0.36, midZ));
+    const dfCol = subRgb([0.92, 0.93, 0.92], midZ);
+    cr.setSourceRGBA(dfCol[0], dfCol[1], dfCol[2], subAlpha(0.32, midZ));
     cr.setLineWidth(Math.max(0.85, maxWidth * 0.12));
     cr.newPath();
     for (let i = 5; i <= 9; i++) {
@@ -1438,8 +1438,8 @@ function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity) {
         const hw = leftPts[1].hw * 0.82;
         const mouthX = sp[0].x + Math.cos(angles[0]) * maxWidth * 0.30;
         const mouthY = sp[0].y + Math.sin(angles[0]) * maxWidth * 0.30;
-        const bCol = subRgb([0.92, 0.76, 0.68], headZ);
-        cr.setSourceRGBA(bCol[0], bCol[1], bCol[2], subAlpha(0.58, headZ));
+        const bCol = subRgb([0.86, 0.70, 0.62], headZ);
+        cr.setSourceRGBA(bCol[0], bCol[1], bCol[2], subAlpha(0.52, headZ));
         cr.setLineWidth(Math.max(0.65, 0.85 * scale));
         for (const side of [-1, 1]) {
             const bx0 = mouthX + nx * side * leftPts[0].hw * 0.55;
@@ -1466,16 +1466,16 @@ function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity) {
         cr.save();
         cr.translate(noseX, noseY);
         cr.scale(1, 0.38);
-        cr.setSourceRGBA(1.0, 0.95, 0.78, 0.82 * kissT);
-        cr.setLineWidth(1.5 * scale);
+        cr.setSourceRGBA(0.95, 0.88, 0.68, 0.62 * kissT);
+        cr.setLineWidth(1.4 * scale);
         cr.arc(0, 0, 6.5 * scale, 0, TWO_PI);
         cr.stroke();
-        cr.setSourceRGBA(0.92, 0.96, 1.0, 0.56 * kissT);
-        cr.setLineWidth(1.1 * scale);
+        cr.setSourceRGBA(0.84, 0.92, 0.98, 0.42 * kissT);
+        cr.setLineWidth(1.0 * scale);
         cr.arc(0, 0, 15.5 * scale, 0, TWO_PI);
         cr.stroke();
-        cr.setSourceRGBA(0.88, 0.95, 1.0, 0.32 * kissT);
-        cr.setLineWidth(0.9 * scale);
+        cr.setSourceRGBA(0.80, 0.90, 0.98, 0.24 * kissT);
+        cr.setLineWidth(0.85 * scale);
         cr.arc(0, 0, 26.5 * scale, 0, TWO_PI);
         cr.stroke();
         cr.restore();
@@ -1517,10 +1517,10 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
     for (const pad of pads) {
         const pr = pad.r * scale;
         cr.save();
-        cr.translate(pad.x + 4 * scale, pad.y + 8 * scale);
+        cr.translate(pad.x + 3.5 * scale, pad.y + 6.5 * scale);
         cr.scale(1, 0.55);
-        cr.setSourceRGBA(0.01, 0.04, 0.08, 0.40);
-        cr.arc(0, 0, pr * 1.04, 0, TWO_PI);
+        cr.setSourceRGBA(0.01, 0.04, 0.08, 0.36);
+        cr.arc(0, 0, pr * 1.03, 0, TWO_PI);
         cr.fill();
         cr.restore();
     }
@@ -1533,7 +1533,7 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
     for (let r = 0; r < 5; r++) {
         const by = pondTopY + (22 + r * 19) * scale;
         const vFade = Math.sin(((r + 0.5) / 5) * Math.PI);
-        cr.setSourceRGBA(0.85, 0.97, 1.0, (night ? 0.045 : 0.07) * vFade);
+        cr.setSourceRGBA(0.85, 0.97, 1.0, (night ? 0.04 : 0.06) * vFade);
         cr.newPath();
         for (let dx = 0; dx <= width; dx += 10) {
             const py = by
@@ -1548,8 +1548,8 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
     }
     const veilGrad = new Cairo.LinearGradient(0, pondTopY, 0, height);
     veilGrad.addColorStopRGBA(0, waterRgb[0], waterRgb[1], waterRgb[2], 0);
-    veilGrad.addColorStopRGBA(0.38, waterRgb[0], waterRgb[1], waterRgb[2], turbidity * 0.20);
-    veilGrad.addColorStopRGBA(1, waterRgb[0], waterRgb[1], waterRgb[2], turbidity * 0.34);
+    veilGrad.addColorStopRGBA(0.38, waterRgb[0], waterRgb[1], waterRgb[2], turbidity * 0.26);
+    veilGrad.addColorStopRGBA(1, waterRgb[0], waterRgb[1], waterRgb[2], turbidity * 0.42);
     cr.setSource(veilGrad);
     cr.rectangle(0, pondTopY, width, pondH);
     cr.fill();
@@ -1561,13 +1561,13 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
         cr.save();
         cr.translate(pad.x, pad.y);
         cr.scale(1, 0.55);
-        const pg = new Cairo.RadialGradient(-3 * scale, -3 * scale, 1.5 * scale, 0, 0, pr);
+        const pg = new Cairo.RadialGradient(-2.5 * scale, -2.5 * scale, 1.5 * scale, 0, 0, pr);
         if (night) {
-            pg.addColorStopRGBA(0, 0.14, 0.30, 0.22, 0.94);
-            pg.addColorStopRGBA(1, 0.07, 0.17, 0.12, 0.94);
+            pg.addColorStopRGBA(0, 0.12, 0.26, 0.19, 0.88);
+            pg.addColorStopRGBA(1, 0.06, 0.14, 0.10, 0.88);
         } else {
-            pg.addColorStopRGBA(0, 0.25, 0.50, 0.34, 0.94);
-            pg.addColorStopRGBA(1, 0.13, 0.29, 0.19, 0.94);
+            pg.addColorStopRGBA(0, 0.20, 0.42, 0.29, 0.90);
+            pg.addColorStopRGBA(1, 0.10, 0.24, 0.16, 0.90);
         }
         cr.setSource(pg);
         cr.newPath();
@@ -1575,25 +1575,25 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
         cr.arc(0, 0, pr, pad.notch + 0.26, pad.notch + TWO_PI - 0.26);
         cr.closePath();
         cr.fillPreserve();
-        cr.setSourceRGBA(0.72, 0.92, 0.76, night ? 0.22 : 0.32);
+        cr.setSourceRGBA(0.52, 0.74, 0.58, night ? 0.16 : 0.22);
         cr.setLineWidth(Math.max(0.75, scale));
         cr.stroke();
         cr.restore();
 
         if (pad.hasFlower) {
             cr.save();
-            cr.translate(pad.x + 3.5 * scale, pad.y - 3.5 * scale);
+            cr.translate(pad.x - 1.5 * scale, pad.y - 1.5 * scale);
             for (let p = 0; p < 8; p++) {
                 cr.save();
                 cr.rotate((p / 8) * TWO_PI);
-                cr.scale(2.9 * scale, 6.8 * scale);
-                cr.setSourceRGBA(1.0, 0.76, 0.85, night ? 0.82 : 0.94);
+                cr.scale(2.4 * scale, 5.5 * scale);
+                cr.setSourceRGBA(0.76, 0.44, 0.56, night ? 0.72 : 0.80);
                 cr.arc(0, -0.8, 1, 0, TWO_PI);
                 cr.fill();
                 cr.restore();
             }
-            cr.setSourceRGBA(0.96, 0.77, 0.26, night ? 0.88 : 0.98);
-            cr.arc(0, -0.8 * scale, 2.8 * scale, 0, TWO_PI);
+            cr.setSourceRGBA(0.84, 0.62, 0.22, night ? 0.78 : 0.84);
+            cr.arc(0, -0.7 * scale, 2.3 * scale, 0, TWO_PI);
             cr.fill();
             cr.restore();
         }
