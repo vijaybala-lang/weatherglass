@@ -3270,7 +3270,86 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night) {
     cr.restore();
 }
 
-/* T3 (Thunderstorm): Botanical Cattail Reeds, Cupped Peltate Lotus Umbrella & Vocal-Sac Tree Frogs */
+/* T3 (Thunderstorm): Golden-Ratio Cattail Reeds, Cupped Peltate Lotus Umbrella & Vocal-Sac Tree Frogs (Option B) */
+function drawStormReedClump(cr, x, y, sc, dir, stalkCount, sway) {
+    cr.save();
+    cr.translate(x, y);
+    cr.scale(sc * dir, sc);
+
+    // Concentric surface ripple at reed base (outer radius 1.0, inner radius 1/phi = 0.618)
+    cr.save();
+    cr.scale(9.8, 2.7);
+    cr.setSourceRGBA(0.58, 0.82, 0.92, 0.36);
+    cr.setLineWidth(0.08);
+    cr.newPath();
+    cr.arc(0, 0.4, 1, 0, TWO_PI);
+    cr.newSubPath();
+    cr.arc(0, 0.4, 0.618, 0, TWO_PI);
+    cr.stroke();
+    cr.restore();
+
+    // Upright-fanning sheathing ribbon leaves (staying compactly inside the 44px alley)
+    const leaves = stalkCount >= 3 ? [
+        [-4.2, 2, -5.8, -7.5, -5.2 + sway * 0.4, -15.0, -3.5 + sway, -21.5, [0.16, 0.38, 0.26]],
+        [-1.5, 2, -1.0, -8.5, 0.5 + sway * 0.5, -16.5, 2.2 + sway, -22.5, [0.22, 0.48, 0.32]],
+        [2.2, 2, 3.8, -7.0, 5.0 + sway * 0.5, -13.5, 6.2 + sway, -18.0, [0.26, 0.54, 0.36]],
+        [-5.2, 2, -6.8, -5.5, -6.5 + sway * 0.3, -11.5, -5.5 + sway * 0.6, -15.8, [0.18, 0.42, 0.28]],
+        [3.5, 2, 5.2, -5.0, 6.5 + sway * 0.4, -10.0, 7.2 + sway * 0.7, -14.0, [0.20, 0.44, 0.30]],
+    ] : [
+        [-2.5, 2, -3.5, -7.0, -2.2 + sway * 0.4, -14.0, -0.8 + sway, -19.5, [0.18, 0.42, 0.28]],
+        [1.2, 2, 2.8, -6.5, 4.0 + sway * 0.5, -12.5, 5.0 + sway, -16.5, [0.24, 0.50, 0.34]],
+        [-3.6, 2, -4.5, -5.0, -3.8 + sway * 0.3, -10.0, -2.6 + sway * 0.6, -13.6, [0.16, 0.38, 0.26]],
+    ];
+    for (const [x0, y0, x1, y1, x2, y2, x3, y3, col] of leaves) {
+        drawSmoothLimb(cr, x0, y0, 1.10, x1, y1, x2, y2, x3, y3, 0.15);
+        cr.setSourceRGBA(col[0], col[1], col[2], 0.94);
+        cr.fill();
+    }
+
+    // Stalks in Golden Ratio height progression: 25.5 (1.0 Phi), 20.0 (0.786 Phi), 15.8 (0.618 Phi)
+    const allStalks = [
+        [-2.2, 2, -2.6, -10.0, -1.8 + sway * 0.4, -19.5, -0.8 + sway * 0.7, -25.5, 1.00],
+        [1.6, 2, 2.5, -8.0, 3.4 + sway * 0.4, -15.5, 4.2 + sway * 0.7, -20.0, 0.88],
+        [-0.4, 2, 0.2, -6.5, 0.9 + sway * 0.3, -12.2, 1.5 + sway * 0.6, -15.8, 0.78],
+    ];
+    for (let i = 0; i < stalkCount; i++) {
+        const [x0, y0, x1, y1, x2, y2, x3, y3, wScale] = allStalks[i];
+        cr.setSourceRGBA(0.30, 0.58, 0.38, 0.96);
+        cr.setLineWidth(1.0 * wScale);
+        cr.newPath();
+        cr.moveTo(x0, y0);
+        cr.curveTo(x1, y1, x2, y2, x3, y3);
+        cr.stroke();
+
+        const sx = (x2 + x3) * 0.5, sy = (y2 + y3) * 0.5;
+        const ang = Math.atan2(y3 - y2, x3 - x2);
+        cr.save();
+        cr.translate(sx, sy);
+        cr.rotate(ang);
+        cr.setSourceRGBA(0.32, 0.16, 0.08, 0.98);
+        cr.setLineCap(Cairo.LineCap.ROUND);
+        cr.setLineWidth(2.9 * wScale);
+        cr.newPath();
+        cr.moveTo(-2.8 * wScale, 0);
+        cr.lineTo(2.1 * wScale, 0);
+        cr.stroke();
+        cr.setSourceRGBA(0.56, 0.34, 0.18, 0.85);
+        cr.setLineWidth(0.88 * wScale);
+        cr.newPath();
+        cr.moveTo(-2.6 * wScale, -0.68 * wScale);
+        cr.lineTo(1.9 * wScale, -0.68 * wScale);
+        cr.stroke();
+        cr.setSourceRGBA(0.78, 0.66, 0.44, 0.92);
+        cr.setLineWidth(0.78 * wScale);
+        cr.newPath();
+        cr.moveTo(2.1 * wScale, 0);
+        cr.lineTo(4.6 * wScale, 0);
+        cr.stroke();
+        cr.restore();
+    }
+    cr.restore();
+}
+
 function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     const sh = sceneHeight(width, height);
     const groundOffset = height - sh;
@@ -3284,240 +3363,24 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.rectangle(0, floorTop - 10 * scale, width, height - floorTop + 10 * scale);
     cr.fill();
 
-    // Concentric surface ripples around reeds (Row 2 Alley 1), boulder (Row 2 Alley 2), and distant lotus pad (Row 1 Alley 3)
-    for (const [rxFrac, ryVal, rw2] of [
-        [0.267, height - 19 * scale, 18],
-        [0.500, height - 20 * scale, 24],
-        [0.733, floorTop + 21 * scale, 14],
-    ]) {
-        cr.save();
-        cr.translate(width * rxFrac, ryVal);
-        cr.scale(rw2 * scale, rw2 * 0.28 * scale);
-        cr.setSourceRGBA(0.58, 0.82, 0.92, 0.34);
-        cr.setLineWidth(0.08);
-        cr.newPath();
-        cr.arc(0, 0, 1, 0, TWO_PI);
-        cr.newSubPath();
-        cr.arc(0, 0, 0.62, 0, TWO_PI);
-        cr.stroke();
-        cr.restore();
-    }
-
-    // 1. Botanical Cattails & Sheathing Ribbon Leaves (Typha latifolia) moved down in Alley 1 (between Thu & Fri: x = 0.267w, y = h - 20*scale)
-    const reedSway = Math.sin((time - 1.1) * 2.5) * 1.4;
+    // 1. Distant Smaller Frog, Floating Lotus Pad & Pink Sacred Lotus Blossom in Alley 3 (between Tue & Wed: 0.618 Phi)
     cr.save();
-    cr.translate(width * 0.267, height - 20 * scale);
-    cr.scale(1.72 * scale, 1.72 * scale);
-
-    const leaves = [
-        [-8, 2, -6, -8, reedSway * 0.6, -16, 7 + reedSway, -21, [0.16, 0.38, 0.26]],
-        [-4, 2, -1, -9, 6 + reedSway * 0.6, -17, 13 + reedSway, -22, [0.22, 0.48, 0.32]],
-        [2, 2, 5, -7, 10 + reedSway * 0.5, -14, 16 + reedSway, -17, [0.26, 0.54, 0.36]],
-        [-9, 2, -8, -6, -4 + reedSway * 0.4, -13, 2 + reedSway * 0.8, -17, [0.18, 0.42, 0.28]],
-        [4, 2, 7, -5, 11 + reedSway * 0.4, -10, 15 + reedSway * 0.8, -12, [0.20, 0.44, 0.30]],
-    ];
-    for (const [x0, y0, x1, y1, x2, y2, x3, y3, col] of leaves) {
-        drawSmoothLimb(cr, x0, y0, 1.15, x1, y1, x2, y2, x3, y3, 0.15);
-        cr.setSourceRGBA(col[0], col[1], col[2], 0.94);
-        cr.fill();
-    }
-
-    const stalks = [
-        [-5, 2, -2, -11, 4 + reedSway * 0.5, -22, 8 + reedSway, -28],
-        [0, 2, 3, -10, 9 + reedSway * 0.5, -20, 13 + reedSway, -25],
-        [-2, 2, 0, -8, 4 + reedSway * 0.4, -15, 7 + reedSway * 0.8, -19],
-    ];
-    for (let idx = 0; idx < stalks.length; idx++) {
-        const [x0, y0, x1, y1, x2, y2, x3, y3] = stalks[idx];
-        cr.setSourceRGBA(0.30, 0.58, 0.38, 0.96);
-        cr.setLineWidth(1.05);
-        cr.newPath();
-        cr.moveTo(x0, y0);
-        cr.curveTo(x1, y1, x2, y2, x3, y3);
-        cr.stroke();
-
-        const sx = (x2 + x3) * 0.5, sy = (y2 + y3) * 0.5;
-        const ang = Math.atan2(y3 - y2, x3 - x2);
-        cr.save();
-        cr.translate(sx, sy);
-        cr.rotate(ang);
-        cr.setSourceRGBA(0.32, 0.16, 0.08, 0.98);
-        cr.setLineCap(Cairo.LineCap.ROUND);
-        cr.setLineWidth(idx === 2 ? 2.6 : 3.2);
-        cr.newPath();
-        cr.moveTo(-3.2, 0);
-        cr.lineTo(2.4, 0);
-        cr.stroke();
-        cr.setSourceRGBA(0.56, 0.34, 0.18, 0.85);
-        cr.setLineWidth(0.95);
-        cr.newPath();
-        cr.moveTo(-3.0, -0.75);
-        cr.lineTo(2.2, -0.75);
-        cr.stroke();
-        cr.setSourceRGBA(0.78, 0.66, 0.44, 0.92);
-        cr.setLineWidth(0.85);
-        cr.newPath();
-        cr.moveTo(2.4, 0);
-        cr.lineTo(5.2, 0);
-        cr.stroke();
-        cr.restore();
-    }
-    cr.restore();
-
-    // 2. Anatomical Tree Frog under Cupped 11-Veined Peltate Lotus Leaf moved down in Alley 2 (between Fri & Sat: x = 0.50w, y = h - 22*scale)
-    const sac = Math.pow(0.5 + 0.5 * Math.cos((time - 1.1) * 3.0), 1.5);
-    cr.save();
-    cr.translate(width * 0.50, height - 22 * scale);
-    cr.scale(1.76 * scale, 1.76 * scale);
-
-    // Wet stratified river boulder
-    const rg = new Cairo.RadialGradient(-3, -1, 1, 0, 2, 13);
-    rg.addColorStopRGBA(0, 0.28, 0.38, 0.40, 0.98);
-    rg.addColorStopRGBA(0.7, 0.16, 0.24, 0.28, 0.98);
-    rg.addColorStopRGBA(1, 0.08, 0.14, 0.18, 0.98);
-    cr.save();
-    cr.scale(12.5, 4.8);
-    cr.setSource(rg);
-    cr.newPath();
-    cr.arc(0, 0.3, 1, Math.PI, 0);
-    cr.curveTo(1.0, 0.8, -1.0, 0.8, -1.0, 0.3);
-    cr.closePath();
-    cr.fill();
-    cr.restore();
-
-    // Curving lotus petiole stem + cupped 11-veined peltate lotus umbrella leaf
-    cr.setSourceRGBA(0.18, 0.42, 0.28, 0.96);
-    cr.setLineWidth(1.65);
-    cr.newPath();
-    cr.moveTo(5.2, 2.0);
-    cr.curveTo(6.8, -6.0, 5.0, -13.0, 2.2, -18.8);
-    cr.stroke();
+    cr.translate(width * 0.733, floorTop + 15 * scale);
+    cr.scale(1.12 * scale, 1.12 * scale);
 
     cr.save();
-    cr.translate(2.2, -18.8);
-    cr.rotate(-0.10 + Math.sin((time - 1.1) * 2.2) * 0.03);
-
-    cr.setSourceRGBA(0.12, 0.30, 0.20, 0.95);
+    cr.scale(12.2, 3.4);
+    cr.setSourceRGBA(0.58, 0.82, 0.92, 0.32);
+    cr.setLineWidth(0.08);
     cr.newPath();
-    cr.moveTo(-12.5, 0.5);
-    cr.curveTo(-6.0, 3.2, 6.0, 3.2, 12.5, 0.5);
-    cr.curveTo(8.0, -1.5, -8.0, -1.5, -12.5, 0.5);
-    cr.closePath();
-    cr.fill();
-
-    const lg = new Cairo.RadialGradient(0, -1.0, 0.8, 0, -1.0, 13.0);
-    lg.addColorStopRGBA(0, 0.36, 0.72, 0.44, 0.98);
-    lg.addColorStopRGBA(0.65, 0.20, 0.52, 0.32, 0.98);
-    lg.addColorStopRGBA(1, 0.14, 0.38, 0.24, 0.98);
-    cr.setSource(lg);
-    cr.newPath();
-    cr.moveTo(-13.0, 0.2);
-    cr.curveTo(-11.0, -4.6, -4.5, -5.8, 0, -5.2);
-    cr.curveTo(4.5, -5.8, 11.0, -4.6, 13.0, 0.2);
-    cr.curveTo(9.2, 2.2, 4.5, -0.4, 0, 1.4);
-    cr.curveTo(-4.5, -0.4, -9.2, 2.2, -13.0, 0.2);
-    cr.closePath();
-    cr.fill();
-
-    cr.setSourceRGBA(0.64, 0.90, 0.68, 0.55);
-    cr.setLineWidth(0.5);
-    cr.newPath();
-    for (const [vx, vy] of [[-11, -0.2], [-8.5, -2.2], [-5, -3.8], [0, -4.4],
-        [5, -3.8], [8.5, -2.2], [11, -0.2], [-6, 0.8], [6, 0.8]]) {
-        cr.moveTo(0, -1.2);
-        cr.lineTo(vx, vy);
-    }
-    cr.stroke();
-
-    // Quicksilver rainwater beads on lotus leaf
-    cr.setSourceRGBA(0.86, 0.97, 1.0, 0.94);
-    cr.newPath();
-    cr.arc(-5.2, -2.0, 1.1, 0, TWO_PI);
+    cr.arc(0, 0.2, 1, 0, TWO_PI);
     cr.newSubPath();
-    cr.arc(4.2, -2.2, 0.85, 0, TWO_PI);
-    cr.newSubPath();
-    cr.arc(-12.6, 1.8, 0.85, 0, TWO_PI);
-    cr.fill();
+    cr.arc(0, 0.2, 0.618, 0, TWO_PI);
+    cr.stroke();
     cr.restore();
 
-    // Anatomical Green Tree Frog (Dryophytes) with Z-folded hind leg & inflating amber vocal sac
-    cr.setSourceRGBA(0.24, 0.58, 0.28, 0.98);
-    cr.setLineWidth(2.0);
-    cr.setLineCap(Cairo.LineCap.ROUND);
-    cr.setLineJoin(Cairo.LineJoin.ROUND);
-    cr.newPath();
-    cr.moveTo(2.4, -1.0);
-    cr.lineTo(5.6, -3.2);
-    cr.lineTo(3.2, 0.4);
-    cr.lineTo(6.0, 0.8);
-    cr.stroke();
-
-    if (sac > 0.05) {
-        const sr = 1.2 + sac * 2.5;
-        const sg = new Cairo.RadialGradient(-6.8, -1.8, 0.3, -6.2, -1.4, sr);
-        sg.addColorStopRGBA(0, 1.0, 0.95, 0.68, 0.94);
-        sg.addColorStopRGBA(0.6, 0.95, 0.72, 0.26, 0.90);
-        sg.addColorStopRGBA(1, 0.76, 0.48, 0.14, 0.85);
-        cr.setSource(sg);
-        cr.newPath();
-        cr.arc(-6.2, -1.4, sr, 0, TWO_PI);
-        cr.fill();
-    }
-
-    const fg = new Cairo.LinearGradient(-6, -6.8, 4, 0.5);
-    fg.addColorStopRGBA(0, 0.52, 0.88, 0.38, 0.99);
-    fg.addColorStopRGBA(0.55, 0.28, 0.68, 0.32, 0.99);
-    fg.addColorStopRGBA(1, 0.16, 0.46, 0.24, 0.99);
-    cr.setSource(fg);
-    cr.newPath();
-    cr.moveTo(3.6, -0.4);
-    cr.curveTo(1.8, -5.6, -2.5, -6.6, -5.5, -5.6);
-    cr.lineTo(-8.2, -4.0);
-    cr.curveTo(-8.0, -2.8, -5.5, -2.6, -3.2, -1.8);
-    cr.curveTo(-1.0, 0.2, 1.8, 0.4, 3.6, -0.4);
-    cr.closePath();
-    cr.fill();
-
-    cr.setSourceRGBA(0.94, 0.96, 0.72, 0.90);
-    cr.setLineWidth(0.8);
-    cr.newPath();
-    cr.moveTo(-7.6, -3.6);
-    cr.curveTo(-4.0, -3.6, -0.5, -2.4, 2.8, -0.8);
-    cr.stroke();
-
-    cr.setSourceRGBA(0.32, 0.70, 0.34, 0.98);
-    cr.setLineWidth(1.45);
-    cr.newPath();
-    cr.moveTo(-3.4, -2.4);
-    cr.lineTo(-4.6, 1.0);
-    cr.stroke();
-    for (const tx of [-5.6, -4.6, -3.6]) {
-        cr.newPath();
-        cr.arc(tx, 1.2, 0.6, 0, TWO_PI);
-        cr.fill();
-    }
-
-    cr.setSourceRGBA(0.98, 0.82, 0.28, 0.98);
-    cr.newPath();
-    cr.arc(-5.4, -5.8, 1.6, 0, TWO_PI);
-    cr.fill();
-    cr.setSourceRGBA(0.06, 0.08, 0.10, 0.98);
     cr.save();
-    cr.translate(-5.5, -5.8);
-    cr.scale(1.0, 0.46);
-    cr.newPath();
-    cr.arc(0, 0, 1.0, 0, TWO_PI);
-    cr.fill();
-    cr.restore();
-    cr.restore();
-
-    // 3. Smaller Distant Frog, Floating Lotus Pad & Sacred Lotus Blossom in Alley 3 (between Tue & Wed: x = 0.733w, y = floorTop + 20*scale)
-    cr.save();
-    cr.translate(width * 0.733, floorTop + 20 * scale);
-    cr.scale(1.22 * scale, 1.22 * scale);
-
-    cr.save();
-    cr.scale(10.8, 4.5);
+    cr.scale(10.5, 4.3);
     cr.setSourceRGBA(0.18, 0.46, 0.28, 0.94);
     cr.newPath();
     cr.moveTo(0, 0);
@@ -3529,18 +3392,18 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.setSourceRGBA(0.24, 0.52, 0.32, 0.95);
     cr.setLineWidth(1.2);
     cr.newPath();
-    cr.moveTo(6.5, 0);
-    cr.lineTo(7.8, -8.5);
+    cr.moveTo(6.2, 0);
+    cr.lineTo(7.5, -8.2);
     cr.stroke();
 
     cr.save();
-    cr.translate(7.8, -8.5);
+    cr.translate(7.5, -8.2);
     for (const [ang, len, wid, cTop, cBot] of [
-        [-0.55, 6.2, 2.2, [0.88, 0.42, 0.58], [0.62, 0.26, 0.40]],
-        [ 0.55, 6.2, 2.2, [0.88, 0.42, 0.58], [0.62, 0.26, 0.40]],
-        [-0.26, 6.8, 2.3, [0.96, 0.58, 0.72], [0.76, 0.34, 0.50]],
-        [ 0.26, 6.8, 2.3, [0.96, 0.58, 0.72], [0.76, 0.34, 0.50]],
-        [ 0.00, 7.2, 2.4, [1.00, 0.76, 0.86], [0.84, 0.42, 0.58]],
+        [-0.55, 6.0, 2.1, [0.88, 0.42, 0.58], [0.62, 0.26, 0.40]],
+        [0.55, 6.0, 2.1, [0.88, 0.42, 0.58], [0.62, 0.26, 0.40]],
+        [-0.26, 6.6, 2.2, [0.96, 0.58, 0.72], [0.76, 0.34, 0.50]],
+        [0.26, 6.6, 2.2, [0.96, 0.58, 0.72], [0.76, 0.34, 0.50]],
+        [0.00, 7.0, 2.3, [1.00, 0.76, 0.86], [0.84, 0.42, 0.58]],
     ]) {
         cr.save();
         cr.rotate(ang);
@@ -3569,6 +3432,171 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.newPath();
     cr.arc(2.6, -4.4, 1.2, 0, TWO_PI);
     cr.fill();
+    cr.restore();
+
+    // 2. Golden-Ratio Cattail Reeds: Primary 1.0 Phi clump in 1-2-X pocket + Balancing 0.618 Phi clump in Sat-Sun Alley 3
+    const reedSway = 0.6 + Math.sin((time - 1.1) * 2.5) * 0.9;
+    drawStormReedClump(cr, width * 0.733, height - 12 * scale, 1.11 * scale, -1, 2, reedSway);
+    drawStormReedClump(cr, width * 0.267, height - 82 * scale, 1.56 * scale, 1, 3, reedSway);
+
+    // 3. Foreground Hero Frog & Cupped 11-Veined Peltate Lotus Umbrella lower in Alley 2 (between Fri & Sat: 1.0 Phi)
+    const sac = Math.pow(0.5 + 0.5 * Math.cos((time - 1.1) * 3.0), 1.5);
+    cr.save();
+    cr.translate(width * 0.50, height - 10 * scale);
+    cr.scale(1.62 * scale, 1.62 * scale);
+
+    // Concentric ripple around boulder
+    cr.save();
+    cr.scale(13.5, 3.6);
+    cr.setSourceRGBA(0.58, 0.82, 0.92, 0.36);
+    cr.setLineWidth(0.07);
+    cr.newPath();
+    cr.arc(0, 0.3, 1, 0, TWO_PI);
+    cr.newSubPath();
+    cr.arc(0, 0.3, 0.618, 0, TWO_PI);
+    cr.stroke();
+    cr.restore();
+
+    // Wet stratified river boulder
+    const rg = new Cairo.RadialGradient(-3, -1, 1, 0, 2, 12.0);
+    rg.addColorStopRGBA(0, 0.28, 0.38, 0.40, 0.98);
+    rg.addColorStopRGBA(0.7, 0.16, 0.24, 0.28, 0.98);
+    rg.addColorStopRGBA(1, 0.08, 0.14, 0.18, 0.98);
+    cr.save();
+    cr.scale(11.6, 4.2);
+    cr.setSource(rg);
+    cr.newPath();
+    cr.arc(0, 0.25, 1, Math.PI, 0);
+    cr.curveTo(1.0, 0.75, -1.0, 0.75, -1.0, 0.25);
+    cr.closePath();
+    cr.fill();
+    cr.restore();
+
+    // Curving lotus petiole stem (golden height -16.8)
+    cr.setSourceRGBA(0.18, 0.42, 0.28, 0.96);
+    cr.setLineWidth(1.55);
+    cr.newPath();
+    cr.moveTo(4.8, 1.6);
+    cr.curveTo(6.2, -5.2, 4.6, -11.4, 1.8, -16.8);
+    cr.stroke();
+
+    // Cupped 11-veined peltate lotus leaf canopy
+    cr.save();
+    cr.translate(1.8, -16.8);
+    cr.rotate(-0.10 + Math.sin((time - 1.1) * 2.2) * 0.03);
+
+    cr.setSourceRGBA(0.12, 0.30, 0.20, 0.95);
+    cr.newPath();
+    cr.moveTo(-11.8, 0.5);
+    cr.curveTo(-5.6, 2.9, 5.6, 2.9, 11.8, 0.5);
+    cr.curveTo(7.5, -1.4, -7.5, -1.4, -11.8, 0.5);
+    cr.closePath();
+    cr.fill();
+
+    const lg = new Cairo.RadialGradient(0, -1.0, 0.8, 0, -1.0, 12.2);
+    lg.addColorStopRGBA(0, 0.36, 0.72, 0.44, 0.98);
+    lg.addColorStopRGBA(0.65, 0.20, 0.52, 0.32, 0.98);
+    lg.addColorStopRGBA(1, 0.14, 0.38, 0.24, 0.98);
+    cr.setSource(lg);
+    cr.newPath();
+    cr.moveTo(-12.2, 0.2);
+    cr.curveTo(-10.2, -4.2, -4.2, -5.4, 0, -4.8);
+    cr.curveTo(4.2, -5.4, 10.2, -4.2, 12.2, 0.2);
+    cr.curveTo(8.6, 2.0, 4.2, -0.4, 0, 1.2);
+    cr.curveTo(-4.2, -0.4, -8.6, 2.0, -12.2, 0.2);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.64, 0.90, 0.68, 0.55);
+    cr.setLineWidth(0.5);
+    cr.newPath();
+    for (const [vx, vy] of [[-10.2, -0.2], [-7.9, -2.0], [-4.6, -3.5], [0, -4.0],
+        [4.6, -3.5], [7.9, -2.0], [10.2, -0.2], [-5.6, 0.8], [5.6, 0.8]]) {
+        cr.moveTo(0, -1.0);
+        cr.lineTo(vx, vy);
+    }
+    cr.stroke();
+
+    // Quicksilver rainwater beads on lotus leaf
+    cr.setSourceRGBA(0.86, 0.97, 1.0, 0.94);
+    cr.newPath();
+    cr.arc(-4.8, -1.8, 1.0, 0, TWO_PI);
+    cr.newSubPath();
+    cr.arc(3.8, -2.0, 0.8, 0, TWO_PI);
+    cr.newSubPath();
+    cr.arc(-11.8, 1.6, 0.8, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    // Anatomical Green Tree Frog (Dryophytes) with Z-folded hind leg & inflating amber vocal sac
+    cr.setSourceRGBA(0.24, 0.58, 0.28, 0.98);
+    cr.setLineWidth(1.9);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.setLineJoin(Cairo.LineJoin.ROUND);
+    cr.newPath();
+    cr.moveTo(2.3, -1.0);
+    cr.lineTo(5.3, -3.0);
+    cr.lineTo(3.0, 0.4);
+    cr.lineTo(5.6, 0.8);
+    cr.stroke();
+
+    if (sac > 0.05) {
+        const sr = 1.2 + sac * 1.9;
+        const sg = new Cairo.RadialGradient(-6.4, -1.8, 0.3, -5.8, -1.4, sr);
+        sg.addColorStopRGBA(0, 1.0, 0.95, 0.68, 0.94);
+        sg.addColorStopRGBA(0.6, 0.95, 0.72, 0.26, 0.90);
+        sg.addColorStopRGBA(1, 0.76, 0.48, 0.14, 0.85);
+        cr.setSource(sg);
+        cr.newPath();
+        cr.arc(-5.8, -1.4, sr, 0, TWO_PI);
+        cr.fill();
+    }
+
+    const fg = new Cairo.LinearGradient(-6, -6.4, 4, 0.5);
+    fg.addColorStopRGBA(0, 0.52, 0.88, 0.38, 0.99);
+    fg.addColorStopRGBA(0.55, 0.28, 0.68, 0.32, 0.99);
+    fg.addColorStopRGBA(1, 0.16, 0.46, 0.24, 0.99);
+    cr.setSource(fg);
+    cr.newPath();
+    cr.moveTo(3.4, -0.4);
+    cr.curveTo(1.7, -5.3, -2.3, -6.2, -5.2, -5.3);
+    cr.lineTo(-7.8, -3.8);
+    cr.curveTo(-7.6, -2.6, -5.2, -2.4, -3.0, -1.6);
+    cr.curveTo(-1.0, 0.2, 1.7, 0.4, 3.4, -0.4);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.94, 0.96, 0.72, 0.90);
+    cr.setLineWidth(0.75);
+    cr.newPath();
+    cr.moveTo(-7.2, -3.4);
+    cr.curveTo(-3.8, -3.4, -0.5, -2.2, 2.6, -0.8);
+    cr.stroke();
+
+    cr.setSourceRGBA(0.32, 0.70, 0.34, 0.98);
+    cr.setLineWidth(1.35);
+    cr.newPath();
+    cr.moveTo(-3.2, -2.2);
+    cr.lineTo(-4.4, 1.0);
+    cr.stroke();
+    for (const tx of [-5.2, -4.4, -3.6]) {
+        cr.newPath();
+        cr.arc(tx, 1.2, 0.55, 0, TWO_PI);
+        cr.fill();
+    }
+
+    cr.setSourceRGBA(0.98, 0.82, 0.28, 0.98);
+    cr.newPath();
+    cr.arc(-5.1, -5.4, 1.5, 0, TWO_PI);
+    cr.fill();
+    cr.setSourceRGBA(0.06, 0.08, 0.10, 0.98);
+    cr.save();
+    cr.translate(-5.2, -5.4);
+    cr.scale(1.0, 0.46);
+    cr.newPath();
+    cr.arc(0, 0, 0.92, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
     cr.restore();
 }
 
