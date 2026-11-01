@@ -1608,7 +1608,7 @@ function isStormForegroundZone(x, y, width, height, scale) {
         return true;
     if (x > width * 0.948 - 20 * scale && y > height - 56 * scale)
         return true;
-    if (Math.abs(x - width * 0.50) < 32 * scale && y > height - 118 * scale && y < height - 56 * scale)
+    if (Math.abs(x - width * 0.50) < 32 * scale && y > height - 60 * scale)
         return true;
     if (Math.abs(x - width * 0.733) < 24 * scale && y > floorTop - 8 * scale && y < floorTop + 28 * scale)
         return true;
@@ -3462,10 +3462,10 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     drawStormReedClump(cr, width * 0.948, height - 14 * scale, 1.11 * scale, -1, 2, reedSway);
     drawStormReedClump(cr, width * 0.052, height - 16 * scale, 1.56 * scale, 1, 3, reedSway);
 
-    // 3. Foreground Hero Frog & Cupped 11-Veined Peltate Lotus Umbrella centered in Mon-Tue-Fri-Sat intersection (x = 0.50w, y = h - 72*scale)
+    // 3. Foreground Hero Frog & Cupped 11-Veined Peltate Lotus Umbrella between Fri & Sat tiles (x = 0.50w, y = h - 10*scale)
     const sac = Math.pow(0.5 + 0.5 * Math.cos((time - 1.1) * 3.0), 1.5);
     cr.save();
-    cr.translate(width * 0.50, height - 72 * scale);
+    cr.translate(width * 0.50, height - 10 * scale);
     cr.scale(1.62 * scale, 1.62 * scale);
 
     // Concentric ripple around boulder
