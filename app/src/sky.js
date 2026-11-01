@@ -498,8 +498,8 @@ function rebuild(sky, width, height, scene) {
             },
         ];
         sky.pads = [
-            { x: width * 0.28, y: height - 82 * gs, r: 14.5, notch: 0.4, hasFlower: false },
-            { x: width * 0.948, y: height - 47 * gs, r: 15.0, notch: 2.4, hasFlower: true },
+            { x: width * 0.273, y: height - 48 * gs, r: 25.5, notch: 0.42, hasFlower: true, hasBud: true, companionLeaf: true },
+            { x: width * 0.733, y: height - 87 * gs, r: 18.5, notch: 2.35, hasFlower: false },
         ];
     } else {
         sky.koi = [];
@@ -1515,12 +1515,22 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
     // Pass 3: Underwater shadows cast by floating lotus pads onto the water & koi below
     const pads = sky.pads ?? [];
     for (const pad of pads) {
+        if (pad.companionLeaf) {
+            const cr2 = 15.5 * scale;
+            cr.save();
+            cr.translate(pad.x - (26 - 3.5) * scale, pad.y + (18 + 6.0) * scale);
+            cr.scale(1, 0.56);
+            traceKoiLotusPad(cr, cr2 * 1.02, 3.6);
+            cr.setSourceRGBA(0.01, 0.04, 0.07, 0.36);
+            cr.fill();
+            cr.restore();
+        }
         const pr = pad.r * scale;
         cr.save();
-        cr.translate(pad.x + 3.5 * scale, pad.y + 6.5 * scale);
-        cr.scale(1, 0.55);
-        cr.setSourceRGBA(0.01, 0.04, 0.08, 0.36);
-        cr.arc(0, 0, pr * 1.03, 0, TWO_PI);
+        cr.translate(pad.x + 3.5 * scale, pad.y + 6.0 * scale);
+        cr.scale(1, 0.56);
+        traceKoiLotusPad(cr, pr * 1.02, pad.notch ?? 0.42);
+        cr.setSourceRGBA(0.01, 0.04, 0.07, 0.38);
         cr.fill();
         cr.restore();
     }
@@ -1555,49 +1565,400 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
     cr.fill();
     cr.restore();
 
-    // Pass 5: Floating foreshortened lotus pads & lotus blossom on the water surface
+    // Pass 5: Floating foreshortened botanical lotus pads, bud & 3D Sacred Lotus blossom
+    const lum = night ? 0.54 : 0.72;
     for (const pad of pads) {
-        const pr = pad.r * scale;
-        cr.save();
-        cr.translate(pad.x, pad.y);
-        cr.scale(1, 0.55);
-        const pg = new Cairo.RadialGradient(-2.5 * scale, -2.5 * scale, 1.5 * scale, 0, 0, pr);
-        if (night) {
-            pg.addColorStopRGBA(0, 0.12, 0.26, 0.19, 0.88);
-            pg.addColorStopRGBA(1, 0.06, 0.14, 0.10, 0.88);
-        } else {
-            pg.addColorStopRGBA(0, 0.20, 0.42, 0.29, 0.90);
-            pg.addColorStopRGBA(1, 0.10, 0.24, 0.16, 0.90);
+        if (pad.companionLeaf) {
+            drawKoiLotusPadLeaf(
+                cr,
+                pad.x - 26 * scale,
+                pad.y + 18 * scale,
+                15.5 * scale,
+                3.6,
+                scale,
+                lum
+            );
         }
-        cr.setSource(pg);
-        cr.newPath();
-        cr.moveTo(0, 0);
-        cr.arc(0, 0, pr, pad.notch + 0.26, pad.notch + TWO_PI - 0.26);
-        cr.closePath();
-        cr.fillPreserve();
-        cr.setSourceRGBA(0.52, 0.74, 0.58, night ? 0.16 : 0.22);
-        cr.setLineWidth(Math.max(0.75, scale));
-        cr.stroke();
-        cr.restore();
+        const pr = pad.r * scale;
+        drawKoiLotusPadLeaf(cr, pad.x, pad.y, pr, pad.notch ?? 0.42, scale, lum);
 
+        if (pad.hasBud) {
+            drawKoiLotusBud(
+                cr,
+                pad.x + 18 * scale,
+                pad.y - 6 * scale,
+                scale,
+                0.22,
+                lum
+            );
+        }
         if (pad.hasFlower) {
-            cr.save();
-            cr.translate(pad.x - 1.5 * scale, pad.y - 1.5 * scale);
-            for (let p = 0; p < 8; p++) {
-                cr.save();
-                cr.rotate((p / 8) * TWO_PI);
-                cr.scale(2.4 * scale, 5.5 * scale);
-                cr.setSourceRGBA(0.76, 0.44, 0.56, night ? 0.72 : 0.80);
-                cr.arc(0, -0.8, 1, 0, TWO_PI);
-                cr.fill();
-                cr.restore();
-            }
-            cr.setSourceRGBA(0.84, 0.62, 0.22, night ? 0.78 : 0.84);
-            cr.arc(0, -0.7 * scale, 2.3 * scale, 0, TWO_PI);
-            cr.fill();
-            cr.restore();
+            drawKoiLotusBlossom(
+                cr,
+                pad.x - pr * 0.06,
+                pad.y - pr * 0.14,
+                scale * 1.32,
+                lum
+            );
         }
     }
+}
+
+/* Trace a wavy/crenate botanical peltate lotus pad perimeter with a radial V-sinus notch */
+function traceKoiLotusPad(cr, pr, notchAngle) {
+    const gap = 0.21;
+    const a0 = notchAngle + gap;
+    const a1 = notchAngle + TWO_PI - gap;
+    const steps = 44;
+    const hubX = Math.cos(notchAngle) * pr * 0.11;
+    const hubY = Math.sin(notchAngle) * pr * 0.11;
+    cr.newPath();
+    cr.moveTo(hubX, hubY);
+    for (let i = 0; i <= steps; i++) {
+        const u = i / steps;
+        const a = a0 + u * (a1 - a0);
+        const edgeFade = Math.sin(u * Math.PI);
+        const r = pr * (1 + 0.040 * edgeFade * Math.sin(u * 11 * TWO_PI));
+        cr.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    cr.closePath();
+}
+
+/* Draw a single floating peltate lotus leaf with meniscus ripple, upturned rim & 11 dichotomous veins */
+function drawKoiLotusPadLeaf(cr, x, y, pr, notch, scale, lum) {
+    const sy = 0.56;
+
+    // Subtle concentric water-meniscus ripple ring
+    cr.save();
+    cr.translate(x, y + 1.0 * scale);
+    cr.scale(1, sy);
+    cr.setSourceRGBA(0.66, 0.82, 0.92, 0.18 * lum);
+    cr.setLineWidth(Math.max(0.6, 0.75 * scale));
+    cr.newPath();
+    cr.arc(0, 0, pr * 1.15, 0, TWO_PI);
+    cr.stroke();
+    cr.setSourceRGBA(0.66, 0.82, 0.92, 0.10 * lum);
+    cr.setLineWidth(Math.max(0.5, 0.52 * scale));
+    cr.newPath();
+    cr.arc(0, 0, pr * 1.30, 0, TWO_PI);
+    cr.stroke();
+    cr.restore();
+
+    // Upturned lower leaf rim / dark emerald underside thickness
+    cr.save();
+    cr.translate(x, y + 1.7 * scale);
+    cr.scale(1, sy);
+    traceKoiLotusPad(cr, pr, notch);
+    cr.setSourceRGBA(0.07 * lum, 0.20 * lum, 0.14 * lum, 0.88);
+    cr.fill();
+    cr.restore();
+
+    // Main peltate leaf blade with radial botanical gradient & radiating dichotomous veins
+    cr.save();
+    cr.translate(x, y);
+    cr.scale(1, sy);
+    traceKoiLotusPad(cr, pr, notch);
+
+    const ux = Math.cos(notch) * pr * 0.08;
+    const uy = Math.sin(notch) * pr * 0.08;
+    const lg = new Cairo.RadialGradient(ux - pr * 0.12, uy - pr * 0.12, pr * 0.06, 0, 0, pr * 1.04);
+    lg.addColorStopRGBA(0.00, 0.38 * lum, 0.64 * lum, 0.38 * lum, 0.90);
+    lg.addColorStopRGBA(0.52, 0.22 * lum, 0.48 * lum, 0.30 * lum, 0.90);
+    lg.addColorStopRGBA(0.86, 0.14 * lum, 0.35 * lum, 0.22 * lum, 0.90);
+    lg.addColorStopRGBA(1.00, 0.19 * lum, 0.42 * lum, 0.27 * lum, 0.90);
+    cr.setSource(lg);
+    cr.fillPreserve();
+
+    cr.setSourceRGBA(0.44 * lum, 0.70 * lum, 0.46 * lum, 0.44);
+    cr.setLineWidth(Math.max(0.65, 0.85 * scale));
+    cr.stroke();
+
+    const numVeins = 11;
+    const gap = 0.28;
+    const span = TWO_PI - gap * 2;
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    for (let i = 0; i < numVeins; i++) {
+        const va = notch + gap + (i + 0.5) * (span / numVeins);
+        const vx1 = ux + Math.cos(va) * pr * 0.62;
+        const vy1 = uy + Math.sin(va) * pr * 0.62;
+        const vx2 = ux + Math.cos(va) * pr * 0.88;
+        const vy2 = uy + Math.sin(va) * pr * 0.88;
+
+        cr.setSourceRGBA(0.56 * lum, 0.82 * lum, 0.54 * lum, 0.40);
+        cr.setLineWidth(Math.max(0.5, 0.72 * scale));
+        cr.newPath();
+        cr.moveTo(ux, uy);
+        cr.lineTo(vx2, vy2);
+        cr.stroke();
+
+        cr.setSourceRGBA(0.56 * lum, 0.82 * lum, 0.54 * lum, 0.26);
+        cr.setLineWidth(Math.max(0.4, 0.48 * scale));
+        for (const da of [-0.14, 0.14]) {
+            const fx = ux + Math.cos(va + da) * pr * 0.92;
+            const fy = uy + Math.sin(va + da) * pr * 0.92;
+            cr.newPath();
+            cr.moveTo(vx1, vy1);
+            cr.lineTo(fx, fy);
+            cr.stroke();
+        }
+    }
+
+    cr.setSourceRGBA(0.70 * lum, 0.88 * lum, 0.58 * lum, 0.80);
+    cr.newPath();
+    cr.arc(ux, uy, 1.45 * scale, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+}
+
+/* Draw an unopened sculpted pink Sacred Lotus bud on a short curving stem */
+function drawKoiLotusBud(cr, x, y, sc, tilt, lum) {
+    cr.save();
+    cr.translate(x, y);
+    cr.scale(sc, sc);
+
+    cr.setSourceRGBA(0.18 * lum, 0.40 * lum, 0.25 * lum, 0.88);
+    cr.setLineWidth(1.4);
+    cr.newPath();
+    cr.moveTo(0, 5.0);
+    cr.curveTo(tilt * 4.5, 1.8, tilt * 6.5, -1.5, tilt * 5.5, -4.6);
+    cr.stroke();
+
+    cr.translate(tilt * 5.5, -4.6);
+    cr.rotate(tilt * 0.6);
+
+    const bg = new Cairo.LinearGradient(0, 1.6, 0, -9.2);
+    bg.addColorStopRGBA(0.0, 0.26 * lum, 0.48 * lum, 0.30 * lum, 0.90);
+    bg.addColorStopRGBA(0.30, 0.66 * lum, 0.22 * lum, 0.40 * lum, 0.92);
+    bg.addColorStopRGBA(0.72, 0.92 * lum, 0.52 * lum, 0.68 * lum, 0.92);
+    bg.addColorStopRGBA(1.0, 1.00 * lum, 0.86 * lum, 0.92 * lum, 0.94);
+    cr.setSource(bg);
+    cr.newPath();
+    cr.moveTo(0, 1.4);
+    cr.curveTo(-3.9, -0.8, -3.5, -5.8, 0, -9.2);
+    cr.curveTo(3.5, -5.8, 3.9, -0.8, 0, 1.4);
+    cr.closePath();
+    cr.fillPreserve();
+    cr.setSourceRGBA(0.50 * lum, 0.16 * lum, 0.30 * lum, 0.36);
+    cr.setLineWidth(0.45);
+    cr.stroke();
+
+    cr.setSourceRGBA(1.0 * lum, 0.82 * lum, 0.88 * lum, 0.40);
+    cr.setLineWidth(0.42);
+    cr.newPath();
+    cr.moveTo(-0.4, 0.6);
+    cr.curveTo(-1.3, -2.6, -0.9, -6.0, 0, -8.6);
+    cr.stroke();
+    cr.restore();
+}
+
+/* Draw a 3D cupped Sacred Lotus blossom (Nelumbo nucifera) in 3/4 pond perspective */
+function drawKoiLotusBlossom(cr, x, y, sc, lum) {
+    cr.save();
+    cr.translate(x, y);
+    cr.scale(sc, sc);
+
+    // Soft ambient occlusion shadow on the lotus pad beneath the blossom
+    const sg = new Cairo.RadialGradient(0, 2.2, 1.2, 0, 2.2, 15.5);
+    sg.addColorStopRGBA(0, 0.02, 0.08, 0.05, 0.50);
+    sg.addColorStopRGBA(0.6, 0.03, 0.10, 0.07, 0.24);
+    sg.addColorStopRGBA(1, 0.03, 0.10, 0.07, 0.0);
+    cr.setSource(sg);
+    cr.save();
+    cr.scale(1.0, 0.62);
+    cr.newPath();
+    cr.arc(0, 3.0, 15.5, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    const drawCuppedPetal = (dx, dy, rot, len, wid, baseCol, midCol, tipCol, alpha = 0.90) => {
+        cr.save();
+        cr.translate(dx, dy);
+        cr.rotate(rot);
+
+        const pg = new Cairo.LinearGradient(0, 0, 0, -len);
+        pg.addColorStopRGBA(0.00, baseCol[0] * lum, baseCol[1] * lum, baseCol[2] * lum, alpha);
+        pg.addColorStopRGBA(0.52, midCol[0] * lum, midCol[1] * lum, midCol[2] * lum, alpha);
+        pg.addColorStopRGBA(1.00, tipCol[0] * lum, tipCol[1] * lum, tipCol[2] * lum, alpha);
+        cr.setSource(pg);
+
+        cr.newPath();
+        cr.moveTo(0, 0);
+        cr.curveTo(-wid * 1.12, -len * 0.30, -wid * 0.78, -len * 0.78, 0, -len);
+        cr.curveTo(wid * 0.78, -len * 0.78, wid * 1.12, -len * 0.30, 0, 0);
+        cr.closePath();
+        cr.fillPreserve();
+
+        cr.setSourceRGBA(0.50 * lum, 0.16 * lum, 0.30 * lum, 0.32);
+        cr.setLineWidth(0.42);
+        cr.stroke();
+
+        cr.setSourceRGBA(1.0 * lum, 0.90 * lum, 0.94 * lum, 0.28);
+        cr.setLineWidth(0.36);
+        cr.newPath();
+        cr.moveTo(0, -len * 0.16);
+        cr.lineTo(0, -len * 0.86);
+        cr.stroke();
+        cr.restore();
+    };
+
+    // Basal green-blush calyx sepals
+    drawCuppedPetal(-2.5, 1.0, -1.32, 11.2, 3.0, [0.22, 0.44, 0.28], [0.48, 0.56, 0.42], [0.78, 0.60, 0.66], 0.84);
+    drawCuppedPetal(2.5, 1.0, 1.32, 11.2, 3.0, [0.22, 0.44, 0.28], [0.48, 0.56, 0.42], [0.78, 0.60, 0.66], 0.84);
+
+    // Outer spreading whorl
+    const outerBack = [
+        [-2.2, -0.4, -1.12, 12.2, 3.5],
+        [2.2, -0.4, 1.12, 12.2, 3.5],
+        [-1.5, -1.0, -0.74, 12.6, 3.6],
+        [1.5, -1.0, 0.74, 12.6, 3.6],
+        [-0.7, -1.4, -0.36, 13.0, 3.7],
+        [0.7, -1.4, 0.36, 13.0, 3.7],
+        [0.0, -1.6, 0.00, 13.4, 3.8],
+    ];
+    for (const [dx, dy, rot, len, wid] of outerBack) {
+        drawCuppedPetal(
+            dx, dy, rot, len, wid,
+            [0.60, 0.18, 0.36],
+            [0.85, 0.44, 0.60],
+            [0.98, 0.80, 0.88],
+            0.89
+        );
+    }
+
+    // Middle cupped whorl
+    const midCup = [
+        [-1.8, -0.2, -0.92, 10.8, 3.3],
+        [1.8, -0.2, 0.92, 10.8, 3.3],
+        [-1.1, -0.8, -0.54, 11.4, 3.4],
+        [1.1, -0.8, 0.54, 11.4, 3.4],
+        [-0.4, -1.1, -0.18, 11.8, 3.5],
+        [0.4, -1.1, 0.18, 11.8, 3.5],
+    ];
+    for (const [dx, dy, rot, len, wid] of midCup) {
+        drawCuppedPetal(
+            dx, dy, rot, len, wid,
+            [0.68, 0.22, 0.40],
+            [0.92, 0.56, 0.70],
+            [1.00, 0.90, 0.94],
+            0.91
+        );
+    }
+
+    // Inner upright cradle petals behind the golden receptacle
+    const innerBack = [
+        [-1.2, -0.4, -0.66, 9.2, 2.9],
+        [1.2, -0.4, 0.66, 9.2, 2.9],
+        [-0.6, -0.7, -0.28, 9.6, 3.0],
+        [0.6, -0.7, 0.28, 9.6, 3.0],
+        [0.0, -0.9, 0.00, 9.8, 3.1],
+    ];
+    for (const [dx, dy, rot, len, wid] of innerBack) {
+        drawCuppedPetal(
+            dx, dy, rot, len, wid,
+            [0.76, 0.28, 0.46],
+            [0.96, 0.66, 0.78],
+            [1.00, 0.95, 0.97],
+            0.92
+        );
+    }
+
+    // Golden stamen crown & flat-topped Sacred Lotus seed-pod receptacle
+    cr.save();
+    cr.translate(0, -1.6);
+    const numStamens = 18;
+    for (let i = 0; i < numStamens; i++) {
+        const sa = (i / numStamens) * TWO_PI;
+        const sx0 = Math.cos(sa) * 2.4;
+        const sy0 = Math.sin(sa) * 1.5;
+        const sx1 = Math.cos(sa) * 4.8;
+        const sy1 = Math.sin(sa) * 3.0 - 0.7;
+        cr.setSourceRGBA(0.95 * lum, 0.74 * lum, 0.18 * lum, 0.88);
+        cr.setLineWidth(0.56);
+        cr.newPath();
+        cr.moveTo(sx0, sy0);
+        cr.lineTo(sx1, sy1);
+        cr.stroke();
+
+        cr.setSourceRGBA(1.0 * lum, 0.92 * lum, 0.54 * lum, 0.90);
+        cr.newPath();
+        cr.arc(sx1, sy1, 0.50, 0, TWO_PI);
+        cr.fill();
+    }
+
+    const rg = new Cairo.RadialGradient(-0.7, -0.6, 0.3, 0, 0, 3.2);
+    rg.addColorStopRGBA(0, 0.98 * lum, 0.88 * lum, 0.34 * lum, 0.92);
+    rg.addColorStopRGBA(0.7, 0.86 * lum, 0.68 * lum, 0.16 * lum, 0.92);
+    rg.addColorStopRGBA(1, 0.62 * lum, 0.46 * lum, 0.10 * lum, 0.92);
+    cr.setSource(rg);
+    cr.save();
+    cr.scale(1.0, 0.66);
+    cr.newPath();
+    cr.arc(0, 0, 3.1, 0, TWO_PI);
+    cr.fill();
+    cr.setSourceRGBA(0.46 * lum, 0.32 * lum, 0.06 * lum, 0.72);
+    for (const [dx, dy] of [[0, 0], [-1.3, -0.6], [1.3, -0.6], [-0.9, 1.0], [0.9, 1.0], [0, -1.3]]) {
+        cr.newPath();
+        cr.arc(dx, dy, 0.35, 0, TWO_PI);
+        cr.fill();
+    }
+    cr.restore();
+    cr.restore();
+
+    // Foreshortened front spreading & cupped petals
+    const frontOuter = [
+        [-2.0, 0.8, -1.88, 9.6, 3.5],
+        [2.0, 0.8, 1.88, 9.6, 3.5],
+        [-1.1, 1.2, -2.42, 8.2, 3.6],
+        [1.1, 1.2, 2.42, 8.2, 3.6],
+        [0.0, 1.4, Math.PI, 7.6, 3.8],
+    ];
+    for (const [dx, dy, rot, len, wid] of frontOuter) {
+        drawCuppedPetal(
+            dx, dy, rot, len, wid,
+            [0.64, 0.20, 0.38],
+            [0.88, 0.50, 0.66],
+            [0.99, 0.86, 0.92],
+            0.89
+        );
+    }
+
+    const frontInner = [
+        [-1.3, 0.5, -2.12, 6.4, 3.0],
+        [1.3, 0.5, 2.12, 6.4, 3.0],
+        [0.0, 0.8, Math.PI, 5.6, 3.2],
+    ];
+    for (const [dx, dy, rot, len, wid] of frontInner) {
+        drawCuppedPetal(
+            dx, dy, rot, len, wid,
+            [0.72, 0.26, 0.44],
+            [0.94, 0.62, 0.74],
+            [1.00, 0.93, 0.96],
+            0.90
+        );
+    }
+
+    cr.restore();
+}
+
+/* Exclusion zone around floating koi-pond lotus pads & blossoms so raindrops & splash droplets never paint over them */
+function isKoiPadZone(x, y, sky, scale) {
+    for (const pad of sky.pads ?? []) {
+        const pr = pad.r * scale;
+        const dx = (x - pad.x) / (pr * 1.25);
+        const dy = (y - (pad.y - (pad.hasFlower ? 4 * scale : 0))) / (pr * (pad.hasFlower ? 0.95 : 0.72));
+        if (dx * dx + dy * dy < 1)
+            return true;
+        if (pad.companionLeaf) {
+            const cx = pad.x - 26 * scale;
+            const cy = pad.y + 18 * scale;
+            const cr2 = 15.5 * scale;
+            const cdx = (x - cx) / (cr2 * 1.20);
+            const cdy = (y - cy) / (cr2 * 0.72);
+            if (cdx * cdx + cdy * cdy < 1)
+                return true;
+        }
+    }
+    return false;
 }
 
 /* Exclusion zone around T3 storm foreground elements (frogs, reeds, lotus) so raindrops & splash droplets never paint over them */
@@ -1690,6 +2051,11 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 
             isStormForegroundZone(drop.x, drop.y, width, height, scale)
         ))
             continue;
+        if (scene === 'rain' && (
+            isKoiPadZone(tx, ty, sky, scale) ||
+            isKoiPadZone((drop.x + tx) * 0.5, (drop.y + ty) * 0.5, sky, scale)
+        ))
+            continue;
         cr.setLineWidth(lw);
         cr.setSourceRGBA(rainColor[0], rainColor[1], rainColor[2], alpha);
         cr.moveTo(drop.x, drop.y);
@@ -1712,6 +2078,8 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 
         if (rp.phase >= 1)
             continue;
         if (scene === 'storm' && isStormForegroundZone(rp.x, rp.y, width, height, scale))
+            continue;
+        if (scene === 'rain' && isKoiPadZone(rp.x, rp.y, sky, scale))
             continue;
         const depth = Math.max(0, Math.min(1, (rp.y - (groundOffset + 0.68 * sh)) / (0.31 * sh)));
         const pScale = (0.52 + 0.54 * depth) * scale;
