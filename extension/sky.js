@@ -1600,6 +1600,21 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
     }
 }
 
+/* Exclusion zone around T3 storm foreground elements (frogs, reeds, lotus) so raindrops & splash droplets never paint over them */
+function isStormForegroundZone(x, y, width, height, scale) {
+    const sh = sceneHeight(width, height);
+    const floorTop = height - sh + 0.685 * sh;
+    if (x < width * 0.052 + 22 * scale && y > height - 68 * scale)
+        return true;
+    if (x > width * 0.948 - 20 * scale && y > height - 56 * scale)
+        return true;
+    if (Math.abs(x - width * 0.50) < 32 * scale && y > height - 118 * scale && y < height - 56 * scale)
+        return true;
+    if (Math.abs(x - width * 0.733) < 24 * scale && y > floorTop - 8 * scale && y < floorTop + 28 * scale)
+        return true;
+    return false;
+}
+
 /* Rain, Drizzle & Showers: 3-tier WMO intensity + connected raindrop-to-ripple impacts + koi pond */
 function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 0, night = false) {
     if (!sky.drops.length)
@@ -1669,6 +1684,12 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 
         const alpha = layer === 2 ? 0.62 : (layer === 1 ? 0.44 : 0.28);
         const lw = (layer === 2 ? 1.65 : (layer === 1 ? 1.25 : 0.92)) * scale;
         const tx = drop.x - length * slant, ty = drop.y + length;
+        if (scene === 'storm' && (
+            isStormForegroundZone(tx, ty, width, height, scale) ||
+            isStormForegroundZone((drop.x + tx) * 0.5, (drop.y + ty) * 0.5, width, height, scale) ||
+            isStormForegroundZone(drop.x, drop.y, width, height, scale)
+        ))
+            continue;
         cr.setLineWidth(lw);
         cr.setSourceRGBA(rainColor[0], rainColor[1], rainColor[2], alpha);
         cr.moveTo(drop.x, drop.y);
@@ -1689,6 +1710,8 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 
             continue;
         const rp = sky.ripples[i];
         if (rp.phase >= 1)
+            continue;
+        if (scene === 'storm' && isStormForegroundZone(rp.x, rp.y, width, height, scale))
             continue;
         const depth = Math.max(0, Math.min(1, (rp.y - (groundOffset + 0.68 * sh)) / (0.31 * sh)));
         const pScale = (0.52 + 0.54 * depth) * scale;
@@ -3516,16 +3539,6 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
         cr.lineTo(vx, vy);
     }
     cr.stroke();
-
-    // Quicksilver rainwater beads on lotus leaf
-    cr.setSourceRGBA(0.70, 0.80, 0.84, 0.82);
-    cr.newPath();
-    cr.arc(-4.8, -1.8, 1.0, 0, TWO_PI);
-    cr.newSubPath();
-    cr.arc(3.8, -2.0, 0.8, 0, TWO_PI);
-    cr.newSubPath();
-    cr.arc(-11.8, 1.6, 0.8, 0, TWO_PI);
-    cr.fill();
     cr.restore();
 
     // Anatomical Green Tree Frog (Dryophytes) with Z-folded hind leg & inflating amber vocal sac
