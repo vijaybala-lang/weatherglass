@@ -4005,15 +4005,13 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     drawStormPadShadow(cr, x2, y2, r2, 2.35, scale);
     drawKoiLotusPadLeaf(cr, x2, y2, r2, 2.35, scale, lum);
 
-    // 3. Twin-Leaf Sacred Lotus + 3D Cupped Blossom + Bud in Sat–Sun alley (x = 0.733w, y = h - 43*scale)
+    // 3. Flowerless Twin-Leaf Sacred Lotus pads in Fri–Sat / Sat–Sun alley (x = 0.733w, y = h - 43*scale)
     const x3 = width * 0.733, y3 = height - 43 * scale, r3 = 24.5 * scale;
     const x3c = x3 - 24 * scale, y3c = y3 + 16 * scale, r3c = 14.5 * scale;
     drawStormPadShadow(cr, x3c, y3c, r3c, 3.6, scale);
     drawStormPadShadow(cr, x3, y3, r3, 0.42, scale);
     drawKoiLotusPadLeaf(cr, x3c, y3c, r3c, 3.6, scale, lum);
     drawKoiLotusPadLeaf(cr, x3, y3, r3, 0.42, scale, lum);
-    drawKoiLotusBud(cr, x3 + 18 * scale, y3 - 6 * scale, scale * 0.96, 0.22, lum);
-    drawKoiLotusBlossom(cr, x3 - r3 * 0.06, y3 - r3 * 0.14, scale * 1.28, lum);
 
     // 4. Option B: Eurasian Tree Sparrow (Passer montanus) standing on the Thu–Fri lotus pad,
     // sheltering under an overarching pink Sacred Lotus flower whose stem emerges from the pad's V-split opening!
