@@ -145,6 +145,7 @@ const SkyArea = GObject.registerClass(
                     sky: skyOptions.sky, radius: skyOptions.radius ?? 0, phase: skyOptions.phase ?? null,
                     code: skyOptions.scene === 'wind' || skyOptions.scene === 'rain'
                         ? skyOptions.code : null,
+                    temp: skyOptions.temp,
                     glow, solar, fxScale: 1,
                 });
             }
@@ -327,7 +328,7 @@ export class ForecastPanel {
         this._sky = createSky();
         // radius 18 matches the shell's polished-popup corner radius
         this._skyOpts = {
-            scene: 'loading', night: false, scrim: null, code: null,
+            scene: 'loading', night: false, scrim: null, code: null, temp: null,
             sky: this._sky, radius: 18
         };
         this._nowFrac = null;
@@ -1210,20 +1211,23 @@ export class ForecastPanel {
         const state = this._state;
         if (!state)
             return;
-        let scene, night, code;
+        let scene, night, code, temp;
         if (this._day === 0) {
             scene = (state.effective ?? sceneFor(state.current.code, state.current.isDay)).scene;
             night = !state.current.isDay;
             code = state.current.code;
+            temp = state.current.temp;
         } else {
             const dayData = state.daily[this._day];
             scene = sceneFor(dayData.code, true).scene;
             night = false;
             code = dayData.code;
+            temp = dayData.tmax;
         }
         this._skyOpts.scene = scene;
         this._skyOpts.night = night;
         this._skyOpts.code = code;
+        this._skyOpts.temp = Number.isFinite(temp) ? temp : null;
         this._skyOpts.phase = Number.isFinite(state.phase) ? state.phase : null;
         this._sunCoords = Number.isFinite(state.latitude) && Number.isFinite(state.longitude)
             ? [state.latitude, state.longitude] : null;

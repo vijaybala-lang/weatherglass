@@ -395,6 +395,7 @@ function renderCard(p, outDir, probe = null) {
             time: style === 'solid' ? STATIC_TIME : 2.9,   // solid = frozen frame
             scene, night, sky: pool, scrim,
             code: scene === 'wind' || scene === 'rain' ? wmo : null,
+            temp: data.temps[0],
             radius: RADIUS, glow, solar, phase: mPhase});
     }
 

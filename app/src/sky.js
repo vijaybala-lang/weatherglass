@@ -2388,6 +2388,1775 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
 /* Multi-branch forked lightning emerging from the dark cloud underbelly */
 const BOLT_ORIGINS = [0.46, 0.56, 0.64];
 
+/* Resolve bottom floor scene ('S1', 'S2', 'T3', 'C1', 'C2', or null) from scene, night, and Celsius temp */
+export function resolveFloorScene(scene, night, temp = null) {
+    const hasTemp = temp !== null && temp !== undefined && Number.isFinite(temp);
+    const tempF = hasTemp ? temp * 9 / 5 + 32 : null;
+    if (scene === 'storm')
+        return 'T3';
+    if (scene === 'snow')
+        return tempF !== null && tempF < 0 ? 'S1' : 'S2';
+    if ((scene === 'clear' || scene === 'sun') && !night) {
+        if (tempF !== null && tempF < 0)
+            return 'S1';
+        if (tempF !== null && tempF <= 32)
+            return 'S2';
+        if (tempF !== null && tempF >= 76)
+            return 'C2';
+        return 'C1';
+    }
+    return null;
+}
+
+/* Snow-laden 5-tier evergreen pine for S1 and S2 winter floors */
+function drawSnowPine(cr, x, baseY, treeH, snowCap = true, bend = 0, alpha = 1.0, night = false) {
+    cr.save();
+    const trunkW = Math.max(1.5, treeH * 0.055);
+    drawSmoothLimb(
+        cr, x, baseY + 2, trunkW,
+        x + bend * 0.2, baseY - treeH * 0.3,
+        x + bend * 0.5, baseY - treeH * 0.6,
+        x + bend * 0.8, baseY - treeH * 0.85, trunkW * 0.25);
+    cr.setSourceRGBA(0.28, 0.19, 0.13, 0.95 * alpha);
+    cr.fill();
+
+    const tiers = 5;
+    for (let t = tiers - 1; t >= 0; t--) {
+        const f = t / tiers;
+        const hTop = 1.0 - f * 0.58;
+        const hBot = 0.66 - f * 0.50;
+        const topShift = bend * (hTop ** 1.3);
+        const botShift = bend * (hBot ** 1.3);
+        const topY = baseY - treeH * hTop;
+        const botY = baseY - treeH * hBot;
+        const hw = treeH * (0.15 + f * 0.23);
+
+        const g = new Cairo.LinearGradient(x - hw, topY, x + hw, botY + 3);
+        if (night) {
+            g.addColorStopRGBA(0, 0.14, 0.28, 0.24, 0.94 * alpha);
+            g.addColorStopRGBA(0.55, 0.09, 0.20, 0.18, 0.94 * alpha);
+            g.addColorStopRGBA(1, 0.05, 0.13, 0.12, 0.96 * alpha);
+        } else {
+            g.addColorStopRGBA(0, 0.22, 0.42, 0.33, 0.94 * alpha);
+            g.addColorStopRGBA(0.55, 0.15, 0.32, 0.26, 0.94 * alpha);
+            g.addColorStopRGBA(1, 0.09, 0.22, 0.18, 0.96 * alpha);
+        }
+        cr.setSource(g);
+
+        cr.newPath();
+        cr.moveTo(x + topShift, topY);
+        cr.curveTo(
+            x + botShift - hw * 0.42, (topY + botY) * 0.5,
+            x + botShift - hw * 0.88, botY - 1.5,
+            x + botShift - hw, botY);
+        cr.curveTo(
+            x + botShift - hw * 0.28, botY + 2.8,
+            x + botShift + hw * 0.28, botY + 2.8,
+            x + botShift + hw, botY);
+        cr.curveTo(
+            x + botShift + hw * 0.88, botY - 1.5,
+            x + botShift + hw * 0.42, (topY + botY) * 0.5,
+            x + topShift, topY);
+        cr.closePath();
+        cr.fill();
+
+        if (snowCap) {
+            const sg = new Cairo.LinearGradient(x - hw * 0.7, topY, x + hw * 0.7, botY);
+            sg.addColorStopRGBA(0, 0.94, 0.98, 1.0, 0.90 * alpha);
+            sg.addColorStopRGBA(1, 0.70, 0.82, 0.94, 0.82 * alpha);
+            cr.setSource(sg);
+            cr.newPath();
+            cr.moveTo(x + topShift, topY);
+            cr.curveTo(
+                x + botShift - hw * 0.36, (topY + botY) * 0.5,
+                x + botShift - hw * 0.76, botY - 2.0,
+                x + botShift - hw * 0.80, botY - 1.2);
+            cr.curveTo(
+                x + botShift - hw * 0.20, botY + 0.6,
+                x + botShift + hw * 0.20, botY + 0.6,
+                x + botShift + hw * 0.80, botY - 1.2);
+            cr.curveTo(
+                x + botShift + hw * 0.76, botY - 2.0,
+                x + botShift + hw * 0.36, (topY + botY) * 0.5,
+                x + topShift, topY);
+            cr.closePath();
+            cr.fill();
+        }
+    }
+    cr.restore();
+}
+
+/* Articulated 2-jointed Siberian Husky with X-back harness and 4-beat gallop kinematics */
+function drawHusky(cr, x, y, scale, stridePhase, coat = 'agouti') {
+    cr.save();
+    cr.translate(x, y);
+    cr.scale(scale, scale);
+
+    const palettes = {
+        agouti: {
+            dark: [0.16, 0.22, 0.30], mid: [0.34, 0.42, 0.52],
+            belly: [0.90, 0.95, 0.99], harness: [0.84, 0.24, 0.22],
+        },
+        white: {
+            dark: [0.60, 0.70, 0.82], mid: [0.82, 0.89, 0.96],
+            belly: [0.97, 0.99, 1.00], harness: [0.18, 0.56, 0.76],
+        },
+        black: {
+            dark: [0.10, 0.14, 0.20], mid: [0.22, 0.28, 0.36],
+            belly: [0.88, 0.93, 0.98], harness: [0.88, 0.56, 0.18],
+        },
+    };
+    const pal = palettes[coat] ?? palettes.agouti;
+
+    const s1 = Math.sin(stridePhase);
+    const bodyBob = Math.abs(s1) * 0.8;
+    const pitch = s1 * 0.05;
+
+    cr.translate(0, -bodyBob);
+    cr.rotate(pitch);
+
+    const drawLeg = (hipX, hipY, ph, isHind, isFar) => {
+        const sw = Math.sin(ph);
+        const lift = Math.max(0, -Math.cos(ph));
+        const thighLen = isHind ? 3.2 : 2.9;
+        const shinLen = isHind ? 3.0 : 2.8;
+        const a1 = (isHind ? 0.30 : -0.15) + sw * 0.46;
+        const a2 = a1 + (isHind ? -0.40 - lift * 0.50 : 0.32 + lift * 0.55);
+
+        const kx = hipX + Math.sin(a1) * thighLen;
+        const ky = hipY + Math.cos(a1) * thighLen;
+        const px = kx + Math.sin(a2) * shinLen;
+        const py = ky + Math.cos(a2) * shinLen;
+
+        cr.setLineCap(Cairo.LineCap.ROUND);
+        cr.setLineJoin(Cairo.LineJoin.ROUND);
+        const col = isFar ? pal.dark : pal.belly;
+        cr.setSourceRGBA(col[0], col[1], col[2], isFar ? 0.85 : 0.96);
+        cr.setLineWidth(isHind ? 1.5 : 1.35);
+        cr.newPath();
+        cr.moveTo(hipX, hipY);
+        cr.lineTo(kx, ky);
+        cr.lineTo(px, py);
+        cr.stroke();
+    };
+
+    drawLeg(-4.2, -3.6, stridePhase + 0.55, true, true);
+    drawLeg(3.4, -3.8, stridePhase + Math.PI + 0.55, false, true);
+
+    // Plumed sickle tail
+    cr.setSourceRGBA(pal.mid[0], pal.mid[1], pal.mid[2], 0.94);
+    cr.setLineWidth(2.0);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.newPath();
+    cr.moveTo(-4.8, -5.0);
+    cr.curveTo(-7.2, -6.2, -8.5, -8.4, -6.8, -9.6);
+    cr.stroke();
+
+    // Ribcage & tucked loin torso
+    const tg = new Cairo.LinearGradient(0, -6.8, 0, -2.0);
+    tg.addColorStopRGBA(0, pal.dark[0], pal.dark[1], pal.dark[2], 0.98);
+    tg.addColorStopRGBA(0.58, pal.mid[0], pal.mid[1], pal.mid[2], 0.98);
+    tg.addColorStopRGBA(1, pal.belly[0], pal.belly[1], pal.belly[2], 0.98);
+    cr.setSource(tg);
+    cr.newPath();
+    cr.moveTo(-5.2, -5.4);
+    cr.curveTo(-2.5, -6.4, 2.2, -6.6, 4.8, -6.2);
+    cr.curveTo(6.2, -5.2, 5.8, -2.5, 3.6, -2.4);
+    cr.curveTo(1.2, -2.4, -1.8, -3.6, -4.6, -3.4);
+    cr.closePath();
+    cr.fill();
+
+    // X-back racing harness
+    cr.setSourceRGBA(pal.harness[0], pal.harness[1], pal.harness[2], 0.95);
+    cr.setLineWidth(0.95);
+    cr.newPath();
+    cr.moveTo(4.2, -6.0);
+    cr.lineTo(2.8, -2.8);
+    cr.moveTo(4.0, -5.6);
+    cr.lineTo(-4.0, -5.0);
+    cr.stroke();
+
+    drawLeg(-4.0, -3.5, stridePhase, true, false);
+    drawLeg(3.6, -3.8, stridePhase + Math.PI * 1.1, false, false);
+
+    // Wolf-like head, white mask & erect ears
+    cr.setSourceRGBA(pal.dark[0], pal.dark[1], pal.dark[2], 0.98);
+    cr.newPath();
+    cr.moveTo(3.6, -5.8);
+    cr.lineTo(5.4, -8.4);
+    cr.lineTo(7.4, -8.0);
+    cr.lineTo(9.2, -7.0);
+    cr.lineTo(8.8, -6.0);
+    cr.lineTo(6.6, -6.0);
+    cr.lineTo(4.8, -3.8);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(pal.belly[0], pal.belly[1], pal.belly[2], 0.96);
+    cr.newPath();
+    cr.moveTo(6.6, -7.6);
+    cr.lineTo(9.0, -7.0);
+    cr.lineTo(8.7, -6.0);
+    cr.lineTo(6.2, -5.8);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(pal.dark[0], pal.dark[1], pal.dark[2], 0.98);
+    cr.newPath();
+    cr.moveTo(5.0, -8.0);
+    cr.lineTo(5.5, -10.6);
+    cr.lineTo(6.6, -8.1);
+    cr.moveTo(6.0, -8.0);
+    cr.lineTo(6.7, -10.4);
+    cr.lineTo(7.4, -7.9);
+    cr.closePath();
+    cr.fill();
+
+    cr.restore();
+}
+
+/* 7-segment S-flexing Arctic Char (Salvelinus alpinus) with forked tail & white-edged crimson fins */
+function drawArcticChar(cr, x, y, scale, baseAngle, time) {
+    cr.save();
+    cr.translate(x, y);
+    cr.scale(scale, scale);
+    cr.rotate(baseAngle);
+
+    const N = 7;
+    const len = 17.5;
+    const halfW = [0.65, 2.2, 3.1, 2.9, 2.2, 1.3, 0.75];
+    const spine = [];
+    for (let i = 0; i < N; i++) {
+        const u = i / (N - 1);
+        const sx = (0.48 - u) * len;
+        const env = (u ** 1.1) * 2.6;
+        const sy = Math.sin(time * 14 - u * 4.6) * env;
+        spine.push({ x: sx, y: sy, r: halfW[i] });
+    }
+
+    const leftPts = [], rightPts = [];
+    for (let i = 0; i < N; i++) {
+        const p0 = spine[Math.max(0, i - 1)];
+        const p1 = spine[Math.min(N - 1, i + 1)];
+        const dx = p1.x - p0.x, dy = p1.y - p0.y;
+        const l = Math.hypot(dx, dy) || 1;
+        const nx = -dy / l, ny = dx / l;
+        leftPts.push({ x: spine[i].x + nx * spine[i].r, y: spine[i].y + ny * spine[i].r });
+        rightPts.push({ x: spine[i].x - nx * spine[i].r, y: spine[i].y - ny * spine[i].r });
+    }
+
+    const tail = spine[N - 1], prev = spine[N - 2];
+    const tAng = Math.atan2(tail.y - prev.y, tail.x - prev.x);
+    cr.save();
+    cr.translate(tail.x, tail.y);
+    cr.rotate(tAng);
+    cr.setSourceRGBA(0.62, 0.74, 0.84, 0.94);
+    cr.newPath();
+    cr.moveTo(0, 0);
+    cr.lineTo(4.8, -3.5);
+    cr.lineTo(2.6, 0);
+    cr.lineTo(4.8, 3.5);
+    cr.closePath();
+    cr.fill();
+    cr.restore();
+
+    const mid = spine[2];
+    cr.setSourceRGBA(0.88, 0.36, 0.30, 0.92);
+    cr.newPath();
+    cr.moveTo(mid.x, rightPts[2].y);
+    cr.lineTo(mid.x - 2.6, rightPts[2].y + 3.4);
+    cr.lineTo(mid.x + 1.2, rightPts[2].y + 0.5);
+    cr.closePath();
+    cr.fill();
+    cr.setSourceRGBA(0.96, 0.99, 1.0, 0.92);
+    cr.setLineWidth(0.55);
+    cr.newPath();
+    cr.moveTo(mid.x + 1.0, rightPts[2].y + 0.4);
+    cr.lineTo(mid.x - 2.6, rightPts[2].y + 3.4);
+    cr.stroke();
+
+    cr.setSourceRGBA(0.30, 0.44, 0.58, 0.92);
+    cr.newPath();
+    cr.moveTo(leftPts[2].x, leftPts[2].y);
+    cr.lineTo(leftPts[3].x - 0.8, leftPts[3].y - 2.8);
+    cr.lineTo(leftPts[4].x, leftPts[4].y);
+    cr.closePath();
+    cr.fill();
+
+    const bg = new Cairo.LinearGradient(0, -3.5, 0, 3.5);
+    bg.addColorStopRGBA(0.0, 0.20, 0.32, 0.46, 0.98);
+    bg.addColorStopRGBA(0.46, 0.80, 0.88, 0.96, 0.98);
+    bg.addColorStopRGBA(0.76, 0.94, 0.46, 0.36, 0.96);
+    bg.addColorStopRGBA(1.0, 0.98, 0.90, 0.84, 0.96);
+    cr.setSource(bg);
+    cr.newPath();
+    cr.moveTo(spine[0].x + 1.0, spine[0].y);
+    for (let i = 0; i < N; i++)
+        cr.lineTo(leftPts[i].x, leftPts[i].y);
+    for (let i = N - 1; i >= 0; i--)
+        cr.lineTo(rightPts[i].x, rightPts[i].y);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(1.0, 1.0, 1.0, 0.62);
+    cr.setLineWidth(0.75);
+    cr.newPath();
+    for (let i = 1; i < N - 1; i++) {
+        if (i === 1)
+            cr.moveTo(spine[i].x, spine[i].y - 0.4);
+        else
+            cr.lineTo(spine[i].x, spine[i].y - 0.4);
+    }
+    cr.stroke();
+
+    cr.setSourceRGBA(0.08, 0.10, 0.14, 0.98);
+    cr.newPath();
+    cr.arc(spine[0].x - 0.8, spine[0].y - 0.4, 0.85, 0, TWO_PI);
+    cr.fill();
+
+    cr.restore();
+}
+
+/* S1 (< 0°F Snow & Clear Day): Inuit Ice Fishing, Flexing Arctic Char, Igloo & Husky Sled Trail */
+function drawIceFishingFloor(cr, width, height, scale, time, night) {
+    const sh = sceneHeight(width, height);
+    const groundOffset = height - sh;
+    const floorTop = groundOffset + 0.685 * sh;
+    const ridgeY = floorTop - 14 * scale;
+
+    // Upper snow ridge wash
+    const rg = new Cairo.LinearGradient(0, ridgeY - 6 * scale, 0, floorTop + 14 * scale);
+    if (night) {
+        rg.addColorStopRGBA(0, 0.24, 0.34, 0.48, 0.0);
+        rg.addColorStopRGBA(0.35, 0.24, 0.34, 0.48, 0.28);
+        rg.addColorStopRGBA(1, 0.16, 0.24, 0.36, 0.42);
+    } else {
+        rg.addColorStopRGBA(0, 0.88, 0.94, 1.0, 0.0);
+        rg.addColorStopRGBA(0.35, 0.84, 0.91, 0.98, 0.34);
+        rg.addColorStopRGBA(1, 0.72, 0.82, 0.92, 0.46);
+    }
+    cr.setSource(rg);
+    cr.newPath();
+    cr.moveTo(0, ridgeY + 4 * scale);
+    cr.curveTo(width * 0.35, ridgeY - 5 * scale, width * 0.68, ridgeY + 4 * scale, width, ridgeY - 1 * scale);
+    cr.lineTo(width, floorTop + 14 * scale);
+    cr.lineTo(0, floorTop + 14 * scale);
+    cr.closePath();
+    cr.fill();
+
+    // Glacial ice sheet floor wash
+    const iceG = new Cairo.LinearGradient(0, floorTop + 8 * scale, 0, height);
+    if (night) {
+        iceG.addColorStopRGBA(0, 0.14, 0.24, 0.36, 0.34);
+        iceG.addColorStopRGBA(1, 0.08, 0.15, 0.26, 0.56);
+    } else {
+        iceG.addColorStopRGBA(0, 0.66, 0.80, 0.92, 0.36);
+        iceG.addColorStopRGBA(1, 0.52, 0.68, 0.84, 0.52);
+    }
+    cr.setSource(iceG);
+    cr.rectangle(0, floorTop + 8 * scale, width, height - floorTop - 8 * scale);
+    cr.fill();
+
+    // 1. Qamutiik Dog Sled + Musher + 3 Articulated Huskies on upper ridge
+    const span = width + 180 * scale;
+    const dtShift = ((time - 1.1) * 22 * scale % span + span) % span;
+    const sledX = ((width * 0.388 + dtShift + 90 * scale) % span) - 90 * scale;
+    cr.save();
+    cr.translate(sledX, ridgeY);
+    cr.scale(1.42 * scale, 1.42 * scale);
+
+    cr.setSourceRGBA(0.16, 0.24, 0.34, 0.92);
+    cr.setLineWidth(1.3);
+    cr.newPath();
+    cr.moveTo(-28, 0);
+    cr.lineTo(-4, 0);
+    cr.curveTo(0, 0, 2, -3.5, -1, -5.0);
+    cr.lineTo(-22, -5.0);
+    cr.moveTo(-24, 0);
+    cr.lineTo(-22, -9.5);
+    cr.moveTo(-14, 0);
+    cr.lineTo(-14, -5.0);
+    cr.moveTo(-6, 0);
+    cr.lineTo(-6, -5.0);
+    cr.stroke();
+
+    cr.setSourceRGBA(0.30, 0.40, 0.50, 0.92);
+    cr.newPath();
+    cr.moveTo(-20, -5.0);
+    cr.curveTo(-16, -9.2, -8, -8.8, -4, -5.0);
+    cr.closePath();
+    cr.fill();
+
+    const kick = Math.sin(time * 7.0) * 1.8;
+    cr.setSourceRGBA(0.18, 0.26, 0.36, 0.95);
+    cr.setLineWidth(1.5);
+    cr.newPath();
+    cr.moveTo(-25, -4.5);
+    cr.lineTo(-27, 0);
+    cr.moveTo(-25, -4.5);
+    cr.lineTo(-29 - kick, -1.2);
+    cr.moveTo(-23, -9.0);
+    cr.lineTo(-21, -8.5);
+    cr.stroke();
+    cr.newPath();
+    cr.arc(-23, -11.8, 2.0, 0, TWO_PI);
+    cr.fill();
+    cr.rectangle(-25.5, -10.2, 3.6, 5.6);
+    cr.fill();
+
+    // Sled lantern glow + gangline
+    const lg = new Cairo.RadialGradient(-1, -4.5, 0.5, -1, -4.5, 7.5);
+    lg.addColorStopRGBA(0, 1.0, 0.90, 0.48, 0.95);
+    lg.addColorStopRGBA(1, 1.0, 0.68, 0.20, 0.0);
+    cr.setSource(lg);
+    cr.newPath();
+    cr.arc(-1, -4.5, 7.5, 0, TWO_PI);
+    cr.fill();
+
+    cr.setSourceRGBA(0.75, 0.85, 0.95, 0.65);
+    cr.setLineWidth(0.75);
+    cr.newPath();
+    cr.moveTo(0, -3.2);
+    cr.lineTo(58, -3.8);
+    cr.stroke();
+    cr.restore();
+
+    drawHusky(cr, sledX + 18 * scale, ridgeY, 1.42 * scale, time * 10 + 0.4, 'agouti');
+    drawHusky(cr, sledX + 48 * scale, ridgeY - 0.5 * scale, 1.42 * scale, time * 10 + 2.2, 'white');
+    drawHusky(cr, sledX + 78 * scale, ridgeY - 1.0 * scale, 1.42 * scale, time * 10 + 4.0, 'black');
+
+    // 2. Spiral-Coursed Snow-Block Igloo in Alley 1 (x = 0.267w, y = h - 70*scale)
+    const igX = width * 0.267, igY = height - 70 * scale;
+    cr.save();
+    cr.translate(igX, igY);
+    cr.scale(1.68 * scale, 1.68 * scale);
+
+    cr.save();
+    cr.scale(16.0, 5.2);
+    cr.setSourceRGBA(0.06, 0.14, 0.24, 0.34);
+    cr.newPath();
+    cr.arc(0, 0.4, 1, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    const domeG = new Cairo.RadialGradient(-5, -8, 2, 0, 0, 16);
+    domeG.addColorStopRGBA(0, 0.95, 0.98, 1.0, 0.96);
+    domeG.addColorStopRGBA(0.58, 0.72, 0.84, 0.95, 0.95);
+    domeG.addColorStopRGBA(1, 0.46, 0.62, 0.78, 0.96);
+    cr.setSource(domeG);
+    cr.newPath();
+    cr.arc(0, 0, 14, Math.PI, 0);
+    cr.curveTo(14, 3.2, -14, 3.2, -14, 0);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.28, 0.44, 0.62, 0.50);
+    cr.setLineWidth(0.70);
+    cr.newPath();
+    cr.moveTo(-13.2, -3.8);
+    cr.curveTo(-4, -5.8, 4, -5.8, 13.2, -3.8);
+    cr.moveTo(-11.2, -8.2);
+    cr.curveTo(-3, -9.8, 3, -9.8, 11.2, -8.2);
+    cr.moveTo(-6.8, -11.8);
+    cr.curveTo(-2, -12.8, 2, -12.8, 6.8, -11.8);
+    cr.moveTo(-6, 0.8);
+    cr.lineTo(-5.5, -4.4);
+    cr.moveTo(2, 1.2);
+    cr.lineTo(2.2, -4.5);
+    cr.moveTo(-2, -4.6);
+    cr.lineTo(-1.6, -9.0);
+    cr.moveTo(5, -4.2);
+    cr.lineTo(4.4, -8.6);
+    cr.stroke();
+
+    // Barrel-vaulted torsuk entrance tunnel + warm seal-oil lamp glow
+    cr.setSourceRGBA(0.76, 0.88, 0.98, 0.96);
+    cr.newPath();
+    cr.arc(10.5, 1.2, 5.2, Math.PI * 1.08, Math.PI * 1.96);
+    cr.lineTo(15.5, 3.8);
+    cr.lineTo(5.5, 3.8);
+    cr.closePath();
+    cr.fill();
+
+    const lampG = new Cairo.RadialGradient(12.2, 2.2, 0.8, 13.5, 3.2, 10.5);
+    lampG.addColorStopRGBA(0, 1.0, 0.88, 0.44, 0.96);
+    lampG.addColorStopRGBA(0.45, 1.0, 0.68, 0.22, 0.58);
+    lampG.addColorStopRGBA(1, 1.0, 0.54, 0.14, 0.0);
+    cr.setSource(lampG);
+    cr.newPath();
+    cr.arc(12.2, 2.2, 10.5, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    // 3. Inuit Angler in Alley 2 (x = 0.485w) + Glowing Aqua Ice Hole & Flexing Char in Alley 3 (x = 0.715w)
+    const angX = width * 0.485, angY = height - 50 * scale;
+    const holeX = width * 0.715, holeY = height - 46 * scale;
+    const haul = 0.5 + 0.5 * Math.sin((time - 1.1) * 1.8 + 0.65);
+
+    // Glowing aqua ice hole in Alley 3
+    cr.save();
+    cr.translate(holeX, holeY);
+    cr.scale(1.68 * scale, 1.68 * scale);
+    cr.save();
+    cr.scale(11.0, 3.8);
+    cr.setSourceRGBA(0.86, 0.94, 1.0, 0.94);
+    cr.newPath();
+    cr.arc(0, 0, 1.15, 0, TWO_PI);
+    cr.fill();
+    const hg = new Cairo.RadialGradient(0, 0, 0.1, 0, 0, 1.0);
+    hg.addColorStopRGBA(0, 0.24, 0.88, 0.98, 0.96);
+    hg.addColorStopRGBA(0.65, 0.08, 0.52, 0.74, 0.96);
+    hg.addColorStopRGBA(1, 0.04, 0.26, 0.44, 0.98);
+    cr.setSource(hg);
+    cr.newPath();
+    cr.arc(0, 0, 1.0, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+    cr.restore();
+
+    // Inuit Angler in Caribou Parka with Wolverine Sunburst Ruff in Alley 2
+    cr.save();
+    cr.translate(angX, angY);
+    cr.scale(1.68 * scale, 1.68 * scale);
+
+    // Snow-block seat
+    cr.setSourceRGBA(0.84, 0.92, 0.99, 0.95);
+    cr.rectangle(-10.5, -3.5, 9.5, 6.2);
+    cr.fill();
+
+    // Kamik mukluk boots
+    cr.setSourceRGBA(0.32, 0.20, 0.12, 0.98);
+    cr.newPath();
+    cr.arc(2.5, 1.2, 3.2, Math.PI, 0);
+    cr.lineTo(5.7, 2.8);
+    cr.lineTo(-0.7, 2.8);
+    cr.closePath();
+    cr.fill();
+
+    // Caribou-skin atigi parka with decorative cream trim
+    const pkG = new Cairo.LinearGradient(-8, -16, 6, 0);
+    pkG.addColorStopRGBA(0, 0.64, 0.38, 0.20, 0.98);
+    pkG.addColorStopRGBA(0.6, 0.48, 0.26, 0.14, 0.98);
+    pkG.addColorStopRGBA(1, 0.34, 0.18, 0.09, 0.98);
+    cr.setSource(pkG);
+    cr.newPath();
+    cr.moveTo(-7.5, -1.2);
+    cr.curveTo(-8.2, -8.5, -5.5, -14.8, -1.2, -15.5);
+    cr.curveTo(3.2, -15.2, 4.8, -9.5, 4.2, -1.2);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.96, 0.92, 0.82, 0.94);
+    cr.setLineWidth(1.1);
+    cr.newPath();
+    cr.moveTo(-7.2, -2.2);
+    cr.lineTo(4.0, -2.2);
+    cr.stroke();
+
+    // Extended arm & mitten holding jigging rod
+    cr.setSourceRGBA(0.56, 0.32, 0.16, 0.98);
+    cr.setLineWidth(3.0);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.newPath();
+    cr.moveTo(0.5, -11.5);
+    cr.lineTo(7.2, -9.8);
+    cr.stroke();
+
+    // Plush multi-ringed wolverine/wolf sunburst fur ruff (nasak)
+    cr.setSourceRGBA(0.42, 0.28, 0.16, 0.96);
+    cr.newPath();
+    cr.arc(-0.5, -17.2, 5.2, 0, TWO_PI);
+    cr.fill();
+    cr.setSourceRGBA(0.86, 0.76, 0.62, 0.96);
+    cr.newPath();
+    cr.arc(0.2, -17.2, 4.1, 0, TWO_PI);
+    cr.fill();
+    cr.setSourceRGBA(0.82, 0.58, 0.42, 0.98);
+    cr.newPath();
+    cr.arc(1.0, -17.2, 2.5, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    // Parabolic bending jigging rod + taut line + 7-segment flexing Arctic char
+    const rodBaseX = angX + 12.0 * scale, rodBaseY = angY - 16.5 * scale;
+    const tipX = holeX - 6.0 * scale, tipY = holeY - (29.0 - haul * 5.0) * scale;
+    cr.setSourceRGBA(0.42, 0.26, 0.14, 0.96);
+    cr.setLineWidth(1.5 * scale);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.newPath();
+    cr.moveTo(rodBaseX, rodBaseY);
+    cr.curveTo(
+        (rodBaseX + tipX) * 0.45, rodBaseY - 14 * scale,
+        (rodBaseX + tipX) * 0.78, tipY - 6 * scale,
+        tipX, tipY);
+    cr.stroke();
+
+    const fishX = holeX - 2.0 * scale;
+    const fishY = holeY - (8.0 + haul * 11.0) * scale;
+    cr.setSourceRGBA(0.88, 0.95, 1.0, 0.78);
+    cr.setLineWidth(0.95 * scale);
+    cr.newPath();
+    cr.moveTo(tipX, tipY);
+    cr.lineTo(fishX + 3.5 * scale, fishY - 7.5 * scale);
+    cr.stroke();
+
+    drawArcticChar(cr, fishX, fishY, 1.52 * scale, -Math.PI * 0.44, time);
+    drawSnowPine(cr, width * 0.945, height - 28 * scale, 36 * scale, true, -1.5 * scale, 1.0, night);
+}
+
+/* S2 (0°F .. 32°F Snow & Clear Day): Snowman, Pine Woodland & Smaller Distant Thu–Fri Smoking Chalet */
+function drawSnowmanChaletFloor(cr, width, height, scale, time, night) {
+    const sh = sceneHeight(width, height);
+    const groundOffset = height - sh;
+    const floorTop = groundOffset + 0.685 * sh;
+
+    // Distant snow ridge wash
+    const dg = new Cairo.LinearGradient(0, floorTop - 6 * scale, 0, height);
+    if (night) {
+        dg.addColorStopRGBA(0, 0.22, 0.32, 0.46, 0.0);
+        dg.addColorStopRGBA(0.28, 0.20, 0.30, 0.44, 0.34);
+        dg.addColorStopRGBA(1, 0.10, 0.18, 0.28, 0.56);
+    } else {
+        dg.addColorStopRGBA(0, 0.86, 0.92, 0.98, 0.0);
+        dg.addColorStopRGBA(0.28, 0.78, 0.86, 0.95, 0.34);
+        dg.addColorStopRGBA(1, 0.58, 0.70, 0.84, 0.52);
+    }
+    cr.setSource(dg);
+    cr.newPath();
+    cr.moveTo(0, floorTop + 5 * scale);
+    cr.curveTo(width * 0.35, floorTop - 6 * scale, width * 0.68, floorTop + 6 * scale, width, floorTop + 2 * scale);
+    cr.lineTo(width, height);
+    cr.lineTo(0, height);
+    cr.closePath();
+    cr.fill();
+
+    // Foreground snowbank contour
+    const fgSnow = new Cairo.LinearGradient(0, height - 62 * scale, 0, height);
+    if (night) {
+        fgSnow.addColorStopRGBA(0, 0.16, 0.26, 0.38, 0.38);
+        fgSnow.addColorStopRGBA(1, 0.08, 0.15, 0.24, 0.58);
+    } else {
+        fgSnow.addColorStopRGBA(0, 0.72, 0.82, 0.92, 0.38);
+        fgSnow.addColorStopRGBA(1, 0.52, 0.66, 0.80, 0.54);
+    }
+    cr.setSource(fgSnow);
+    cr.newPath();
+    cr.moveTo(0, height - 48 * scale);
+    cr.curveTo(
+        width * 0.38, height - 62 * scale,
+        width * 0.72, height - 44 * scale,
+        width, height - 52 * scale);
+    cr.lineTo(width, height);
+    cr.lineTo(0, height);
+    cr.closePath();
+    cr.fill();
+
+    // 1. Smaller Distant Warm-Lit Alpine Timber & Stone Chalet with Curling Chimney Smoke
+    //    Placed further in the distance between tiles Thu and Fri (x = 0.733w, y = floorTop + 18*scale)
+    const chX = width * 0.733, chY = floorTop + 18 * scale;
+    cr.save();
+    cr.translate(chX, chY);
+    cr.scale(1.08 * scale, 1.08 * scale);
+
+    // Warm golden window-light aura spilled onto the distant snow ridge
+    const snowAura = new Cairo.RadialGradient(0, 1.5, 1.5, 0, 2.5, 16.5);
+    snowAura.addColorStopRGBA(0, 1.0, 0.80, 0.36, 0.42);
+    snowAura.addColorStopRGBA(0.6, 1.0, 0.68, 0.24, 0.16);
+    snowAura.addColorStopRGBA(1, 1.0, 0.60, 0.18, 0.0);
+    cr.save();
+    cr.scale(1.0, 0.42);
+    cr.setSource(snowAura);
+    cr.newPath();
+    cr.arc(0, 4.0, 16.5, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    // Animated curling chimney smoke puffs rising gently between Thu and Fri
+    for (let i = 0; i < 5; i++) {
+        const u = ((i / 5) + ((time - 1.1) * 0.16) % 1 + 1) % 1;
+        const px = 6.2 + Math.sin(u * 5.2 + time * 1.8) * (1.2 + u * 1.4);
+        const py = -20.5 - u * 18.0;
+        const pr = 1.6 + u * 3.4;
+        const pa = (1 - u) * 0.52;
+        const sg = new Cairo.RadialGradient(px - pr * 0.25, py - pr * 0.25, pr * 0.15, px, py, pr);
+        sg.addColorStopRGBA(0, 0.92, 0.96, 1.0, pa);
+        sg.addColorStopRGBA(1, 0.74, 0.84, 0.95, 0);
+        cr.setSource(sg);
+        cr.newPath();
+        cr.arc(px, py, pr, 0, TWO_PI);
+        cr.fill();
+    }
+    cr.setSourceRGBA(0.88, 0.94, 1.0, 0.36);
+    cr.setLineWidth(1.3);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.newPath();
+    cr.moveTo(6.0, -19.2);
+    cr.curveTo(
+        8.4 + Math.sin(time * 2.0) * 0.8, -23.5,
+        4.6 - Math.sin(time * 2.0) * 0.8, -28.0,
+        7.6, -33.5);
+    cr.stroke();
+
+    // Stone chimney + snow cap
+    cr.setSourceRGBA(0.42, 0.44, 0.50, 0.98);
+    cr.rectangle(4.4, -19.2, 3.2, 8.5);
+    cr.fill();
+    cr.setSourceRGBA(0.92, 0.96, 1.0, 0.96);
+    cr.rectangle(4.0, -19.6, 4.0, 1.1);
+    cr.fill();
+
+    // Cut-stone masonry foundation + cedar/larch log cabin walls
+    cr.setSourceRGBA(0.36, 0.40, 0.46, 0.98);
+    cr.rectangle(-10.2, -0.8, 20.4, 2.6);
+    cr.fill();
+
+    const wallG = new Cairo.LinearGradient(-10, -11, 10, 0);
+    wallG.addColorStopRGBA(0, 0.56, 0.36, 0.22, 0.98);
+    wallG.addColorStopRGBA(0.55, 0.46, 0.28, 0.16, 0.98);
+    wallG.addColorStopRGBA(1, 0.34, 0.20, 0.12, 0.98);
+    cr.setSource(wallG);
+    cr.newPath();
+    cr.moveTo(-9.8, -0.6);
+    cr.lineTo(-9.8, -10.5);
+    cr.lineTo(0, -17.8);
+    cr.lineTo(9.8, -10.5);
+    cr.lineTo(9.8, -0.6);
+    cr.closePath();
+    cr.fill();
+
+    // Horizontal log courses & corner notches
+    cr.setSourceRGBA(0.24, 0.14, 0.08, 0.55);
+    cr.setLineWidth(0.45);
+    cr.newPath();
+    for (let ly = -2.4; ly >= -10.0; ly -= 1.9) {
+        cr.moveTo(-10.4, ly);
+        cr.lineTo(10.4, ly);
+    }
+    cr.stroke();
+
+    // Arched front door + glowing windows
+    cr.setSourceRGBA(0.28, 0.16, 0.10, 0.98);
+    cr.newPath();
+    cr.arc(0, -4.6, 2.0, Math.PI, 0);
+    cr.lineTo(2.0, -0.6);
+    cr.lineTo(-2.0, -0.6);
+    cr.closePath();
+    cr.fill();
+
+    for (const [wx, wy, ww, wh] of [[-5.6, -5.2, 3.4, 3.2], [5.6, -5.2, 3.4, 3.2], [0.0, -12.2, 2.8, 2.6]]) {
+        const wg = new Cairo.RadialGradient(wx, wy, 0.4, wx, wy, ww * 1.3);
+        wg.addColorStopRGBA(0, 1.0, 0.92, 0.56, 0.98);
+        wg.addColorStopRGBA(0.6, 1.0, 0.74, 0.24, 0.92);
+        wg.addColorStopRGBA(1, 0.90, 0.52, 0.12, 0.0);
+        cr.setSource(wg);
+        cr.newPath();
+        cr.arc(wx, wy, ww * 1.3, 0, TWO_PI);
+        cr.fill();
+        cr.setSourceRGBA(1.0, 0.90, 0.48, 0.98);
+        cr.rectangle(wx - ww * 0.5, wy - wh * 0.5, ww, wh);
+        cr.fill();
+    }
+
+    // Gable eaves + thick pillowy snowpack roof
+    cr.setSourceRGBA(0.24, 0.15, 0.10, 0.98);
+    cr.setLineWidth(1.5);
+    cr.setLineJoin(Cairo.LineJoin.ROUND);
+    cr.newPath();
+    cr.moveTo(-12.2, -9.2);
+    cr.lineTo(0, -18.4);
+    cr.lineTo(12.2, -9.2);
+    cr.stroke();
+
+    const roofSnowG = new Cairo.LinearGradient(0, -20.2, 0, -8.5);
+    roofSnowG.addColorStopRGBA(0, 0.96, 0.98, 1.0, 0.98);
+    roofSnowG.addColorStopRGBA(0.65, 0.80, 0.88, 0.97, 0.97);
+    roofSnowG.addColorStopRGBA(1, 0.58, 0.72, 0.88, 0.96);
+    cr.setSource(roofSnowG);
+    cr.newPath();
+    cr.moveTo(-12.8, -9.2);
+    cr.curveTo(-8.0, -13.6, -3.5, -17.6, 0, -20.0);
+    cr.curveTo(3.5, -17.6, 8.0, -13.6, 12.8, -9.2);
+    cr.curveTo(12.2, -7.8, 9.5, -8.8, 0, -16.8);
+    cr.curveTo(-9.5, -8.8, -12.2, -7.8, -12.8, -9.2);
+    cr.closePath();
+    cr.fill();
+    cr.restore();
+
+    // 2. 8-Tree Snow-Laden Evergreen Pine Woodland (distant ridge, Alley 2/3, and outer margins; no birds)
+    const sway = Math.sin((time - 1.1) * 1.6) * 0.5 * scale;
+    drawSnowPine(cr, width * 0.460, floorTop + 8 * scale, 22 * scale, true, 0.3 * scale + sway, 0.72, night);
+    drawSnowPine(cr, width * 0.527, floorTop + 11 * scale, 26 * scale, true, -0.4 * scale + sway, 0.76, night);
+    drawSnowPine(cr, width * 0.497, height - 50 * scale, 32 * scale, true, 0.5 * scale + sway, 0.90, night);
+    drawSnowPine(cr, width * 0.733, height - 46 * scale, 30 * scale, true, -0.4 * scale + sway, 0.92, night);
+    drawSnowPine(cr, width * 0.042, height - 64 * scale, 30 * scale, true, 0.8 * scale + sway, 1.0, night);
+    drawSnowPine(cr, width * 0.088, height - 46 * scale, 24 * scale, true, 0.5 * scale + sway, 1.0, night);
+    drawSnowPine(cr, width * 0.903, height - 62 * scale, 28 * scale, true, -0.8 * scale + sway, 1.0, night);
+    drawSnowPine(cr, width * 0.952, height - 26 * scale, 40 * scale, true, -1.2 * scale + sway, 1.0, night);
+
+    // 3. 3-Tier Snowman in Alley 1 (x = 0.267w, y = h - 54*scale)
+    const smX = width * 0.267, smY = height - 54 * scale;
+    cr.save();
+    cr.translate(smX, smY);
+    cr.scale(1.72 * scale, 1.72 * scale);
+
+    cr.save();
+    cr.scale(10.5, 3.6);
+    cr.setSourceRGBA(0.05, 0.10, 0.18, 0.36);
+    cr.newPath();
+    cr.arc(0.1, 0.5, 1, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    for (const [sy, sr] of [[-4.2, 6.8], [-12.6, 5.1], [-19.6, 3.8]]) {
+        const sg = new Cairo.RadialGradient(-sr * 0.32, sy - sr * 0.32, sr * 0.12, 0, sy, sr);
+        sg.addColorStopRGBA(0, 0.96, 0.98, 1.0, 0.98);
+        sg.addColorStopRGBA(0.65, 0.76, 0.86, 0.95, 0.96);
+        sg.addColorStopRGBA(1, 0.50, 0.64, 0.80, 0.96);
+        cr.setSource(sg);
+        cr.newPath();
+        cr.arc(0, sy, sr, 0, TWO_PI);
+        cr.fill();
+    }
+
+    // Branched twig arms
+    cr.setSourceRGBA(0.32, 0.21, 0.14, 0.95);
+    cr.setLineWidth(1.05);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.newPath();
+    cr.moveTo(-4.6, -13.0);
+    cr.lineTo(-10.8, -16.8);
+    cr.moveTo(-8.2, -15.2);
+    cr.lineTo(-10.2, -18.2);
+    cr.moveTo(4.6, -13.0);
+    cr.lineTo(10.6, -16.2);
+    cr.moveTo(8.0, -14.8);
+    cr.lineTo(10.2, -17.6);
+    cr.stroke();
+
+    // Coal buttons & eyes + 3D carrot nose + fluttering crimson scarf + top hat
+    cr.setSourceRGBA(0.10, 0.14, 0.20, 0.96);
+    for (const [bx, by, br] of [[0, -10.5, 0.75], [0, -12.8, 0.75], [0, -15.0, 0.75],
+        [-1.3, -20.6, 0.75], [1.4, -20.6, 0.75]]) {
+        cr.newPath();
+        cr.arc(bx, by, br, 0, TWO_PI);
+        cr.fill();
+    }
+
+    cr.setSourceRGBA(0.94, 0.46, 0.14, 0.98);
+    cr.newPath();
+    cr.moveTo(0.8, -19.8);
+    cr.lineTo(6.4, -19.0);
+    cr.lineTo(0.8, -18.3);
+    cr.closePath();
+    cr.fill();
+
+    const scarfWave = Math.sin((time - 1.1) * 3.2) * 1.1;
+    cr.setSourceRGBA(0.84, 0.20, 0.24, 0.96);
+    cr.setLineWidth(2.2);
+    cr.newPath();
+    cr.moveTo(-3.8, -16.2);
+    cr.lineTo(3.8, -16.2);
+    cr.moveTo(2.8, -16.2);
+    cr.curveTo(6.5, -15.0 + scarfWave * 0.4, 8.8, -13.2 + scarfWave, 10.6, -11.5 + scarfWave);
+    cr.stroke();
+
+    cr.setSourceRGBA(0.12, 0.16, 0.22, 0.98);
+    cr.rectangle(-5.0, -23.8, 10.0, 1.5);
+    cr.rectangle(-3.2, -28.8, 6.4, 5.0);
+    cr.fill();
+    cr.setSourceRGBA(0.84, 0.20, 0.24, 0.95);
+    cr.rectangle(-3.2, -24.8, 6.4, 1.1);
+    cr.fill();
+    cr.restore();
+}
+
+/* T3 (Thunderstorm): Botanical Cattail Reeds, Cupped Peltate Lotus Umbrella & Vocal-Sac Tree Frogs */
+function drawStormFrogsFloor(cr, width, height, scale, time, night) {
+    const sh = sceneHeight(width, height);
+    const groundOffset = height - sh;
+    const floorTop = groundOffset + 0.685 * sh;
+
+    const marshG = new Cairo.LinearGradient(0, floorTop - 10 * scale, 0, height);
+    marshG.addColorStopRGBA(0, 0.05, 0.14, 0.18, 0.0);
+    marshG.addColorStopRGBA(0.28, 0.05, 0.14, 0.18, night ? 0.42 : 0.36);
+    marshG.addColorStopRGBA(1, 0.02, 0.08, 0.12, night ? 0.72 : 0.62);
+    cr.setSource(marshG);
+    cr.rectangle(0, floorTop - 10 * scale, width, height - floorTop + 10 * scale);
+    cr.fill();
+
+    // Concentric surface ripples around reeds, boulder, and lotus pad
+    for (const [rxFrac, ryOff, rw2] of [[0.267, 42, 18], [0.50, 44, 24], [0.733, 42, 20]]) {
+        cr.save();
+        cr.translate(width * rxFrac, height - ryOff * scale);
+        cr.scale(rw2 * scale, rw2 * 0.28 * scale);
+        cr.setSourceRGBA(0.58, 0.82, 0.92, 0.34);
+        cr.setLineWidth(0.08);
+        cr.newPath();
+        cr.arc(0, 0, 1, 0, TWO_PI);
+        cr.newSubPath();
+        cr.arc(0, 0, 0.62, 0, TWO_PI);
+        cr.stroke();
+        cr.restore();
+    }
+
+    // 1. Botanical Cattails & Sheathing Ribbon Leaves (Typha latifolia) in Alley 1 (x = 0.267w)
+    const reedSway = Math.sin((time - 1.1) * 2.5) * 1.4;
+    cr.save();
+    cr.translate(width * 0.267, height - 44 * scale);
+    cr.scale(1.72 * scale, 1.72 * scale);
+
+    const leaves = [
+        [-8, 2, -6, -8, reedSway * 0.6, -16, 7 + reedSway, -21, [0.16, 0.38, 0.26]],
+        [-4, 2, -1, -9, 6 + reedSway * 0.6, -17, 13 + reedSway, -22, [0.22, 0.48, 0.32]],
+        [2, 2, 5, -7, 10 + reedSway * 0.5, -14, 16 + reedSway, -17, [0.26, 0.54, 0.36]],
+        [-9, 2, -8, -6, -4 + reedSway * 0.4, -13, 2 + reedSway * 0.8, -17, [0.18, 0.42, 0.28]],
+        [4, 2, 7, -5, 11 + reedSway * 0.4, -10, 15 + reedSway * 0.8, -12, [0.20, 0.44, 0.30]],
+    ];
+    for (const [x0, y0, x1, y1, x2, y2, x3, y3, col] of leaves) {
+        drawSmoothLimb(cr, x0, y0, 1.15, x1, y1, x2, y2, x3, y3, 0.15);
+        cr.setSourceRGBA(col[0], col[1], col[2], 0.94);
+        cr.fill();
+    }
+
+    const stalks = [
+        [-5, 2, -2, -11, 4 + reedSway * 0.5, -22, 8 + reedSway, -28],
+        [0, 2, 3, -10, 9 + reedSway * 0.5, -20, 13 + reedSway, -25],
+        [-2, 2, 0, -8, 4 + reedSway * 0.4, -15, 7 + reedSway * 0.8, -19],
+    ];
+    for (let idx = 0; idx < stalks.length; idx++) {
+        const [x0, y0, x1, y1, x2, y2, x3, y3] = stalks[idx];
+        cr.setSourceRGBA(0.30, 0.58, 0.38, 0.96);
+        cr.setLineWidth(1.05);
+        cr.newPath();
+        cr.moveTo(x0, y0);
+        cr.curveTo(x1, y1, x2, y2, x3, y3);
+        cr.stroke();
+
+        const sx = (x2 + x3) * 0.5, sy = (y2 + y3) * 0.5;
+        const ang = Math.atan2(y3 - y2, x3 - x2);
+        cr.save();
+        cr.translate(sx, sy);
+        cr.rotate(ang);
+        cr.setSourceRGBA(0.32, 0.16, 0.08, 0.98);
+        cr.setLineCap(Cairo.LineCap.ROUND);
+        cr.setLineWidth(idx === 2 ? 2.6 : 3.2);
+        cr.newPath();
+        cr.moveTo(-3.2, 0);
+        cr.lineTo(2.4, 0);
+        cr.stroke();
+        cr.setSourceRGBA(0.56, 0.34, 0.18, 0.85);
+        cr.setLineWidth(0.95);
+        cr.newPath();
+        cr.moveTo(-3.0, -0.75);
+        cr.lineTo(2.2, -0.75);
+        cr.stroke();
+        cr.setSourceRGBA(0.78, 0.66, 0.44, 0.92);
+        cr.setLineWidth(0.85);
+        cr.newPath();
+        cr.moveTo(2.4, 0);
+        cr.lineTo(5.2, 0);
+        cr.stroke();
+        cr.restore();
+    }
+    cr.restore();
+
+    // 2. Anatomical Tree Frog under Cupped 11-Veined Peltate Lotus Leaf in Alley 2 (x = 0.50w)
+    const sac = Math.pow(0.5 + 0.5 * Math.cos((time - 1.1) * 3.0), 1.5);
+    cr.save();
+    cr.translate(width * 0.50, height - 48 * scale);
+    cr.scale(1.76 * scale, 1.76 * scale);
+
+    // Wet stratified river boulder
+    const rg = new Cairo.RadialGradient(-3, -1, 1, 0, 2, 13);
+    rg.addColorStopRGBA(0, 0.28, 0.38, 0.40, 0.98);
+    rg.addColorStopRGBA(0.7, 0.16, 0.24, 0.28, 0.98);
+    rg.addColorStopRGBA(1, 0.08, 0.14, 0.18, 0.98);
+    cr.save();
+    cr.scale(12.5, 4.8);
+    cr.setSource(rg);
+    cr.newPath();
+    cr.arc(0, 0.3, 1, Math.PI, 0);
+    cr.curveTo(1.0, 0.8, -1.0, 0.8, -1.0, 0.3);
+    cr.closePath();
+    cr.fill();
+    cr.restore();
+
+    // Curving lotus petiole stem + cupped 11-veined peltate lotus umbrella leaf
+    cr.setSourceRGBA(0.18, 0.42, 0.28, 0.96);
+    cr.setLineWidth(1.65);
+    cr.newPath();
+    cr.moveTo(5.2, 2.0);
+    cr.curveTo(6.8, -6.0, 5.0, -13.0, 2.2, -18.8);
+    cr.stroke();
+
+    cr.save();
+    cr.translate(2.2, -18.8);
+    cr.rotate(-0.10 + Math.sin((time - 1.1) * 2.2) * 0.03);
+
+    cr.setSourceRGBA(0.12, 0.30, 0.20, 0.95);
+    cr.newPath();
+    cr.moveTo(-12.5, 0.5);
+    cr.curveTo(-6.0, 3.2, 6.0, 3.2, 12.5, 0.5);
+    cr.curveTo(8.0, -1.5, -8.0, -1.5, -12.5, 0.5);
+    cr.closePath();
+    cr.fill();
+
+    const lg = new Cairo.RadialGradient(0, -1.0, 0.8, 0, -1.0, 13.0);
+    lg.addColorStopRGBA(0, 0.36, 0.72, 0.44, 0.98);
+    lg.addColorStopRGBA(0.65, 0.20, 0.52, 0.32, 0.98);
+    lg.addColorStopRGBA(1, 0.14, 0.38, 0.24, 0.98);
+    cr.setSource(lg);
+    cr.newPath();
+    cr.moveTo(-13.0, 0.2);
+    cr.curveTo(-11.0, -4.6, -4.5, -5.8, 0, -5.2);
+    cr.curveTo(4.5, -5.8, 11.0, -4.6, 13.0, 0.2);
+    cr.curveTo(9.2, 2.2, 4.5, -0.4, 0, 1.4);
+    cr.curveTo(-4.5, -0.4, -9.2, 2.2, -13.0, 0.2);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.64, 0.90, 0.68, 0.55);
+    cr.setLineWidth(0.5);
+    cr.newPath();
+    for (const [vx, vy] of [[-11, -0.2], [-8.5, -2.2], [-5, -3.8], [0, -4.4],
+        [5, -3.8], [8.5, -2.2], [11, -0.2], [-6, 0.8], [6, 0.8]]) {
+        cr.moveTo(0, -1.2);
+        cr.lineTo(vx, vy);
+    }
+    cr.stroke();
+
+    // Quicksilver rainwater beads on lotus leaf
+    cr.setSourceRGBA(0.86, 0.97, 1.0, 0.94);
+    cr.newPath();
+    cr.arc(-5.2, -2.0, 1.1, 0, TWO_PI);
+    cr.newSubPath();
+    cr.arc(4.2, -2.2, 0.85, 0, TWO_PI);
+    cr.newSubPath();
+    cr.arc(-12.6, 1.8, 0.85, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    // Anatomical Green Tree Frog (Dryophytes) with Z-folded hind leg & inflating amber vocal sac
+    cr.setSourceRGBA(0.24, 0.58, 0.28, 0.98);
+    cr.setLineWidth(2.0);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.setLineJoin(Cairo.LineJoin.ROUND);
+    cr.newPath();
+    cr.moveTo(2.4, -1.0);
+    cr.lineTo(5.6, -3.2);
+    cr.lineTo(3.2, 0.4);
+    cr.lineTo(6.0, 0.8);
+    cr.stroke();
+
+    if (sac > 0.05) {
+        const sr = 1.2 + sac * 2.5;
+        const sg = new Cairo.RadialGradient(-6.8, -1.8, 0.3, -6.2, -1.4, sr);
+        sg.addColorStopRGBA(0, 1.0, 0.95, 0.68, 0.94);
+        sg.addColorStopRGBA(0.6, 0.95, 0.72, 0.26, 0.90);
+        sg.addColorStopRGBA(1, 0.76, 0.48, 0.14, 0.85);
+        cr.setSource(sg);
+        cr.newPath();
+        cr.arc(-6.2, -1.4, sr, 0, TWO_PI);
+        cr.fill();
+    }
+
+    const fg = new Cairo.LinearGradient(-6, -6.8, 4, 0.5);
+    fg.addColorStopRGBA(0, 0.52, 0.88, 0.38, 0.99);
+    fg.addColorStopRGBA(0.55, 0.28, 0.68, 0.32, 0.99);
+    fg.addColorStopRGBA(1, 0.16, 0.46, 0.24, 0.99);
+    cr.setSource(fg);
+    cr.newPath();
+    cr.moveTo(3.6, -0.4);
+    cr.curveTo(1.8, -5.6, -2.5, -6.6, -5.5, -5.6);
+    cr.lineTo(-8.2, -4.0);
+    cr.curveTo(-8.0, -2.8, -5.5, -2.6, -3.2, -1.8);
+    cr.curveTo(-1.0, 0.2, 1.8, 0.4, 3.6, -0.4);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.94, 0.96, 0.72, 0.90);
+    cr.setLineWidth(0.8);
+    cr.newPath();
+    cr.moveTo(-7.6, -3.6);
+    cr.curveTo(-4.0, -3.6, -0.5, -2.4, 2.8, -0.8);
+    cr.stroke();
+
+    cr.setSourceRGBA(0.32, 0.70, 0.34, 0.98);
+    cr.setLineWidth(1.45);
+    cr.newPath();
+    cr.moveTo(-3.4, -2.4);
+    cr.lineTo(-4.6, 1.0);
+    cr.stroke();
+    for (const tx of [-5.6, -4.6, -3.6]) {
+        cr.newPath();
+        cr.arc(tx, 1.2, 0.6, 0, TWO_PI);
+        cr.fill();
+    }
+
+    cr.setSourceRGBA(0.98, 0.82, 0.28, 0.98);
+    cr.newPath();
+    cr.arc(-5.4, -5.8, 1.6, 0, TWO_PI);
+    cr.fill();
+    cr.setSourceRGBA(0.06, 0.08, 0.10, 0.98);
+    cr.save();
+    cr.translate(-5.5, -5.8);
+    cr.scale(1.0, 0.46);
+    cr.newPath();
+    cr.arc(0, 0, 1.0, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+    cr.restore();
+
+    // 3. Floating Lotus Pad, Multi-Petaled Sacred Lotus Blossom & Second Frog in Alley 3 (x = 0.733w)
+    cr.save();
+    cr.translate(width * 0.733, height - 46 * scale);
+    cr.scale(1.72 * scale, 1.72 * scale);
+
+    cr.save();
+    cr.scale(10.8, 4.5);
+    cr.setSourceRGBA(0.18, 0.46, 0.28, 0.94);
+    cr.newPath();
+    cr.moveTo(0, 0);
+    cr.arc(0, 0, 1, 0.25, TWO_PI - 0.25);
+    cr.closePath();
+    cr.fill();
+    cr.restore();
+
+    cr.setSourceRGBA(0.24, 0.52, 0.32, 0.95);
+    cr.setLineWidth(1.2);
+    cr.newPath();
+    cr.moveTo(6.5, 0);
+    cr.lineTo(7.8, -8.5);
+    cr.stroke();
+
+    cr.save();
+    cr.translate(7.8, -8.5);
+    for (const [ang, len, wid, cTop, cBot] of [
+        [-0.55, 6.2, 2.2, [0.88, 0.42, 0.58], [0.62, 0.26, 0.40]],
+        [ 0.55, 6.2, 2.2, [0.88, 0.42, 0.58], [0.62, 0.26, 0.40]],
+        [-0.26, 6.8, 2.3, [0.96, 0.58, 0.72], [0.76, 0.34, 0.50]],
+        [ 0.26, 6.8, 2.3, [0.96, 0.58, 0.72], [0.76, 0.34, 0.50]],
+        [ 0.00, 7.2, 2.4, [1.00, 0.76, 0.86], [0.84, 0.42, 0.58]],
+    ]) {
+        cr.save();
+        cr.rotate(ang);
+        const pg = new Cairo.LinearGradient(0, -len, 0, 0);
+        pg.addColorStopRGBA(0, cTop[0], cTop[1], cTop[2], 0.98);
+        pg.addColorStopRGBA(1, cBot[0], cBot[1], cBot[2], 0.96);
+        cr.setSource(pg);
+        cr.newPath();
+        cr.moveTo(0, 0);
+        cr.curveTo(-wid, -len * 0.45, -wid * 0.7, -len * 0.85, 0, -len);
+        cr.curveTo(wid * 0.7, -len * 0.85, wid, -len * 0.45, 0, 0);
+        cr.closePath();
+        cr.fill();
+        cr.restore();
+    }
+    cr.restore();
+
+    cr.setSourceRGBA(0.38, 0.76, 0.34, 0.96);
+    cr.newPath();
+    cr.moveTo(-4.2, -0.5);
+    cr.curveTo(-2.5, -4.6, 1.5, -5.2, 4.2, -3.2);
+    cr.curveTo(4.6, -1.2, 1.5, 0.5, -4.2, -0.5);
+    cr.closePath();
+    cr.fill();
+    cr.setSourceRGBA(0.98, 0.82, 0.28, 0.98);
+    cr.newPath();
+    cr.arc(2.6, -4.4, 1.2, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+}
+
+/* C1 (Clear Day 55–75°F): Sunlit Pastoral Hills, Dutch Lattice-Sail Windmill, Woodland & High Hot-Air Balloon */
+function drawClearHillsFloor(cr, width, height, scale, time) {
+    const sh = sceneHeight(width, height);
+    const groundOffset = height - sh;
+    const floorTop = groundOffset + 0.685 * sh;
+
+    // 1. Sunlit pastoral rolling meadow hills (kept bright so dark #101823 day-tile ink has > 7:1 contrast)
+    const h1 = new Cairo.LinearGradient(0, floorTop - 8 * scale, 0, height);
+    h1.addColorStopRGBA(0, 0.46, 0.74, 0.42, 0.42);
+    h1.addColorStopRGBA(1, 0.34, 0.62, 0.32, 0.58);
+    cr.setSource(h1);
+    cr.newPath();
+    cr.moveTo(0, floorTop + 8 * scale);
+    cr.curveTo(width * 0.30, floorTop - 12 * scale, width * 0.62, floorTop + 6 * scale, width, floorTop + 2 * scale);
+    cr.lineTo(width, height);
+    cr.lineTo(0, height);
+    cr.closePath();
+    cr.fill();
+
+    const h2 = new Cairo.LinearGradient(0, floorTop + 16 * scale, 0, height);
+    h2.addColorStopRGBA(0, 0.40, 0.68, 0.36, 0.48);
+    h2.addColorStopRGBA(1, 0.28, 0.56, 0.26, 0.64);
+    cr.setSource(h2);
+    cr.newPath();
+    cr.moveTo(0, floorTop + 32 * scale);
+    cr.curveTo(width * 0.36, floorTop + 44 * scale, width * 0.68, floorTop + 20 * scale, width, floorTop + 22 * scale);
+    cr.lineTo(width, height);
+    cr.lineTo(0, height);
+    cr.closePath();
+    cr.fill();
+
+    // Rustic wooden post-and-rail fence along mid-hill crest
+    cr.setSourceRGBA(0.42, 0.30, 0.18, 0.62);
+    cr.setLineWidth(0.85 * scale);
+    cr.newPath();
+    for (let i = 0; i <= 7; i++) {
+        const px = width * (0.34 + i * 0.042);
+        const py = floorTop + (36 - i * 1.7) * scale;
+        cr.moveTo(px, py);
+        cr.lineTo(px, py - 4.5 * scale);
+    }
+    cr.moveTo(width * 0.34, floorTop + 34 * scale);
+    cr.lineTo(width * 0.634, floorTop + 22 * scale);
+    cr.moveTo(width * 0.34, floorTop + 32 * scale);
+    cr.lineTo(width * 0.634, floorTop + 20 * scale);
+    cr.stroke();
+
+    const h3 = new Cairo.LinearGradient(0, height - 52 * scale, 0, height);
+    h3.addColorStopRGBA(0, 0.36, 0.64, 0.32, 0.54);
+    h3.addColorStopRGBA(1, 0.24, 0.50, 0.22, 0.68);
+    cr.setSource(h3);
+    cr.newPath();
+    cr.moveTo(0, height - 42 * scale);
+    cr.curveTo(width * 0.45, height - 56 * scale, width * 0.78, height - 44 * scale, width, height - 36 * scale);
+    cr.lineTo(width, height);
+    cr.lineTo(0, height);
+    cr.closePath();
+    cr.fill();
+
+    // 2. Traditional Stone & Timber Dutch Lattice-Sail Windmill in Alley 1 (x = 0.267w, y = h - 52*scale)
+    cr.save();
+    cr.translate(width * 0.267, height - 52 * scale);
+    cr.scale(1.75 * scale, 1.75 * scale);
+
+    cr.save();
+    cr.scale(9.5, 3.0);
+    cr.setSourceRGBA(0.06, 0.16, 0.08, 0.34);
+    cr.newPath();
+    cr.arc(0.2, 0.6, 1, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    const twG = new Cairo.LinearGradient(-5, 0, 5, 0);
+    twG.addColorStopRGBA(0, 0.84, 0.78, 0.68, 0.98);
+    twG.addColorStopRGBA(0.55, 0.68, 0.62, 0.52, 0.98);
+    twG.addColorStopRGBA(1, 0.48, 0.42, 0.36, 0.98);
+    cr.setSource(twG);
+    cr.newPath();
+    cr.moveTo(-5.0, 2.2);
+    cr.lineTo(-3.2, -15.5);
+    cr.lineTo(3.2, -15.5);
+    cr.lineTo(5.0, 2.2);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.38, 0.26, 0.18, 0.95);
+    cr.setLineWidth(0.9);
+    cr.newPath();
+    cr.moveTo(-6.2, -4.8);
+    cr.lineTo(6.2, -4.8);
+    cr.moveTo(-4.2, 2.0);
+    cr.lineTo(-5.6, -4.8);
+    cr.moveTo(4.2, 2.0);
+    cr.lineTo(5.6, -4.8);
+    cr.stroke();
+    cr.setSourceRGBA(0.18, 0.14, 0.12, 0.95);
+    cr.rectangle(-1.2, -1.5, 2.4, 3.5);
+    cr.rectangle(-0.9, -10.5, 1.8, 2.2);
+    cr.fill();
+
+    cr.setSourceRGBA(0.28, 0.22, 0.18, 0.98);
+    cr.newPath();
+    cr.arc(0, -15.5, 3.6, Math.PI, 0);
+    cr.closePath();
+    cr.fill();
+
+    cr.save();
+    cr.translate(0, -14.2);
+    cr.rotate(0.38 + (time - 1.1) * 0.55);
+    for (let b = 0; b < 4; b++) {
+        cr.save();
+        cr.rotate((b * Math.PI) / 2);
+        cr.setSourceRGBA(0.42, 0.28, 0.18, 0.98);
+        cr.setLineWidth(1.15);
+        cr.newPath();
+        cr.moveTo(0, 0);
+        cr.lineTo(0, -12.5);
+        cr.stroke();
+        cr.setSourceRGBA(0.98, 0.95, 0.86, 0.90);
+        cr.rectangle(0.4, -12.0, 2.5, 9.6);
+        cr.fill();
+        cr.setSourceRGBA(0.52, 0.36, 0.24, 0.85);
+        cr.setLineWidth(0.45);
+        cr.newPath();
+        cr.rectangle(0.4, -12.0, 2.5, 9.6);
+        for (let y = -10.4; y <= -3.5; y += 1.6) {
+            cr.moveTo(0.4, y);
+            cr.lineTo(2.9, y);
+        }
+        cr.stroke();
+        cr.restore();
+    }
+    cr.setSourceRGBA(0.20, 0.22, 0.24, 0.98);
+    cr.newPath();
+    cr.arc(0, 0, 1.3, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+    cr.restore();
+
+    // 3. 7 Dappled Broadleaf Woodland Trees across 3 depth planes (positioned in alleys & outer margins)
+    const decidPal = {
+        trunk: [0.34, 0.23, 0.15],
+        trunkHi: [0.48, 0.34, 0.22],
+        shadeLeaf: [0.16, 0.38, 0.18],
+        midLeaf: [0.24, 0.52, 0.24],
+        litLeaf: [0.36, 0.66, 0.28],
+        sunLeaf: [0.54, 0.80, 0.34],
+    };
+    drawDeciduousTree(cr, width * 0.091, floorTop + 12 * scale, 22 * scale, decidPal, 0.6 * scale, time, 31);
+    drawDeciduousTree(cr, width * 0.461, floorTop + 5 * scale, 23 * scale, decidPal, 0.4 * scale, time, 43);
+    drawDeciduousTree(cr, width * 0.512, floorTop + 9 * scale, 18 * scale, decidPal, -0.3 * scale, time, 57);
+    drawDeciduousTree(cr, width * 0.715, floorTop + 12 * scale, 24 * scale, decidPal, 0.5 * scale, time, 69);
+    drawDeciduousTree(cr, width * 0.760, floorTop + 16 * scale, 19 * scale, decidPal, -0.4 * scale, time, 83);
+    drawDeciduousTree(cr, width * 0.048, height - 48 * scale, 36 * scale, decidPal, 1.0 * scale, time, 23);
+    drawDeciduousTree(cr, width * 0.939, height - 26 * scale, 50 * scale, decidPal, -1.5 * scale, time, 11);
+
+    // Wildflower dots along bottom foreground margin
+    const r = seededRand(77);
+    for (let i = 0; i < 16; i++) {
+        const fx = width * 0.055 + r(0, width * 0.89);
+        const fy = height - (6 + r(0, 14)) * scale;
+        const isGold = i % 3 !== 0;
+        cr.setSourceRGBA(isGold ? 0.98 : 0.92, isGold ? 0.82 : 0.30, isGold ? 0.22 : 0.26, 0.88);
+        cr.newPath();
+        cr.arc(fx, fy, 1.3 * scale, 0, TWO_PI);
+        cr.fill();
+    }
+
+    // 4. Realistic Hot-Air Balloon higher up in the menu sky (x = 0.648w, y = groundOffset + 0.275*sh)
+    const bx = width * 0.648 + Math.sin((time - 1.1) * 0.55) * 7.5 * scale;
+    const by = groundOffset + 0.275 * sh + Math.cos((time - 1.1) * 0.85) * 3.0 * scale;
+    cr.save();
+    cr.translate(bx, by);
+    cr.scale(1.38 * scale, 1.38 * scale);
+
+    const flamePulse = 0.82 + 0.18 * Math.sin(time * 6.5);
+    const fg = new Cairo.RadialGradient(0, 7.5, 0.5, 0, 7.5, 5.5);
+    fg.addColorStopRGBA(0, 1.0, 0.96, 0.68, 0.95 * flamePulse);
+    fg.addColorStopRGBA(0.5, 1.0, 0.64, 0.18, 0.65 * flamePulse);
+    fg.addColorStopRGBA(1, 1.0, 0.42, 0.08, 0.0);
+    cr.setSource(fg);
+    cr.newPath();
+    cr.arc(0, 7.5, 5.5, 0, TWO_PI);
+    cr.fill();
+
+    cr.setSourceRGBA(0.28, 0.22, 0.18, 0.88);
+    cr.setLineWidth(0.55);
+    cr.newPath();
+    cr.moveTo(-2.6, 8.2);
+    cr.lineTo(-1.8, 12.2);
+    cr.moveTo(2.6, 8.2);
+    cr.lineTo(1.8, 12.2);
+    cr.stroke();
+
+    cr.setSourceRGBA(0.68, 0.46, 0.24, 0.98);
+    cr.rectangle(-2.5, 12.0, 5.0, 3.8);
+    cr.fill();
+    cr.setSourceRGBA(0.46, 0.28, 0.14, 0.98);
+    cr.rectangle(-2.8, 11.7, 5.6, 1.0);
+    cr.fill();
+
+    const traceBalloon = () => {
+        cr.newPath();
+        cr.moveTo(0, -13.0);
+        cr.curveTo(9.8, -13.0, 11.8, -3.2, 6.2, 4.2);
+        cr.curveTo(4.4, 6.4, 3.4, 7.6, 2.8, 8.4);
+        cr.lineTo(-2.8, 8.4);
+        cr.curveTo(-3.4, 7.6, -4.4, 6.4, -6.2, 4.2);
+        cr.curveTo(-11.8, -3.2, -9.8, -13.0, 0, -13.0);
+        cr.closePath();
+    };
+
+    cr.save();
+    traceBalloon();
+    cr.clip();
+    cr.setSourceRGBA(0.88, 0.24, 0.22, 0.98);
+    cr.paint();
+
+    for (const [gx0, gx1, col] of [
+        [-9.5, -5.2, [0.98, 0.76, 0.18]],
+        [-5.2, -1.6, [0.16, 0.46, 0.78]],
+        [-1.6,  1.6, [0.98, 0.95, 0.86]],
+        [ 1.6,  5.2, [0.16, 0.46, 0.78]],
+        [ 5.2,  9.5, [0.98, 0.76, 0.18]],
+    ]) {
+        cr.setSourceRGBA(col[0], col[1], col[2], 0.96);
+        cr.newPath();
+        cr.moveTo(0, -13.2);
+        cr.curveTo(gx0 * 1.15, -4.5, gx0 * 0.75, 4.0, gx0 * 0.32, 8.8);
+        cr.lineTo(gx1 * 0.32, 8.8);
+        cr.curveTo(gx1 * 0.75, 4.0, gx1 * 1.15, -4.5, 0, -13.2);
+        cr.closePath();
+        cr.fill();
+    }
+
+    cr.setSourceRGBA(0.92, 0.22, 0.20, 0.94);
+    cr.rectangle(-12, -3.2, 24, 2.4);
+    cr.fill();
+    cr.setSourceRGBA(0.98, 0.84, 0.26, 0.95);
+    cr.rectangle(-12, -2.4, 24, 0.8);
+    cr.fill();
+
+    const envShade = new Cairo.RadialGradient(-3.5, -5.5, 1.2, 0, -2.0, 12.5);
+    envShade.addColorStopRGBA(0, 1.0, 1.0, 0.95, 0.28);
+    envShade.addColorStopRGBA(0.55, 0.0, 0.0, 0.0, 0.0);
+    envShade.addColorStopRGBA(1, 0.04, 0.08, 0.16, 0.44);
+    cr.setSource(envShade);
+    cr.paint();
+    cr.restore();
+
+    traceBalloon();
+    cr.setSourceRGBA(0.18, 0.12, 0.10, 0.38);
+    cr.setLineWidth(0.45);
+    cr.stroke();
+    cr.restore();
+}
+
+/* C2 (Clear Day ≥ 76°F): Tropical Beach, High Thu–Fri Sailboat, Low Dry-Sand Umbrella & Anatomical Crab */
+function drawClearBeachFloor(cr, width, height, scale, time) {
+    const sh = sceneHeight(width, height);
+    const groundOffset = height - sh;
+    const floorTop = groundOffset + 0.685 * sh;
+    const shoreY = height - 68 * scale;
+    const surfShift = Math.sin((time - 1.1) * 1.8) * 1.8 * scale;
+
+    // 1. Sunlit turquoise ocean cove kept higher up (floorTop .. shoreY) so NO waves are near the umbrella
+    const seaG = new Cairo.LinearGradient(0, floorTop - 6 * scale, 0, shoreY + 6 * scale);
+    seaG.addColorStopRGBA(0, 0.14, 0.66, 0.82, 0.44);
+    seaG.addColorStopRGBA(0.55, 0.16, 0.74, 0.86, 0.58);
+    seaG.addColorStopRGBA(1, 0.28, 0.84, 0.90, 0.68);
+    cr.setSource(seaG);
+    cr.rectangle(0, floorTop - 4 * scale, width, shoreY - floorTop + 10 * scale);
+    cr.fill();
+
+    // 2. Wide dry golden-sand beach below shoreY (shoreY .. height)
+    const sandG = new Cairo.LinearGradient(0, shoreY - 4 * scale, 0, height);
+    sandG.addColorStopRGBA(0, 0.90, 0.78, 0.54, 0.72);
+    sandG.addColorStopRGBA(0.35, 0.86, 0.72, 0.46, 0.78);
+    sandG.addColorStopRGBA(1, 0.78, 0.62, 0.38, 0.84);
+    cr.setSource(sandG);
+    cr.newPath();
+    cr.moveTo(0, shoreY + 2 * scale + surfShift);
+    cr.curveTo(
+        width * 0.32, shoreY - 6 * scale + surfShift,
+        width * 0.68, shoreY + 6 * scale + surfShift,
+        width, shoreY - 2 * scale + surfShift);
+    cr.lineTo(width, height);
+    cr.lineTo(0, height);
+    cr.closePath();
+    cr.fill();
+
+    // Gentle foamy surf line along shoreY (well above the umbrella at height - 32*scale)
+    cr.setSourceRGBA(0.96, 0.99, 1.0, 0.85);
+    cr.setLineWidth(2.0 * scale);
+    cr.newPath();
+    cr.moveTo(0, shoreY + 1 * scale + surfShift);
+    cr.curveTo(
+        width * 0.32, shoreY - 7 * scale + surfShift,
+        width * 0.68, shoreY + 5 * scale + surfShift,
+        width, shoreY - 3 * scale + surfShift);
+    cr.stroke();
+
+    // 3. Realistic Sloop Sailboat moved FURTHER UP between Thu and Fri tiles (x = 0.733w, y = floorTop + 18*scale)
+    const boatX = width * 0.733 + Math.sin((time - 1.1) * 0.55) * 5.0 * scale;
+    const boatY = floorTop + 18 * scale;
+    cr.save();
+    cr.translate(boatX, boatY);
+    cr.rotate(Math.sin((time - 1.1) * 1.9) * 0.035);
+    cr.scale(1.50 * scale, 1.50 * scale);
+
+    cr.setSourceRGBA(0.94, 0.99, 1.0, 0.76);
+    cr.setLineWidth(0.9);
+    cr.newPath();
+    cr.moveTo(-10.5, 1.8);
+    cr.curveTo(-4.0, 2.6, 4.0, 2.4, 9.5, 1.4);
+    cr.stroke();
+
+    cr.setSourceRGBA(0.96, 0.97, 0.99, 0.98);
+    cr.newPath();
+    cr.moveTo(-8.2, -0.8);
+    cr.lineTo(8.8, -1.2);
+    cr.lineTo(6.8, 1.6);
+    cr.lineTo(-6.8, 1.6);
+    cr.closePath();
+    cr.fill();
+    cr.setSourceRGBA(0.56, 0.24, 0.14, 0.96);
+    cr.newPath();
+    cr.moveTo(-7.4, 0.4);
+    cr.lineTo(7.6, 0.2);
+    cr.lineTo(6.8, 1.6);
+    cr.lineTo(-6.8, 1.6);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.32, 0.24, 0.18, 0.96);
+    cr.setLineWidth(0.85);
+    cr.newPath();
+    cr.moveTo(0.5, -0.8);
+    cr.lineTo(0.5, -16.2);
+    cr.moveTo(0.5, -2.4);
+    cr.lineTo(-7.2, -2.0);
+    cr.stroke();
+
+    const mainSailG = new Cairo.LinearGradient(-7.0, -15.5, 0.5, -2.4);
+    mainSailG.addColorStopRGBA(0, 1.0, 0.99, 0.95, 0.98);
+    mainSailG.addColorStopRGBA(1, 0.84, 0.88, 0.94, 0.95);
+    cr.setSource(mainSailG);
+    cr.newPath();
+    cr.moveTo(0.2, -15.5);
+    cr.curveTo(-4.6, -10.0, -6.4, -5.5, -6.8, -2.4);
+    cr.lineTo(0.2, -2.6);
+    cr.closePath();
+    cr.fill();
+
+    const jibG = new Cairo.LinearGradient(1.0, -14.2, 8.2, -2.0);
+    jibG.addColorStopRGBA(0, 1.0, 0.98, 0.94, 0.98);
+    jibG.addColorStopRGBA(1, 0.86, 0.90, 0.95, 0.94);
+    cr.setSource(jibG);
+    cr.newPath();
+    cr.moveTo(0.8, -14.5);
+    cr.curveTo(5.2, -9.8, 7.4, -5.4, 8.2, -1.8);
+    cr.curveTo(5.0, -2.4, 2.6, -2.5, 0.8, -2.2);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.92, 0.26, 0.22, 0.95);
+    cr.newPath();
+    cr.moveTo(0.5, -16.2);
+    cr.lineTo(-3.2, -15.4);
+    cr.lineTo(0.5, -14.8);
+    cr.closePath();
+    cr.fill();
+    cr.restore();
+
+    // 4. Striped Beach Umbrella + Teak Lounger moved FURTHER DOWN on dry sand in Alley 1 (x = 0.267w, y = h - 32*scale)
+    cr.save();
+    cr.translate(width * 0.267, height - 32 * scale);
+    cr.scale(1.68 * scale, 1.68 * scale);
+
+    cr.save();
+    cr.scale(11.5, 3.4);
+    cr.setSourceRGBA(0.24, 0.16, 0.08, 0.34);
+    cr.newPath();
+    cr.arc(0.5, 0.8, 1, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    cr.setSourceRGBA(0.48, 0.28, 0.14, 0.96);
+    cr.setLineWidth(1.1);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.newPath();
+    cr.moveTo(-7.5, 1.5);
+    cr.lineTo(4.2, 1.5);
+    cr.lineTo(7.4, -2.2);
+    cr.moveTo(-5.8, 1.5);
+    cr.lineTo(-6.8, 3.4);
+    cr.moveTo(3.2, 1.5);
+    cr.lineTo(4.2, 3.4);
+    cr.stroke();
+    cr.setSourceRGBA(0.98, 0.95, 0.88, 0.96);
+    cr.setLineWidth(1.35);
+    cr.newPath();
+    cr.moveTo(-6.8, 0.9);
+    cr.lineTo(3.8, 0.9);
+    cr.lineTo(6.6, -2.3);
+    cr.stroke();
+
+    cr.setSourceRGBA(0.42, 0.28, 0.16, 0.96);
+    cr.setLineWidth(1.15);
+    cr.newPath();
+    cr.moveTo(-0.5, 2.2);
+    cr.lineTo(-2.4, -15.5);
+    cr.stroke();
+
+    cr.save();
+    cr.translate(-2.4, -15.0);
+    cr.rotate(-0.12);
+    const ribX = [-12.5, -7.2, -2.2, 2.2, 7.2, 12.5];
+    for (let g = 0; g < 5; g++) {
+        const xL = ribX[g], xR = ribX[g + 1];
+        const isCoral = g % 2 === 0;
+        cr.setSourceRGBA(
+            isCoral ? 0.92 : 0.99,
+            isCoral ? 0.28 : 0.96,
+            isCoral ? 0.24 : 0.88,
+            0.98);
+        cr.newPath();
+        cr.moveTo(0, -3.6);
+        cr.curveTo(xL * 0.55, -3.2, xL * 0.88, -0.5, xL, 2.8);
+        cr.curveTo((xL + xR) * 0.5, 1.6, (xL + xR) * 0.5, 1.6, xR, 2.8);
+        cr.curveTo(xR * 0.88, -0.5, xR * 0.55, -3.2, 0, -3.6);
+        cr.closePath();
+        cr.fill();
+    }
+    cr.setSourceRGBA(0.96, 0.82, 0.34, 0.98);
+    cr.newPath();
+    cr.arc(0, -4.0, 0.85, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+    cr.restore();
+
+    // 5. Realistic Anatomical Crab scuttling on dry sand in Alley 2 (x = 0.50w, y = h - 36*scale)
+    const crabX = width * 0.50 + Math.sin((time - 1.1) * 1.6) * 4.5 * scale;
+    const crabY = height - 36 * scale;
+    cr.save();
+    cr.translate(crabX, crabY);
+    cr.scale(1.76 * scale, 1.76 * scale);
+
+    cr.save();
+    cr.scale(7.2, 2.5);
+    cr.setSourceRGBA(0.22, 0.14, 0.06, 0.34);
+    cr.newPath();
+    cr.arc(0, 0.7, 1, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.setLineJoin(Cairo.LineJoin.ROUND);
+    for (const side of [-1, 1]) {
+        for (let l = 0; l < 4; l++) {
+            const step = Math.sin((time - 1.1) * 8.0 + l * 1.4 + side) * 0.45;
+            const bx = side * (3.2 + l * 0.55);
+            const by = -0.8 + l * 0.85;
+            const kx = side * (6.4 + l * 0.55);
+            const ky = -1.8 + l * 1.05 - Math.abs(step) * 0.6;
+            const tx = side * (8.2 - l * 0.25) + step;
+            const ty = 0.8 + l * 0.75;
+            cr.setSourceRGBA(0.84, 0.28, 0.16, 0.96);
+            cr.setLineWidth(1.05);
+            cr.newPath();
+            cr.moveTo(bx, by);
+            cr.lineTo(kx, ky);
+            cr.stroke();
+            cr.setSourceRGBA(0.94, 0.42, 0.22, 0.98);
+            cr.setLineWidth(0.80);
+            cr.newPath();
+            cr.moveTo(kx, ky);
+            cr.lineTo(tx, ty);
+            cr.stroke();
+        }
+    }
+
+    for (const side of [-1, 1]) {
+        cr.setSourceRGBA(0.86, 0.26, 0.16, 0.98);
+        cr.setLineWidth(1.45);
+        cr.newPath();
+        cr.moveTo(side * 2.8, -1.8);
+        cr.lineTo(side * 5.2, -4.2);
+        cr.lineTo(side * 4.4, -6.4);
+        cr.stroke();
+
+        cr.save();
+        cr.translate(side * 4.2, -6.8);
+        cr.rotate(side * -0.25);
+        const clawG = new Cairo.RadialGradient(-side * 0.5, -0.5, 0.2, 0, 0, 2.8);
+        clawG.addColorStopRGBA(0, 1.0, 0.48, 0.26, 0.99);
+        clawG.addColorStopRGBA(1, 0.78, 0.18, 0.12, 0.98);
+        cr.setSource(clawG);
+        cr.newPath();
+        cr.moveTo(0, 0.8);
+        cr.curveTo(side * 2.4, 0.4, side * 2.8, -2.2, side * 0.6, -3.4);
+        cr.curveTo(side * 0.2, -2.4, side * 0.8, -1.4, 0, -0.8);
+        cr.curveTo(-side * 0.8, -1.4, -side * 0.3, -2.3, -side * 0.2, -3.1);
+        cr.curveTo(-side * 1.8, -2.0, -side * 1.6, 0.4, 0, 0.8);
+        cr.closePath();
+        cr.fill();
+        cr.restore();
+    }
+
+    const shellG = new Cairo.RadialGradient(-1.2, -1.8, 0.6, 0, -0.5, 5.2);
+    shellG.addColorStopRGBA(0, 1.0, 0.46, 0.24, 0.99);
+    shellG.addColorStopRGBA(0.65, 0.88, 0.24, 0.14, 0.99);
+    shellG.addColorStopRGBA(1, 0.62, 0.14, 0.08, 0.99);
+    cr.setSource(shellG);
+    cr.newPath();
+    cr.moveTo(-4.6, -0.8);
+    cr.curveTo(-4.2, -3.2, -2.0, -4.0, 0, -3.8);
+    cr.curveTo(2.0, -4.0, 4.2, -3.2, 4.6, -0.8);
+    cr.curveTo(3.6, 1.8, 1.8, 2.4, 0, 2.4);
+    cr.curveTo(-1.8, 2.4, -3.6, 1.8, -4.6, -0.8);
+    cr.closePath();
+    cr.fill();
+
+    for (const side of [-1, 1]) {
+        cr.setSourceRGBA(0.86, 0.28, 0.16, 0.98);
+        cr.setLineWidth(0.75);
+        cr.newPath();
+        cr.moveTo(side * 1.1, -3.5);
+        cr.lineTo(side * 1.35, -4.8);
+        cr.stroke();
+        cr.setSourceRGBA(0.08, 0.10, 0.14, 0.99);
+        cr.newPath();
+        cr.arc(side * 1.35, -4.9, 0.62, 0, TWO_PI);
+        cr.fill();
+    }
+    cr.restore();
+
+    // 6. Leaning Coconut Palm on Right Outer Margin (x = 0.945w, y = h - 28*scale)
+    cr.save();
+    cr.translate(width * 0.945, height - 28 * scale);
+    cr.scale(1.50 * scale, 1.50 * scale);
+
+    drawSmoothLimb(cr, 0, 4, 2.2, -3, -12, -8, -26, -13, -38, 1.0);
+    const trkG = new Cairo.LinearGradient(-14, -38, 2, 4);
+    trkG.addColorStopRGBA(0, 0.56, 0.40, 0.26, 0.98);
+    trkG.addColorStopRGBA(1, 0.36, 0.24, 0.14, 0.98);
+    cr.setSource(trkG);
+    cr.fill();
+
+    cr.setSourceRGBA(0.34, 0.20, 0.10, 0.98);
+    for (const [cx2, cy2] of [[-11.8, -36.5], [-14.0, -36.8], [-12.8, -35.2]]) {
+        cr.newPath();
+        cr.arc(cx2, cy2, 1.4, 0, TWO_PI);
+        cr.fill();
+    }
+
+    cr.translate(-13, -38);
+    for (const [cpx, cpy, ex, ey, col] of [
+        [-12, -6, -24, -2, [0.22, 0.56, 0.28]],
+        [-14, -12, -26, -14, [0.30, 0.66, 0.32]],
+        [-4, -14, -8, -24, [0.36, 0.72, 0.36]],
+        [8, -10, 14, -4, [0.26, 0.60, 0.30]],
+        [6, -4, 11, 6, [0.20, 0.50, 0.24]],
+    ]) {
+        cr.setSourceRGBA(col[0], col[1], col[2], 0.96);
+        cr.newPath();
+        cr.moveTo(0, 0);
+        cr.curveTo(cpx, cpy - 3.2, (cpx + ex) * 0.5, cpy, ex, ey);
+        cr.curveTo((cpx + ex) * 0.5, cpy + 2.4, cpx * 0.8, cpy + 1.2, 0, 0);
+        cr.closePath();
+        cr.fill();
+    }
+    cr.restore();
+}
+
+function drawSceneFloor(cr, width, height, scale, time, scene, night, temp) {
+    const floorId = resolveFloorScene(scene, night, temp);
+    if (floorId === 'S1')
+        drawIceFishingFloor(cr, width, height, scale, time, night);
+    else if (floorId === 'S2')
+        drawSnowmanChaletFloor(cr, width, height, scale, time, night);
+    else if (floorId === 'T3')
+        drawStormFrogsFloor(cr, width, height, scale, time, night);
+    else if (floorId === 'C1')
+        drawClearHillsFloor(cr, width, height, scale, time);
+    else if (floorId === 'C2')
+        drawClearBeachFloor(cr, width, height, scale, time);
+}
+
 function drawLightning(cr, width, height, scale, time) {
     const sh = sceneHeight(width, height);
     const shifted = time + 2.08;
@@ -2516,7 +4285,7 @@ function drawLightning(cr, width, height, scale, time) {
  * plane unless pinned with fxScale: 1. */
 export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
     scrim = null, radius = 0, phase = null, glow = 0, solar = null,
-    code = null, variant = null, quiet = false, fxScale = null }) {
+    code = null, variant = null, temp = null, quiet = false, fxScale = null }) {
     const tStartMs = Date.now();
     const rw = Math.round(width), rh = Math.round(height);
     const sh = sceneHeight(width, height);
@@ -2603,6 +4372,7 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
         drawClouds(fc, sky, width, height, scale, dt, time, scene, night, twilight,
             Boolean(features.bolt));
         drawFog(fc, sky, width, dt, time, night, scale);
+        drawSceneFloor(fc, width, height, scale, time, scene, night, temp);
         drawRain(fc, sky, width, height, scale, dt, scene, code, time, night);
         drawSnow(fc, sky, width, height, scale, dt, time, code, variant);
         drawSleetPellets(fc, sky, width, height, scale, dt);

@@ -158,6 +158,7 @@ export function makeSkyBackdrop(getState, animate = () => true) {
             glow, solar,
             phase: st.phase ?? null,
             code: st.code ?? null,
+            temp: st.temp ?? null,
             scrim: st.scrim ?? null,
             sky,
         });

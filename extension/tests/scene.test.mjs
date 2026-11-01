@@ -6,7 +6,7 @@
 import Cairo from 'gi://cairo';
 import { file, test, ok, near, eq, report } from './harness.mjs';
 import { sceneFor, fmtTemp, sunGeometry, daySlice } from '../weather.js';
-import { createSky, paintSky } from '../sky.js';
+import { createSky, paintSky, resolveFloorScene } from '../sky.js';
 
 file('scene');
 
@@ -157,6 +157,39 @@ test('rain sky initializes submerged Nishikigoi pond floor and connects drop imp
                 diff += Math.PI * 2;
             ok(Math.abs(diff) <= 0.15, `koi spine joint ${i} bend ${diff} exceeded gentle cap`);
         }
+    }
+    cr.$dispose();
+});
+
+test('resolveFloorScene routes snow, storm, and temperature-banded clear day floors (S1, S2, T3, C1, C2)', () => {
+    eq(resolveFloorScene('storm', false, 20), 'T3');
+    eq(resolveFloorScene('storm', true, 15), 'T3');
+
+    // Snow and Clear Day share S1 (< 0°F / < -17.78°C) and S2 (0..32°F / -17.78..0°C)
+    eq(resolveFloorScene('snow', false, -21), 'S1', '-21°C (-5.8°F) snow -> S1 ice fishing');
+    eq(resolveFloorScene('sun', false, -21), 'S1', '-21°C (-5.8°F) clear day -> S1 ice fishing');
+    eq(resolveFloorScene('snow', false, -5), 'S2', '-5°C (23°F) snow -> S2 snowman & chalet');
+    eq(resolveFloorScene('sun', false, -5), 'S2', '-5°C (23°F) clear day -> S2 snowman & chalet');
+    eq(resolveFloorScene('snow', true, -2), 'S2', 'snow night stays S2');
+
+    // Clear Day C1 (55..75°F) and C2 (>= 76°F / >= 24.44°C)
+    eq(resolveFloorScene('sun', false, 18), 'C1', '18°C (64.4°F) clear day -> C1 rolling hills & balloon');
+    eq(resolveFloorScene('sun', false, 28), 'C2', '28°C (82.4°F) clear day -> C2 sandy beach & sailboat');
+    eq(resolveFloorScene('sun', true, 20), null, 'clear night does not paint daytime floor');
+    eq(resolveFloorScene('moon', true, -20), null, 'moon night does not paint daytime floor');
+
+    // Render all 5 floor scenes cleanly through paintSky
+    const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
+    const cr = new Cairo.Context(surf);
+    const sky = createSky();
+    for (const [scene, night, temp] of [
+        ['snow', false, -21],
+        ['snow', false, -5],
+        ['storm', true, 19],
+        ['sun', false, 20],
+        ['sun', false, 29],
+    ]) {
+        paintSky(cr, { w: 330, h: 472, time: 1.5, scene, night, sky, temp });
     }
     cr.$dispose();
 });
