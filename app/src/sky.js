@@ -485,7 +485,7 @@ function rebuild(sky, width, height, scene) {
                 baseDepth: 0.28, headZ: 0.05, tailZ: 0.45,
                 swimPhase: 1.0, speed: 22, kissClock: 1.2, patrolPhase: 0.4,
                 pathSpine: buildInitialKoiSpine(
-                    width * 0.48, height - 83 * gs, -0.14, 0.16, 54 * gs, 0.05, 0.45),
+                    width * 0.55, height - 83 * gs, -0.14, 0.16, 54 * gs, 0.05, 0.45),
             },
             {
                 variant: 'sanke',
@@ -498,7 +498,7 @@ function rebuild(sky, width, height, scene) {
             },
         ];
         sky.pads = [
-            { x: width * 0.048, y: height - 47 * gs, r: 14.5, notch: 0.4, hasFlower: false },
+            { x: width * 0.28, y: height - 82 * gs, r: 14.5, notch: 0.4, hasFlower: false },
             { x: width * 0.948, y: height - 47 * gs, r: 15.0, notch: 2.4, hasFlower: true },
         ];
     } else {
