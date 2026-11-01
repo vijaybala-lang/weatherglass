@@ -3676,25 +3676,15 @@ function drawUmbrellaLotusFlower(cr, x, y, sc, tilt, lum) {
     cr.rotate(tilt);
     cr.scale(sc, sc);
 
-    const glow = new Cairo.RadialGradient(0, 3.5, 1.0, 0, 5.0, 17.0);
-    glow.addColorStopRGBA(0.0, 0.92 * lum, 0.48 * lum, 0.68 * lum, 0.20);
-    glow.addColorStopRGBA(1.0, 0.92 * lum, 0.48 * lum, 0.68 * lum, 0.0);
-    cr.setSource(glow);
-    cr.newPath();
-    cr.arc(0, 4.0, 17.0, 0, TWO_PI);
-    cr.fill();
-
-    const drawStriatedPetal = (dx, dy, rot, len, wid, curveBias = 0, lumBoost = 1.0, alpha = 0.95) => {
+    const drawStriatedPetal = (dx, dy, rot, len, wid, curveBias, baseCol, midCol, tipCol, alpha = 0.90) => {
         cr.save();
         cr.translate(dx, dy);
         cr.rotate(rot);
 
-        const L = lum * lumBoost;
         const pg = new Cairo.LinearGradient(0, 0, 0, -len);
-        pg.addColorStopRGBA(0.00, Math.min(1, 0.96 * L), Math.min(1, 0.88 * L), Math.min(1, 0.86 * L), alpha);
-        pg.addColorStopRGBA(0.38, Math.min(1, 0.96 * L), Math.min(1, 0.64 * L), Math.min(1, 0.78 * L), alpha);
-        pg.addColorStopRGBA(0.78, Math.min(1, 0.94 * L), Math.min(1, 0.42 * L), Math.min(1, 0.64 * L), alpha);
-        pg.addColorStopRGBA(1.00, Math.min(1, 0.88 * L), Math.min(1, 0.22 * L), Math.min(1, 0.48 * L), alpha);
+        pg.addColorStopRGBA(0.00, baseCol[0] * lum, baseCol[1] * lum, baseCol[2] * lum, alpha);
+        pg.addColorStopRGBA(0.52, midCol[0] * lum, midCol[1] * lum, midCol[2] * lum, alpha);
+        pg.addColorStopRGBA(1.00, tipCol[0] * lum, tipCol[1] * lum, tipCol[2] * lum, alpha);
         cr.setSource(pg);
 
         cr.newPath();
@@ -3704,21 +3694,26 @@ function drawUmbrellaLotusFlower(cr, x, y, sc, tilt, lum) {
         cr.closePath();
         cr.fillPreserve();
 
-        cr.setSourceRGBA(0.68 * L, 0.18 * L, 0.38 * L, 0.42);
-        cr.setLineWidth(0.36);
+        cr.setSourceRGBA(0.50 * lum, 0.16 * lum, 0.30 * lum, 0.32);
+        cr.setLineWidth(0.40);
         cr.stroke();
 
-        cr.setSourceRGBA(0.76 * L, 0.24 * L, 0.46 * L, 0.25);
-        cr.setLineWidth(0.26);
-        for (const v of [-0.55, -0.28, 0.0, 0.28, 0.55]) {
+        cr.setSourceRGBA(1.0 * lum, 0.90 * lum, 0.94 * lum, 0.24);
+        cr.setLineWidth(0.28);
+        for (const v of [-0.45, 0.0, 0.45]) {
             cr.newPath();
-            cr.moveTo(v * wid * 0.25, -len * 0.10);
-            cr.curveTo(v * wid * 0.85, -len * 0.42, v * wid * 0.65 + curveBias * 0.4, -len * 0.74, curveBias * 0.5 + v * wid * 0.15, -len * 0.93);
+            cr.moveTo(v * wid * 0.25, -len * 0.14);
+            cr.curveTo(v * wid * 0.80, -len * 0.44, v * wid * 0.60 + curveBias * 0.4, -len * 0.74, curveBias * 0.5 + v * wid * 0.15, -len * 0.90);
             cr.stroke();
         }
         cr.restore();
     };
 
+    // Basal green-blush calyx sepals on far left/right
+    drawStriatedPetal(-2.8, 0.8, -1.42, 11.2, 3.0, -0.4, [0.22, 0.44, 0.28], [0.48, 0.56, 0.42], [0.78, 0.60, 0.66], 0.84);
+    drawStriatedPetal( 2.8, 0.8,  1.42, 11.2, 3.0,  0.4, [0.22, 0.44, 0.28], [0.48, 0.56, 0.42], [0.78, 0.60, 0.66], 0.84);
+
+    // Back / upper tier of tall pointed petals fanning upward
     for (const [dx, dy, rot, len, wid, bias] of [
         [-2.6, -1.4, -0.74, 13.4, 3.4, -0.4],
         [-1.4, -2.0, -0.44, 14.2, 3.7, -0.2],
@@ -3726,23 +3721,25 @@ function drawUmbrellaLotusFlower(cr, x, y, sc, tilt, lum) {
         [ 1.4, -2.0,  0.44, 14.2, 3.7,  0.2],
         [ 2.6, -1.4,  0.74, 13.4, 3.4,  0.4],
     ]) {
-        drawStriatedPetal(dx, dy, rot, len, wid, bias, 0.96, 0.94);
+        drawStriatedPetal(dx, dy, rot, len, wid, bias, [0.60, 0.18, 0.36], [0.85, 0.44, 0.60], [0.98, 0.80, 0.88], 0.89);
     }
 
+    // Golden receptacle (seed head) & yellow stamens peeking from the heart of the blossom
     cr.save();
     cr.translate(0, -5.8);
     for (let i = -5; i <= 5; i++) {
         const sx = i * 0.72;
-        cr.setSourceRGBA(0.98 * lum, 0.80 * lum, 0.20 * lum, 0.92);
-        cr.setLineWidth(0.45);
+        cr.setSourceRGBA(0.95 * lum, 0.74 * lum, 0.18 * lum, 0.88);
+        cr.setLineWidth(0.48);
         cr.newPath();
         cr.moveTo(sx * 0.6, 1.2);
         cr.lineTo(sx, -1.3 - Math.cos(i * 0.3) * 0.7);
         cr.stroke();
     }
-    const rg = new Cairo.LinearGradient(-3.4, -1.4, 3.4, 1.4);
-    rg.addColorStopRGBA(0, 1.00 * lum, 0.92 * lum, 0.32 * lum, 0.96);
-    rg.addColorStopRGBA(1, 0.90 * lum, 0.72 * lum, 0.14 * lum, 0.96);
+    const rg = new Cairo.RadialGradient(-0.8, -0.5, 0.3, 0, 0, 3.5);
+    rg.addColorStopRGBA(0.0, 0.98 * lum, 0.88 * lum, 0.34 * lum, 0.92);
+    rg.addColorStopRGBA(0.7, 0.86 * lum, 0.68 * lum, 0.16 * lum, 0.92);
+    rg.addColorStopRGBA(1.0, 0.62 * lum, 0.46 * lum, 0.10 * lum, 0.92);
     cr.setSource(rg);
     cr.save();
     cr.scale(3.5, 1.4);
@@ -3750,7 +3747,7 @@ function drawUmbrellaLotusFlower(cr, x, y, sc, tilt, lum) {
     cr.arc(0, 0, 1.0, 0, TWO_PI);
     cr.fill();
     cr.restore();
-    cr.setSourceRGBA(0.58 * lum, 0.42 * lum, 0.08 * lum, 0.78);
+    cr.setSourceRGBA(0.46 * lum, 0.32 * lum, 0.06 * lum, 0.72);
     for (const [cx, cy] of [[-1.7, -0.2], [-0.6, -0.4], [0.6, -0.4], [1.7, -0.2], [-1.0, 0.4], [0.0, 0.5], [1.0, 0.4]]) {
         cr.newPath();
         cr.arc(cx, cy, 0.32, 0, TWO_PI);
@@ -3758,6 +3755,7 @@ function drawUmbrellaLotusFlower(cr, x, y, sc, tilt, lum) {
     }
     cr.restore();
 
+    // Wide sweeping mid-tier canopy petals
     for (const [dx, dy, rot, len, wid, bias] of [
         [-3.0, -0.3, -1.28, 15.0, 3.8, -0.9],
         [ 3.0, -0.3,  1.28, 15.0, 3.8,  0.9],
@@ -3766,9 +3764,10 @@ function drawUmbrellaLotusFlower(cr, x, y, sc, tilt, lum) {
         [-1.1, -1.0, -0.48, 12.8, 4.1, -0.2],
         [ 1.1, -1.0,  0.48, 12.8, 4.1,  0.2],
     ]) {
-        drawStriatedPetal(dx, dy, rot, len, wid, bias, 1.03, 0.96);
+        drawStriatedPetal(dx, dy, rot, len, wid, bias, [0.68, 0.22, 0.40], [0.92, 0.56, 0.70], [1.00, 0.90, 0.94], 0.90);
     }
 
+    // Front-facing cupped petals & plump basal petals hugging the stem top
     for (const [dx, dy, rot, len, wid, bias] of [
         [-2.0,  0.4, -1.52, 11.2, 3.5, -0.6],
         [ 2.0,  0.4,  1.52, 11.2, 3.5,  0.6],
@@ -3779,11 +3778,11 @@ function drawUmbrellaLotusFlower(cr, x, y, sc, tilt, lum) {
         [ 0.9,  1.0,  2.18,  6.0, 2.7,  0.0],
         [ 0.0,  1.2,  Math.PI, 4.6, 2.8, 0.0],
     ]) {
-        drawStriatedPetal(dx, dy, rot, len, wid, bias, 1.06, 0.97);
+        drawStriatedPetal(dx, dy, rot, len, wid, bias, [0.64, 0.20, 0.38], [0.88, 0.50, 0.66], [0.99, 0.86, 0.92], 0.90);
     }
 
     // Translucent crystal dewdrop hanging off the outer-left petal tip
-    cr.setSourceRGBA(0.82, 0.94, 1.0, 0.72);
+    cr.setSourceRGBA(0.82 * lum, 0.94 * lum, 1.0 * lum, 0.68);
     cr.newPath();
     cr.moveTo(-17.4, -4.6);
     cr.curveTo(-18.0, -3.6, -17.9, -2.9, -17.4, -2.8);
@@ -4019,11 +4018,10 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     // 4. Option B: Eurasian Tree Sparrow (Passer montanus) standing on the Thu–Fri lotus pad,
     // sheltering under an overarching pink Sacred Lotus flower whose stem emerges from the pad's V-split opening!
     const xf = width * 0.258, yf = height - 42 * scale, rf = 27.5 * scale;
-    const heroLum = night ? 0.90 : 0.96;
     const padNotch = 0.08, padGap = 0.28;
 
     drawStormPadShadow(cr, xf, yf, rf, padNotch, scale, padGap);
-    drawKoiLotusPadLeaf(cr, xf, yf, rf, padNotch, scale, lum * 1.08, padGap);
+    drawKoiLotusPadLeaf(cr, xf, yf, rf, padNotch, scale, lum, padGap);
 
     // Stem base inside the lotus pad's right-hand V-split opening (with concentric water meniscus ripple)
     const stemX0 = xf + 13.5 * scale, stemY0 = yf + 1.2 * scale;
@@ -4033,7 +4031,7 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.save();
     cr.translate(stemX0, stemY0);
     cr.scale(1.0, 0.56);
-    cr.setSourceRGBA(0.62, 0.86, 0.96, 0.34 * heroLum);
+    cr.setSourceRGBA(0.66, 0.82, 0.92, 0.22 * lum);
     cr.setLineWidth(Math.max(0.55, 0.65 * scale));
     cr.newPath();
     cr.arc(0, 0, 3.0 * scale, 0, TWO_PI);
@@ -4043,14 +4041,14 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     // Arching green lotus stem emerging out of the V-split opening up to the flower canopy
     cr.save();
     cr.setLineCap(Cairo.LineCap.ROUND);
-    cr.setSourceRGBA(0.09 * heroLum, 0.25 * heroLum, 0.15 * heroLum, 0.96);
+    cr.setSourceRGBA(0.11 * lum, 0.28 * lum, 0.17 * lum, 0.90);
     cr.setLineWidth(Math.max(1.6, 2.4 * scale));
     cr.newPath();
     cr.moveTo(stemX0, stemY0);
     cr.curveTo(xf + 14.5 * scale, yf - 19 * scale, xf + 11.0 * scale + sway * 0.6, yf - 31 * scale, stemX1, stemY1);
     cr.stroke();
 
-    cr.setSourceRGBA(0.38 * heroLum, 0.68 * heroLum, 0.32 * heroLum, 0.92);
+    cr.setSourceRGBA(0.38 * lum, 0.66 * lum, 0.34 * lum, 0.88);
     cr.setLineWidth(Math.max(0.8, 1.15 * scale));
     cr.newPath();
     cr.moveTo(stemX0 - 0.4 * scale, stemY0);
@@ -4059,10 +4057,10 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.restore();
 
     // Eurasian Tree Sparrow standing on the solid left/center lobe of the lotus pad leaf
-    drawEurasianTreeSparrowOnPad(cr, xf - 5.0 * scale, yf - 9.0 * scale, 1.38 * scale, heroLum);
+    drawEurasianTreeSparrowOnPad(cr, xf - 5.0 * scale, yf - 9.0 * scale, 1.38 * scale, lum);
 
     // Overhanging pink Sacred Lotus flower canopy tilted slightly left to roof over the sparrow
-    drawUmbrellaLotusFlower(cr, stemX1, stemY1, 1.24 * scale, -0.08 + sway * 0.012, heroLum);
+    drawUmbrellaLotusFlower(cr, stemX1, stemY1, 1.24 * scale, -0.08 + sway * 0.012, lum);
 
     // Subtle feathered storm-atmosphere veil to gently recess floor elements behind foreground UI labels
     const veilG = new Cairo.LinearGradient(0, floorTop - 12 * scale, 0, height);
