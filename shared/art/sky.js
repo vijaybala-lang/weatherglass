@@ -1605,8 +1605,7 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
 }
 
 /* Trace a wavy/crenate botanical peltate lotus pad perimeter with a radial V-sinus notch */
-function traceKoiLotusPad(cr, pr, notchAngle) {
-    const gap = 0.21;
+function traceKoiLotusPad(cr, pr, notchAngle, gap = 0.21) {
     const a0 = notchAngle + gap;
     const a1 = notchAngle + TWO_PI - gap;
     const steps = 44;
@@ -1625,7 +1624,7 @@ function traceKoiLotusPad(cr, pr, notchAngle) {
 }
 
 /* Draw a single floating peltate lotus leaf with meniscus ripple, upturned rim & 11 dichotomous veins */
-function drawKoiLotusPadLeaf(cr, x, y, pr, notch, scale, lum) {
+function drawKoiLotusPadLeaf(cr, x, y, pr, notch, scale, lum, gap = 0.21) {
     const sy = 0.56;
 
     // Subtle concentric water-meniscus ripple ring
@@ -1648,7 +1647,7 @@ function drawKoiLotusPadLeaf(cr, x, y, pr, notch, scale, lum) {
     cr.save();
     cr.translate(x, y + 1.7 * scale);
     cr.scale(1, sy);
-    traceKoiLotusPad(cr, pr, notch);
+    traceKoiLotusPad(cr, pr, notch, gap);
     cr.setSourceRGBA(0.07 * lum, 0.20 * lum, 0.14 * lum, 0.88);
     cr.fill();
     cr.restore();
@@ -1657,7 +1656,7 @@ function drawKoiLotusPadLeaf(cr, x, y, pr, notch, scale, lum) {
     cr.save();
     cr.translate(x, y);
     cr.scale(1, sy);
-    traceKoiLotusPad(cr, pr, notch);
+    traceKoiLotusPad(cr, pr, notch, gap);
 
     const ux = Math.cos(notch) * pr * 0.08;
     const uy = Math.sin(notch) * pr * 0.08;
@@ -1674,11 +1673,11 @@ function drawKoiLotusPadLeaf(cr, x, y, pr, notch, scale, lum) {
     cr.stroke();
 
     const numVeins = 11;
-    const gap = 0.28;
-    const span = TWO_PI - gap * 2;
+    const vGap = gap + 0.07;
+    const span = TWO_PI - vGap * 2;
     cr.setLineCap(Cairo.LineCap.ROUND);
     for (let i = 0; i < numVeins; i++) {
-        const va = notch + gap + (i + 0.5) * (span / numVeins);
+        const va = notch + vGap + (i + 0.5) * (span / numVeins);
         const vx1 = ux + Math.cos(va) * pr * 0.62;
         const vy1 = uy + Math.sin(va) * pr * 0.62;
         const vx2 = ux + Math.cos(va) * pr * 0.88;
@@ -1961,16 +1960,16 @@ function isKoiPadZone(x, y, sky, scale) {
     return false;
 }
 
-/* Exclusion zone around T3 storm foreground elements (frog on lotus pad & lotus clusters) so raindrops & splash droplets never paint over them */
+/* Exclusion zone around T3 storm foreground elements (sparrow sheltering under lotus flower on pad & lotus clusters) so raindrops & splash droplets never paint over them */
 function isStormForegroundZone(x, y, width, height, scale) {
-    if (Math.abs(x - width * 0.267) < 33 * scale && Math.abs(y - (height - 56 * scale)) < 22 * scale)
+    if (Math.abs(x - width * 0.258) < 38 * scale && y > height - 102 * scale && y < height - 12 * scale)
         return true;
-    if (Math.abs(x - width * 0.500) < 22 * scale && Math.abs(y - (height - 89 * scale)) < 14 * scale)
+    if (Math.abs(x - width * 0.500) < 26 * scale && Math.abs(y - (height - 89 * scale)) < 18 * scale)
         return true;
-    if (Math.abs(x - width * 0.733) < 19 * scale && Math.abs(y - (height - 95 * scale)) < 12 * scale)
+    if (Math.abs(x - width * 0.733) < 23 * scale && Math.abs(y - (height - 95 * scale)) < 16 * scale)
         return true;
-    if (x > width * 0.733 - 42 * scale && x < width * 0.733 + 30 * scale &&
-        y > height - 66 * scale && y < height - 16 * scale)
+    if (x > width * 0.733 - 46 * scale && x < width * 0.733 + 34 * scale &&
+        y > height - 70 * scale && y < height - 12 * scale)
         return true;
     return false;
 }
@@ -3660,14 +3659,324 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night) {
     cr.restore();
 }
 
-/* T3 (Thunderstorm): Permutation C1 — 3D Anatomical Frog on Lotus Pad, Stepping-Stone Pads & Twin-Leaf Sacred Lotus Blossom */
-function drawStormPadShadow(cr, x, y, pr, notch, scale) {
+/* T3 (Thunderstorm): Eurasian Tree Sparrow (Passer montanus) Sheltering Under Overhanging Sacred Lotus Flower on Lotus Pad */
+function drawStormPadShadow(cr, x, y, pr, notch, scale, gap = 0.21) {
     cr.save();
     cr.translate(x + 3.2 * scale, y + 5.5 * scale);
     cr.scale(1, 0.56);
-    traceKoiLotusPad(cr, pr * 1.02, notch);
+    traceKoiLotusPad(cr, pr * 1.02, notch, gap);
     cr.setSourceRGBA(0.01, 0.03, 0.06, 0.44);
     cr.fill();
+    cr.restore();
+}
+
+function drawUmbrellaLotusFlower(cr, x, y, sc, tilt, lum) {
+    cr.save();
+    cr.translate(x, y);
+    cr.rotate(tilt);
+    cr.scale(sc, sc);
+
+    const glow = new Cairo.RadialGradient(0, 3.5, 1.0, 0, 5.0, 17.0);
+    glow.addColorStopRGBA(0.0, 0.92 * lum, 0.48 * lum, 0.68 * lum, 0.20);
+    glow.addColorStopRGBA(1.0, 0.92 * lum, 0.48 * lum, 0.68 * lum, 0.0);
+    cr.setSource(glow);
+    cr.newPath();
+    cr.arc(0, 4.0, 17.0, 0, TWO_PI);
+    cr.fill();
+
+    const drawStriatedPetal = (dx, dy, rot, len, wid, curveBias = 0, lumBoost = 1.0, alpha = 0.95) => {
+        cr.save();
+        cr.translate(dx, dy);
+        cr.rotate(rot);
+
+        const L = lum * lumBoost;
+        const pg = new Cairo.LinearGradient(0, 0, 0, -len);
+        pg.addColorStopRGBA(0.00, Math.min(1, 0.96 * L), Math.min(1, 0.88 * L), Math.min(1, 0.86 * L), alpha);
+        pg.addColorStopRGBA(0.38, Math.min(1, 0.96 * L), Math.min(1, 0.64 * L), Math.min(1, 0.78 * L), alpha);
+        pg.addColorStopRGBA(0.78, Math.min(1, 0.94 * L), Math.min(1, 0.42 * L), Math.min(1, 0.64 * L), alpha);
+        pg.addColorStopRGBA(1.00, Math.min(1, 0.88 * L), Math.min(1, 0.22 * L), Math.min(1, 0.48 * L), alpha);
+        cr.setSource(pg);
+
+        cr.newPath();
+        cr.moveTo(0, 0);
+        cr.curveTo(-wid * 1.18, -len * 0.28, -wid * 0.92 + curveBias, -len * 0.76, curveBias * 0.6, -len);
+        cr.curveTo(wid * 0.92 + curveBias, -len * 0.76, wid * 1.18, -len * 0.28, 0, 0);
+        cr.closePath();
+        cr.fillPreserve();
+
+        cr.setSourceRGBA(0.68 * L, 0.18 * L, 0.38 * L, 0.42);
+        cr.setLineWidth(0.36);
+        cr.stroke();
+
+        cr.setSourceRGBA(0.76 * L, 0.24 * L, 0.46 * L, 0.25);
+        cr.setLineWidth(0.26);
+        for (const v of [-0.55, -0.28, 0.0, 0.28, 0.55]) {
+            cr.newPath();
+            cr.moveTo(v * wid * 0.25, -len * 0.10);
+            cr.curveTo(v * wid * 0.85, -len * 0.42, v * wid * 0.65 + curveBias * 0.4, -len * 0.74, curveBias * 0.5 + v * wid * 0.15, -len * 0.93);
+            cr.stroke();
+        }
+        cr.restore();
+    };
+
+    for (const [dx, dy, rot, len, wid, bias] of [
+        [-2.6, -1.4, -0.74, 13.4, 3.4, -0.4],
+        [-1.4, -2.0, -0.44, 14.2, 3.7, -0.2],
+        [ 0.0, -2.2,  0.00, 14.8, 3.9,  0.0],
+        [ 1.4, -2.0,  0.44, 14.2, 3.7,  0.2],
+        [ 2.6, -1.4,  0.74, 13.4, 3.4,  0.4],
+    ]) {
+        drawStriatedPetal(dx, dy, rot, len, wid, bias, 0.96, 0.94);
+    }
+
+    cr.save();
+    cr.translate(0, -5.8);
+    for (let i = -5; i <= 5; i++) {
+        const sx = i * 0.72;
+        cr.setSourceRGBA(0.98 * lum, 0.80 * lum, 0.20 * lum, 0.92);
+        cr.setLineWidth(0.45);
+        cr.newPath();
+        cr.moveTo(sx * 0.6, 1.2);
+        cr.lineTo(sx, -1.3 - Math.cos(i * 0.3) * 0.7);
+        cr.stroke();
+    }
+    const rg = new Cairo.LinearGradient(-3.4, -1.4, 3.4, 1.4);
+    rg.addColorStopRGBA(0, 1.00 * lum, 0.92 * lum, 0.32 * lum, 0.96);
+    rg.addColorStopRGBA(1, 0.90 * lum, 0.72 * lum, 0.14 * lum, 0.96);
+    cr.setSource(rg);
+    cr.save();
+    cr.scale(3.5, 1.4);
+    cr.newPath();
+    cr.arc(0, 0, 1.0, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+    cr.setSourceRGBA(0.58 * lum, 0.42 * lum, 0.08 * lum, 0.78);
+    for (const [cx, cy] of [[-1.7, -0.2], [-0.6, -0.4], [0.6, -0.4], [1.7, -0.2], [-1.0, 0.4], [0.0, 0.5], [1.0, 0.4]]) {
+        cr.newPath();
+        cr.arc(cx, cy, 0.32, 0, TWO_PI);
+        cr.fill();
+    }
+    cr.restore();
+
+    for (const [dx, dy, rot, len, wid, bias] of [
+        [-3.0, -0.3, -1.28, 15.0, 3.8, -0.9],
+        [ 3.0, -0.3,  1.28, 15.0, 3.8,  0.9],
+        [-2.2, -0.7, -0.92, 13.8, 4.0, -0.5],
+        [ 2.2, -0.7,  0.92, 13.8, 4.0,  0.5],
+        [-1.1, -1.0, -0.48, 12.8, 4.1, -0.2],
+        [ 1.1, -1.0,  0.48, 12.8, 4.1,  0.2],
+    ]) {
+        drawStriatedPetal(dx, dy, rot, len, wid, bias, 1.03, 0.96);
+    }
+
+    for (const [dx, dy, rot, len, wid, bias] of [
+        [-2.0,  0.4, -1.52, 11.2, 3.5, -0.6],
+        [ 2.0,  0.4,  1.52, 11.2, 3.5,  0.6],
+        [-1.0,  0.2, -0.78, 10.2, 3.8, -0.2],
+        [ 1.0,  0.2,  0.78, 10.2, 3.8,  0.2],
+        [ 0.0,  0.4,  0.00, 10.8, 4.2,  0.0],
+        [-0.9,  1.0, -2.18,  6.0, 2.7,  0.0],
+        [ 0.9,  1.0,  2.18,  6.0, 2.7,  0.0],
+        [ 0.0,  1.2,  Math.PI, 4.6, 2.8, 0.0],
+    ]) {
+        drawStriatedPetal(dx, dy, rot, len, wid, bias, 1.06, 0.97);
+    }
+
+    // Translucent crystal dewdrop hanging off the outer-left petal tip
+    cr.setSourceRGBA(0.82, 0.94, 1.0, 0.72);
+    cr.newPath();
+    cr.moveTo(-17.4, -4.6);
+    cr.curveTo(-18.0, -3.6, -17.9, -2.9, -17.4, -2.8);
+    cr.curveTo(-16.9, -2.9, -16.8, -3.6, -17.4, -4.6);
+    cr.closePath();
+    cr.fill();
+
+    cr.restore();
+}
+
+function drawEurasianTreeSparrowOnPad(cr, x, y, sc, lum) {
+    cr.save();
+    cr.translate(x, y);
+    cr.scale(sc, sc);
+
+    // 1. Soft contact shadow on lotus pad beneath feet
+    const sg = new Cairo.RadialGradient(0.2, 6.2, 0.8, 0.2, 6.2, 7.2);
+    sg.addColorStopRGBA(0, 0.01, 0.04, 0.03, 0.62);
+    sg.addColorStopRGBA(1, 0.01, 0.04, 0.03, 0.0);
+    cr.setSource(sg);
+    cr.save();
+    cr.scale(1.2, 0.45);
+    cr.newPath();
+    cr.arc(0.2, 13.5, 7.2, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    // 2. Slender warm flesh-ochre tarsi & articulated toes gripping the lotus leaf
+    cr.setSourceRGBA(0.76 * lum, 0.52 * lum, 0.44 * lum, 0.98);
+    cr.setLineWidth(0.62);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.newPath();
+    cr.moveTo(0.8, 2.4);
+    cr.lineTo(2.1, 5.7);
+    cr.moveTo(0.9, 5.7);
+    cr.lineTo(3.9, 5.7);
+    cr.moveTo(2.1, 5.7);
+    cr.lineTo(3.4, 6.2);
+    cr.stroke();
+
+    cr.setSourceRGBA(0.84 * lum, 0.58 * lum, 0.48 * lum, 0.99);
+    cr.newPath();
+    cr.moveTo(-1.0, 2.7);
+    cr.lineTo(0.4, 6.3);
+    cr.moveTo(-1.1, 6.4);
+    cr.lineTo(2.6, 6.4);
+    cr.moveTo(0.4, 6.3);
+    cr.lineTo(2.0, 7.0);
+    cr.stroke();
+
+    // 3. Slender notched sepia-brown tail with pale buff outer web
+    cr.setSourceRGBA(0.30 * lum, 0.20 * lum, 0.14 * lum, 0.98);
+    cr.newPath();
+    cr.moveTo(-4.8, 1.0);
+    cr.lineTo(-13.0, 4.5);
+    cr.lineTo(-12.3, 5.8);
+    cr.lineTo(-3.8, 2.6);
+    cr.closePath();
+    cr.fillPreserve();
+    cr.setSourceRGBA(0.78 * lum, 0.68 * lum, 0.56 * lum, 0.62);
+    cr.setLineWidth(0.32);
+    cr.stroke();
+
+    // 4. Plump warm-buff & pearl-taupe breast/belly
+    const bg = new Cairo.RadialGradient(2.2, -0.5, 0.8, 0.0, 0.5, 7.8);
+    bg.addColorStopRGBA(0.00, 0.92 * lum, 0.89 * lum, 0.83 * lum, 0.99);
+    bg.addColorStopRGBA(0.58, 0.76 * lum, 0.70 * lum, 0.62 * lum, 0.99);
+    bg.addColorStopRGBA(1.00, 0.48 * lum, 0.40 * lum, 0.32 * lum, 0.99);
+    cr.setSource(bg);
+    cr.newPath();
+    cr.moveTo(-5.6, 1.6);
+    cr.curveTo(-4.2, -2.2, -0.6, -4.8, 2.8, -4.6);
+    cr.curveTo(5.8, -2.0, 5.4, 2.4, 2.2, 3.5);
+    cr.curveTo(-1.0, 4.1, -4.0, 3.1, -5.6, 1.6);
+    cr.closePath();
+    cr.fill();
+
+    // Downy feather texture strokes on breast
+    cr.setSourceRGBA(0.56 * lum, 0.50 * lum, 0.42 * lum, 0.34);
+    cr.setLineWidth(0.32);
+    for (const [fx, fy, dx, dy] of [[3.2, -0.6, -0.8, 1.5], [2.0, 0.4, -1.0, 1.4], [0.6, 1.2, -1.2, 1.2]]) {
+        cr.newPath();
+        cr.moveTo(fx, fy);
+        cr.lineTo(fx + dx, fy + dy);
+        cr.stroke();
+    }
+
+    // 5. Layered chestnut, sepia & buff-edged folded wing with two white wing-bars
+    const wg = new Cairo.LinearGradient(-5.5, -2.8, 2.0, 2.5);
+    wg.addColorStopRGBA(0.00, 0.60 * lum, 0.34 * lum, 0.17 * lum, 0.99);
+    wg.addColorStopRGBA(0.55, 0.40 * lum, 0.23 * lum, 0.13 * lum, 0.99);
+    wg.addColorStopRGBA(1.00, 0.16 * lum, 0.11 * lum, 0.08 * lum, 0.99);
+    cr.setSource(wg);
+    cr.newPath();
+    cr.moveTo(1.0, -3.5);
+    cr.curveTo(-2.6, -3.4, -5.8, -0.6, -7.2, 2.3);
+    cr.curveTo(-3.4, 2.7, 0.8, 1.3, 2.0, -1.0);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.12 * lum, 0.08 * lum, 0.06 * lum, 0.78);
+    cr.setLineWidth(0.55);
+    for (const [x0, y0, x1, y1] of [[-0.4, -2.5, -3.2, -0.8], [-1.6, -1.4, -4.8, 0.4], [-2.8, -0.2, -6.2, 1.6]]) {
+        cr.newPath();
+        cr.moveTo(x0, y0);
+        cr.lineTo(x1, y1);
+        cr.stroke();
+    }
+    cr.setSourceRGBA(0.88 * lum, 0.78 * lum, 0.62 * lum, 0.82);
+    cr.setLineWidth(0.36);
+    for (const [x0, y0, x1, y1] of [[-0.2, -2.2, -3.0, -0.5], [-1.4, -1.1, -4.6, 0.7], [-2.6, 0.1, -6.0, 1.9]]) {
+        cr.newPath();
+        cr.moveTo(x0, y0);
+        cr.lineTo(x1, y1);
+        cr.stroke();
+    }
+
+    cr.setSourceRGBA(0.96 * lum, 0.94 * lum, 0.88 * lum, 0.92);
+    cr.setLineWidth(0.58);
+    cr.newPath();
+    cr.moveTo(0.2, -1.9);
+    cr.lineTo(-1.4, -0.3);
+    cr.moveTo(-1.4, -0.9);
+    cr.lineTo(-3.2, 0.7);
+    cr.stroke();
+
+    // 6. Sculpted head & rich chestnut-mahogany crown flowing smoothly into the nape
+    const cg = new Cairo.RadialGradient(3.2, -6.4, 0.5, 2.8, -4.8, 4.6);
+    cg.addColorStopRGBA(0.0, 0.66 * lum, 0.32 * lum, 0.18 * lum, 0.99);
+    cg.addColorStopRGBA(0.65, 0.48 * lum, 0.21 * lum, 0.12 * lum, 0.99);
+    cg.addColorStopRGBA(1.0, 0.34 * lum, 0.15 * lum, 0.09 * lum, 0.99);
+    cr.setSource(cg);
+    cr.newPath();
+    cr.moveTo(0.0, -3.4);
+    cr.curveTo(0.0, -6.6, 2.2, -8.2, 4.5, -7.6);
+    cr.curveTo(6.2, -7.1, 6.7, -5.6, 6.2, -4.2);
+    cr.curveTo(5.2, -2.4, 2.0, -2.2, 0.0, -3.4);
+    cr.closePath();
+    cr.fill();
+
+    // 7. Snow-white cheek patch & sub-triangular black ear-covert spot
+    cr.setSourceRGBA(0.97 * lum, 0.96 * lum, 0.93 * lum, 0.99);
+    cr.newPath();
+    cr.moveTo(5.6, -4.8);
+    cr.curveTo(4.2, -5.6, 1.8, -5.3, 1.0, -3.9);
+    cr.curveTo(0.9, -2.5, 2.8, -2.1, 4.8, -2.7);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.08, 0.07, 0.07, 0.97);
+    cr.newPath();
+    cr.moveTo(1.8, -4.2);
+    cr.curveTo(2.5, -4.6, 3.3, -4.2, 3.2, -3.4);
+    cr.curveTo(3.0, -2.9, 2.0, -3.0, 1.7, -3.6);
+    cr.closePath();
+    cr.fill();
+
+    // 8. Velvety black lores & feathered black chin/throat bib
+    cr.setSourceRGBA(0.06, 0.05, 0.06, 0.99);
+    cr.newPath();
+    cr.moveTo(6.2, -5.2);
+    cr.lineTo(4.5, -5.6);
+    cr.lineTo(4.4, -3.5);
+    cr.lineTo(3.7, -1.4);
+    cr.curveTo(5.0, -1.2, 5.8, -1.8, 6.1, -3.4);
+    cr.closePath();
+    cr.fill();
+
+    // 9. Stout conical dark seed-eating bill with horn highlight
+    cr.setSourceRGBA(0.15, 0.16, 0.19, 0.99);
+    cr.newPath();
+    cr.moveTo(5.9, -6.0);
+    cr.lineTo(8.5, -5.1);
+    cr.lineTo(5.9, -4.1);
+    cr.closePath();
+    cr.fill();
+    cr.setSourceRGBA(0.68, 0.72, 0.78, 0.60);
+    cr.setLineWidth(0.32);
+    cr.newPath();
+    cr.moveTo(6.0, -5.8);
+    cr.lineTo(8.2, -5.1);
+    cr.stroke();
+
+    // 10. Glossy dark eye with crisp white catchlight
+    cr.setSourceRGBA(0.04, 0.04, 0.05, 0.99);
+    cr.newPath();
+    cr.arc(4.7, -5.5, 0.74, 0, TWO_PI);
+    cr.fill();
+    cr.setSourceRGBA(1.0, 1.0, 1.0, 0.96);
+    cr.newPath();
+    cr.arc(4.88, -5.68, 0.25, 0, TWO_PI);
+    cr.fill();
+
     cr.restore();
 }
 
@@ -3707,239 +4016,53 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     drawKoiLotusBud(cr, x3 + 18 * scale, y3 - 6 * scale, scale * 0.96, 0.22, lum);
     drawKoiLotusBlossom(cr, x3 - r3 * 0.06, y3 - r3 * 0.14, scale * 1.28, lum);
 
-    // 4. Larger, Realistic 3D Anatomical Pond/Tree Frog perched ON TOP OF a large botanical lotus pad between Thu & Fri
-    const xf = width * 0.267, yf = height - 55 * scale, rf = 27.5 * scale;
-    const frogLum = night ? 0.76 : 0.82;
-    drawStormPadShadow(cr, xf, yf, rf, 2.65, scale);
-    drawKoiLotusPadLeaf(cr, xf, yf, rf, 2.65, scale, frogLum * 0.92);
+    // 4. Option B: Eurasian Tree Sparrow (Passer montanus) standing on the Thu–Fri lotus pad,
+    // sheltering under an overarching pink Sacred Lotus flower whose stem emerges from the pad's V-split opening!
+    const xf = width * 0.258, yf = height - 42 * scale, rf = 27.5 * scale;
+    const heroLum = night ? 0.90 : 0.96;
+    const padNotch = 0.08, padGap = 0.28;
 
-    const sac = Math.pow(0.5 + 0.5 * Math.cos((time - 1.1) * 3.0), 1.5);
-    const sc = 2.28 * scale;
-    cr.save();
-    cr.translate(xf, yf - 2.0 * scale);
-    cr.scale(sc, sc);
+    drawStormPadShadow(cr, xf, yf, rf, padNotch, scale, padGap);
+    drawKoiLotusPadLeaf(cr, xf, yf, rf, padNotch, scale, lum * 1.08, padGap);
 
-    // Deep ambient occlusion contact shadow on the lotus leaf beneath the frog
-    const csg = new Cairo.RadialGradient(0.0, 1.5, 1.0, 0.0, 1.5, 9.8);
-    csg.addColorStopRGBA(0, 0.01, 0.04, 0.03, 0.78);
-    csg.addColorStopRGBA(0.62, 0.02, 0.07, 0.04, 0.44);
-    csg.addColorStopRGBA(1, 0.02, 0.07, 0.04, 0.0);
+    // Stem base inside the lotus pad's right-hand V-split opening (with concentric water meniscus ripple)
+    const stemX0 = xf + 13.5 * scale, stemY0 = yf + 1.2 * scale;
+    const sway = Math.sin((time - 1.1) * 1.6) * 0.8 * scale;
+    const stemX1 = xf + 6.0 * scale + sway, stemY1 = yf - 42.0 * scale;
+
     cr.save();
-    cr.scale(1.0, 0.48);
-    cr.setSource(csg);
+    cr.translate(stemX0, stemY0);
+    cr.scale(1.0, 0.56);
+    cr.setSourceRGBA(0.62, 0.86, 0.96, 0.34 * heroLum);
+    cr.setLineWidth(Math.max(0.55, 0.65 * scale));
     cr.newPath();
-    cr.arc(0.0, 3.1, 9.8, 0, TWO_PI);
-    cr.fill();
+    cr.arc(0, 0, 3.0 * scale, 0, TWO_PI);
+    cr.stroke();
     cr.restore();
 
-    // Far-side foreleg planted forward-right on the pad
-    drawSmoothLimb(cr, 3.2, -1.2, 1.05, 4.5, 0.1, 5.2, 1.1, 5.8, 1.6, 0.58);
-    cr.setSourceRGBA(0.14 * frogLum, 0.36 * frogLum, 0.18 * frogLum, 0.95);
-    cr.fill();
-
-    // Muscular Z-folded hind leg (thigh + calf + 4 long webbed toes with pale toe discs)
-    cr.setSourceRGBA(0.28 * frogLum, 0.62 * frogLum, 0.26 * frogLum, 0.96);
-    cr.setLineWidth(0.72);
+    // Arching green lotus stem emerging out of the V-split opening up to the flower canopy
+    cr.save();
     cr.setLineCap(Cairo.LineCap.ROUND);
-    for (const [tx, ty] of [[-1.8, 2.5], [-0.4, 2.8], [1.0, 2.6], [-3.0, 2.2]]) {
-        cr.newPath();
-        cr.moveTo(-3.2, 1.7);
-        cr.lineTo(tx, ty);
-        cr.stroke();
-        cr.setSourceRGBA(0.72 * frogLum, 0.88 * frogLum, 0.48 * frogLum, 0.95);
-        cr.newPath();
-        cr.arc(tx, ty, 0.46, 0, TWO_PI);
-        cr.fill();
-        cr.setSourceRGBA(0.28 * frogLum, 0.62 * frogLum, 0.26 * frogLum, 0.96);
-    }
-
-    drawSmoothLimb(cr, -6.8, -1.5, 1.55, -5.6, 0.1, -4.4, 1.1, -3.2, 1.7, 0.90);
-    const calfG = new Cairo.LinearGradient(-6.8, -2.6, -3.2, 2.2);
-    calfG.addColorStopRGBA(0, 0.42 * frogLum, 0.78 * frogLum, 0.32 * frogLum, 0.97);
-    calfG.addColorStopRGBA(1, 0.16 * frogLum, 0.42 * frogLum, 0.20 * frogLum, 0.97);
-    cr.setSource(calfG);
-    cr.fillPreserve();
-    cr.setSourceRGBA(0.06 * frogLum, 0.18 * frogLum, 0.08 * frogLum, 0.65);
-    cr.setLineWidth(0.38);
+    cr.setSourceRGBA(0.09 * heroLum, 0.25 * heroLum, 0.15 * heroLum, 0.96);
+    cr.setLineWidth(Math.max(1.6, 2.4 * scale));
+    cr.newPath();
+    cr.moveTo(stemX0, stemY0);
+    cr.curveTo(xf + 14.5 * scale, yf - 19 * scale, xf + 11.0 * scale + sway * 0.6, yf - 31 * scale, stemX1, stemY1);
     cr.stroke();
 
-    drawSmoothLimb(cr, -4.0, 0.3, 1.78, -5.1, -0.6, -6.0, -1.3, -6.8, -1.6, 1.35);
-    const thighG = new Cairo.LinearGradient(-6.8, -3.0, -3.6, 1.5);
-    thighG.addColorStopRGBA(0, 0.54 * frogLum, 0.88 * frogLum, 0.36 * frogLum, 0.98);
-    thighG.addColorStopRGBA(1, 0.22 * frogLum, 0.50 * frogLum, 0.24 * frogLum, 0.98);
-    cr.setSource(thighG);
-    cr.fillPreserve();
-    cr.setSourceRGBA(0.06 * frogLum, 0.18 * frogLum, 0.08 * frogLum, 0.60);
-    cr.setLineWidth(0.38);
+    cr.setSourceRGBA(0.38 * heroLum, 0.68 * heroLum, 0.32 * heroLum, 0.92);
+    cr.setLineWidth(Math.max(0.8, 1.15 * scale));
+    cr.newPath();
+    cr.moveTo(stemX0 - 0.4 * scale, stemY0);
+    cr.curveTo(xf + 14.1 * scale, yf - 19 * scale, xf + 10.6 * scale + sway * 0.6, yf - 31 * scale, stemX1 - 0.4 * scale, stemY1);
     cr.stroke();
-
-    // Dark olive leg cross-bands on thigh & calf
-    cr.setSourceRGBA(0.10 * frogLum, 0.26 * frogLum, 0.12 * frogLum, 0.72);
-    cr.setLineWidth(0.68);
-    cr.newPath();
-    cr.moveTo(-5.8, -2.2);
-    cr.lineTo(-4.8, -0.4);
-    cr.moveTo(-5.2, 0.0);
-    cr.lineTo(-4.0, 1.1);
-    cr.stroke();
-
-    // Soft cream-chartreuse underbelly (ventrum) & inflating golden-amber vocal sac
-    cr.setSourceRGBA(0.90 * frogLum, 0.92 * frogLum, 0.66 * frogLum, 0.95);
-    cr.newPath();
-    cr.moveTo(-3.6, 0.8);
-    cr.curveTo(-1.0, 2.2, 2.4, 2.0, 4.6, 0.2);
-    cr.curveTo(2.4, -0.6, -1.2, -0.4, -3.6, 0.8);
-    cr.closePath();
-    cr.fill();
-
-    if (sac > 0.05) {
-        const sacR = 1.6 + sac * 1.4;
-        const sacG = new Cairo.RadialGradient(5.8, -1.7, 0.3, 5.0, -1.1, sacR);
-        sacG.addColorStopRGBA(0.0, 1.00 * frogLum, 0.96 * frogLum, 0.68 * frogLum, 0.95);
-        sacG.addColorStopRGBA(0.55, 0.96 * frogLum, 0.74 * frogLum, 0.26 * frogLum, 0.90);
-        sacG.addColorStopRGBA(1.0, 0.74 * frogLum, 0.46 * frogLum, 0.12 * frogLum, 0.85);
-        cr.setSource(sacG);
-        cr.newPath();
-        cr.arc(5.0, -1.1, sacR, 0, TWO_PI);
-        cr.fillPreserve();
-        cr.setSourceRGBA(0.58 * frogLum, 0.36 * frogLum, 0.10 * frogLum, 0.45);
-        cr.setLineWidth(0.38);
-        cr.stroke();
-    }
-
-    // Far-side eye dome peeking over the snout ridge
-    cr.setSourceRGBA(0.34 * frogLum, 0.68 * frogLum, 0.30 * frogLum, 0.96);
-    cr.newPath();
-    cr.arc(5.0, -5.8, 1.45, 0, TWO_PI);
-    cr.fill();
-    cr.setSourceRGBA(0.94 * frogLum, 0.76 * frogLum, 0.24 * frogLum, 0.95);
-    cr.newPath();
-    cr.arc(5.2, -5.8, 0.92, 0, TWO_PI);
-    cr.fill();
-
-    // Sculpted 3D Dorsal Body, Arched Shoulders & Snout
-    const bodyG = new Cairo.LinearGradient(-4.8, -6.4, 5.6, 1.4);
-    bodyG.addColorStopRGBA(0.00, 0.58 * frogLum, 0.94 * frogLum, 0.38 * frogLum, 0.98);
-    bodyG.addColorStopRGBA(0.48, 0.34 * frogLum, 0.74 * frogLum, 0.32 * frogLum, 0.98);
-    bodyG.addColorStopRGBA(1.00, 0.18 * frogLum, 0.46 * frogLum, 0.22 * frogLum, 0.98);
-    cr.setSource(bodyG);
-    cr.newPath();
-    cr.moveTo(-4.8, 0.4);
-    cr.curveTo(-4.4, -3.8, -1.2, -6.0, 2.3, -5.9);
-    cr.curveTo(4.6, -5.8, 6.6, -4.8, 7.6, -3.3);
-    cr.curveTo(7.4, -1.9, 5.4, -1.7, 3.3, -1.2);
-    cr.curveTo(1.2, 0.9, -2.0, 1.3, -4.8, 0.4);
-    cr.closePath();
-    cr.fillPreserve();
-    cr.setSourceRGBA(0.06 * frogLum, 0.18 * frogLum, 0.08 * frogLum, 0.55);
-    cr.setLineWidth(0.36);
-    cr.stroke();
-
-    // Natural dark-olive dorsal spots on the back
-    cr.setSourceRGBA(0.12 * frogLum, 0.30 * frogLum, 0.14 * frogLum, 0.68);
-    for (const [sx, sy, rx, ry] of [[-1.6, -3.8, 1.1, 0.55], [0.4, -4.4, 0.95, 0.48], [-3.0, -2.2, 0.85, 0.45]]) {
-        cr.save();
-        cr.translate(sx, sy);
-        cr.rotate(-0.25);
-        cr.scale(rx, ry);
-        cr.newPath();
-        cr.arc(0, 0, 1, 0, TWO_PI);
-        cr.fill();
-        cr.restore();
-    }
-
-    // Moist amphibian skin specular highlight along upper dorsal ridge
-    cr.setSourceRGBA(0.84 * frogLum, 1.00 * frogLum, 0.70 * frogLum, 0.52);
-    cr.setLineWidth(0.70);
-    cr.newPath();
-    cr.moveTo(-3.0, -3.4);
-    cr.curveTo(-0.4, -5.2, 2.4, -5.3, 5.0, -4.4);
-    cr.stroke();
-
-    // Bright golden-cream dorsolateral fold stripe from behind eye down the flank
-    cr.setSourceRGBA(0.96 * frogLum, 0.96 * frogLum, 0.66 * frogLum, 0.90);
-    cr.setLineWidth(0.82);
-    cr.newPath();
-    cr.moveTo(6.6, -3.2);
-    cr.curveTo(3.5, -3.4, -0.4, -2.2, -3.8, -0.4);
-    cr.stroke();
-
-    // Subtle mouth line & nostril dot
-    cr.setSourceRGBA(0.06 * frogLum, 0.18 * frogLum, 0.09 * frogLum, 0.78);
-    cr.setLineWidth(0.45);
-    cr.newPath();
-    cr.moveTo(3.4, -2.0);
-    cr.curveTo(5.2, -2.1, 6.6, -2.4, 7.5, -3.1);
-    cr.stroke();
-    cr.newPath();
-    cr.arc(6.8, -3.7, 0.30, 0, TWO_PI);
-    cr.fill();
-
-    // Darker circular tympanum (ear drum) with bronze rim just behind eye
-    cr.setSourceRGBA(0.14 * frogLum, 0.32 * frogLum, 0.18 * frogLum, 0.88);
-    cr.newPath();
-    cr.arc(2.5, -3.7, 0.85, 0, TWO_PI);
-    cr.fillPreserve();
-    cr.setSourceRGBA(0.68 * frogLum, 0.76 * frogLum, 0.42 * frogLum, 0.55);
-    cr.setLineWidth(0.32);
-    cr.stroke();
-
-    // Planted Near Forelimb (upper arm + forearm + 4 toes with pale adhesive toe discs)
-    drawSmoothLimb(cr, 1.6, -1.6, 1.25, 2.1, -0.1, 2.5, 1.1, 2.9, 1.9, 0.74);
-    const armG = new Cairo.LinearGradient(1.2, -1.8, 3.1, 2.1);
-    armG.addColorStopRGBA(0, 0.42 * frogLum, 0.80 * frogLum, 0.34 * frogLum, 0.98);
-    armG.addColorStopRGBA(1, 0.22 * frogLum, 0.52 * frogLum, 0.24 * frogLum, 0.98);
-    cr.setSource(armG);
-    cr.fillPreserve();
-    cr.setSourceRGBA(0.06 * frogLum, 0.18 * frogLum, 0.08 * frogLum, 0.55);
-    cr.setLineWidth(0.35);
-    cr.stroke();
-
-    cr.setSourceRGBA(0.36 * frogLum, 0.72 * frogLum, 0.32 * frogLum, 0.96);
-    cr.setLineWidth(0.66);
-    for (const [fx, fy] of [[2.0, 2.5], [3.0, 2.7], [4.0, 2.5], [4.6, 2.0]]) {
-        cr.newPath();
-        cr.moveTo(2.9, 1.8);
-        cr.lineTo(fx, fy);
-        cr.stroke();
-        cr.setSourceRGBA(0.76 * frogLum, 0.90 * frogLum, 0.50 * frogLum, 0.96);
-        cr.newPath();
-        cr.arc(fx, fy, 0.48, 0, TWO_PI);
-        cr.fill();
-        cr.setSourceRGBA(0.36 * frogLum, 0.72 * frogLum, 0.32 * frogLum, 0.96);
-    }
-
-    // Prominent Near Eye Dome (supraorbital ridge + metallic golden iris + horizontal pupil + catchlight)
-    cr.setSourceRGBA(0.42 * frogLum, 0.78 * frogLum, 0.34 * frogLum, 0.98);
-    cr.newPath();
-    cr.arc(4.2, -5.2, 1.85, 0, TWO_PI);
-    cr.fill();
-
-    const eyeG = new Cairo.RadialGradient(4.0, -5.5, 0.2, 4.2, -5.2, 1.52);
-    eyeG.addColorStopRGBA(0.0, 1.00 * frogLum, 0.94 * frogLum, 0.44 * frogLum, 0.99);
-    eyeG.addColorStopRGBA(0.7, 0.94 * frogLum, 0.72 * frogLum, 0.18 * frogLum, 0.99);
-    eyeG.addColorStopRGBA(1.0, 0.64 * frogLum, 0.40 * frogLum, 0.08 * frogLum, 0.99);
-    cr.setSource(eyeG);
-    cr.newPath();
-    cr.arc(4.2, -5.2, 1.50, 0, TWO_PI);
-    cr.fill();
-
-    cr.setSourceRGBA(0.04, 0.06, 0.08, 0.98);
-    cr.save();
-    cr.translate(4.3, -5.2);
-    cr.rotate(-0.08);
-    cr.scale(1.0, 0.46);
-    cr.newPath();
-    cr.arc(0, 0, 1.02, 0, TWO_PI);
-    cr.fill();
     cr.restore();
 
-    cr.setSourceRGBA(1.0, 1.0, 1.0, 0.95);
-    cr.newPath();
-    cr.arc(3.82, -5.65, 0.46, 0, TWO_PI);
-    cr.fill();
+    // Eurasian Tree Sparrow standing on the solid left/center lobe of the lotus pad leaf
+    drawEurasianTreeSparrowOnPad(cr, xf - 5.0 * scale, yf - 9.0 * scale, 1.38 * scale, heroLum);
 
-    cr.restore();
+    // Overhanging pink Sacred Lotus flower canopy tilted slightly left to roof over the sparrow
+    drawUmbrellaLotusFlower(cr, stemX1, stemY1, 1.24 * scale, -0.08 + sway * 0.012, heroLum);
 
     // Subtle feathered storm-atmosphere veil to gently recess floor elements behind foreground UI labels
     const veilG = new Cairo.LinearGradient(0, floorTop - 12 * scale, 0, height);
