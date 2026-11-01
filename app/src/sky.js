@@ -3284,10 +3284,14 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.rectangle(0, floorTop - 10 * scale, width, height - floorTop + 10 * scale);
     cr.fill();
 
-    // Concentric surface ripples around reeds, boulder, and lotus pad
-    for (const [rxFrac, ryOff, rw2] of [[0.267, 42, 18], [0.50, 44, 24], [0.733, 42, 20]]) {
+    // Concentric surface ripples around reeds (Row 2 Alley 1), boulder (Row 2 Alley 2), and distant lotus pad (Row 1 Alley 3)
+    for (const [rxFrac, ryVal, rw2] of [
+        [0.267, height - 19 * scale, 18],
+        [0.500, height - 20 * scale, 24],
+        [0.733, floorTop + 21 * scale, 14],
+    ]) {
         cr.save();
-        cr.translate(width * rxFrac, height - ryOff * scale);
+        cr.translate(width * rxFrac, ryVal);
         cr.scale(rw2 * scale, rw2 * 0.28 * scale);
         cr.setSourceRGBA(0.58, 0.82, 0.92, 0.34);
         cr.setLineWidth(0.08);
@@ -3299,10 +3303,10 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
         cr.restore();
     }
 
-    // 1. Botanical Cattails & Sheathing Ribbon Leaves (Typha latifolia) in Alley 1 (x = 0.267w)
+    // 1. Botanical Cattails & Sheathing Ribbon Leaves (Typha latifolia) moved down in Alley 1 (between Thu & Fri: x = 0.267w, y = h - 20*scale)
     const reedSway = Math.sin((time - 1.1) * 2.5) * 1.4;
     cr.save();
-    cr.translate(width * 0.267, height - 44 * scale);
+    cr.translate(width * 0.267, height - 20 * scale);
     cr.scale(1.72 * scale, 1.72 * scale);
 
     const leaves = [
@@ -3360,10 +3364,10 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     }
     cr.restore();
 
-    // 2. Anatomical Tree Frog under Cupped 11-Veined Peltate Lotus Leaf in Alley 2 (x = 0.50w)
+    // 2. Anatomical Tree Frog under Cupped 11-Veined Peltate Lotus Leaf moved down in Alley 2 (between Fri & Sat: x = 0.50w, y = h - 22*scale)
     const sac = Math.pow(0.5 + 0.5 * Math.cos((time - 1.1) * 3.0), 1.5);
     cr.save();
-    cr.translate(width * 0.50, height - 48 * scale);
+    cr.translate(width * 0.50, height - 22 * scale);
     cr.scale(1.76 * scale, 1.76 * scale);
 
     // Wet stratified river boulder
@@ -3507,10 +3511,10 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.restore();
     cr.restore();
 
-    // 3. Floating Lotus Pad, Multi-Petaled Sacred Lotus Blossom & Second Frog in Alley 3 (x = 0.733w)
+    // 3. Smaller Distant Frog, Floating Lotus Pad & Sacred Lotus Blossom in Alley 3 (between Tue & Wed: x = 0.733w, y = floorTop + 20*scale)
     cr.save();
-    cr.translate(width * 0.733, height - 46 * scale);
-    cr.scale(1.72 * scale, 1.72 * scale);
+    cr.translate(width * 0.733, floorTop + 20 * scale);
+    cr.scale(1.22 * scale, 1.22 * scale);
 
     cr.save();
     cr.scale(10.8, 4.5);
