@@ -4072,157 +4072,208 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.fill();
 }
 
-/* C1 (Clear Day 55–75°F & Overcast/Cloudy Day): Realistic Pastoral Hills, Dutch Stellingmolen Windmill, Woodland & 3D Ribbed Hot-Air Balloon */
-function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
-    const sh = sceneHeight(width, height);
-    const groundOffset = height - sh;
-    const floorTop = groundOffset + 0.685 * sh;
-    const lum = subdued ? 0.84 : 1.0;
+/* C1 (Clear Day 55–75°F & Overcast/Cloudy Day): Option C — 2 Dutch Windmills (Foreground + Hazed Horizon), 3 Realistic Pastoral Oaks & Reference Hot-Air Balloon */
+function makeHazeTinter(subdued, lum, distFade) {
+    const hazeR = subdued ? 0.56 : 0.62;
+    const hazeG = subdued ? 0.64 : 0.75;
+    const hazeB = subdued ? 0.70 : 0.84;
+    const aMul = 1.0 - distFade * 0.45;
+    return {
+        aMul,
+        tint: (r, g, b) => [
+            (r * lum) * (1 - distFade) + hazeR * distFade,
+            (g * lum) * (1 - distFade) + hazeG * distFade,
+            (b * lum) * (1 - distFade) + hazeB * distFade,
+        ],
+    };
+}
 
-    // 1. Contoured rolling meadow hills (kept bright enough so dark #101823 day-tile ink has > 5.5:1 contrast)
-    const h1 = new Cairo.LinearGradient(0, floorTop - 10 * scale, 0, height);
-    if (subdued) {
-        h1.addColorStopRGBA(0.00, 0.38, 0.56, 0.40, 0.38);
-        h1.addColorStopRGBA(0.45, 0.33, 0.50, 0.35, 0.46);
-        h1.addColorStopRGBA(1.00, 0.27, 0.43, 0.29, 0.54);
-    } else {
-        h1.addColorStopRGBA(0.00, 0.48, 0.76, 0.42, 0.42);
-        h1.addColorStopRGBA(0.45, 0.40, 0.68, 0.36, 0.50);
-        h1.addColorStopRGBA(1.00, 0.34, 0.62, 0.32, 0.58);
-    }
-    cr.setSource(h1);
-    cr.newPath();
-    cr.moveTo(0, floorTop + 8 * scale);
-    cr.curveTo(width * 0.30, floorTop - 12 * scale, width * 0.62, floorTop + 6 * scale, width, floorTop + 2 * scale);
-    cr.lineTo(width, height);
-    cr.lineTo(0, height);
-    cr.closePath();
-    cr.fill();
-
-    // Subtle crest rim highlight along Hill 1
-    cr.setSourceRGBA(subdued ? 0.56 : 0.72, subdued ? 0.70 : 0.92, subdued ? 0.56 : 0.54, subdued ? 0.24 : 0.30);
-    cr.setLineWidth(1.05 * scale);
-    cr.newPath();
-    cr.moveTo(0, floorTop + 8 * scale);
-    cr.curveTo(width * 0.30, floorTop - 12 * scale, width * 0.62, floorTop + 6 * scale, width, floorTop + 2 * scale);
-    cr.stroke();
-
-    // Soft valley mist ribbon in hollow between Hill 1 and Hill 2
-    const mistG = new Cairo.LinearGradient(0, floorTop + 4 * scale, 0, floorTop + 34 * scale);
-    mistG.addColorStopRGBA(0.0, 0.80, 0.86, 0.90, 0.0);
-    mistG.addColorStopRGBA(0.5, 0.80, 0.86, 0.90, subdued ? 0.16 : 0.10);
-    mistG.addColorStopRGBA(1.0, 0.80, 0.86, 0.90, 0.0);
-    cr.setSource(mistG);
-    cr.rectangle(0, floorTop + 4 * scale, width, 30 * scale);
-    cr.fill();
-
-    const h2 = new Cairo.LinearGradient(0, floorTop + 32 * scale, 0, height);
-    if (subdued) {
-        h2.addColorStopRGBA(0.00, 0.34, 0.51, 0.35, 0.44);
-        h2.addColorStopRGBA(0.50, 0.28, 0.45, 0.30, 0.52);
-        h2.addColorStopRGBA(1.00, 0.22, 0.38, 0.24, 0.58);
-    } else {
-        h2.addColorStopRGBA(0.00, 0.42, 0.70, 0.36, 0.48);
-        h2.addColorStopRGBA(0.50, 0.34, 0.62, 0.30, 0.56);
-        h2.addColorStopRGBA(1.00, 0.28, 0.56, 0.26, 0.64);
-    }
-    cr.setSource(h2);
-    cr.newPath();
-    cr.moveTo(0, floorTop + 46 * scale);
-    cr.curveTo(width * 0.36, floorTop + 58 * scale, width * 0.68, floorTop + 40 * scale, width, floorTop + 42 * scale);
-    cr.lineTo(width, height);
-    cr.lineTo(0, height);
-    cr.closePath();
-    cr.fill();
-
-    // Subtle crest rim highlight along Hill 2
-    cr.setSourceRGBA(subdued ? 0.52 : 0.68, subdued ? 0.66 : 0.88, subdued ? 0.52 : 0.50, subdued ? 0.20 : 0.26);
-    cr.setLineWidth(0.95 * scale);
-    cr.newPath();
-    cr.moveTo(0, floorTop + 46 * scale);
-    cr.curveTo(width * 0.36, floorTop + 58 * scale, width * 0.68, floorTop + 40 * scale, width, floorTop + 42 * scale);
-    cr.stroke();
-
-    // Realistic 3D split-rail wooden fence in the inter-row alley (floorTop + 52..44*scale) with post shadows
-    const fLum = subdued ? 0.80 : 1.0;
-    cr.setLineCap(Cairo.LineCap.ROUND);
-    for (let i = 0; i <= 7; i++) {
-        const px = width * (0.44 + i * 0.042);
-        const py = floorTop + (52.5 - i * 1.25) * scale;
-        cr.setSourceRGBA(0.06, 0.12, 0.08, 0.24);
-        cr.setLineWidth(0.85 * scale);
-        cr.newPath();
-        cr.moveTo(px, py);
-        cr.lineTo(px + 2.0 * scale, py + 0.8 * scale);
-        cr.stroke();
-
-        cr.setSourceRGBA(0.44 * fLum, 0.31 * fLum, 0.19 * fLum, 0.72);
-        cr.setLineWidth(1.0 * scale);
-        cr.newPath();
-        cr.moveTo(px, py + 0.4 * scale);
-        cr.lineTo(px, py - 4.5 * scale);
-        cr.stroke();
-    }
-    cr.setSourceRGBA(0.48 * fLum, 0.34 * fLum, 0.21 * fLum, 0.68);
-    cr.setLineWidth(0.82 * scale);
-    cr.newPath();
-    cr.moveTo(width * 0.44, floorTop + 50.8 * scale);
-    cr.lineTo(width * 0.734, floorTop + 42.0 * scale);
-    cr.moveTo(width * 0.44, floorTop + 48.7 * scale);
-    cr.lineTo(width * 0.734, floorTop + 39.9 * scale);
-    cr.stroke();
-
-    const h3 = new Cairo.LinearGradient(0, height - 54 * scale, 0, height);
-    if (subdued) {
-        h3.addColorStopRGBA(0.00, 0.30, 0.47, 0.31, 0.48);
-        h3.addColorStopRGBA(0.55, 0.24, 0.40, 0.26, 0.54);
-        h3.addColorStopRGBA(1.00, 0.19, 0.34, 0.21, 0.60);
-    } else {
-        h3.addColorStopRGBA(0.00, 0.36, 0.64, 0.32, 0.54);
-        h3.addColorStopRGBA(0.55, 0.30, 0.58, 0.26, 0.62);
-        h3.addColorStopRGBA(1.00, 0.24, 0.50, 0.22, 0.68);
-    }
-    cr.setSource(h3);
-    cr.newPath();
-    cr.moveTo(0, height - 42 * scale);
-    cr.curveTo(width * 0.45, height - 56 * scale, width * 0.78, height - 44 * scale, width, height - 36 * scale);
-    cr.lineTo(width, height);
-    cr.lineTo(0, height);
-    cr.closePath();
-    cr.fill();
-
-    // Subtle crest rim highlight along Hill 3
-    cr.setSourceRGBA(subdued ? 0.50 : 0.64, subdued ? 0.64 : 0.86, subdued ? 0.50 : 0.46, subdued ? 0.20 : 0.28);
-    cr.setLineWidth(0.95 * scale);
-    cr.newPath();
-    cr.moveTo(0, height - 42 * scale);
-    cr.curveTo(width * 0.45, height - 56 * scale, width * 0.78, height - 44 * scale, width, height - 36 * scale);
-    cr.stroke();
-
-    // 2. Realistic Dutch Stellingmolen Windmill in Alley 1 (x = 0.267w, y = h - 42*scale)
+function drawRealisticPastoralOak(cr, x, baseY, treeHeight, subdued = true, bend = 0, seed = 1, distFade = 0.0) {
     cr.save();
-    cr.translate(width * 0.267, height - 42 * scale);
+    const r = seededRand(seed * 173 + 19);
+    const s = treeHeight / 50;
+    const lum = subdued ? 0.84 : 0.98;
+    const { tint, aMul } = makeHazeTinter(subdued, lum, distFade);
+
+    // 1. Soft ground shadow under tree
+    cr.save();
+    cr.translate(x + 2 * s, baseY + 1.5 * s);
+    cr.scale(14 * s, 3.6 * s);
+    const shG = new Cairo.RadialGradient(0, 0, 0.1, 0, 0, 1.0);
+    shG.addColorStopRGBA(0, ...tint(0.05, 0.11, 0.07), 0.34 * aMul);
+    shG.addColorStopRGBA(1, ...tint(0.05, 0.11, 0.07), 0.0);
+    cr.setSource(shG);
+    cr.newPath();
+    cr.arc(0, 0, 1.0, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    const forkX = x + bend * 0.25;
+    const forkY = baseY - treeHeight * 0.40;
+
+    const traceScallopedDome = (cx, cy, rx, ry, lobes = 11, ph = 0) => {
+        cr.newPath();
+        const steps = 44;
+        for (let i = 0; i <= steps; i++) {
+            const u = i / steps;
+            const a = u * TWO_PI;
+            const bump = 1.0
+                + 0.11 * Math.sin(a * lobes + ph)
+                + 0.06 * Math.cos(a * (lobes - 3) - ph * 0.7);
+            const px = cx + Math.cos(a) * rx * bump;
+            const py = cy + Math.sin(a) * ry * bump;
+            if (i === 0) cr.moveTo(px, py);
+            else cr.lineTo(px, py);
+        }
+        cr.closePath();
+    };
+
+    const domes = [
+        [-11.5 * s, -28.0 * s, 9.2 * s, 6.2 * s, 0.4],
+        [ 11.8 * s, -26.5 * s, 9.0 * s, 6.0 * s, 1.7],
+        [ -6.2 * s, -36.5 * s, 10.2 * s, 6.8 * s, 2.8],
+        [  6.8 * s, -35.5 * s,  9.6 * s, 6.5 * s, 4.1],
+        [  0.4 * s, -42.5 * s,  9.2 * s, 6.4 * s, 5.3],
+    ];
+
+    // 2. Deep interior shadow foliage behind the boughs
+    for (const [ox, oy, rx, ry, ph] of domes) {
+        const cx = x + bend * 0.55 + ox;
+        const cy = baseY + oy + 2.2 * s;
+        traceScallopedDome(cx, cy, rx * 0.98, ry * 0.96, 10, ph);
+        cr.setSourceRGBA(...tint(0.10, 0.19, 0.12), 0.92 * aMul);
+        cr.fill();
+    }
+
+    // 3. Gnarled 3D-shaded trunk with root flare (nebari) & exposed primary limbs
+    const baseW = 3.1 * s;
+    const trkG = new Cairo.LinearGradient(x - baseW * 1.4, baseY, x + baseW * 1.4, baseY);
+    trkG.addColorStopRGBA(0.0, ...tint(0.40, 0.29, 0.20), 0.96 * aMul);
+    trkG.addColorStopRGBA(0.55, ...tint(0.28, 0.20, 0.14), 0.96 * aMul);
+    trkG.addColorStopRGBA(1.0, ...tint(0.17, 0.12, 0.08), 0.96 * aMul);
+    cr.setSource(trkG);
+
+    cr.newPath();
+    cr.moveTo(x - baseW * 1.35, baseY + 2.2 * s);
+    cr.curveTo(x - baseW * 0.85, baseY - 3 * s, x - baseW * 0.72, baseY - 11 * s, forkX - baseW * 0.52, forkY);
+    cr.lineTo(forkX + baseW * 0.52, forkY);
+    cr.curveTo(x + baseW * 0.72, baseY - 11 * s, x + baseW * 0.85, baseY - 3 * s, x + baseW * 1.35, baseY + 2.2 * s);
+    cr.closePath();
+    cr.fill();
+
+    const limbs = [
+        [forkX - 0.8 * s, forkY + 1 * s, 1.45 * s, forkX - 5.5 * s, forkY - 4 * s, forkX - 9.0 * s, forkY - 7 * s, x + bend * 0.5 - 12.0 * s, baseY - 28.5 * s, 0.55 * s],
+        [forkX + 0.8 * s, forkY + 1 * s, 1.40 * s, forkX + 5.5 * s, forkY - 3.5 * s, forkX + 9.2 * s, forkY - 6.5 * s, x + bend * 0.5 + 12.2 * s, baseY - 27.0 * s, 0.55 * s],
+        [forkX - 0.3 * s, forkY, 1.55 * s, forkX - 2.5 * s, forkY - 7 * s, forkX - 5.0 * s, forkY - 12 * s, x + bend * 0.6 - 6.5 * s, baseY - 37.0 * s, 0.50 * s],
+        [forkX + 0.4 * s, forkY, 1.45 * s, forkX + 2.8 * s, forkY - 6.5 * s, forkX + 5.2 * s, forkY - 11.5 * s, x + bend * 0.6 + 6.8 * s, baseY - 36.0 * s, 0.50 * s],
+        [forkX, forkY - 2 * s, 1.25 * s, forkX - 0.5 * s, forkY - 10 * s, forkX + 0.8 * s, forkY - 16 * s, x + bend * 0.7 + 0.4 * s, baseY - 42.5 * s, 0.45 * s],
+    ];
+    for (const b of limbs) {
+        drawSmoothLimb(cr, b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9]);
+        cr.fill();
+    }
+
+    // Subtle vertical bark texture lines on trunk
+    cr.setSourceRGBA(...tint(0.14, 0.09, 0.06), 0.45 * aMul);
+    cr.setLineWidth(0.45 * s);
+    cr.newPath();
+    cr.moveTo(x - 0.5 * s, baseY + 1 * s);
+    cr.curveTo(x - 0.3 * s, baseY - 8 * s, forkX - 0.2 * s, forkY + 5 * s, forkX, forkY);
+    cr.moveTo(x + 0.9 * s, baseY + 1.5 * s);
+    cr.curveTo(x + 0.6 * s, baseY - 7 * s, forkX + 0.5 * s, forkY + 4 * s, forkX + 0.4 * s, forkY + 1 * s);
+    cr.stroke();
+
+    // 4. Unified canopy gradient with toned-down luminance matching the windmill & hills
+    const crownX = x + bend * 0.55;
+    const crownY = baseY - 34.5 * s;
+    const globalCanopyG = new Cairo.LinearGradient(
+        crownX - 18 * s, crownY - 14 * s,
+        crownX + 18 * s, crownY + 14 * s
+    );
+    if (subdued) {
+        globalCanopyG.addColorStopRGBA(0.00, ...tint(0.30, 0.44, 0.28), 0.96 * aMul);
+        globalCanopyG.addColorStopRGBA(0.45, ...tint(0.22, 0.35, 0.22), 0.96 * aMul);
+        globalCanopyG.addColorStopRGBA(0.82, ...tint(0.16, 0.27, 0.17), 0.96 * aMul);
+        globalCanopyG.addColorStopRGBA(1.00, ...tint(0.12, 0.21, 0.14), 0.96 * aMul);
+    } else {
+        globalCanopyG.addColorStopRGBA(0.00, ...tint(0.36, 0.54, 0.29), 0.97 * aMul);
+        globalCanopyG.addColorStopRGBA(0.45, ...tint(0.26, 0.42, 0.22), 0.97 * aMul);
+        globalCanopyG.addColorStopRGBA(0.82, ...tint(0.18, 0.32, 0.17), 0.97 * aMul);
+        globalCanopyG.addColorStopRGBA(1.00, ...tint(0.13, 0.25, 0.13), 0.97 * aMul);
+    }
+
+    for (let i = 0; i < domes.length; i++) {
+        const [ox, oy, rx, ry, ph] = domes[i];
+        const cx = crownX + ox;
+        const cy = baseY + oy;
+
+        if (i >= 2) {
+            traceScallopedDome(cx + 0.9 * s, cy + 1.6 * s, rx * 0.90, ry * 0.86, 11, ph);
+            cr.setSourceRGBA(...tint(0.10, 0.19, 0.12), 0.30 * aMul);
+            cr.fill();
+        }
+
+        traceScallopedDome(cx, cy, rx, ry, 11, ph);
+        cr.setSource(globalCanopyG);
+        cr.fill();
+
+        traceScallopedDome(cx - rx * 0.16, cy - ry * 0.18, rx * 0.68, ry * 0.64, 9, ph + 1.1);
+        cr.setSourceRGBA(
+            ...tint(subdued ? 0.32 : 0.39, subdued ? 0.47 : 0.57, subdued ? 0.30 : 0.31),
+            0.22 * aMul
+        );
+        cr.fill();
+
+        cr.setSourceRGBA(
+            ...tint(subdued ? 0.34 : 0.42, subdued ? 0.49 : 0.60, subdued ? 0.31 : 0.32),
+            0.46 * aMul
+        );
+        for (let k = 0; k < 6; k++) {
+            const a = -Math.PI * 0.90 + (k / 5) * Math.PI * 0.75 + r(-0.08, 0.08);
+            const lx = cx + Math.cos(a) * rx * r(0.52, 0.82);
+            const ly = cy + Math.sin(a) * ry * r(0.52, 0.82);
+            const lr = r(1.3, 2.0) * s;
+            cr.save();
+            cr.translate(lx, ly);
+            cr.rotate(a + 1.2);
+            cr.scale(1.35, 0.72);
+            cr.newPath();
+            cr.arc(0, 0, lr, 0, TWO_PI);
+            cr.restore();
+            cr.fill();
+        }
+    }
+
+    cr.restore();
+}
+
+function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade = 0.0, sailPhase = 0.0) {
+    cr.save();
+    cr.translate(x, y);
     cr.scale(1.62 * scale, 1.62 * scale);
+
+    const lum = subdued ? 0.84 : 0.98;
+    const { tint, aMul } = makeHazeTinter(subdued, lum, distFade);
 
     // Elliptical ground shadow
     cr.save();
     cr.scale(10.5, 3.2);
     const sg = new Cairo.RadialGradient(0, 0.5, 0.1, 0.3, 0.6, 1.0);
-    sg.addColorStopRGBA(0, 0.04 * lum, 0.12 * lum, 0.06 * lum, 0.40);
-    sg.addColorStopRGBA(0.65, 0.05 * lum, 0.14 * lum, 0.07 * lum, 0.22);
-    sg.addColorStopRGBA(1, 0.05 * lum, 0.14 * lum, 0.07 * lum, 0.0);
+    sg.addColorStopRGBA(0, ...tint(0.04, 0.12, 0.06), 0.36 * aMul);
+    sg.addColorStopRGBA(0.65, ...tint(0.05, 0.14, 0.07), 0.18 * aMul);
+    sg.addColorStopRGBA(1, ...tint(0.05, 0.14, 0.07), 0.0);
     cr.setSource(sg);
     cr.newPath();
-    cr.arc(0.2, 0.6, 1.0, 0, TWO_PI);
+    cr.arc(0, 0.5, 1.0, 0, TWO_PI);
     cr.fill();
     cr.restore();
 
-    // Lower Octagonal Brick Masonry Base (y = -5.0 .. 2.4)
-    const brickG = new Cairo.LinearGradient(-5.4, 0, 5.4, 0);
-    brickG.addColorStopRGBA(0.00, 0.68 * lum, 0.38 * lum, 0.28 * lum, 0.98);
-    brickG.addColorStopRGBA(0.32, 0.62 * lum, 0.34 * lum, 0.24 * lum, 0.98);
-    brickG.addColorStopRGBA(0.68, 0.46 * lum, 0.25 * lum, 0.18 * lum, 0.98);
-    brickG.addColorStopRGBA(1.00, 0.32 * lum, 0.17 * lum, 0.13 * lum, 0.98);
+    // Lower Octagonal Red-Brown Brick Tower Base (y = -5.0 .. +2.4)
+    const brickG = new Cairo.LinearGradient(-5.2, 0, 5.2, 0);
+    brickG.addColorStopRGBA(0.00, ...tint(0.62, 0.33, 0.24), 0.97 * aMul);
+    brickG.addColorStopRGBA(0.35, ...tint(0.54, 0.28, 0.20), 0.97 * aMul);
+    brickG.addColorStopRGBA(0.75, ...tint(0.39, 0.20, 0.15), 0.97 * aMul);
+    brickG.addColorStopRGBA(1.00, ...tint(0.28, 0.14, 0.11), 0.97 * aMul);
     cr.setSource(brickG);
     cr.newPath();
     cr.moveTo(-5.3, 2.4);
@@ -4232,11 +4283,11 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     cr.closePath();
     cr.fill();
 
-    // Horizontal brick course lines
-    cr.setSourceRGBA(0.26 * lum, 0.22 * lum, 0.20 * lum, 0.52);
-    cr.setLineWidth(0.35);
-    for (let by = -3.8; by <= 1.4; by += 1.3) {
-        const hw = 4.5 + ((by + 5.0) / 7.4) * 0.8;
+    // Horizontal mortar courses on brick base
+    cr.setSourceRGBA(...tint(0.76, 0.68, 0.60), 0.22 * aMul);
+    cr.setLineWidth(0.24);
+    for (let by = -4.0; by <= 1.8; by += 1.15) {
+        const hw = 4.5 + ((by + 5.0) / 7.4) * 0.75;
         cr.newPath();
         cr.moveTo(-hw, by);
         cr.lineTo( hw, by);
@@ -4244,7 +4295,7 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     }
 
     // Arched double wooden entrance door with pale stone architrave
-    cr.setSourceRGBA(0.78 * lum, 0.74 * lum, 0.66 * lum, 0.92);
+    cr.setSourceRGBA(...tint(0.76, 0.72, 0.64), 0.90 * aMul);
     cr.newPath();
     cr.moveTo(-1.65, 2.4);
     cr.lineTo(-1.65, -0.8);
@@ -4253,7 +4304,7 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     cr.closePath();
     cr.fill();
 
-    cr.setSourceRGBA(0.22 * lum, 0.15 * lum, 0.11 * lum, 0.96);
+    cr.setSourceRGBA(...tint(0.22, 0.15, 0.11), 0.95 * aMul);
     cr.newPath();
     cr.moveTo(-1.25, 2.4);
     cr.lineTo(-1.25, -0.7);
@@ -4264,10 +4315,10 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
 
     // Upper Tapered Octagonal Thatch / Timber Smock Body (y = -15.8 .. -5.0)
     const smockG = new Cairo.LinearGradient(-4.5, 0, 4.5, 0);
-    smockG.addColorStopRGBA(0.00, 0.54 * lum, 0.48 * lum, 0.36 * lum, 0.98);
-    smockG.addColorStopRGBA(0.28, 0.48 * lum, 0.43 * lum, 0.32 * lum, 0.98);
-    smockG.addColorStopRGBA(0.68, 0.36 * lum, 0.32 * lum, 0.24 * lum, 0.98);
-    smockG.addColorStopRGBA(1.00, 0.24 * lum, 0.21 * lum, 0.16 * lum, 0.98);
+    smockG.addColorStopRGBA(0.00, ...tint(0.52, 0.46, 0.35), 0.97 * aMul);
+    smockG.addColorStopRGBA(0.28, ...tint(0.46, 0.41, 0.31), 0.97 * aMul);
+    smockG.addColorStopRGBA(0.68, ...tint(0.34, 0.30, 0.23), 0.97 * aMul);
+    smockG.addColorStopRGBA(1.00, ...tint(0.23, 0.20, 0.15), 0.97 * aMul);
     cr.setSource(smockG);
     cr.newPath();
     cr.moveTo(-4.5, -5.0);
@@ -4278,7 +4329,7 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     cr.fill();
 
     // Octagonal facet seam lines & white-painted Dutch corner trim ribs
-    cr.setSourceRGBA(0.88 * lum, 0.85 * lum, 0.78 * lum, 0.68);
+    cr.setSourceRGBA(...tint(0.84, 0.81, 0.74), 0.65 * aMul);
     cr.setLineWidth(0.38);
     cr.newPath();
     cr.moveTo(-4.35, -5.0);
@@ -4287,7 +4338,7 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     cr.lineTo(-1.35, -15.6);
     cr.stroke();
 
-    cr.setSourceRGBA(0.16 * lum, 0.14 * lum, 0.11 * lum, 0.52);
+    cr.setSourceRGBA(...tint(0.16, 0.14, 0.11), 0.48 * aMul);
     cr.newPath();
     cr.moveTo(1.85, -5.0);
     cr.lineTo(1.35, -15.6);
@@ -4295,13 +4346,13 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
 
     // Two mullioned 4-pane windows with white frames
     for (const [wx, wy, ww, wh] of [[0, -11.4, 1.8, 2.3], [0, -7.8, 1.9, 2.1]]) {
-        cr.setSourceRGBA(0.88 * lum, 0.85 * lum, 0.78 * lum, 0.94);
+        cr.setSourceRGBA(...tint(0.84, 0.81, 0.74), 0.92 * aMul);
         cr.rectangle(wx - ww * 0.5 - 0.25, wy - wh * 0.5 - 0.25, ww + 0.5, wh + 0.5);
         cr.fill();
-        cr.setSourceRGBA(0.14 * lum, 0.18 * lum, 0.22 * lum, 0.96);
+        cr.setSourceRGBA(...tint(0.14, 0.18, 0.22), 0.94 * aMul);
         cr.rectangle(wx - ww * 0.5, wy - wh * 0.5, ww, wh);
         cr.fill();
-        cr.setSourceRGBA(0.86 * lum, 0.83 * lum, 0.76 * lum, 0.88);
+        cr.setSourceRGBA(...tint(0.82, 0.79, 0.72), 0.85 * aMul);
         cr.setLineWidth(0.28);
         cr.newPath();
         cr.moveTo(wx, wy - wh * 0.5); cr.lineTo(wx, wy + wh * 0.5);
@@ -4310,7 +4361,7 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     }
 
     // Cantilevered Wooden Stage Gallery (Stelling) at y = -5.0
-    cr.setSourceRGBA(0.38 * lum, 0.28 * lum, 0.20 * lum, 0.94);
+    cr.setSourceRGBA(...tint(0.38, 0.28, 0.20), 0.92 * aMul);
     cr.setLineWidth(0.65);
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.newPath();
@@ -4325,11 +4376,11 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     }
     cr.stroke();
 
-    cr.setSourceRGBA(0.46 * lum, 0.34 * lum, 0.24 * lum, 0.98);
+    cr.setSourceRGBA(...tint(0.46, 0.34, 0.24), 0.96 * aMul);
     cr.rectangle(-7.1, -5.3, 14.2, 0.75);
     cr.fill();
 
-    cr.setSourceRGBA(0.84 * lum, 0.80 * lum, 0.72 * lum, 0.88);
+    cr.setSourceRGBA(...tint(0.80, 0.76, 0.68), 0.85 * aMul);
     cr.setLineWidth(0.38);
     cr.newPath();
     cr.moveTo(-6.9, -6.6);
@@ -4343,14 +4394,14 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     cr.stroke();
 
     // Domed Boat-Shaped Cap (Kap) with white cornice trim
-    cr.setSourceRGBA(0.86 * lum, 0.83 * lum, 0.76 * lum, 0.92);
+    cr.setSourceRGBA(...tint(0.82, 0.79, 0.72), 0.90 * aMul);
     cr.rectangle(-3.55, -16.1, 7.1, 0.55);
     cr.fill();
 
     const capG = new Cairo.LinearGradient(-3.6, -19.2, 3.6, -15.8);
-    capG.addColorStopRGBA(0.0, 0.36 * lum, 0.32 * lum, 0.26 * lum, 0.98);
-    capG.addColorStopRGBA(0.5, 0.26 * lum, 0.23 * lum, 0.19 * lum, 0.98);
-    capG.addColorStopRGBA(1.0, 0.16 * lum, 0.14 * lum, 0.12 * lum, 0.98);
+    capG.addColorStopRGBA(0.0, ...tint(0.36, 0.32, 0.26), 0.97 * aMul);
+    capG.addColorStopRGBA(0.5, ...tint(0.26, 0.23, 0.19), 0.97 * aMul);
+    capG.addColorStopRGBA(1.0, ...tint(0.16, 0.14, 0.12), 0.97 * aMul);
     cr.setSource(capG);
     cr.newPath();
     cr.moveTo(-3.6, -15.8);
@@ -4362,18 +4413,18 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     // 4 Realistic Dutch Lattice & Canvas Sails (Wieken) centered at (0, -16.8)
     cr.save();
     cr.translate(0, -16.8);
-    cr.rotate(0.76 + (time - 1.1) * 0.55);
+    cr.rotate(0.76 + sailPhase + (time - 1.1) * 0.55);
 
     for (let b = 0; b < 4; b++) {
         cr.save();
         cr.rotate((b * Math.PI) / 2);
 
-        cr.setSourceRGBA(0.04, 0.06, 0.08, 0.18);
+        cr.setSourceRGBA(0.04, 0.06, 0.08, 0.14 * aMul);
         cr.rectangle(-0.1, -13.2, 3.3, 11.2);
         cr.fill();
 
         // Leading-edge wooden windboard (stormplank)
-        cr.setSourceRGBA(0.82 * lum, 0.76 * lum, 0.66 * lum, 0.92);
+        cr.setSourceRGBA(...tint(0.76, 0.70, 0.60), 0.90 * aMul);
         cr.newPath();
         cr.moveTo(-0.2, -2.2);
         cr.lineTo(-0.78, -2.5);
@@ -4384,281 +4435,434 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
 
         // Trailing-side billowing canvas sailcloth (zeildoek)
         const sailG = new Cairo.LinearGradient(0.2, -13.2, 3.1, -2.2);
-        sailG.addColorStopRGBA(0.0, 0.95 * lum, 0.91 * lum, 0.82 * lum, 0.92);
-        sailG.addColorStopRGBA(0.6, 0.86 * lum, 0.80 * lum, 0.70 * lum, 0.90);
-        sailG.addColorStopRGBA(1.0, 0.74 * lum, 0.67 * lum, 0.56 * lum, 0.88);
+        sailG.addColorStopRGBA(0.0, ...tint(0.86, 0.82, 0.73), 0.88 * aMul);
+        sailG.addColorStopRGBA(0.6, ...tint(0.78, 0.72, 0.63), 0.86 * aMul);
+        sailG.addColorStopRGBA(1.0, ...tint(0.66, 0.60, 0.50), 0.84 * aMul);
         cr.setSource(sailG);
         cr.newPath();
-        cr.moveTo(0.25, -2.2);
+        cr.moveTo(0.2, -2.2);
         cr.lineTo(2.95, -2.4);
-        cr.curveTo(3.15, -6.0, 3.10, -10.0, 2.80, -13.2);
-        cr.lineTo(0.25, -13.4);
+        cr.lineTo(2.75, -13.1);
+        cr.lineTo(0.2, -13.2);
         cr.closePath();
         cr.fill();
 
-        // Fine dark-timber lattice bars (hekwerk)
-        cr.setSourceRGBA(0.38 * lum, 0.26 * lum, 0.18 * lum, 0.86);
-        cr.setLineWidth(0.32);
+        // Wooden lattice bars (hekwerk): 2 longitudinal stringers + 10 transverse rungs
+        cr.setSourceRGBA(...tint(0.30, 0.20, 0.13), 0.90 * aMul);
+        cr.setLineWidth(0.26);
         cr.newPath();
-        for (const lx of [1.10, 1.98, 2.82]) {
-            cr.moveTo(lx, -2.3);
-            cr.lineTo(lx - (lx > 2.5 ? 0.08 : 0), -13.25);
-        }
-        for (let ry = -13.1; ry <= -2.3; ry += 1.2) {
-            cr.moveTo(0.2, ry);
-            cr.lineTo(2.92, ry);
+        cr.moveTo(1.15, -2.3); cr.lineTo(1.08, -13.15);
+        cr.moveTo(2.05, -2.35); cr.lineTo(1.92, -13.12);
+        for (let r = 0; r <= 9; r++) {
+            const ry = -2.4 - r * 1.18;
+            const rw = 2.95 - r * 0.02;
+            cr.moveTo(-0.65, ry);
+            cr.lineTo(rw, ry);
         }
         cr.stroke();
 
-        // Main heavy tapered timber sail stock (roede)
-        const stockG = new Cairo.LinearGradient(-0.4, 0, 0.4, 0);
-        stockG.addColorStopRGBA(0, 0.48 * lum, 0.34 * lum, 0.22 * lum, 0.98);
-        stockG.addColorStopRGBA(1, 0.28 * lum, 0.18 * lum, 0.12 * lum, 0.98);
-        cr.setSource(stockG);
+        // Main central iron/timber whip stock (roede)
+        cr.setSourceRGBA(...tint(0.24, 0.16, 0.10), 0.96 * aMul);
+        cr.setLineWidth(0.62);
         cr.newPath();
-        cr.moveTo(-0.42, 0);
-        cr.lineTo(-0.26, -13.8);
-        cr.lineTo( 0.26, -13.8);
-        cr.lineTo( 0.42, 0);
-        cr.closePath();
-        cr.fill();
+        cr.moveTo(0, 0);
+        cr.lineTo(0, -13.6);
+        cr.stroke();
 
         cr.restore();
     }
 
-    // Cast-iron wind-shaft hub boss (askop)
-    cr.setSourceRGBA(0.86 * lum, 0.84 * lum, 0.78 * lum, 0.95);
+    // Cast-iron windshaft hub (askop) with white collar ring
+    cr.setSourceRGBA(...tint(0.80, 0.78, 0.72), 0.94 * aMul);
     cr.newPath();
     cr.arc(0, 0, 1.55, 0, TWO_PI);
     cr.fill();
-    cr.setSourceRGBA(0.18 * lum, 0.20 * lum, 0.22 * lum, 0.98);
+    cr.setSourceRGBA(...tint(0.18, 0.20, 0.22), 0.96 * aMul);
     cr.newPath();
     cr.arc(0, 0, 1.05, 0, TWO_PI);
     cr.fill();
 
     cr.restore();
     cr.restore();
+}
 
-    // 3. 7 Dappled Broadleaf Woodland Trees across 3 depth planes (positioned in alleys & outer margins)
-    const decidPal = subdued ? {
-        trunk: [0.28, 0.21, 0.16],
-        trunkHi: [0.39, 0.30, 0.22],
-        shadeLeaf: [0.15, 0.30, 0.20],
-        midLeaf: [0.22, 0.40, 0.26],
-        litLeaf: [0.30, 0.50, 0.31],
-        sunLeaf: [0.40, 0.60, 0.36],
-    } : {
-        trunk: [0.34, 0.23, 0.15],
-        trunkHi: [0.48, 0.34, 0.22],
-        shadeLeaf: [0.16, 0.38, 0.18],
-        midLeaf: [0.24, 0.52, 0.24],
-        litLeaf: [0.36, 0.66, 0.28],
-        sunLeaf: [0.54, 0.80, 0.34],
-    };
-    drawDeciduousTree(cr, width * 0.091, floorTop + 12 * scale, 22 * scale, decidPal, 0.6 * scale, time, 31);
-    drawDeciduousTree(cr, width * 0.461, floorTop + 5 * scale, 23 * scale, decidPal, 0.4 * scale, time, 43);
-    drawDeciduousTree(cr, width * 0.512, floorTop + 9 * scale, 18 * scale, decidPal, -0.3 * scale, time, 57);
-    drawDeciduousTree(cr, width * 0.715, floorTop + 12 * scale, 24 * scale, decidPal, 0.5 * scale, time, 69);
-    drawDeciduousTree(cr, width * 0.760, floorTop + 16 * scale, 19 * scale, decidPal, -0.4 * scale, time, 83);
-    drawDeciduousTree(cr, width * 0.048, height - 48 * scale, 36 * scale, decidPal, 1.0 * scale, time, 23);
-    drawDeciduousTree(cr, width * 0.939, height - 26 * scale, 50 * scale, decidPal, -1.5 * scale, time, 11);
-
-    // Wildflower dots along bottom foreground margin
-    const r = seededRand(77);
-    const wfLum = subdued ? 0.82 : 1.0;
-    for (let i = 0; i < 16; i++) {
-        const fx = width * 0.055 + r(0, width * 0.89);
-        const fy = height - (6 + r(0, 14)) * scale;
-        const isGold = i % 3 !== 0;
-        cr.setSourceRGBA(
-            (isGold ? 0.98 : 0.92) * wfLum,
-            (isGold ? 0.82 : 0.30) * wfLum,
-            (isGold ? 0.22 : 0.26) * wfLum,
-            subdued ? 0.68 : 0.88
-        );
+function drawReferenceHotAirBalloon(cr, bx, by, scale, time = 1.1, subdued = true) {
+    const bLum = subdued ? 0.86 : 0.98;
+    const roundRectB = (x, y, w, h, r) => {
         cr.newPath();
-        cr.arc(fx, fy, 1.3 * scale, 0, TWO_PI);
-        cr.fill();
-    }
+        cr.arc(x + w - r, y + r, r, -Math.PI / 2, 0);
+        cr.arc(x + w - r, y + h - r, r, 0, Math.PI / 2);
+        cr.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
+        cr.arc(x + r, y + r, r, Math.PI, 3 * Math.PI / 2);
+        cr.closePath();
+    };
 
-    // 4. Realistic 3D Ribbed Hot-Air Balloon higher up in the menu sky (x = 0.648w, y = groundOffset + 0.275*sh)
-    const bx = width * 0.648 + Math.sin((time - 1.1) * 0.55) * 7.5 * scale;
-    const by = groundOffset + 0.275 * sh + Math.cos((time - 1.1) * 0.85) * 3.0 * scale;
-    const bLum = subdued ? 0.88 : 1.0;
     cr.save();
     cr.translate(bx, by);
     cr.scale(1.42 * scale, 1.42 * scale);
 
-    // Suspension cables
-    cr.setSourceRGBA(0.24 * bLum, 0.20 * bLum, 0.18 * bLum, 0.88);
-    cr.setLineWidth(0.38);
+    // 1. 4 Angled Suspension Cables fanning from the burner frame (-1.35..1.35, y = 8.6)
+    //    up to the wide Nomex throat rim (-3.05..2.95, y = 5.2) across the open side triangles
+    cr.setSourceRGBA(0.16 * bLum, 0.18 * bLum, 0.22 * bLum, 0.68);
+    cr.setLineWidth(0.24);
     cr.newPath();
-    cr.moveTo(-2.7, 8.2); cr.lineTo(-2.1, 12.2);
-    cr.moveTo(-1.4, 8.4); cr.lineTo(-1.1, 12.2);
-    cr.moveTo( 1.4, 8.4); cr.lineTo( 1.1, 12.2);
-    cr.moveTo( 2.7, 8.2); cr.lineTo( 2.1, 12.2);
+    for (const [tx, ty, bx0] of [
+        [-3.05, 5.2, -1.35],
+        [-1.85, 5.3, -0.75],
+        [ 1.85, 6.2,  0.75],
+        [ 2.95, 5.2,  1.35],
+    ]) {
+        cr.moveTo(tx, ty);
+        cr.lineTo(bx0, 8.6);
+    }
     cr.stroke();
 
-    // Glowing propane burner flame
-    const flamePulse = 0.84 + 0.16 * Math.sin(time * 6.5);
-    const fg = new Cairo.RadialGradient(0, 8.6, 0.3, 0, 8.0, 6.2);
-    fg.addColorStopRGBA(0.0, 1.0, 0.98, 0.78, 0.96 * flamePulse);
-    fg.addColorStopRGBA(0.38, 1.0, 0.72, 0.24, 0.74 * flamePulse);
-    fg.addColorStopRGBA(0.75, 0.98, 0.45, 0.10, 0.28 * flamePulse);
-    fg.addColorStopRGBA(1.0, 0.95, 0.35, 0.05, 0.0);
-    cr.setSource(fg);
+    // 4 Short Corner Burner Frame Upright Rods above the basket (y = 8.6 .. 10.3)
+    cr.setSourceRGBA(0.22 * bLum, 0.20 * bLum, 0.18 * bLum, 0.88);
+    cr.setLineWidth(0.32);
     cr.newPath();
-    cr.arc(0, 8.2, 6.2, 0, TWO_PI);
+    cr.moveTo(-1.80, 10.3); cr.lineTo(-1.35, 8.6);
+    cr.moveTo(-0.75, 10.3); cr.lineTo(-0.65, 8.6);
+    cr.moveTo( 0.75, 10.3); cr.lineTo( 0.65, 8.6);
+    cr.moveTo( 1.80, 10.3); cr.lineTo( 1.35, 8.6);
+    cr.moveTo(-1.45, 8.6); cr.lineTo( 1.45, 8.6);
+    cr.stroke();
+
+    // Compact Twin Stainless Burner Coils at (0, 8.05..8.65) right below the wind scoop tip
+    cr.setSourceRGBA(0.38 * bLum, 0.40 * bLum, 0.44 * bLum, 0.95);
+    cr.rectangle(-0.90, 8.05, 1.80, 0.58);
     cr.fill();
 
-    cr.setSourceRGBA(1.0, 0.94, 0.65, 0.92 * flamePulse);
+    // Subtle warm pilot glow right at the burner nozzle (y = 7.4..8.1)
+    const flamePulse = 0.85 + 0.15 * Math.sin(time * 6.5);
+    cr.setSourceRGBA(1.0, 0.86, 0.32, 0.85 * flamePulse);
     cr.newPath();
-    cr.moveTo(-1.1, 9.8);
-    cr.curveTo(-1.4, 8.2, -0.5, 6.8, 0, 6.2);
-    cr.curveTo( 0.5, 6.8,  1.4, 8.2, 1.1, 9.8);
+    cr.moveTo(-0.38, 8.05);
+    cr.curveTo(-0.45, 7.65, -0.16, 7.35, 0, 7.20);
+    cr.curveTo( 0.16, 7.35,  0.45, 7.65, 0.38, 8.05);
     cr.closePath();
     cr.fill();
 
-    // Woven Rattan Wicker Gondola Basket
-    const baskG = new Cairo.LinearGradient(-3.0, 12.0, 3.0, 15.8);
-    baskG.addColorStopRGBA(0.0, 0.74 * bLum, 0.52 * bLum, 0.30 * bLum, 0.98);
-    baskG.addColorStopRGBA(0.6, 0.58 * bLum, 0.39 * bLum, 0.21 * bLum, 0.98);
-    baskG.addColorStopRGBA(1.0, 0.38 * bLum, 0.24 * bLum, 0.13 * bLum, 0.98);
+    // Tiny passenger/pilot silhouettes standing inside the basket rim (y = 9.25 .. 10.3)
+    cr.setSourceRGBA(0.15 * bLum, 0.14 * bLum, 0.17 * bLum, 0.92);
+    for (const [px, py, rHead] of [[-1.02, 9.38, 0.44], [0.08, 9.28, 0.48], [1.05, 9.42, 0.42]]) {
+        cr.newPath();
+        cr.arc(px, py, rHead, 0, TWO_PI);
+        cr.fill();
+        cr.newPath();
+        cr.arc(px, py + 0.88, rHead * 1.38, Math.PI, 0);
+        cr.fill();
+    }
+
+    // 2. Hand-Woven Rattan Wicker Gondola Basket (y = 10.3 .. 13.9)
+    const baskG = new Cairo.LinearGradient(-3.0, 10.3, 3.0, 13.9);
+    baskG.addColorStopRGBA(0.0, 0.76 * bLum, 0.55 * bLum, 0.31 * bLum, 0.98);
+    baskG.addColorStopRGBA(0.55, 0.60 * bLum, 0.42 * bLum, 0.22 * bLum, 0.98);
+    baskG.addColorStopRGBA(1.0, 0.38 * bLum, 0.25 * bLum, 0.13 * bLum, 0.98);
     cr.setSource(baskG);
-    cr.rectangle(-2.7, 12.0, 5.4, 3.9);
+    roundRectB(-2.60, 10.3, 5.20, 3.60, 0.62);
     cr.fill();
 
+    // Wicker weave horizontal & vertical ribs
     cr.setSourceRGBA(0.28 * bLum, 0.17 * bLum, 0.09 * bLum, 0.55);
-    cr.setLineWidth(0.28);
+    cr.setLineWidth(0.25);
     cr.newPath();
-    for (let wy = 12.8; wy <= 15.2; wy += 0.8) {
-        cr.moveTo(-2.5, wy);
-        cr.lineTo( 2.5, wy);
+    for (let wy = 11.05; wy <= 13.35; wy += 0.76) {
+        cr.moveTo(-2.40, wy);
+        cr.lineTo( 2.40, wy);
     }
-    for (let wx = -1.8; wx <= 1.8; wx += 0.9) {
-        cr.moveTo(wx, 12.2);
-        cr.lineTo(wx, 15.7);
+    for (let wx = -1.68; wx <= 1.68; wx += 0.84) {
+        cr.moveTo(wx, 10.5);
+        cr.lineTo(wx, 13.7);
     }
     cr.stroke();
 
-    // Padded dark-brown suede leather bolster rim
-    cr.setSourceRGBA(0.36 * bLum, 0.21 * bLum, 0.12 * bLum, 0.98);
-    cr.rectangle(-3.0, 11.6, 6.0, 1.0);
+    // Padded dark-brown suede leather bolster rim at top of basket
+    cr.setSourceRGBA(0.35 * bLum, 0.21 * bLum, 0.12 * bLum, 0.98);
+    roundRectB(-2.85, 9.96, 5.70, 0.78, 0.38);
     cr.fill();
 
-    const traceBalloon = () => {
+    // 3. Asymmetric Triangular Wind Scoop (hanging below the throat from y = 5.1 to y = 7.95 on the right side)
+    const scoopG = new Cairo.LinearGradient(-2.6, 5.1, 2.6, 7.95);
+    scoopG.addColorStopRGBA(0.0, 0.16 * bLum, 0.24 * bLum, 0.30 * bLum, 0.96);
+    scoopG.addColorStopRGBA(0.58, 0.84 * bLum, 0.66 * bLum, 0.16 * bLum, 0.96);
+    scoopG.addColorStopRGBA(1.0, 0.12 * bLum, 0.18 * bLum, 0.24 * bLum, 0.98);
+    cr.setSource(scoopG);
+    cr.newPath();
+    cr.moveTo(-2.2, 5.1);
+    cr.lineTo( 2.8, 5.1);
+    cr.lineTo( 0.72, 7.95);
+    cr.lineTo(-0.35, 7.75);
+    cr.closePath();
+    cr.fill();
+
+    // 4. Deeply Scalloped 9-Gore Inverted-Pear Envelope (y = -15.8 .. 5.2)
+    const goreBounds = [-11.6, -9.2, -6.5, -3.7, -1.2, 1.2, 3.7, 6.5, 9.2, 11.6];
+
+    const goreXAt = (gx, u) => {
+        const profile = Math.sin(Math.pow(u, 0.68) * Math.PI * 0.86) * (1 - 0.72 * Math.pow(u, 2.2))
+            + 0.28 * Math.pow(u, 1.4);
+        return gx * profile;
+    };
+    const goreYAt = u => -15.8 + u * 21.0;
+
+    const traceBalloonOutline = () => {
         cr.newPath();
-        cr.moveTo(0, -13.4);
-        cr.curveTo( 5.2, -13.4,  9.8, -10.4, 10.6, -5.2);
-        cr.curveTo(11.2,  -0.8,  8.4,   3.4,  5.6,  6.2);
-        cr.curveTo( 4.1,   7.7,  3.3,   8.3,  2.9,  8.8);
-        cr.lineTo(-2.9,  8.8);
-        cr.curveTo(-3.3,   8.3, -4.1,   7.7, -5.6,  6.2);
-        cr.curveTo(-8.4,   3.4, -11.2, -0.8, -10.6, -5.2);
-        cr.curveTo(-9.8, -10.4, -5.2, -13.4,  0, -13.4);
+        for (let g = 0; g < 9; g++) {
+            const xL = goreXAt(goreBounds[g], 0.06);
+            const xR = goreXAt(goreBounds[g + 1], 0.06);
+            const xM = (xL + xR) * 0.5;
+            const ySide = -15.2 + Math.abs(g - 4) * 0.22;
+            const yPeak = ySide - 0.55;
+            if (g === 0) cr.moveTo(xL, ySide + 0.3);
+            cr.curveTo(xL + (xM - xL) * 0.4, yPeak, xR - (xR - xM) * 0.4, yPeak, xR, ySide + 0.3);
+        }
+        const steps = 20;
+        for (let i = 1; i <= steps; i++) {
+            const u = 0.06 + (i / steps) * 0.94;
+            cr.lineTo(goreXAt(11.6, u), goreYAt(u));
+        }
+        cr.curveTo(1.2, 5.45, -1.2, 5.45, goreXAt(-11.6, 1.0), 5.2);
+        for (let i = steps - 1; i >= 0; i--) {
+            const u = 0.06 + (i / steps) * 0.94;
+            cr.lineTo(goreXAt(-11.6, u), goreYAt(u));
+        }
         cr.closePath();
     };
 
     cr.save();
-    traceBalloon();
+    traceBalloonOutline();
     cr.clip();
 
-    const gores = [
-        [-11.2, -7.8, [0.76, 0.18, 0.18]],
-        [ -7.8, -4.5, [0.94, 0.68, 0.16]],
-        [ -4.5, -1.5, [0.15, 0.40, 0.68]],
-        [ -1.5,  1.5, [0.96, 0.93, 0.84]],
-        [  1.5,  4.5, [0.15, 0.40, 0.68]],
-        [  4.5,  7.8, [0.94, 0.68, 0.16]],
-        [  7.8, 11.2, [0.76, 0.18, 0.18]],
+    const C_YEL = [0.96, 0.78, 0.14];
+    const C_BLU = [0.08, 0.34, 0.76];
+    const C_RED = [0.86, 0.18, 0.16];
+    const C_ORG = [0.94, 0.49, 0.12];
+    const C_GRN = [0.10, 0.52, 0.27];
+    const C_NOM = [0.16, 0.23, 0.28];
+
+    const uBands = [0.00, 0.14, 0.22, 0.30, 0.38, 0.46, 0.54, 0.62, 0.70, 0.90, 1.00];
+    const bandColors = [
+        [C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL],
+        [C_BLU, C_BLU, C_YEL, C_BLU, C_YEL, C_BLU, C_YEL, C_BLU, C_BLU],
+        [C_RED, C_RED, C_GRN, C_BLU, C_RED, C_RED, C_BLU, C_RED, C_RED],
+        [C_BLU, C_ORG, C_BLU, C_RED, C_BLU, C_ORG, C_RED, C_BLU, C_BLU],
+        [C_RED, C_ORG, C_ORG, C_BLU, C_ORG, C_RED, C_ORG, C_BLU, C_RED],
+        [C_ORG, C_RED, C_RED, C_ORG, C_RED, C_RED, C_RED, C_ORG, C_BLU],
+        [C_GRN, C_ORG, C_BLU, C_ORG, C_BLU, C_ORG, C_BLU, C_GRN, C_BLU],
+        [C_BLU, C_BLU, C_GRN, C_BLU, C_GRN, C_BLU, C_GRN, C_BLU, C_YEL],
+        [C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL],
+        [C_NOM, C_NOM, C_NOM, C_NOM, C_NOM, C_NOM, C_NOM, C_NOM, C_NOM],
     ];
 
-    const traceGoreEdge = (xEq, toBottom) => {
-        if (toBottom) {
-            cr.curveTo(xEq * 0.72, -11.5, xEq * 1.06, -6.2, xEq * 0.98, -2.0);
-            cr.curveTo(xEq * 0.88,  2.2,  xEq * 0.52,  6.0, xEq * 0.27,  9.0);
-        } else {
-            cr.curveTo(xEq * 0.52,  6.0,  xEq * 0.88,  2.2, xEq * 0.98, -2.0);
-            cr.curveTo(xEq * 1.06, -6.2,  xEq * 0.72, -11.5, 0, -13.5);
+    for (let g = 0; g < 9; g++) {
+        const gx0 = goreBounds[g];
+        const gx1 = goreBounds[g + 1];
+
+        for (let rIdx = 0; rIdx < 10; rIdx++) {
+            const stagger = (g % 2 === 1 && rIdx >= 1 && rIdx <= 7) ? 0.018 : 0.0;
+            const u0 = Math.max(0, uBands[rIdx] + stagger);
+            const u1 = Math.min(1, uBands[rIdx + 1] + (rIdx < 8 ? stagger : 0));
+            const uM = (u0 + u1) * 0.5;
+
+            const x00 = goreXAt(gx0, u0), x10 = goreXAt(gx1, u0);
+            const x01 = goreXAt(gx0, u1), x11 = goreXAt(gx1, u1);
+            const x0M = goreXAt(gx0, uM), x1M = goreXAt(gx1, uM);
+            const y0 = goreYAt(u0), y1 = goreYAt(u1), yM = goreYAt(uM);
+
+            const col = bandColors[rIdx][g];
+            const pg = new Cairo.LinearGradient(x0M, yM, x1M, yM);
+            pg.addColorStopRGBA(0.00, col[0] * 0.72 * bLum, col[1] * 0.72 * bLum, col[2] * 0.72 * bLum, 0.99);
+            pg.addColorStopRGBA(0.38, Math.min(1, col[0] * 1.06) * bLum, Math.min(1, col[1] * 1.06) * bLum, Math.min(1, col[2] * 1.06) * bLum, 0.99);
+            pg.addColorStopRGBA(0.72, col[0] * 0.90 * bLum, col[1] * 0.90 * bLum, col[2] * 0.90 * bLum, 0.99);
+            pg.addColorStopRGBA(1.00, col[0] * 0.65 * bLum, col[1] * 0.65 * bLum, col[2] * 0.65 * bLum, 0.99);
+            cr.setSource(pg);
+
+            const arch = -0.22 * (1 - uM * 0.6);
+            cr.newPath();
+            cr.moveTo(x00, y0);
+            cr.curveTo((x00 + x10) * 0.5, y0 + arch, (x00 + x10) * 0.5, y0 + arch, x10, y0);
+            cr.lineTo(x11, y1);
+            cr.curveTo((x01 + x11) * 0.5, y1 + arch, (x01 + x11) * 0.5, y1 + arch, x01, y1);
+            cr.closePath();
+            cr.fill();
         }
-    };
-
-    for (const [gx0, gx1, col] of gores) {
-        const goreG = new Cairo.LinearGradient(gx0, 0, gx1, 0);
-        goreG.addColorStopRGBA(0.0, col[0] * 0.82 * bLum, col[1] * 0.82 * bLum, col[2] * 0.82 * bLum, 0.98);
-        goreG.addColorStopRGBA(0.45, Math.min(1, col[0] * 1.06) * bLum, Math.min(1, col[1] * 1.06) * bLum, Math.min(1, col[2] * 1.06) * bLum, 0.98);
-        goreG.addColorStopRGBA(1.0, col[0] * 0.78 * bLum, col[1] * 0.78 * bLum, col[2] * 0.78 * bLum, 0.98);
-        cr.setSource(goreG);
-
-        cr.newPath();
-        cr.moveTo(0, -13.5);
-        traceGoreEdge(gx0, true);
-        cr.lineTo(gx1 * 0.27, 9.0);
-        traceGoreEdge(gx1, false);
-        cr.closePath();
-        cr.fill();
     }
 
-    // Horizontal decorative equator band with gold trim
-    cr.setSourceRGBA(0.84 * bLum, 0.18 * bLum, 0.18 * bLum, 0.94);
+    // Deep recessed vertical load-tape gore crevices from crown to throat
+    cr.setSourceRGBA(0.06, 0.08, 0.12, 0.34);
+    cr.setLineWidth(0.32);
+    for (let g = 1; g < 9; g++) {
+        const gx = goreBounds[g];
+        cr.newPath();
+        for (let i = 0; i <= 16; i++) {
+            const u = i / 16;
+            const px = goreXAt(gx, u);
+            const py = goreYAt(u);
+            if (i === 0) cr.moveTo(px, py);
+            else cr.lineTo(px, py);
+        }
+        cr.stroke();
+    }
+
+    // Global 3D spherical lighting & shadow overlay across the entire envelope
+    const sphG = new Cairo.RadialGradient(-3.8, -6.5, 1.2, 0.5, -4.5, 14.5);
+    sphG.addColorStopRGBA(0.00, 1.0, 0.98, 0.88, 0.20);
+    sphG.addColorStopRGBA(0.48, 1.0, 1.0, 1.0, 0.0);
+    sphG.addColorStopRGBA(0.78, 0.04, 0.07, 0.12, 0.16);
+    sphG.addColorStopRGBA(1.00, 0.02, 0.04, 0.08, 0.36);
+    cr.setSource(sphG);
+    cr.paint();
+
+    cr.restore();
+    cr.restore();
+}
+
+function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
+    const sh = sceneHeight(width, height);
+    const groundOffset = height - sh;
+    const floorTop = groundOffset + 0.685 * sh;
+
+    // 1. Hill 1 (Distant horizon ridge — softened into atmospheric haze)
+    const h1 = new Cairo.LinearGradient(0, floorTop - 14 * scale, 0, height);
+    if (subdued) {
+        h1.addColorStopRGBA(0.00, 0.44, 0.56, 0.49, 0.32);
+        h1.addColorStopRGBA(0.45, 0.38, 0.50, 0.43, 0.38);
+        h1.addColorStopRGBA(1.00, 0.32, 0.44, 0.36, 0.44);
+    } else {
+        h1.addColorStopRGBA(0.00, 0.48, 0.74, 0.46, 0.38);
+        h1.addColorStopRGBA(0.45, 0.40, 0.66, 0.38, 0.46);
+        h1.addColorStopRGBA(1.00, 0.34, 0.58, 0.32, 0.52);
+    }
+    cr.setSource(h1);
     cr.newPath();
-    cr.moveTo(-11.5, -3.8);
-    cr.curveTo(-5.0, -2.4, 5.0, -2.4, 11.5, -3.8);
-    cr.lineTo(11.5, -1.4);
-    cr.curveTo(5.0, 0.0, -5.0, 0.0, -11.5, -1.4);
+    cr.moveTo(0, floorTop + 8 * scale);
+    cr.curveTo(width * 0.30, floorTop - 12 * scale, width * 0.62, floorTop + 6 * scale, width, floorTop + 2 * scale);
+    cr.lineTo(width, height);
+    cr.lineTo(0, height);
     cr.closePath();
     cr.fill();
 
-    cr.setSourceRGBA(0.98 * bLum, 0.82 * bLum, 0.24 * bLum, 0.94);
-    cr.setLineWidth(0.55);
+    // Distant objects on Hill 1 ridge (faded with atmospheric haze distFade = 0.60..0.62)
+    drawDutchWindmill(cr, width * 0.495, floorTop + 5 * scale, 0.54 * scale, time, subdued, 0.60, 0.35);
+    drawRealisticPastoralOak(cr, width * 0.733, floorTop + 12 * scale, 24 * scale, subdued, 0.4 * scale, 69, 0.62);
+
+    // 2. Layered Valley Atmospheric Mist Veil
+    const mistG = new Cairo.LinearGradient(0, floorTop - 8 * scale, 0, floorTop + 38 * scale);
+    if (subdued) {
+        mistG.addColorStopRGBA(0.00, 0.74, 0.80, 0.85, 0.0);
+        mistG.addColorStopRGBA(0.42, 0.74, 0.80, 0.85, 0.26);
+        mistG.addColorStopRGBA(0.75, 0.74, 0.80, 0.85, 0.18);
+        mistG.addColorStopRGBA(1.00, 0.74, 0.80, 0.85, 0.0);
+    } else {
+        mistG.addColorStopRGBA(0.00, 0.82, 0.91, 0.97, 0.0);
+        mistG.addColorStopRGBA(0.45, 0.82, 0.91, 0.97, 0.22);
+        mistG.addColorStopRGBA(1.00, 0.82, 0.91, 0.97, 0.0);
+    }
+    cr.setSource(mistG);
+    cr.rectangle(0, floorTop - 8 * scale, width, 46 * scale);
+    cr.fill();
+
+    // 3. Hill 2 (Midground slope — intermediate atmospheric depth)
+    const h2 = new Cairo.LinearGradient(0, floorTop + 32 * scale, 0, height);
+    if (subdued) {
+        h2.addColorStopRGBA(0.00, 0.35, 0.50, 0.37, 0.42);
+        h2.addColorStopRGBA(0.50, 0.29, 0.44, 0.31, 0.50);
+        h2.addColorStopRGBA(1.00, 0.23, 0.37, 0.25, 0.56);
+    } else {
+        h2.addColorStopRGBA(0.00, 0.40, 0.68, 0.35, 0.46);
+        h2.addColorStopRGBA(0.50, 0.33, 0.60, 0.29, 0.54);
+        h2.addColorStopRGBA(1.00, 0.27, 0.54, 0.25, 0.60);
+    }
+    cr.setSource(h2);
     cr.newPath();
-    cr.moveTo(-11.5, -2.6);
-    cr.curveTo(-5.0, -1.2, 5.0, -1.2, 11.5, -2.6);
-    cr.stroke();
+    cr.moveTo(0, floorTop + 46 * scale);
+    cr.curveTo(width * 0.36, floorTop + 58 * scale, width * 0.68, floorTop + 40 * scale, width, floorTop + 42 * scale);
+    cr.lineTo(width, height);
+    cr.lineTo(0, height);
+    cr.closePath();
+    cr.fill();
 
-    // Horizontal nylon panel seam rings across the envelope
-    cr.setSourceRGBA(0.08, 0.10, 0.14, 0.22);
-    cr.setLineWidth(0.30);
-    for (const py of [-9.6, -6.4, 1.4, 4.4, 6.8]) {
+    // Split-rail wooden fence on Hill 2 (midground atmospheric fade distFade = 0.32)
+    const fHaze = makeHazeTinter(subdued, subdued ? 0.84 : 0.98, 0.32);
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    for (let i = 0; i <= 7; i++) {
+        const px = width * (0.44 + i * 0.042);
+        const py = floorTop + (52.5 - i * 1.25) * scale;
+        cr.setSourceRGBA(...fHaze.tint(0.06, 0.12, 0.08), 0.20 * fHaze.aMul);
+        cr.setLineWidth(0.85 * scale);
         cr.newPath();
-        cr.moveTo(-11.2, py - 0.6);
-        cr.curveTo(-4.5, py + 0.5, 4.5, py + 0.5, 11.2, py - 0.6);
+        cr.moveTo(px, py);
+        cr.lineTo(px + 2.0 * scale, py + 0.8 * scale);
+        cr.stroke();
+
+        cr.setSourceRGBA(...fHaze.tint(0.42, 0.30, 0.19), 0.68 * fHaze.aMul);
+        cr.setLineWidth(1.0 * scale);
+        cr.newPath();
+        cr.moveTo(px, py + 0.4 * scale);
+        cr.lineTo(px, py - 4.5 * scale);
         cr.stroke();
     }
+    cr.setSourceRGBA(...fHaze.tint(0.46, 0.33, 0.21), 0.64 * fHaze.aMul);
+    cr.setLineWidth(0.82 * scale);
+    cr.newPath();
+    cr.moveTo(width * 0.44, floorTop + 50.8 * scale);
+    cr.lineTo(width * 0.734, floorTop + 42.0 * scale);
+    cr.moveTo(width * 0.44, floorTop + 48.7 * scale);
+    cr.lineTo(width * 0.734, floorTop + 39.9 * scale);
+    cr.stroke();
 
-    // Longitudinal load-tape seams from crown to throat
-    cr.setSourceRGBA(0.06, 0.08, 0.12, 0.28);
-    cr.setLineWidth(0.32);
-    for (const gx of [-7.8, -4.5, -1.5, 1.5, 4.5, 7.8]) {
+    // Subtle lower-valley mist ribbon between Hill 2 and Hill 3
+    const mistG2 = new Cairo.LinearGradient(0, height - 64 * scale, 0, height - 34 * scale);
+    mistG2.addColorStopRGBA(0.0, 0.74, 0.80, 0.85, 0.0);
+    mistG2.addColorStopRGBA(0.5, 0.74, 0.80, 0.85, subdued ? 0.14 : 0.10);
+    mistG2.addColorStopRGBA(1.0, 0.74, 0.80, 0.85, 0.0);
+    cr.setSource(mistG2);
+    cr.rectangle(0, height - 64 * scale, width, 30 * scale);
+    cr.fill();
+
+    // 4. Hill 3 (Foreground meadow slope)
+    const h3 = new Cairo.LinearGradient(0, height - 54 * scale, 0, height);
+    if (subdued) {
+        h3.addColorStopRGBA(0.00, 0.28, 0.44, 0.29, 0.48);
+        h3.addColorStopRGBA(0.55, 0.22, 0.37, 0.24, 0.54);
+        h3.addColorStopRGBA(1.00, 0.18, 0.31, 0.19, 0.60);
+    } else {
+        h3.addColorStopRGBA(0.00, 0.34, 0.62, 0.30, 0.52);
+        h3.addColorStopRGBA(0.55, 0.28, 0.55, 0.25, 0.60);
+        h3.addColorStopRGBA(1.00, 0.22, 0.48, 0.21, 0.66);
+    }
+    cr.setSource(h3);
+    cr.newPath();
+    cr.moveTo(0, height - 42 * scale);
+    cr.curveTo(width * 0.45, height - 56 * scale, width * 0.78, height - 44 * scale, width, height - 36 * scale);
+    cr.lineTo(width, height);
+    cr.lineTo(0, height);
+    cr.closePath();
+    cr.fill();
+
+    // Foreground wildflower dots
+    const r = seededRand(77);
+    const flLum = subdued ? 0.80 : 0.96;
+    for (let i = 0; i < 14; i++) {
+        const fx = width * 0.055 + r(0, width * 0.89);
+        const fy = height - (6 + r(0, 13)) * scale;
+        const isGold = i % 3 !== 0;
+        cr.setSourceRGBA((isGold ? 0.95 : 0.88) * flLum, (isGold ? 0.78 : 0.28) * flLum, (isGold ? 0.20 : 0.24) * flLum, subdued ? 0.65 : 0.85);
         cr.newPath();
-        cr.moveTo(0, -13.5);
-        traceGoreEdge(gx, true);
-        cr.stroke();
+        cr.arc(fx, fy, 1.25 * scale, 0, TWO_PI);
+        cr.fill();
     }
 
-    // Internal warm propane burner glow illuminating the lower throat
-    const innerGlow = new Cairo.RadialGradient(0, 7.8, 0.5, 0, 5.2, 7.5);
-    innerGlow.addColorStopRGBA(0.0, 1.0, 0.86, 0.42, 0.52 * flamePulse);
-    innerGlow.addColorStopRGBA(0.5, 1.0, 0.62, 0.18, 0.22 * flamePulse);
-    innerGlow.addColorStopRGBA(1.0, 1.0, 0.50, 0.10, 0.0);
-    cr.setSource(innerGlow);
-    cr.paint();
+    // 5. Foreground Objects (distFade = 0.0, matched luminance across windmill & outer margin oaks)
+    drawDutchWindmill(cr, width * 0.267, height - 42 * scale, scale, time, subdued, 0.0, 0.0);
+    drawRealisticPastoralOak(cr, width * 0.036, height - 44 * scale, 32 * scale, subdued, -1.2 * scale, 23, 0.0);
+    drawRealisticPastoralOak(cr, width * 0.962, height - 26 * scale, 36 * scale, subdued,  1.4 * scale, 11, 0.0);
 
-    // Global 3D spherical lighting & terminator shadow
-    const envShade = new Cairo.RadialGradient(-4.2, -6.2, 1.4, -0.5, -2.5, 13.5);
-    envShade.addColorStopRGBA(0.00, 1.0, 1.0, 0.96, 0.32 * bLum);
-    envShade.addColorStopRGBA(0.48, 0.0, 0.0, 0.0, 0.0);
-    envShade.addColorStopRGBA(0.82, 0.03, 0.06, 0.12, 0.34);
-    envShade.addColorStopRGBA(1.00, 0.02, 0.04, 0.09, 0.52);
-    cr.setSource(envShade);
-    cr.paint();
-    cr.restore();
-
-    traceBalloon();
-    cr.setSourceRGBA(0.14, 0.11, 0.10, 0.42);
-    cr.setLineWidth(0.42);
-    cr.stroke();
-    cr.restore();
+    // 6. Reference-Accurate Hot-Air Balloon (with closer, photo-accurate basket spacing)
+    const bx = width * 0.648 + Math.sin((time - 1.1) * 0.55) * 7.5 * scale;
+    const by = groundOffset + 0.275 * sh + Math.cos((time - 1.1) * 0.85) * 3.0 * scale;
+    drawReferenceHotAirBalloon(cr, bx, by, scale, time, subdued);
 }
 
 /* C2 (Clear Day ≥ 76°F): Tropical Beach, High Thu–Fri Sailboat, Low Dry-Sand Umbrella & Anatomical Crab */
