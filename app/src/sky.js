@@ -4072,12 +4072,12 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.fill();
 }
 
-/* C1 (Clear Day 55–75°F & Overcast/Cloudy Day): Option C — 2 Dutch Windmills (Foreground + Hazed Horizon), 3 Realistic Pastoral Oaks & Reference Hot-Air Balloon */
+/* C1 (Clear Day 55–75°F & Overcast/Cloudy Day): Option C — 2 Dutch Windmills (Foreground + Horizon) & 3 Realistic Pastoral Oaks */
 function makeHazeTinter(subdued, lum, distFade) {
     const hazeR = subdued ? 0.56 : 0.62;
     const hazeG = subdued ? 0.64 : 0.75;
     const hazeB = subdued ? 0.70 : 0.84;
-    const aMul = 1.0 - distFade * 0.45;
+    const aMul = 1.0 - distFade * 0.22;
     return {
         aMul,
         tint: (r, g, b) => [
@@ -4486,244 +4486,12 @@ function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade
     cr.restore();
 }
 
-function drawReferenceHotAirBalloon(cr, bx, by, scale, time = 1.1, subdued = true) {
-    const bLum = subdued ? 0.86 : 0.98;
-    const roundRectB = (x, y, w, h, r) => {
-        cr.newPath();
-        cr.arc(x + w - r, y + r, r, -Math.PI / 2, 0);
-        cr.arc(x + w - r, y + h - r, r, 0, Math.PI / 2);
-        cr.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
-        cr.arc(x + r, y + r, r, Math.PI, 3 * Math.PI / 2);
-        cr.closePath();
-    };
-
-    cr.save();
-    cr.translate(bx, by);
-    cr.scale(1.42 * scale, 1.42 * scale);
-
-    // 1. 4 Angled Suspension Cables fanning from the burner frame (-1.35..1.35, y = 8.6)
-    //    up to the wide Nomex throat rim (-3.05..2.95, y = 5.2) across the open side triangles
-    cr.setSourceRGBA(0.16 * bLum, 0.18 * bLum, 0.22 * bLum, 0.68);
-    cr.setLineWidth(0.24);
-    cr.newPath();
-    for (const [tx, ty, bx0] of [
-        [-3.05, 5.2, -1.35],
-        [-1.85, 5.3, -0.75],
-        [ 1.85, 6.2,  0.75],
-        [ 2.95, 5.2,  1.35],
-    ]) {
-        cr.moveTo(tx, ty);
-        cr.lineTo(bx0, 8.6);
-    }
-    cr.stroke();
-
-    // 4 Short Corner Burner Frame Upright Rods above the basket (y = 8.6 .. 10.3)
-    cr.setSourceRGBA(0.22 * bLum, 0.20 * bLum, 0.18 * bLum, 0.88);
-    cr.setLineWidth(0.32);
-    cr.newPath();
-    cr.moveTo(-1.80, 10.3); cr.lineTo(-1.35, 8.6);
-    cr.moveTo(-0.75, 10.3); cr.lineTo(-0.65, 8.6);
-    cr.moveTo( 0.75, 10.3); cr.lineTo( 0.65, 8.6);
-    cr.moveTo( 1.80, 10.3); cr.lineTo( 1.35, 8.6);
-    cr.moveTo(-1.45, 8.6); cr.lineTo( 1.45, 8.6);
-    cr.stroke();
-
-    // Compact Twin Stainless Burner Coils at (0, 8.05..8.65) right below the wind scoop tip
-    cr.setSourceRGBA(0.38 * bLum, 0.40 * bLum, 0.44 * bLum, 0.95);
-    cr.rectangle(-0.90, 8.05, 1.80, 0.58);
-    cr.fill();
-
-    // Subtle warm pilot glow right at the burner nozzle (y = 7.4..8.1)
-    const flamePulse = 0.85 + 0.15 * Math.sin(time * 6.5);
-    cr.setSourceRGBA(1.0, 0.86, 0.32, 0.85 * flamePulse);
-    cr.newPath();
-    cr.moveTo(-0.38, 8.05);
-    cr.curveTo(-0.45, 7.65, -0.16, 7.35, 0, 7.20);
-    cr.curveTo( 0.16, 7.35,  0.45, 7.65, 0.38, 8.05);
-    cr.closePath();
-    cr.fill();
-
-    // Tiny passenger/pilot silhouettes standing inside the basket rim (y = 9.25 .. 10.3)
-    cr.setSourceRGBA(0.15 * bLum, 0.14 * bLum, 0.17 * bLum, 0.92);
-    for (const [px, py, rHead] of [[-1.02, 9.38, 0.44], [0.08, 9.28, 0.48], [1.05, 9.42, 0.42]]) {
-        cr.newPath();
-        cr.arc(px, py, rHead, 0, TWO_PI);
-        cr.fill();
-        cr.newPath();
-        cr.arc(px, py + 0.88, rHead * 1.38, Math.PI, 0);
-        cr.fill();
-    }
-
-    // 2. Hand-Woven Rattan Wicker Gondola Basket (y = 10.3 .. 13.9)
-    const baskG = new Cairo.LinearGradient(-3.0, 10.3, 3.0, 13.9);
-    baskG.addColorStopRGBA(0.0, 0.76 * bLum, 0.55 * bLum, 0.31 * bLum, 0.98);
-    baskG.addColorStopRGBA(0.55, 0.60 * bLum, 0.42 * bLum, 0.22 * bLum, 0.98);
-    baskG.addColorStopRGBA(1.0, 0.38 * bLum, 0.25 * bLum, 0.13 * bLum, 0.98);
-    cr.setSource(baskG);
-    roundRectB(-2.60, 10.3, 5.20, 3.60, 0.62);
-    cr.fill();
-
-    // Wicker weave horizontal & vertical ribs
-    cr.setSourceRGBA(0.28 * bLum, 0.17 * bLum, 0.09 * bLum, 0.55);
-    cr.setLineWidth(0.25);
-    cr.newPath();
-    for (let wy = 11.05; wy <= 13.35; wy += 0.76) {
-        cr.moveTo(-2.40, wy);
-        cr.lineTo( 2.40, wy);
-    }
-    for (let wx = -1.68; wx <= 1.68; wx += 0.84) {
-        cr.moveTo(wx, 10.5);
-        cr.lineTo(wx, 13.7);
-    }
-    cr.stroke();
-
-    // Padded dark-brown suede leather bolster rim at top of basket
-    cr.setSourceRGBA(0.35 * bLum, 0.21 * bLum, 0.12 * bLum, 0.98);
-    roundRectB(-2.85, 9.96, 5.70, 0.78, 0.38);
-    cr.fill();
-
-    // 3. Asymmetric Triangular Wind Scoop (hanging below the throat from y = 5.1 to y = 7.95 on the right side)
-    const scoopG = new Cairo.LinearGradient(-2.6, 5.1, 2.6, 7.95);
-    scoopG.addColorStopRGBA(0.0, 0.16 * bLum, 0.24 * bLum, 0.30 * bLum, 0.96);
-    scoopG.addColorStopRGBA(0.58, 0.84 * bLum, 0.66 * bLum, 0.16 * bLum, 0.96);
-    scoopG.addColorStopRGBA(1.0, 0.12 * bLum, 0.18 * bLum, 0.24 * bLum, 0.98);
-    cr.setSource(scoopG);
-    cr.newPath();
-    cr.moveTo(-2.2, 5.1);
-    cr.lineTo( 2.8, 5.1);
-    cr.lineTo( 0.72, 7.95);
-    cr.lineTo(-0.35, 7.75);
-    cr.closePath();
-    cr.fill();
-
-    // 4. Deeply Scalloped 9-Gore Inverted-Pear Envelope (y = -15.8 .. 5.2)
-    const goreBounds = [-11.6, -9.2, -6.5, -3.7, -1.2, 1.2, 3.7, 6.5, 9.2, 11.6];
-
-    const goreXAt = (gx, u) => {
-        const profile = Math.sin(Math.pow(u, 0.68) * Math.PI * 0.86) * (1 - 0.72 * Math.pow(u, 2.2))
-            + 0.28 * Math.pow(u, 1.4);
-        return gx * profile;
-    };
-    const goreYAt = u => -15.8 + u * 21.0;
-
-    const traceBalloonOutline = () => {
-        cr.newPath();
-        for (let g = 0; g < 9; g++) {
-            const xL = goreXAt(goreBounds[g], 0.06);
-            const xR = goreXAt(goreBounds[g + 1], 0.06);
-            const xM = (xL + xR) * 0.5;
-            const ySide = -15.2 + Math.abs(g - 4) * 0.22;
-            const yPeak = ySide - 0.55;
-            if (g === 0) cr.moveTo(xL, ySide + 0.3);
-            cr.curveTo(xL + (xM - xL) * 0.4, yPeak, xR - (xR - xM) * 0.4, yPeak, xR, ySide + 0.3);
-        }
-        const steps = 20;
-        for (let i = 1; i <= steps; i++) {
-            const u = 0.06 + (i / steps) * 0.94;
-            cr.lineTo(goreXAt(11.6, u), goreYAt(u));
-        }
-        cr.curveTo(1.2, 5.45, -1.2, 5.45, goreXAt(-11.6, 1.0), 5.2);
-        for (let i = steps - 1; i >= 0; i--) {
-            const u = 0.06 + (i / steps) * 0.94;
-            cr.lineTo(goreXAt(-11.6, u), goreYAt(u));
-        }
-        cr.closePath();
-    };
-
-    cr.save();
-    traceBalloonOutline();
-    cr.clip();
-
-    const C_YEL = [0.96, 0.78, 0.14];
-    const C_BLU = [0.08, 0.34, 0.76];
-    const C_RED = [0.86, 0.18, 0.16];
-    const C_ORG = [0.94, 0.49, 0.12];
-    const C_GRN = [0.10, 0.52, 0.27];
-    const C_NOM = [0.16, 0.23, 0.28];
-
-    const uBands = [0.00, 0.14, 0.22, 0.30, 0.38, 0.46, 0.54, 0.62, 0.70, 0.90, 1.00];
-    const bandColors = [
-        [C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL],
-        [C_BLU, C_BLU, C_YEL, C_BLU, C_YEL, C_BLU, C_YEL, C_BLU, C_BLU],
-        [C_RED, C_RED, C_GRN, C_BLU, C_RED, C_RED, C_BLU, C_RED, C_RED],
-        [C_BLU, C_ORG, C_BLU, C_RED, C_BLU, C_ORG, C_RED, C_BLU, C_BLU],
-        [C_RED, C_ORG, C_ORG, C_BLU, C_ORG, C_RED, C_ORG, C_BLU, C_RED],
-        [C_ORG, C_RED, C_RED, C_ORG, C_RED, C_RED, C_RED, C_ORG, C_BLU],
-        [C_GRN, C_ORG, C_BLU, C_ORG, C_BLU, C_ORG, C_BLU, C_GRN, C_BLU],
-        [C_BLU, C_BLU, C_GRN, C_BLU, C_GRN, C_BLU, C_GRN, C_BLU, C_YEL],
-        [C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL, C_YEL],
-        [C_NOM, C_NOM, C_NOM, C_NOM, C_NOM, C_NOM, C_NOM, C_NOM, C_NOM],
-    ];
-
-    for (let g = 0; g < 9; g++) {
-        const gx0 = goreBounds[g];
-        const gx1 = goreBounds[g + 1];
-
-        for (let rIdx = 0; rIdx < 10; rIdx++) {
-            const stagger = (g % 2 === 1 && rIdx >= 1 && rIdx <= 7) ? 0.018 : 0.0;
-            const u0 = Math.max(0, uBands[rIdx] + stagger);
-            const u1 = Math.min(1, uBands[rIdx + 1] + (rIdx < 8 ? stagger : 0));
-            const uM = (u0 + u1) * 0.5;
-
-            const x00 = goreXAt(gx0, u0), x10 = goreXAt(gx1, u0);
-            const x01 = goreXAt(gx0, u1), x11 = goreXAt(gx1, u1);
-            const x0M = goreXAt(gx0, uM), x1M = goreXAt(gx1, uM);
-            const y0 = goreYAt(u0), y1 = goreYAt(u1), yM = goreYAt(uM);
-
-            const col = bandColors[rIdx][g];
-            const pg = new Cairo.LinearGradient(x0M, yM, x1M, yM);
-            pg.addColorStopRGBA(0.00, col[0] * 0.72 * bLum, col[1] * 0.72 * bLum, col[2] * 0.72 * bLum, 0.99);
-            pg.addColorStopRGBA(0.38, Math.min(1, col[0] * 1.06) * bLum, Math.min(1, col[1] * 1.06) * bLum, Math.min(1, col[2] * 1.06) * bLum, 0.99);
-            pg.addColorStopRGBA(0.72, col[0] * 0.90 * bLum, col[1] * 0.90 * bLum, col[2] * 0.90 * bLum, 0.99);
-            pg.addColorStopRGBA(1.00, col[0] * 0.65 * bLum, col[1] * 0.65 * bLum, col[2] * 0.65 * bLum, 0.99);
-            cr.setSource(pg);
-
-            const arch = -0.22 * (1 - uM * 0.6);
-            cr.newPath();
-            cr.moveTo(x00, y0);
-            cr.curveTo((x00 + x10) * 0.5, y0 + arch, (x00 + x10) * 0.5, y0 + arch, x10, y0);
-            cr.lineTo(x11, y1);
-            cr.curveTo((x01 + x11) * 0.5, y1 + arch, (x01 + x11) * 0.5, y1 + arch, x01, y1);
-            cr.closePath();
-            cr.fill();
-        }
-    }
-
-    // Deep recessed vertical load-tape gore crevices from crown to throat
-    cr.setSourceRGBA(0.06, 0.08, 0.12, 0.34);
-    cr.setLineWidth(0.32);
-    for (let g = 1; g < 9; g++) {
-        const gx = goreBounds[g];
-        cr.newPath();
-        for (let i = 0; i <= 16; i++) {
-            const u = i / 16;
-            const px = goreXAt(gx, u);
-            const py = goreYAt(u);
-            if (i === 0) cr.moveTo(px, py);
-            else cr.lineTo(px, py);
-        }
-        cr.stroke();
-    }
-
-    // Global 3D spherical lighting & shadow overlay across the entire envelope
-    const sphG = new Cairo.RadialGradient(-3.8, -6.5, 1.2, 0.5, -4.5, 14.5);
-    sphG.addColorStopRGBA(0.00, 1.0, 0.98, 0.88, 0.20);
-    sphG.addColorStopRGBA(0.48, 1.0, 1.0, 1.0, 0.0);
-    sphG.addColorStopRGBA(0.78, 0.04, 0.07, 0.12, 0.16);
-    sphG.addColorStopRGBA(1.00, 0.02, 0.04, 0.08, 0.36);
-    cr.setSource(sphG);
-    cr.paint();
-
-    cr.restore();
-    cr.restore();
-}
-
 function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     const sh = sceneHeight(width, height);
     const groundOffset = height - sh;
     const floorTop = groundOffset + 0.685 * sh;
 
-    // 1. Hill 1 (Distant horizon ridge — softened into atmospheric haze)
+    // 1. Hill 1 (Distant horizon ridge — subtle atmospheric depth)
     const h1 = new Cairo.LinearGradient(0, floorTop - 14 * scale, 0, height);
     if (subdued) {
         h1.addColorStopRGBA(0.00, 0.44, 0.56, 0.49, 0.32);
@@ -4743,20 +4511,21 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     cr.closePath();
     cr.fill();
 
-    // Distant objects on Hill 1 ridge (faded with atmospheric haze distFade = 0.60..0.62)
-    drawDutchWindmill(cr, width * 0.495, floorTop + 5 * scale, 0.54 * scale, time, subdued, 0.60, 0.35);
-    drawRealisticPastoralOak(cr, width * 0.733, floorTop + 12 * scale, 24 * scale, subdued, 0.4 * scale, 69, 0.62);
+    // Distant objects on Hill 1 ridge (gentle depth fade so details stay crisp)
+    const ridgeFade = subdued ? 0.28 : 0.22;
+    drawDutchWindmill(cr, width * 0.495, floorTop + 5 * scale, 0.54 * scale, time, subdued, ridgeFade, 0.35);
+    drawRealisticPastoralOak(cr, width * 0.733, floorTop + 12 * scale, 24 * scale, subdued, 0.4 * scale, 69, ridgeFade);
 
-    // 2. Layered Valley Atmospheric Mist Veil
+    // 2. Subtle Valley Atmospheric Mist Veil
     const mistG = new Cairo.LinearGradient(0, floorTop - 8 * scale, 0, floorTop + 38 * scale);
     if (subdued) {
         mistG.addColorStopRGBA(0.00, 0.74, 0.80, 0.85, 0.0);
-        mistG.addColorStopRGBA(0.42, 0.74, 0.80, 0.85, 0.26);
-        mistG.addColorStopRGBA(0.75, 0.74, 0.80, 0.85, 0.18);
+        mistG.addColorStopRGBA(0.42, 0.74, 0.80, 0.85, 0.10);
+        mistG.addColorStopRGBA(0.75, 0.74, 0.80, 0.85, 0.06);
         mistG.addColorStopRGBA(1.00, 0.74, 0.80, 0.85, 0.0);
     } else {
         mistG.addColorStopRGBA(0.00, 0.82, 0.91, 0.97, 0.0);
-        mistG.addColorStopRGBA(0.45, 0.82, 0.91, 0.97, 0.22);
+        mistG.addColorStopRGBA(0.45, 0.82, 0.91, 0.97, 0.06);
         mistG.addColorStopRGBA(1.00, 0.82, 0.91, 0.97, 0.0);
     }
     cr.setSource(mistG);
@@ -4783,8 +4552,8 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     cr.closePath();
     cr.fill();
 
-    // Split-rail wooden fence on Hill 2 (midground atmospheric fade distFade = 0.32)
-    const fHaze = makeHazeTinter(subdued, subdued ? 0.84 : 0.98, 0.32);
+    // Split-rail wooden fence on Hill 2 (light midground depth fade)
+    const fHaze = makeHazeTinter(subdued, subdued ? 0.84 : 0.98, subdued ? 0.15 : 0.12);
     cr.setLineCap(Cairo.LineCap.ROUND);
     for (let i = 0; i <= 7; i++) {
         const px = width * (0.44 + i * 0.042);
@@ -4815,7 +4584,7 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     // Subtle lower-valley mist ribbon between Hill 2 and Hill 3
     const mistG2 = new Cairo.LinearGradient(0, height - 64 * scale, 0, height - 34 * scale);
     mistG2.addColorStopRGBA(0.0, 0.74, 0.80, 0.85, 0.0);
-    mistG2.addColorStopRGBA(0.5, 0.74, 0.80, 0.85, subdued ? 0.14 : 0.10);
+    mistG2.addColorStopRGBA(0.5, 0.74, 0.80, 0.85, subdued ? 0.07 : 0.04);
     mistG2.addColorStopRGBA(1.0, 0.74, 0.80, 0.85, 0.0);
     cr.setSource(mistG2);
     cr.rectangle(0, height - 64 * scale, width, 30 * scale);
@@ -4858,11 +4627,6 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     drawDutchWindmill(cr, width * 0.267, height - 42 * scale, scale, time, subdued, 0.0, 0.0);
     drawRealisticPastoralOak(cr, width * 0.036, height - 44 * scale, 32 * scale, subdued, -1.2 * scale, 23, 0.0);
     drawRealisticPastoralOak(cr, width * 0.962, height - 26 * scale, 36 * scale, subdued,  1.4 * scale, 11, 0.0);
-
-    // 6. Reference-Accurate Hot-Air Balloon (with closer, photo-accurate basket spacing)
-    const bx = width * 0.648 + Math.sin((time - 1.1) * 0.55) * 7.5 * scale;
-    const by = groundOffset + 0.275 * sh + Math.cos((time - 1.1) * 0.85) * 3.0 * scale;
-    drawReferenceHotAirBalloon(cr, bx, by, scale, time, subdued);
 }
 
 /* C2 (Clear Day ≥ 76°F): Tropical Beach, High Thu–Fri Sailboat, Low Dry-Sand Umbrella & Anatomical Crab */
