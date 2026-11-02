@@ -13,6 +13,7 @@ import { WeatherClient } from './weather.js';
 import { paintWeather } from './painter.js';
 import { createSky, paintSky } from './sky.js';
 import { drawText } from './chart.js';
+import { PanelPosition } from './panel-position.js';
 
 const UNITS = ['metric', 'imperial'];
 const HOURS = ['auto', '12h', '24h'];
@@ -106,8 +107,8 @@ function drawBarWallpaper(cr, width, height, topBarHeight) {
     cr.rectangle(0, topBarHeight - 4, width, height - topBarHeight + 4);
     cr.fill();
     for (const [centerX, centerY, radius] of [[width * 0.22, height + 2, 26],
-                                             [width * 0.58, height + 8, 30],
-                                             [width * 0.85, height + 1, 22]]) {
+    [width * 0.58, height + 8, 30],
+    [width * 0.85, height + 1, 22]]) {
         const bubble = new Cairo.RadialGradient(centerX, centerY, 2, centerX, centerY, radius);
         bubble.addColorStopRGBA(0, 1, 1, 1, 0.65);
         bubble.addColorStopRGBA(1, 1, 1, 1, 0);
@@ -162,7 +163,7 @@ function drawBarBattery(cr, x, centerY, textColor) {
     cr.rectangle(batteryX + 2.4, batteryY + 2.4, (batteryWidth - 4.8) * 0.72, batteryHeight - 4.8);
     cr.fill();
     drawText(cr, '72%', batteryX + batteryWidth + 6, centerY,
-             { size: 11, rgba: textColor, anchor: 'start', vcenter: centerY });
+        { size: 11, rgba: textColor, anchor: 'start', vcenter: centerY });
 }
 
 class PreviewController {
@@ -438,6 +439,23 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
     _buildIndicatorGroup(settings) {
         const lookGroup = new Adw.PreferencesGroup({ title: _('Panel indicator') });
+        const positions = Object.values(PanelPosition);
+        const positionLabels = {
+            [PanelPosition.LEFT]: _('Left'),
+            [PanelPosition.CENTER_LEFT]: _('Center Left'),
+            [PanelPosition.CENTER_RIGHT]: _('Center Right'),
+            [PanelPosition.RIGHT]: _('Right'),
+        };
+        const positionRow = new Adw.ComboRow({
+            title: _('Panel position'),
+            model: new Gtk.StringList({
+                strings: positions.map(position => positionLabels[position]),
+            }),
+        });
+        positionRow.set_selected(positions.indexOf(settings.get_string('panel-position')));
+        positionRow.connect('notify::selected', () =>
+            settings.set_string('panel-position', positions[positionRow.get_selected()]));
+        lookGroup.add(positionRow);
         const iconRow = new Adw.SwitchRow({ title: _('Show animated icon') });
         const tempRow = new Adw.SwitchRow({ title: _('Show temperature') });
         const animRow = new Adw.SwitchRow({
@@ -581,8 +599,8 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             }),
         });
         const MODEL_IDS = ['best_match', 'ecmwf_ifs', 'ecmwf_ifs025',
-                           'icon_seamless', 'gfs_seamless', 'gem_global',
-                           'jma_seamless', 'ukmo_global_deterministic_10km'];
+            'icon_seamless', 'gfs_seamless', 'gem_global',
+            'jma_seamless', 'ukmo_global_deterministic_10km'];
         const selectedModelIndex = MODEL_IDS.indexOf(settings.get_string('om-model'));
         modelRow.set_selected(Math.max(selectedModelIndex, 0));
         modelRow.connect('notify::selected', () =>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
   <schema id="org.gnome.shell.extensions.weatherglass"
-          path="/org/gnome/shell/extensions/weatherglass/">
+    path="/org/gnome/shell/extensions/weatherglass/">
 
     <key name="auto-location" type="b">
       <default>true</default>
@@ -32,8 +32,8 @@
 
     <key name="units" type="s">
       <choices>
-        <choice value="metric"/>
-        <choice value="imperial"/>
+        <choice value="metric" />
+        <choice value="imperial" />
       </choices>
       <default>'metric'</default>
       <summary>Measurement units</summary>
@@ -50,6 +50,17 @@
       <summary>Show the animated icon in the panel</summary>
     </key>
 
+    <key name="panel-position" type="s">
+      <choices>
+        <choice value="left" />
+        <choice value="center-left" />
+        <choice value="center-right" />
+        <choice value="right" />
+      </choices>
+      <default>'right'</default>
+      <summary>Position of the weather indicator in the panel</summary>
+    </key>
+
     <key name="animate" type="b">
       <default>true</default>
       <summary>Animate the panel icon</summary>
@@ -57,139 +68,139 @@
     </key>
 
     <key name="refresh-minutes" type="i">
-      <range min="5" max="120"/>
+      <range min="5" max="120" />
       <default>15</default>
       <summary>Weather refresh interval in minutes</summary>
     </key>
 
     <key name="provider" type="s">
       <choices>
-        <choice value="open-meteo"/>
-        <choice value="met-norway"/>
-        <choice value="noaa-nws"/>
+        <choice value="open-meteo" />
+        <choice value="met-norway" />
+        <choice value="noaa-nws" />
       </choices>
       <default>'open-meteo'</default>
       <summary>Weather data provider</summary>
       <description>All providers are keyless and free. open-meteo = Open-Meteo
-global forecast (default; model selectable via om-model); met-norway =
-Norwegian Meteorological Institute locationforecast, CC BY-SA 4.0
-attribution (reports precipitation amounts, not probabilities, so the
-precipitation chart is model-derived); noaa-nws = US National Weather
-Service (US locations only, official forecasts, station observations
-for current conditions)</description>
+        global forecast (default; model selectable via om-model); met-norway =
+        Norwegian Meteorological Institute locationforecast, CC BY-SA 4.0
+        attribution (reports precipitation amounts, not probabilities, so the
+        precipitation chart is model-derived); noaa-nws = US National Weather
+        Service (US locations only, official forecasts, station observations
+        for current conditions)</description>
     </key>
 
     <key name="om-model" type="s">
       <choices>
-        <choice value="best_match"/>
-        <choice value="ecmwf_ifs"/>
-        <choice value="ecmwf_ifs025"/>
-        <choice value="icon_seamless"/>
-        <choice value="gfs_seamless"/>
-        <choice value="gem_global"/>
-        <choice value="jma_seamless"/>
-        <choice value="ukmo_global_deterministic_10km"/>
+        <choice value="best_match" />
+        <choice value="ecmwf_ifs" />
+        <choice value="ecmwf_ifs025" />
+        <choice value="icon_seamless" />
+        <choice value="gfs_seamless" />
+        <choice value="gem_global" />
+        <choice value="jma_seamless" />
+        <choice value="ukmo_global_deterministic_10km" />
       </choices>
       <default>'best_match'</default>
       <summary>Open-Meteo forecast model</summary>
       <description>Which forecast model Open-Meteo routes to.
-best_match = Open-Meteo's regional pick, the default: it routes to
-whichever national model runs best over the location (ECMWF hybrid in
-Europe, GFS/HRRR in the US); ecmwf_ifs = ECMWF IFS high-resolution
-(~12 km), generally the most accurate global model; ecmwf_ifs025 =
-the same IFS on its coarser 0.25° grid; icon_seamless = German DWD
-ICON (~7-day range); gfs_seamless = US NOAA GFS; gem_global = Canada's
-GEM global; jma_seamless = Japan's JMA (it publishes no rain
-probabilities — the card derives them from rain amounts, the same
-rule the Met.no provider uses); ukmo_global_deterministic_10km = UK
-Met Office global. A model whose run ends early honestly shortens
-the chart instead of drawing zeros. Ignored by other providers. Out
-to a week the models genuinely disagree — if the weekend forecast
-looks off, try another model before doubting the
-provider</description>
+        best_match = Open-Meteo's regional pick, the default: it routes to
+        whichever national model runs best over the location (ECMWF hybrid in
+        Europe, GFS/HRRR in the US); ecmwf_ifs = ECMWF IFS high-resolution
+        (~12 km), generally the most accurate global model; ecmwf_ifs025 =
+        the same IFS on its coarser 0.25° grid; icon_seamless = German DWD
+        ICON (~7-day range); gfs_seamless = US NOAA GFS; gem_global = Canada's
+        GEM global; jma_seamless = Japan's JMA (it publishes no rain
+        probabilities — the card derives them from rain amounts, the same
+        rule the Met.no provider uses); ukmo_global_deterministic_10km = UK
+        Met Office global. A model whose run ends early honestly shortens
+        the chart instead of drawing zeros. Ignored by other providers. Out
+        to a week the models genuinely disagree — if the weekend forecast
+        looks off, try another model before doubting the
+        provider</description>
     </key>
 
     <key name="condition-strip" type="s">
       <choices>
-        <choice value="off"/>
-        <choice value="icons"/>
-        <choice value="pills"/>
+        <choice value="off" />
+        <choice value="icons" />
+        <choice value="pills" />
       </choices>
       <default>'icons'</default>
       <summary>Hourly condition strip on the chart</summary>
       <description>off = none; icons = one small condition icon per few hours;
-pills = consecutive same-condition hours grouped into rounded pills along the
-time axis with the icon centred</description>
+        pills = consecutive same-condition hours grouped into rounded pills along the
+        time axis with the icon centred</description>
     </key>
 
     <key name="condition-pos" type="s">
       <choices>
-        <choice value="top"/>
-        <choice value="bottom"/>
+        <choice value="top" />
+        <choice value="bottom" />
       </choices>
       <default>'bottom'</default>
       <summary>Where the condition band rides</summary>
       <description>top = along the chart top; bottom = directly above the
-hour labels (default)</description>
+        hour labels (default)</description>
     </key>
     <key name="hour-format" type="s">
       <choices>
-        <choice value="auto"/>
-        <choice value="12h"/>
-        <choice value="24h"/>
+        <choice value="auto" />
+        <choice value="12h" />
+        <choice value="24h" />
       </choices>
       <default>'auto'</default>
       <summary>Clock style for hour labels</summary>
       <description>auto follows the GNOME clock-format setting, falling back
-to the locale convention; 12h shows 1AM…12PM; 24h shows 0…23. Applies to the
-chart's hour labels, the city clock in the header, and the preview clock.</description>
+        to the locale convention; 12h shows 1AM…12PM; 24h shows 0…23. Applies to the
+        chart's hour labels, the city clock in the header, and the preview clock.</description>
     </key>
     <key name="text-emphasis" type="s">
       <choices>
-        <choice value="normal"/>
-        <choice value="bold"/>
-        <choice value="large"/>
-        <choice value="both"/>
+        <choice value="normal" />
+        <choice value="bold" />
+        <choice value="large" />
+        <choice value="both" />
       </choices>
       <default>'normal'</default>
       <summary>Emphasis for the chart's data text</summary>
       <description>bold = heavier weight, large = ~18% bigger, both = the
-pair. Applies to the metric value labels (temperature, wind, precipitation),
-the hour labels under the curve and the now label. Normal keeps values in
-semibold and hours in regular weight at the adaptive size.</description>
+        pair. Applies to the metric value labels (temperature, wind, precipitation),
+        the hour labels under the curve and the now label. Normal keeps values in
+        semibold and hours in regular weight at the adaptive size.</description>
     </key>
     <key name="text-emboss" type="b">
       <default>false</default>
       <summary>Text and icon emboss shadows</summary>
       <description>Soft shadow (dark theme) or halo (light theme) under card
-text and the ghost buttons. Off by default: adaptive contrast-aware ink
-makes the shadows unnecessary.</description>
+        text and the ghost buttons. Off by default: adaptive contrast-aware ink
+        makes the shadows unnecessary.</description>
     </key>
     <key name="menu-style" type="s">
       <choices>
-        <choice value="animated"/>
-        <choice value="solid"/>
-        <choice value="accent"/>
+        <choice value="animated" />
+        <choice value="solid" />
+        <choice value="accent" />
       </choices>
       <default>'animated'</default>
       <summary>Menu background style</summary>
       <description>animated = translucent weather sky, solid = the sky dimmed
-under a wash, accent = no sky: the shell theme's own popup background with
-the charts drawn in the OS accent colour</description>
+        under a wash, accent = no sky: the shell theme's own popup background with
+        the charts drawn in the OS accent colour</description>
     </key>
 
     <key name="preview-scene" type="s">
       <default>''</default>
       <summary>Temporarily preview an animation on the panel icon</summary>
       <description>Set by the preferences window; the extension clears it back
-to empty when the preview ends</description>
+        to empty when the preview ends</description>
     </key>
 
     <key name="live-scene" type="s">
       <default>'partly'</default>
       <summary>The sky the menu is currently painting</summary>
       <description>Runtime state written by the extension; the preferences
-      legend shows it as the idle backdrop preview</description>
+        legend shows it as the idle backdrop preview</description>
     </key>
 
     <key name="live-night" type="b">
@@ -199,7 +210,7 @@ to empty when the preview ends</description>
     </key>
 
     <key name="windy-threshold" type="i">
-      <range min="0" max="120"/>
+      <range min="0" max="120" />
       <default>30</default>
       <summary>Wind speed (km/h) that triggers the wind animation</summary>
       <description>0 disables the wind scene override</description>

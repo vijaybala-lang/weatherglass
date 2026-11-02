@@ -14,10 +14,13 @@ import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/
 
 import { WeatherIcon, WarningIcon } from './animation.js';
 import { ForecastPanel } from './menu.js';
-import { WeatherClient, deriveScene, fmtTemp, alertsWithinHours,
-         ensureDesktopEntry, removeDesktopEntry } from './weather.js';
+import {
+    WeatherClient, deriveScene, fmtTemp, alertsWithinHours,
+    ensureDesktopEntry, removeDesktopEntry
+} from './weather.js';
 import { moonPhase } from './moon.js';
 import { resolveIsDark, resolveShellDark } from './theme.js';
+import { resolvePanelPosition } from './panel-position.js';
 
 /* Adwaita accent swatches (org.gnome.desktop.interface accent-color) */
 const ACCENTS = {
@@ -494,6 +497,9 @@ const WeatherIndicator = GObject.registerClass(
 
         _onSetting(key) {
             switch (key) {
+                case 'panel-position':
+                    this._ext._syncPanelPosition();
+                    break;
                 case 'auto-location':
                     if (this._settings.get_boolean('auto-location'))
                         ensureDesktopEntry();
@@ -628,10 +634,18 @@ const WeatherIndicator = GObject.registerClass(
     });
 
 export default class AnimatedWeatherExtension extends Extension {
+    _syncPanelPosition() {
+        const { box, index } = resolvePanelPosition(this.getSettings().get_string('panel-position'));
+        const container = this._indicator.container;
+        container.get_parent().remove_child(container);
+        Main.panel[`_${box}Box`].insert_child_at_index(container, index);
+    }
+
     enable() {
         console.log(`Weatherglass enabled from ${this.dir.get_path()}`);
         this._indicator = new WeatherIndicator(this);
-        Main.panel.addToStatusArea(this.uuid, this._indicator);
+        const { box, index } = resolvePanelPosition(this.getSettings().get_string('panel-position'));
+        Main.panel.addToStatusArea(this.uuid, this._indicator, index, box);
         this._sheet = this.dir.get_child('stylesheet.css');
         St.ThemeContext.get_for_stage(global.stage)
             .get_theme().load_stylesheet(this._sheet);

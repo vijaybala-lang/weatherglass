@@ -20,12 +20,36 @@ git push origin topic/short-description   # open a PR against main
 
 ## Development loop
 
+Run these from the topic worktree's `extension/` directory:
+
 - `gjs -m tools/syntax-check.mjs` — parse-gate every JS source.
-- `bash tools/package.sh` — build `dist/*.zip` and run the zipcheck,
-  which installs the packaged extension in a nested session and boots
-  it; it is the real gate before shipping.
-- `gnome-extensions install --force dist/weatherglass@vijaybala.dev.zip`
-  then log out and back in (GJS caches modules per session).
+- `bash install.sh` — compile schemas and sync the checkout directly
+  into the user extension directory. No ZIP is needed. The installer
+  stamps the installed version as 99 and clears staged EGO updates so
+  an older website build does not overwrite the local build at login.
+- Log out and back in to load changed JavaScript in the desktop shell.
+  GJS caches modules per process; disabling/re-enabling does not reload
+  code. On Xorg, restarting Shell with Alt+F2 then `r` also starts a
+  fresh process; this is not supported on Wayland.
+- Once loaded, Display → Panel indicator → Panel position moves the
+  indicator immediately between Left, Center, Center Left, Center Right,
+  and Right. Center Left and Center Right insert before or after the
+  existing center-box contents; GNOME centers the combined group.
+  Center retains the original Center Left behavior. Changing this
+  setting needs neither reinstalling nor logging out. Position values
+  are shared by runtime and preferences through the `PanelPosition`
+  enum in `panel-position.js`; a test locks schema choices to that enum.
+
+For automated UI checks without disturbing the desktop session,
+`bash tools/shell-golden.sh card check all` runs the working-tree card
+widgets in a disposable headless Shell. This checks the card, not the
+live desktop panel placement. GNOME 50 removed the older windowed
+nested backend; the repository harness uses headless virtual monitors.
+
+Before shipping, `bash tools/certify.sh` runs the complete gate,
+including packaging and a nested-session boot of the ZIP. Packaged
+release installation follows the release skill, not the development
+sync route above.
 
 ## Conventions
 
