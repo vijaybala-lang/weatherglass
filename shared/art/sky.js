@@ -4494,13 +4494,13 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     // 1. Hill 1 (Distant horizon ridge — subtle atmospheric depth)
     const h1 = new Cairo.LinearGradient(0, floorTop - 14 * scale, 0, height);
     if (subdued) {
-        h1.addColorStopRGBA(0.00, 0.44, 0.56, 0.49, 0.32);
-        h1.addColorStopRGBA(0.45, 0.38, 0.50, 0.43, 0.38);
-        h1.addColorStopRGBA(1.00, 0.32, 0.44, 0.36, 0.44);
+        h1.addColorStopRGBA(0.00, 0.54, 0.66, 0.59, 0.28);
+        h1.addColorStopRGBA(0.45, 0.50, 0.62, 0.55, 0.30);
+        h1.addColorStopRGBA(1.00, 0.46, 0.58, 0.50, 0.24);
     } else {
-        h1.addColorStopRGBA(0.00, 0.48, 0.74, 0.46, 0.38);
-        h1.addColorStopRGBA(0.45, 0.40, 0.66, 0.38, 0.46);
-        h1.addColorStopRGBA(1.00, 0.34, 0.58, 0.32, 0.52);
+        h1.addColorStopRGBA(0.00, 0.50, 0.75, 0.48, 0.34);
+        h1.addColorStopRGBA(0.45, 0.44, 0.69, 0.42, 0.38);
+        h1.addColorStopRGBA(1.00, 0.38, 0.62, 0.36, 0.32);
     }
     cr.setSource(h1);
     cr.newPath();
@@ -4532,16 +4532,16 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     cr.rectangle(0, floorTop - 8 * scale, width, 46 * scale);
     cr.fill();
 
-    // 3. Hill 2 (Midground slope — intermediate atmospheric depth)
+    // 3. Hill 2 (Midground slope — silvery-sage tone that preserves icon & text contrast)
     const h2 = new Cairo.LinearGradient(0, floorTop + 32 * scale, 0, height);
     if (subdued) {
-        h2.addColorStopRGBA(0.00, 0.35, 0.50, 0.37, 0.42);
-        h2.addColorStopRGBA(0.50, 0.29, 0.44, 0.31, 0.50);
-        h2.addColorStopRGBA(1.00, 0.23, 0.37, 0.25, 0.56);
+        h2.addColorStopRGBA(0.00, 0.48, 0.62, 0.51, 0.34);
+        h2.addColorStopRGBA(0.50, 0.44, 0.58, 0.47, 0.34);
+        h2.addColorStopRGBA(1.00, 0.40, 0.54, 0.43, 0.28);
     } else {
-        h2.addColorStopRGBA(0.00, 0.40, 0.68, 0.35, 0.46);
-        h2.addColorStopRGBA(0.50, 0.33, 0.60, 0.29, 0.54);
-        h2.addColorStopRGBA(1.00, 0.27, 0.54, 0.25, 0.60);
+        h2.addColorStopRGBA(0.00, 0.44, 0.70, 0.40, 0.38);
+        h2.addColorStopRGBA(0.50, 0.38, 0.64, 0.34, 0.40);
+        h2.addColorStopRGBA(1.00, 0.33, 0.58, 0.30, 0.36);
     }
     cr.setSource(h2);
     cr.newPath();
@@ -4590,16 +4590,16 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     cr.rectangle(0, height - 64 * scale, width, 30 * scale);
     cr.fill();
 
-    // 4. Hill 3 (Foreground meadow slope)
+    // 4. Hill 3 (Foreground meadow slope — balanced luminance for bottom-row day tiles)
     const h3 = new Cairo.LinearGradient(0, height - 54 * scale, 0, height);
     if (subdued) {
-        h3.addColorStopRGBA(0.00, 0.28, 0.44, 0.29, 0.48);
-        h3.addColorStopRGBA(0.55, 0.22, 0.37, 0.24, 0.54);
-        h3.addColorStopRGBA(1.00, 0.18, 0.31, 0.19, 0.60);
+        h3.addColorStopRGBA(0.00, 0.42, 0.57, 0.44, 0.36);
+        h3.addColorStopRGBA(0.55, 0.38, 0.53, 0.40, 0.38);
+        h3.addColorStopRGBA(1.00, 0.34, 0.49, 0.36, 0.40);
     } else {
-        h3.addColorStopRGBA(0.00, 0.34, 0.62, 0.30, 0.52);
-        h3.addColorStopRGBA(0.55, 0.28, 0.55, 0.25, 0.60);
-        h3.addColorStopRGBA(1.00, 0.22, 0.48, 0.21, 0.66);
+        h3.addColorStopRGBA(0.00, 0.38, 0.65, 0.34, 0.42);
+        h3.addColorStopRGBA(0.55, 0.33, 0.59, 0.29, 0.46);
+        h3.addColorStopRGBA(1.00, 0.28, 0.53, 0.25, 0.50);
     }
     cr.setSource(h3);
     cr.newPath();
