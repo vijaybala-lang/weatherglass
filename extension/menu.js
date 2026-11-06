@@ -84,8 +84,11 @@ function row(styleClass) {
     });
 }
 
-function column(styleClass) {
-    return new St.BoxLayout({ vertical: true, style_class: styleClass, x_expand: true });
+function column(styleClass, props = {}) {
+    return new St.BoxLayout({
+        layout_manager: new Clutter.BoxLayout({ orientation: Clutter.Orientation.VERTICAL }),
+        style_class: styleClass, x_expand: true, ...props,
+    });
 }
 
 /** '2026-09-25T15:00' -> '3PM' (or '15') for the chart axis. The next
@@ -350,9 +353,8 @@ export class ForecastPanel {
         this._skyArea = new SkyArea(this, animate);
         this.actor.add_child(this._skyArea);
 
-        this._content = new St.BoxLayout({
-            vertical: true,
-            style_class: 'aw-content',
+        this._content = column('aw-content', {
+            x_expand: false,
             x_align: ACTOR_FILL, y_align: ACTOR_FILL,
         });
         this.actor.add_child(this._content);
@@ -416,11 +418,9 @@ export class ForecastPanel {
             x_align: ACTOR_FILL,
         });
 
-        const leftCol = new St.BoxLayout({
-            vertical: true, style_class: 'aw-temp-col',
-            x_expand: true,
+        const leftCol = column('aw-temp-col', {
             x_align: Clutter.ActorAlign.START,
-            y_align: Clutter.ActorAlign.START
+            y_align: Clutter.ActorAlign.START,
         });
         const tempWrap = row('aw-temp-line');
         this._temperatureLabel = label('', 'aw-current-temp');
@@ -433,11 +433,9 @@ export class ForecastPanel {
         leftCol.add_child(this._descriptionLabel);
         header.add_child(leftCol);
 
-        const right = new St.BoxLayout({
-            vertical: true, style_class: 'aw-city-col',
-            x_expand: true,
+        const right = column('aw-city-col', {
             x_align: Clutter.ActorAlign.END,
-            y_align: Clutter.ActorAlign.START
+            y_align: Clutter.ActorAlign.START,
         });
         this._cityLabel = label(_('Weather'), 'aw-city');
         this._cityLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
@@ -601,9 +599,7 @@ export class ForecastPanel {
                 y_align: Clutter.ActorAlign.CENTER,
             });
             headRow.add_child(icon);
-            const titleCol = new St.BoxLayout({
-                vertical: true, x_expand: true, x_align: ACTOR_FILL,
-            });
+            const titleCol = column(null, { x_align: ACTOR_FILL });
             const title = label(alert.event, 'aw-adv-title');
             title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
             titleCol.add_child(title);
@@ -1287,9 +1283,8 @@ export class ForecastPanel {
                     can_focus: true,
                     x_expand: true,
                 });
-                const col = new St.BoxLayout({
-                    vertical: true, style_class: 'aw-day-col',
-                    x_align: ACTOR_FILL
+                const col = column('aw-day-col', {
+                    x_expand: false, x_align: ACTOR_FILL,
                 });
                 const dayNameRow = new St.BoxLayout({
                     style_class: 'aw-day-namerow',

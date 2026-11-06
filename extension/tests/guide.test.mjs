@@ -141,6 +141,14 @@ test('no GtkWidget.destroy in prefs (GTK4 removed it)', () => {
     silence(scan(/\.destroy\s*\(/, ['prefs.js']));
 });
 
+test('no StBoxLayout.vertical in shell modules (GNOME 51 removed it)', () => {
+    // GNOME 45-47 lacked St.BoxLayout.orientation; GNOME 51 removed
+    // St.BoxLayout.vertical. Passing layout_manager: new Clutter.BoxLayout({
+    // orientation: Clutter.Orientation.VERTICAL }) works across 45-51
+    // without version branching.
+    silence(scan(/\bvertical\s*:/));
+});
+
 /* -- formatting and review hygiene ------------------------------------- */
 
 test('lines stay within 200 characters', () => {
