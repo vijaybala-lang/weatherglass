@@ -4511,9 +4511,8 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     cr.closePath();
     cr.fill();
 
-    // Distant objects on Hill 1 ridge (gentle depth fade so details stay crisp)
+    // Distant oak on Hill 1 ridge (gentle depth fade so details stay crisp)
     const ridgeFade = subdued ? 0.28 : 0.22;
-    drawDutchWindmill(cr, width * 0.495, floorTop + 5 * scale, 0.54 * scale, time, subdued, ridgeFade, 0.35);
     drawRealisticPastoralOak(cr, width * 0.733, floorTop + 12 * scale, 24 * scale, subdued, 0.4 * scale, 69, ridgeFade);
 
     // 2. Subtle Valley Atmospheric Mist Veil
