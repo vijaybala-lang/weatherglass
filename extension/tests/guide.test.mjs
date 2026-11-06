@@ -313,7 +313,7 @@ test('release ritual: one proven artifact to upload, goldens need operator appro
 // promise that the exact shipped bytes were certified on that shell, and
 // the harness companions must be loadable everywhere the product is.
 test('release ritual: every declared shell owes a certification', () => {
-    const expected = ['45', '46', '47', '48', '49', '50'];
+    const expected = ['45', '46', '47', '48', '49', '50', '51'];
     const meta = JSON.parse(read(`${ROOT}/metadata.json`));
     eq(JSON.stringify(meta['shell-version']), JSON.stringify(expected),
         'metadata must declare the certified GNOME Shell majors');

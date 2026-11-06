@@ -114,7 +114,7 @@ function staggeredSpots(count, seed, cx, halfSpan, y0, y1, minDist) {
  *  centerY + 2.4, crown at centerY - 6.1, 12.4 wide. The arc joins are
  *  the shoulders; smoothing them (first attempt) read as a semicircle.
  *  squash < 1 flattens vertically about the base (overcast back bank). */
-function cloud(cr, centerX, centerY, scale, topColor, bottomColor, alpha = 1, squash = 1, rim = false) {
+function cloud(cr, centerX, centerY, scale, topColor, bottomColor, alpha = 1, squash = 1, rim = groundLight()) {
     const gradient = new Cairo.LinearGradient(
         0, centerY + (2.4 - 8.52 * squash) * scale, 0, centerY + 2.4 * scale);
     gradient.addColorStopRGBA(0, topColor[0], topColor[1], topColor[2], alpha);
@@ -300,7 +300,7 @@ function rainDrops(cr, particles, time, count, slant, alpha, band = [18.4, 20.0]
             if (fade <= 0)
                 continue;
             const [ax, ay] = spots[i];
-            const s = (i % 2 ? 0.96 : 1.06) * dropScale;
+            const s = (hasRim ? (i % 2 ? 0.96 : 1.06) : (i % 2 ? 0.88 : 0.98)) * dropScale;
             const x = ax - slant * (ay - 10) * 0.18 + 0.45 - p * drift;
             const y = ay - 2.4 + p * 5.5;
             cr.newPath();
@@ -310,10 +310,10 @@ function rainDrops(cr, particles, time, count, slant, alpha, band = [18.4, 20.0]
                 cr.setLineWidth(0.65);
                 cr.strokePreserve();
             }
-            cr.setSourceRGBA(waterColor[0], waterColor[1], waterColor[2], Math.min(1, alpha * 1.08) * fade);
+            cr.setSourceRGBA(waterColor[0], waterColor[1], waterColor[2], (hasRim ? Math.min(1, alpha * 1.08) : alpha) * fade);
             cr.fill();
-            cr.setSourceRGBA(1, 1, 1, 0.90 * alpha * fade);
-            circle(cr, x - 0.42 * s, y - 0.28 * s, 0.40 * s);
+            cr.setSourceRGBA(1, 1, 1, (hasRim ? 0.88 : 0.80) * alpha * fade);
+            circle(cr, x - 0.44 * s, y - 0.30 * s, (hasRim ? 0.37 : 0.34) * s);
             cr.fill();
         }
         return;
@@ -321,7 +321,7 @@ function rainDrops(cr, particles, time, count, slant, alpha, band = [18.4, 20.0]
     const marks = [];
     for (let i = 0; i < total; i++) {
         const [x, y] = spots[i];
-        const s = (i % 2 ? 0.96 : 1.06) * dropScale;
+        const s = (hasRim ? (i % 2 ? 0.96 : 1.06) : (i % 2 ? 0.88 : 0.98)) * dropScale;
         const drawX = x - slant * (y - 10) * 0.18;
         marks.push([drawX, y, s]);
         cr.newPath();
@@ -331,13 +331,13 @@ function rainDrops(cr, particles, time, count, slant, alpha, band = [18.4, 20.0]
             cr.setLineWidth(0.65);
             cr.strokePreserve();
         }
-        cr.setSourceRGBA(waterColor[0], waterColor[1], waterColor[2], Math.min(1, alpha * 1.08));
+        cr.setSourceRGBA(waterColor[0], waterColor[1], waterColor[2], hasRim ? Math.min(1, alpha * 1.08) : alpha);
         cr.fill();
     }
     // white catch-light, upper-left of the bulb
-    cr.setSourceRGBA(1, 1, 1, 0.90 * alpha);
+    cr.setSourceRGBA(1, 1, 1, (hasRim ? 0.88 : 0.80) * alpha);
     for (const [x, y, s] of marks)
-        circle(cr, x - 0.42 * s, y - 0.28 * s, 0.40 * s);
+        circle(cr, x - 0.44 * s, y - 0.30 * s, (hasRim ? 0.37 : 0.34) * s);
     cr.fill();
 }
 
@@ -664,7 +664,7 @@ function sceneFog(cr, ctx) {
 // the path at 0.711, so scale 1.40 lands the same silhouette
 function precipSceneCloud(cr, time, palette) {
     const cx = 12 + Math.sin(time * 0.6) * 0.6;
-    cloud(cr, cx, 11.7, 1.40, palette[0], palette[1], 1, 1, groundLight());
+    cloud(cr, cx, 11.7, 1.40, palette[0], palette[1]);
     return cx;
 }
 
@@ -678,7 +678,7 @@ function showersPeek(cr, ctx) {
         sunBody(cr, 7, 7, 2.4, time, 1.2);
     const palette = precipCloud();
     const cx = 14.0 + Math.sin(time * 0.6) * 0.6;
-    cloud(cr, cx, 13.0, 1.10, palette[0], palette[1], 1, 1, groundLight());
+    cloud(cr, cx, 13.0, 1.10, palette[0], palette[1]);
     return cx;
 }
 

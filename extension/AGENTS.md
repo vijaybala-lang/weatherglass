@@ -1,6 +1,6 @@
 # AGENTS.md — Weatherglass
 
-GNOME Shell 45-50 weather extension (uuid `weatherglass@vijaybala.dev`,
+GNOME Shell 45-51 weather extension (uuid `weatherglass@vijaybala.dev`,
 GPL-2.0-or-later). JavaScript/GJS, Cairo painting, no build step.
 
 ## Workflow rules
