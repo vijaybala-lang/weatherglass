@@ -499,7 +499,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             }),
         });
         const hourlyIndex = HOURLY_VIEWS.indexOf(settings.get_string('hourly-view'));
-        hourlyRow.set_selected(hourlyIndex < 0 ? 0 : hourlyIndex);
+        hourlyRow.set_selected(hourlyIndex < 0 ? 2 : hourlyIndex);
         bgGroup.add(hourlyRow);
 
         const CONDITION_MODES = ['off', 'icons', 'pills'];
@@ -531,7 +531,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         bgGroup.add(posRow);
 
         const syncHourlyView = () => {
-            const view = HOURLY_VIEWS[hourlyRow.get_selected()] ?? 'chart';
+            const view = HOURLY_VIEWS[hourlyRow.get_selected()] ?? 'rich-pills';
             const isChart = view === 'chart';
             condRow.visible = isChart;
             posRow.visible = isChart;

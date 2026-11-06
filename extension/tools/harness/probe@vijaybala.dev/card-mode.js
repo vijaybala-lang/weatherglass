@@ -579,8 +579,7 @@ export async function renderCards(slugs, cssPath, pngFor, captureRegion) {
         panel.setAccent([0.208, 0.518, 0.894]);   // #3584e4, as the extension does
         panel.setCondPos('bottom');
         panel.setHourFormat(false);
-        if (fx.hourlyView)
-            panel.setHourlyView(fx.hourlyView);
+        panel.setHourlyView(fx.hourlyView ?? 'chart');
         // the SHIPPED default: extension.js calls setEmboss(get_boolean(
         // 'text-emboss')) and text-emboss defaults false -> .aw-flat kills
         // the inherited .aw-content text-shadow. A settings-free harness

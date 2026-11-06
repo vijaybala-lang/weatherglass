@@ -115,7 +115,7 @@ provider</description>
         <choice value="gauge-pills"/>
         <choice value="rich-pills"/>
       </choices>
-      <default>'chart'</default>
+      <default>'rich-pills'</default>
       <summary>Hourly forecast view style</summary>
       <description>chart = continuous line chart with metric tabs;
 gauge-pills = horizontally scrollable hourly pills with a lower gauge chamber and metric tabs;

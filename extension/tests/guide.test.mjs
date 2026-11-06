@@ -446,6 +446,8 @@ test('the hourly-view picker mirrors the schema choices', () => {
         'prefs must offer chart, gauge-pills, and rich-pills');
     eq(JSON.stringify(choices), JSON.stringify(views),
         'gschema hourly-view choices must match prefs HOURLY_VIEWS');
+    ok(/name="hourly-view"[\s\S]*?<default>'rich-pills'<\/default>/.test(xml),
+        'hourly-view must default to rich-pills (All-in-one pills)');
 });
 
 report('guide');

@@ -185,7 +185,10 @@ const SkyArea = GObject.registerClass(
 const ChartArea = GObject.registerClass(
     class ChartArea extends St.DrawingArea {
         _init(panel) {
-            super._init({ x_align: ACTOR_FILL, y_expand: true, x_expand: true, height: 150 });
+            super._init({
+                x_align: ACTOR_FILL, y_expand: true, x_expand: true,
+                height: panel._hourlyView === 'rich-pills' ? 172 : 150,
+            });
             this._panel = panel;
         }
 
@@ -336,7 +339,7 @@ export class ForecastPanel {
         };
         this._nowFrac = null;
         this._style = 'animated';                 // animated | solid | accent
-        this._hourlyView = 'chart';               // chart | gauge-pills | rich-pills
+        this._hourlyView = 'rich-pills';          // chart | gauge-pills | rich-pills
         this._pillScroll = 0;                     // horizontal scroll offset in px
         this._pillTargetScroll = 0;
         this._pillScrollId = 0;
@@ -486,6 +489,7 @@ export class ForecastPanel {
 
         const tabs = row('aw-tabs');
         tabs.x_align = Clutter.ActorAlign.CENTER;
+        tabs.visible = this._hourlyView !== 'rich-pills';
         this._tabs = tabs;
         this._tabButtons = {};
         for (const [key, metricConfig] of Object.entries(METRICS)) {
@@ -799,7 +803,7 @@ export class ForecastPanel {
 
     /** hourly forecast view: 'chart' | 'gauge-pills' | 'rich-pills' */
     setHourlyView(view) {
-        const nextView = ['chart', 'gauge-pills', 'rich-pills'].includes(view) ? view : 'chart';
+        const nextView = ['chart', 'gauge-pills', 'rich-pills'].includes(view) ? view : 'rich-pills';
         if (this._hourlyView === nextView)
             return;
         this._hourlyView = nextView;
