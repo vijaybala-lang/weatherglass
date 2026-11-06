@@ -47,9 +47,10 @@ the golden registry. They keep one city and one calendar day:
 | Segment | Fixture | Berlin local time | Condition |
 |---|---|---|---|
 | sunny | `demo-berlin-sunny` | 2026-06-29 13:00 | clear |
-| rain | `demo-berlin-rain` | 2026-06-29 16:10 | rain |
 | golden | `demo-berlin-golden` | actual sunset −12 min | clear |
-| fullmoon | `demo-berlin-fullmoon` | 2026-06-29 23:30 | clear, 99.98% lit |
+| night | `demo-berlin-fullmoon` | 2026-06-29 23:30 | clear, 99.98% lit |
+| rain | `demo-berlin-rain` | 2026-06-29 16:10 | rain |
+| snow | `demo-berlin-snow` | 2027-01-19 10:20 | snow |
 
 The default timeline is 12 fps: 0.4 s fade in, 2.5 s per segment,
 0.8 s crossfades, 0.5 s fade out. Captures keep one rectangle; the
