@@ -194,7 +194,7 @@ export function sunGeometry(lat, lon, ms) {
 const NOW_BACKFILL_HOURS = 2;
 const TODAY_WINDOW_HOURS = 24;
 
-export function daySlice(hourly, daily, dayIndex, nowIso = '') {
+export function daySlice(hourly, daily, dayIndex, nowIso = '', backfill = NOW_BACKFILL_HOURS) {
     const times = hourly?.time ?? [];
     const count = times.length;
     if (!count)
@@ -203,7 +203,7 @@ export function daySlice(hourly, daily, dayIndex, nowIso = '') {
         const hourPrefix = nowIso.slice(0, 13);
         const nowIndex = times.findIndex(timeStr => timeStr.slice(0, 13) === hourPrefix);
         if (nowIndex >= 0) {
-            const startIndex = Math.max(0, nowIndex - NOW_BACKFILL_HOURS);
+            const startIndex = Math.max(0, nowIndex - backfill);
             const endIndex = Math.min(nowIndex + TODAY_WINDOW_HOURS, count) - 1;
             const hourlyIndices = [];
             for (let i = startIndex; i <= endIndex; i++)

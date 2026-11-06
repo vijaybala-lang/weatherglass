@@ -14,8 +14,8 @@ import { WeatherIcon, WarningIcon } from './animation.js';
 import { paintSky, createSky, sampleSky, bodyOf } from './sky.js';
 import { chromeVerdicts, boxSampleFractions, compositeGround } from './ink-policy.js';
 import {
-    paintChart, ease, lerp, morphPair, contrastSafe, lumOf, pickInk,
-    judgeInk, INK_DARK, tileGlyphPale, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
+    paintChart, paintHourlyPills, hourlyPillsMetrics, ease, lerp, morphPair, contrastSafe,
+    lumOf, pickInk, judgeInk, INK_DARK, tileGlyphPale, STRIP_PRECIP_INTENSITY, CODE_PRECIP_INTENSITY
 } from './chart.js';
 import { sceneFor, variantForCode, fmtTemp, dayName, daySlice, nowFracIn, sunGeometry,
          alertsForDay, alertOverlapsDay, compactAlertSummary, alertUrl } from './weather.js';
@@ -84,8 +84,11 @@ function row(styleClass) {
     });
 }
 
-function column(styleClass) {
-    return new St.BoxLayout({ vertical: true, style_class: styleClass, x_expand: true });
+function column(styleClass, props = {}) {
+    return new St.BoxLayout({
+        layout_manager: new Clutter.BoxLayout({ orientation: Clutter.Orientation.VERTICAL }),
+        style_class: styleClass, x_expand: true, ...props,
+    });
 }
 
 /** '2026-09-25T15:00' -> '3PM' (or '15') for the chart axis. The next
@@ -143,7 +146,9 @@ const SkyArea = GObject.registerClass(
                     w: surfaceWidth, h: surfaceHeight, time: this._time,
                     scene: skyOptions.scene, night: skyOptions.night, scrim: skyOptions.scrim,
                     sky: skyOptions.sky, radius: skyOptions.radius ?? 0, phase: skyOptions.phase ?? null,
-                    code: skyOptions.scene === 'wind' ? skyOptions.code : null,
+                    code: skyOptions.scene === 'wind' || skyOptions.scene === 'rain'
+                        ? skyOptions.code : null,
+                    temp: skyOptions.temp,
                     glow, solar, fxScale: 1,
                 });
             }
@@ -180,7 +185,10 @@ const SkyArea = GObject.registerClass(
 const ChartArea = GObject.registerClass(
     class ChartArea extends St.DrawingArea {
         _init(panel) {
-            super._init({ x_align: ACTOR_FILL, y_expand: true, x_expand: true, height: 150 });
+            super._init({
+                x_align: ACTOR_FILL, y_expand: true, x_expand: true,
+                height: panel._hourlyView === 'rich-pills' ? 172 : 150,
+            });
             this._panel = panel;
         }
 
@@ -196,6 +204,55 @@ const ChartArea = GObject.registerClass(
             // themselves), so the fill bleeds to the card edges; the narrow
             // chart labels every 3rd hour, ink-dim, 8pt
             const cr = this.get_context();
+            const isRtl = this.get_text_direction() === Clutter.TextDirection.RTL;
+            // smart text ink: labels sample the composited sky at their OWN
+            // y -- hour text over a bright day-sky foot goes dark, night text
+            // stays white. accent style's flat card needs none of this.
+            const bgFn = panel._style === 'accent' ? null : (yPx, xPx) => {
+                const [chartX, top] = this.get_transformed_position();
+                const [cardX, cardY] = panel._content.get_transformed_position();
+                const [cardW, cardH] = panel._content.get_size();
+                const fy = Math.min(1, Math.max(0, (top + yPx - cardY) / (cardH || 1)));
+                if (xPx === undefined)
+                    return panel._bgAt(fy);
+                const fx = Math.min(1, Math.max(0, (chartX + xPx - cardX) / (cardW || 1)));
+                return panel._bgAt(fy, { f: fy, x: fx });
+            };
+            if (panel._hourlyView !== 'chart') {
+                const pillStrip = panel._strip;
+                paintHourlyPills(cr, {
+                    w: surfaceWidth, h: surfaceHeight,
+                    mode: panel._hourlyView,
+                    metric: panel._metric,
+                    values: panel._shown,
+                    pillData: panel._pillData,
+                    fmtValue: panel._fmtValue ?? (() => ''),
+                    fmtValueUnit: panel._fmtValueUnit ?? null,
+                    fmtHour: panel._fmtHour ?? (() => ''),
+                    nowText: _('Now'),
+                    isToday: panel._day === 0,
+                    scrollPx: panel._pillScroll,
+                    hoverNav: panel._hoverHourNav,
+                    accent,
+                    ink: panel._theme().ink,
+                    scenes: pillStrip ? pillStrip.scenes : null,
+                    nights: pillStrip ? pillStrip.nights : null,
+                    iconIntensities: pillStrip ? pillStrip.intensities : null,
+                    iconVariants: pillStrip ? pillStrip.variants : null,
+                    phase: panel._skyOpts.phase ?? null,
+                    dark: panel._paintDark(),
+                    solidDark: panel._style === 'solid' && panel._dark,
+                    rtl: isRtl,
+                    pillGlass: panel._style !== 'accent',
+                    bgFn,
+                    fontSize: surfaceWidth < 480 ? 8 : 8.5,
+                    textScale: panel._textScale,
+                    textBold: panel._textBold,
+                });
+                cr.$dispose();
+                panel._applyTextInk();
+                return;
+            }
             const strip = panel._conditions !== 'off' ? panel._strip : null;
             paintChart(cr, {
                 w: surfaceWidth, h: surfaceHeight,
@@ -217,7 +274,7 @@ const ChartArea = GObject.registerClass(
                 // the right, now-fade covering the RIGHT half). St widgets
                 // around this canvas already flip via the toolkit; the painted
                 // surface has to be told explicitly.
-                rtl: this.get_text_direction() === Clutter.TextDirection.RTL,
+                rtl: isRtl,
                 stripBottom: panel._condPos === 'bottom',
                 // over the sky (animated/solid): pills take the day-tile hover
                 // glass; the accent style keeps the accent tint on its calm
@@ -227,19 +284,7 @@ const ChartArea = GObject.registerClass(
                 // it a contrast-safe variant of the accent (no-op when the
                 // accent already clears ~3:1 against the composited backdrop)
                 nowLabel: contrastSafe(accent, panel._bgUnderChart()),
-                // smart text ink: labels sample the composited sky at their OWN
-                // y -- hour text over a bright day-sky foot goes dark, night text
-                // stays white. accent style's flat card needs none of this.
-                bgFn: panel._style === 'accent' ? null : (yPx, xPx) => {
-                    const [chartX, top] = this.get_transformed_position();
-                    const [cardX, cardY] = panel._content.get_transformed_position();
-                    const [cardW, cardH] = panel._content.get_size();
-                    const fy = Math.min(1, Math.max(0, (top + yPx - cardY) / (cardH || 1)));
-                    if (xPx === undefined)
-                        return panel._bgAt(fy);
-                    const fx = Math.min(1, Math.max(0, (chartX + xPx - cardX) / (cardW || 1)));
-                    return panel._bgAt(fy, { f: fy, x: fx });
-                },
+                bgFn,
                 fontSize: surfaceWidth < 480 ? 8 : 8.5,
                 // 'Data text' emphasis: values + hours bigger and/or heavier
                 textScale: panel._textScale,
@@ -289,11 +334,17 @@ export class ForecastPanel {
         this._sky = createSky();
         // radius 18 matches the shell's polished-popup corner radius
         this._skyOpts = {
-            scene: 'loading', night: false, scrim: null, code: null,
+            scene: 'loading', night: false, scrim: null, code: null, temp: null,
             sky: this._sky, radius: 18
         };
         this._nowFrac = null;
         this._style = 'animated';                 // animated | solid | accent
+        this._hourlyView = 'rich-pills';          // chart | gauge-pills | rich-pills
+        this._pillScroll = 0;                     // horizontal scroll offset in px
+        this._pillTargetScroll = 0;
+        this._pillScrollId = 0;
+        this._hoverHourNav = null;                // 'prev' | 'next' | null
+        this._pillData = null;                    // {temps[], precips[], winds[]}
         this._conditions = 'icons';               // chart strip: off | icons | pills
         this._condPos = 'top';                    // strip band: top | bottom
         this._strip = null;                       // {scenes[], nights[]} for the chart
@@ -305,9 +356,8 @@ export class ForecastPanel {
         this._skyArea = new SkyArea(this, animate);
         this.actor.add_child(this._skyArea);
 
-        this._content = new St.BoxLayout({
-            vertical: true,
-            style_class: 'aw-content',
+        this._content = column('aw-content', {
+            x_expand: false,
             x_align: ACTOR_FILL, y_align: ACTOR_FILL,
         });
         this.actor.add_child(this._content);
@@ -371,11 +421,9 @@ export class ForecastPanel {
             x_align: ACTOR_FILL,
         });
 
-        const leftCol = new St.BoxLayout({
-            vertical: true, style_class: 'aw-temp-col',
-            x_expand: true,
+        const leftCol = column('aw-temp-col', {
             x_align: Clutter.ActorAlign.START,
-            y_align: Clutter.ActorAlign.START
+            y_align: Clutter.ActorAlign.START,
         });
         const tempWrap = row('aw-temp-line');
         this._temperatureLabel = label('', 'aw-current-temp');
@@ -388,11 +436,9 @@ export class ForecastPanel {
         leftCol.add_child(this._descriptionLabel);
         header.add_child(leftCol);
 
-        const right = new St.BoxLayout({
-            vertical: true, style_class: 'aw-city-col',
-            x_expand: true,
+        const right = column('aw-city-col', {
             x_align: Clutter.ActorAlign.END,
-            y_align: Clutter.ActorAlign.START
+            y_align: Clutter.ActorAlign.START,
         });
         this._cityLabel = label(_('Weather'), 'aw-city');
         this._cityLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
@@ -443,6 +489,8 @@ export class ForecastPanel {
 
         const tabs = row('aw-tabs');
         tabs.x_align = Clutter.ActorAlign.CENTER;
+        tabs.visible = this._hourlyView !== 'rich-pills';
+        this._tabs = tabs;
         this._tabButtons = {};
         for (const [key, metricConfig] of Object.entries(METRICS)) {
             const btn = new St.Button({
@@ -458,10 +506,37 @@ export class ForecastPanel {
         this._tabButtons[this._metric].add_style_class_name('aw-tab-active');
         main.add_child(tabs);
 
-        // chart -- full card width (.aw-content has no horizontal padding,
-        // the padded rows above/below make their own 14px insets)
+        // chart + hourly pills overlay stack (.aw-content has no horizontal
+        // padding; the padded rows above/below make their own 14px insets)
+        this._hourlyStack = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: true,
+            x_align: ACTOR_FILL,
+            reactive: true,
+        });
         this._chart = new ChartArea(this);
-        main.add_child(this._chart);
+        this._hourlyStack.add_child(this._chart);
+        this._prevHourBtn = this._hourNavButton(-1, _('Previous hours'));
+        this._nextHourBtn = this._hourNavButton(1, _('Next hours'));
+        this._hourlyStack.add_child(this._prevHourBtn);
+        this._hourlyStack.add_child(this._nextHourBtn);
+        this._hourlyStack.connect('scroll-event', (actor, event) => {
+            if (this._hourlyView === 'chart')
+                return Clutter.EVENT_PROPAGATE;
+            const dir = event.get_scroll_direction();
+            if (dir === Clutter.ScrollDirection.SMOOTH) {
+                const [dx, dy] = event.get_scroll_deltas();
+                const delta = Math.abs(dx) >= Math.abs(dy) ? dx : dy;
+                if (delta !== 0)
+                    this._setPillScroll(this._pillScroll + delta * 28);
+            } else if (dir === Clutter.ScrollDirection.RIGHT || dir === Clutter.ScrollDirection.DOWN) {
+                this._stepHours(1);
+            } else if (dir === Clutter.ScrollDirection.LEFT || dir === Clutter.ScrollDirection.UP) {
+                this._stepHours(-1);
+            }
+            return Clutter.EVENT_STOP;
+        });
+        main.add_child(this._hourlyStack);
 
         // day tiles: narrow grid = 2 rows x 4 (rebuilt on render)
         this._daysGrid = column('aw-days-grid');
@@ -528,9 +603,7 @@ export class ForecastPanel {
                 y_align: Clutter.ActorAlign.CENTER,
             });
             headRow.add_child(icon);
-            const titleCol = new St.BoxLayout({
-                vertical: true, x_expand: true, x_align: ACTOR_FILL,
-            });
+            const titleCol = column(null, { x_align: ACTOR_FILL });
             const title = label(alert.event, 'aw-adv-title');
             title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
             titleCol.add_child(title);
@@ -728,6 +801,127 @@ export class ForecastPanel {
         this._chart.queue_repaint();
     }
 
+    /** hourly forecast view: 'chart' | 'gauge-pills' | 'rich-pills' */
+    setHourlyView(view) {
+        const nextView = ['chart', 'gauge-pills', 'rich-pills'].includes(view) ? view : 'rich-pills';
+        if (this._hourlyView === nextView)
+            return;
+        this._hourlyView = nextView;
+        this._tabs.visible = nextView !== 'rich-pills';
+        this._chart.height = nextView === 'rich-pills' ? 172 : 150;
+        if (this._pillScrollId) {
+            GLib.source_remove(this._pillScrollId);
+            this._pillScrollId = 0;
+        }
+        this._pillScroll = 0;
+        this._pillTargetScroll = 0;
+        if (this._state)
+            this._applySelection();
+        else
+            this._syncHourNav();
+    }
+
+    _hourNavButton(dir, name) {
+        const key = dir < 0 ? 'prev' : 'next';
+        const btn = new St.Button({
+            style_class: dir < 0 ? 'aw-hour-nav aw-hour-nav-prev' : 'aw-hour-nav aw-hour-nav-next',
+            can_focus: true,
+            x_expand: true,
+            y_expand: true,
+            x_align: dir < 0 ? Clutter.ActorAlign.START : Clutter.ActorAlign.END,
+            y_align: Clutter.ActorAlign.CENTER,
+            visible: false,
+        });
+        btn.set_accessible_name(name);
+        btn.connect('clicked', () => this._stepHours(dir));
+        btn.connect('event', (actor, event) => {
+            const type = event.type();
+            if (type === Clutter.EventType.ENTER)
+                this._hoverHourNav = key;
+            else if (type === Clutter.EventType.LEAVE && this._hoverHourNav === key)
+                this._hoverHourNav = null;
+            else
+                return Clutter.EVENT_PROPAGATE;
+            this._chart.queue_repaint();
+            return Clutter.EVENT_PROPAGATE;
+        });
+        return btn;
+    }
+
+    _hourCount() {
+        if (this._hourlyView === 'rich-pills' && this._pillData && Array.isArray(this._pillData.temps))
+            return this._pillData.temps.length;
+        return this._shown ? this._shown.length : 0;
+    }
+
+    _syncHourNav() {
+        if (this._hourlyView === 'chart') {
+            this._prevHourBtn.visible = false;
+            this._nextHourBtn.visible = false;
+            return;
+        }
+        const [cardWidth] = this._content.get_size();
+        const m = hourlyPillsMetrics(cardWidth || 330, this._hourCount(), this._hourlyView);
+        this._pillScroll = Math.max(0, Math.min(m.maxScroll, this._pillScroll));
+        this._pillTargetScroll = Math.max(0, Math.min(m.maxScroll, this._pillTargetScroll));
+        const canBack = this._pillScroll > 0.5;
+        const canFwd = this._pillScroll < m.maxScroll - 0.5;
+        this._prevHourBtn.visible = canBack;
+        this._nextHourBtn.visible = canFwd;
+        if (!canBack && this._hoverHourNav === 'prev')
+            this._hoverHourNav = null;
+        if (!canFwd && this._hoverHourNav === 'next')
+            this._hoverHourNav = null;
+    }
+
+    _setPillScroll(px) {
+        if (this._pillScrollId) {
+            GLib.source_remove(this._pillScrollId);
+            this._pillScrollId = 0;
+        }
+        const [cardWidth] = this._content.get_size();
+        const m = hourlyPillsMetrics(cardWidth || 330, this._hourCount(), this._hourlyView);
+        const clamped = Math.max(0, Math.min(m.maxScroll, px));
+        if (Math.abs(clamped - this._pillScroll) < 0.2)
+            return;
+        this._pillScroll = clamped;
+        this._pillTargetScroll = clamped;
+        this._syncHourNav();
+        this._chart.queue_repaint();
+    }
+
+    _stepHours(dir) {
+        const [cardWidth] = this._content.get_size();
+        const m = hourlyPillsMetrics(cardWidth || 330, this._hourCount(), this._hourlyView);
+        const target = Math.max(0, Math.min(m.maxScroll, this._pillTargetScroll + dir * m.stepPx));
+        if (Math.abs(target - this._pillScroll) < 0.5)
+            return;
+        this._pillTargetScroll = target;
+        if (this._pillScrollId) {
+            GLib.source_remove(this._pillScrollId);
+            this._pillScrollId = 0;
+        }
+        if (!this._animate) {
+            this._pillScroll = target;
+            this._syncHourNav();
+            this._chart.queue_repaint();
+            return;
+        }
+        const from = this._pillScroll;
+        const startTime = GLib.get_monotonic_time();
+        this._pillScrollId = GLib.timeout_add(GLib.PRIORITY_LOW, CHART_MORPH_TICK_MS, () => {
+            const progress = Math.min(1, (GLib.get_monotonic_time() - startTime) / 220000);
+            this._pillScroll = from + (target - from) * ease(progress);
+            this._syncHourNav();
+            this._chart.queue_repaint();
+            if (progress >= 1) {
+                this._pillScrollId = 0;
+                return GLib.SOURCE_REMOVE;
+            }
+            return GLib.SOURCE_CONTINUE;
+        });
+    }
+
     /** chart condition strip: 'off' | 'icons' | 'pills' */
     setConditions(mode) {
         this._conditions = ['off', 'icons', 'pills'].includes(mode) ? mode : 'icons';
@@ -865,6 +1059,10 @@ export class ForecastPanel {
             GLib.source_remove(this._morphId);
             this._morphId = 0;
         }
+        if (this._pillScrollId) {
+            GLib.source_remove(this._pillScrollId);
+            this._pillScrollId = 0;
+        }
         if (this._cityClockTimerId) {
             GLib.source_remove(this._cityClockTimerId);
             this._cityClockTimerId = 0;
@@ -877,6 +1075,12 @@ export class ForecastPanel {
         if (dayIndex === this._day)
             return;
         this._day = dayIndex;
+        if (this._pillScrollId) {
+            GLib.source_remove(this._pillScrollId);
+            this._pillScrollId = 0;
+        }
+        this._pillScroll = 0;
+        this._pillTargetScroll = 0;
         this._markTiles();
         this._applySelection();
     }
@@ -902,6 +1106,7 @@ export class ForecastPanel {
         this._syncHeader();
         this._syncAlerts();
         this._morphTo(this._chartValues());
+        this._syncHourNav();
         this._updateSky();
         this._applyTileInk();          // day switch moves the glass tile and
         this._chart.queue_repaint();   // can swap the sampled sky
@@ -929,10 +1134,20 @@ export class ForecastPanel {
     _chartValues() {
         const state = this._state;
         const field = { temp: 'temp', precip: 'precipProb', wind: 'wind' }[this._metric];
+        const backfill = this._hourlyView === 'chart' ? undefined : 0;
         const hourlyIndices = state.hourly
-            ? daySlice(state.hourly, state.daily, this._day, state.currentIso)
+            ? daySlice(state.hourly, state.daily, this._day, state.currentIso, backfill)
             : [];
         const units = state.units;
+        this._pillData = state.hourly ? {
+            temps: hourlyIndices.map(i => fmtTemp(state.hourly.temp[i] ?? 0, units)),
+            precips: hourlyIndices.map(i => Math.round(state.hourly.precipProb[i] ?? 0)),
+            winds: hourlyIndices.map(i => {
+                const w = state.hourly.wind[i] ?? 0;
+                const val = Math.round(units === 'imperial' ? w * 0.621371 : w);
+                return `${val} ${units === 'imperial' ? 'mph' : 'km/h'}`;
+            }),
+        } : null;
         this._fmtValue = this._metric === 'temp'
             ? (i, v) => fmtTemp(v, units)
             : this._metric === 'precip'
@@ -996,20 +1211,23 @@ export class ForecastPanel {
         const state = this._state;
         if (!state)
             return;
-        let scene, night, code;
+        let scene, night, code, temp;
         if (this._day === 0) {
             scene = (state.effective ?? sceneFor(state.current.code, state.current.isDay)).scene;
             night = !state.current.isDay;
             code = state.current.code;
+            temp = state.current.temp;
         } else {
             const dayData = state.daily[this._day];
             scene = sceneFor(dayData.code, true).scene;
             night = false;
             code = dayData.code;
+            temp = dayData.tmax;
         }
         this._skyOpts.scene = scene;
         this._skyOpts.night = night;
         this._skyOpts.code = code;
+        this._skyOpts.temp = Number.isFinite(temp) ? temp : null;
         this._skyOpts.phase = Number.isFinite(state.phase) ? state.phase : null;
         this._sunCoords = Number.isFinite(state.latitude) && Number.isFinite(state.longitude)
             ? [state.latitude, state.longitude] : null;
@@ -1069,9 +1287,8 @@ export class ForecastPanel {
                     can_focus: true,
                     x_expand: true,
                 });
-                const col = new St.BoxLayout({
-                    vertical: true, style_class: 'aw-day-col',
-                    x_align: ACTOR_FILL
+                const col = column('aw-day-col', {
+                    x_expand: false, x_align: ACTOR_FILL,
                 });
                 const dayNameRow = new St.BoxLayout({
                     style_class: 'aw-day-namerow',

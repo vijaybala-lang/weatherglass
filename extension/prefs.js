@@ -490,6 +490,18 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         settings.bind('text-emboss', embossRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         bgGroup.add(embossRow);
 
+        const HOURLY_VIEWS = ['chart', 'gauge-pills', 'rich-pills'];
+        const hourlyRow = new Adw.ComboRow({
+            title: _('Hourly forecast'),
+            subtitle: _('Line chart or scrollable hourly pills'),
+            model: new Gtk.StringList({
+                strings: [_('Line chart'), _('Gauge pills'), _('All-in-one pills')],
+            }),
+        });
+        const hourlyIndex = HOURLY_VIEWS.indexOf(settings.get_string('hourly-view'));
+        hourlyRow.set_selected(hourlyIndex < 0 ? 2 : hourlyIndex);
+        bgGroup.add(hourlyRow);
+
         const CONDITION_MODES = ['off', 'icons', 'pills'];
         const condRow = new Adw.ComboRow({
             title: _('Weather conditions'),
@@ -517,6 +529,17 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         posRow.connect('notify::selected', () =>
             settings.set_string('condition-pos', CONDITION_POSITIONS[posRow.get_selected()] ?? 'bottom'));
         bgGroup.add(posRow);
+
+        const syncHourlyView = () => {
+            const view = HOURLY_VIEWS[hourlyRow.get_selected()] ?? 'rich-pills';
+            const isChart = view === 'chart';
+            condRow.visible = isChart;
+            posRow.visible = isChart;
+            settings.set_string('hourly-view', view);
+        };
+        hourlyRow.connect('notify::selected', syncHourlyView);
+        condRow.visible = hourlyRow.get_selected() === 0;
+        posRow.visible = hourlyRow.get_selected() === 0;
 
         const EMPHASIS_MODES = ['normal', 'bold', 'large', 'both'];
         const emphRow = new Adw.ComboRow({

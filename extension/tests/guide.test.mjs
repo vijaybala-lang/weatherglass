@@ -141,6 +141,14 @@ test('no GtkWidget.destroy in prefs (GTK4 removed it)', () => {
     silence(scan(/\.destroy\s*\(/, ['prefs.js']));
 });
 
+test('no StBoxLayout.vertical in shell modules (GNOME 51 removed it)', () => {
+    // GNOME 45-47 lacked St.BoxLayout.orientation; GNOME 51 removed
+    // St.BoxLayout.vertical. Passing layout_manager: new Clutter.BoxLayout({
+    // orientation: Clutter.Orientation.VERTICAL }) works across 45-51
+    // without version branching.
+    silence(scan(/\bvertical\s*:/));
+});
+
 /* -- formatting and review hygiene ------------------------------------- */
 
 test('lines stay within 200 characters', () => {
@@ -313,7 +321,7 @@ test('release ritual: one proven artifact to upload, goldens need operator appro
 // promise that the exact shipped bytes were certified on that shell, and
 // the harness companions must be loadable everywhere the product is.
 test('release ritual: every declared shell owes a certification', () => {
-    const expected = ['45', '46', '47', '48', '49', '50'];
+    const expected = ['45', '46', '47', '48', '49', '50', '51'];
     const meta = JSON.parse(read(`${ROOT}/metadata.json`));
     eq(JSON.stringify(meta['shell-version']), JSON.stringify(expected),
         'metadata must declare the certified GNOME Shell majors');
@@ -425,6 +433,21 @@ test('prefs splits Use system theme toggle from sky background style dropdown', 
        prefs.includes("_('Animated sky with theme tint')") &&
        prefs.includes('styleRow.visible = !themeRow.active'),
        'prefs must expose a Use system theme switch that hides the sky style dropdown when active');
+});
+
+test('the hourly-view picker mirrors the schema choices', () => {
+    const prefs = read(`${ROOT}/prefs.js`);
+    const xml = read(`${ROOT}/schemas/org.gnome.shell.extensions.weatherglass.gschema.xml`);
+    const views = [...prefs.matchAll(/const HOURLY_VIEWS = \[([^\]]+)\]/g)][0][1]
+        .split(',').map(s => s.trim().replace(/'/g, ''));
+    const choices = [...xml.matchAll(/name="hourly-view"[\s\S]*?<choices>([\s\S]*?)<\/choices>/g)][0][1]
+        .match(/value="([^"]+)"/g).map(m => m.slice(7, -1));
+    eq(JSON.stringify(views), JSON.stringify(['chart', 'gauge-pills', 'rich-pills']),
+        'prefs must offer chart, gauge-pills, and rich-pills');
+    eq(JSON.stringify(choices), JSON.stringify(views),
+        'gschema hourly-view choices must match prefs HOURLY_VIEWS');
+    ok(/name="hourly-view"[\s\S]*?<default>'rich-pills'<\/default>/.test(xml),
+        'hourly-view must default to rich-pills (All-in-one pills)');
 });
 
 report('guide');

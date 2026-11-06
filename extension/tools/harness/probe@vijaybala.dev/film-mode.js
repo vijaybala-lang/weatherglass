@@ -119,6 +119,8 @@ export async function shootFilm({fixture, beats, cssPath, pngFor, captureRegion}
             tzMin: 120, condition: 'clear'},
         'demo-berlin-fullmoon': {...berlinDay,
             local: '2026-06-29T23:30+02:00', condition: 'clear'},
+        'demo-berlin-snow': {...berlinDay,
+            local: '2027-01-19T10:20+01:00', condition: 'snow'},
         // World-tour showcase fixtures (--world flag in tools/film.sh):
         // Covers all 16 supported weather conditions across Day, Golden Hour,
         // and Night, plus Solid & Accent styles in Dark and Light themes.

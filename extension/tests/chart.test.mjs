@@ -5,7 +5,7 @@
  * columns on a 400 px card.
  */
 import Cairo from 'gi://cairo';
-import { paintChart, ease, lerp, morphPair } from '../chart.js';
+import { paintChart, paintHourlyPills, hourlyPillsMetrics, ease, lerp, morphPair } from '../chart.js';
 import { file, test, ok, near, eq, report } from './harness.mjs';
 
 file('chart');
@@ -169,6 +169,63 @@ test('RTL chart keeps the same hour columns as LTR (right-to-left progression)',
     }
     eq(droppedRtl.length, 0, `RTL dropped hours: ${JSON.stringify(droppedRtl)}`);
     eq(keptRtl.join(','), keptLtr.join(','), 'RTL must keep the exact same hour indices as LTR');
+});
+
+test('hourlyPillsMetrics and paintHourlyPills size gauge-pills and rich-pills with vertical overlay nav', () => {
+    const mGauge = hourlyPillsMetrics(330, 24, 'gauge-pills');
+    eq(mGauge.availW, 302, '330 px card minus 14 px gutters leaves 302 px');
+    eq(mGauge.pillW, 50, 'gauge-pills are 50 px wide (5.5 visible across 302 px)');
+    eq(mGauge.navW, 22, 'vertical overlay pill is 22 px wide');
+    eq(mGauge.navH, 74, 'gauge-pills vertical overlay pill is 74 px tall');
+    ok(mGauge.maxScroll > 900, '24 gauge pills scroll horizontally');
+    eq(mGauge.stepPx, 3 * (50 + 6), 'stepper advances 3 pills per click');
+
+    const mRich = hourlyPillsMetrics(330, 24, 'rich-pills');
+    eq(mRich.pillW, 62, 'rich-pills are 62 px wide (4.5 visible across 302 px)');
+    eq(mRich.navH, 84, 'rich-pills vertical overlay pill is 84 px tall');
+    eq(mRich.stepPx, 3 * (62 + 6.5), 'rich stepper advances 3 pills per click');
+
+    const temps = Array.from({ length: 24 }, (_, i) => 14 + Math.round(Math.sin(i / 4) * 6));
+    const pillData = {
+        temps: temps.map(t => `${t}\u00b0`),
+        precips: temps.map((_, i) => (i * 15) % 100),
+        winds: temps.map((_, i) => `${8 + i} km/h`),
+    };
+    for (const mode of ['gauge-pills', 'rich-pills']) {
+        for (const scrollPx of [0, 168]) {
+            const h = mode === 'rich-pills' ? 172 : 150;
+            const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, h);
+            const cr = new Cairo.Context(surf);
+            let probeResult = null;
+            paintHourlyPills(cr, {
+                w: 330, h, mode, metric: 'temp',
+                values: temps, pillData,
+                fmtValue: (i, v) => `${v}\u00b0`,
+                fmtHour, nowText: 'Now', isToday: true,
+                scrollPx, hoverNav: scrollPx > 0 ? 'prev' : 'next',
+                accent: [0.96, 0.65, 0.14], ink: [1, 1, 1],
+                scenes: Array(24).fill('partly'),
+                nights: Array(24).fill(false),
+                dark: true, pillGlass: true,
+                bgFn: () => [0.28, 0.42, 0.64],
+                pillsProbe: r => { probeResult = r; },
+            });
+            cr.$dispose();
+            ok(probeResult !== null, `${mode} @scroll=${scrollPx} must invoke pillsProbe`);
+            eq(probeResult.canScrollBack, scrollPx > 0, `${mode} @scroll=${scrollPx} left < overlay visibility`);
+            eq(probeResult.canScrollFwd, true, `${mode} @scroll=${scrollPx} right > overlay visibility`);
+            if (scrollPx === 0) {
+                eq(probeResult.visiblePills[0].i, 0, `${mode} starts at Now (index 0)`);
+                eq(probeResult.visiblePills.length, mode === 'gauge-pills' ? 6 : 5,
+                    `${mode} shows 5 full + 6th peeking (gauge) or 4 full + 5th peeking (rich)`);
+            }
+            if (mode === 'gauge-pills') {
+                for (const p of probeResult.visiblePills)
+                    ok(p.barTop >= p.chamberTop + 10,
+                        `gauge bar (barTop=${p.barTop}) must stay inside lower chamber below chamberTop=${p.chamberTop}`);
+            }
+        }
+    }
 });
 
 report('chart');

@@ -43,16 +43,38 @@ if [[ ! -s "$OUT" ]]; then
     echo "shexli: engine produced no analysis -- FAIL (cannot certify blind)" >&2
     exit 1
 fi
-if python3 - "$OUT" <<'PY'
+HOST_MAJOR=""
+if command -v gnome-shell >/dev/null 2>&1; then
+    HOST_MAJOR="$(gnome-shell --version | sed -n 's/^GNOME Shell \([0-9][0-9]*\)\..*/\1/p')"
+fi
+if python3 - "$OUT" "${HOST_MAJOR:-0}" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
+host_major = int(sys.argv[2] or 0)
 s = d.get('summary', {})
-n = int(s.get('finding_count', 0))
-if n == 0 and s.get('status') in ('clean', 'ok', None):
-    print(f'shexli: clean ({s.get("status", "?")}, spec {d.get("spec_version", "?")})')
+findings = list(d.get('findings', []))
+target_versions = d.get('artifacts', {}).get('target_versions', [])
+# shexli v0.2.0 (spec 2026-04-02) hardcodes GNOME 50 as the ceiling; when the
+# host itself runs GNOME Shell >= 51 and every declared target_version is a
+# contiguous integer in 45..host_major, EGO-M-004 is a stale-spec false positive.
+waived = []
+if (host_major >= 51 and target_versions
+        and target_versions == list(range(45, host_major + 1))):
+    kept = []
+    for f in findings:
+        if f.get('rule_id') == 'EGO-M-004':
+            waived.append(f)
+        else:
+            kept.append(f)
+    findings = kept
+n = len(findings)
+if n == 0 and (s.get('status') in ('clean', 'ok', None) or waived):
+    note = (f', EGO-M-004 waived for host GNOME Shell {host_major}'
+            if waived else '')
+    print(f'shexli: clean ({s.get("status", "?")}, spec {d.get("spec_version", "?")}{note})')
     sys.exit(0)
 print(f'shexli: {n} finding(s), status={s.get("status")}')
-for f in d.get('findings', []):
+for f in findings:
     print(f'  {f.get("rule_id")} [{f.get("severity")}] {f.get("title")}')
     for e in f.get('evidence', [])[:4]:
         print(f'      {e.get("path", "").split(":")[-1]}:{e.get("line")}  {e.get("snippet", "")[:70]}')

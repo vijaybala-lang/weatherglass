@@ -354,6 +354,17 @@ export const FIXTURES = {
                 source: 'MeteoAlarm',
             },
         ]},
+    /* hourly pill views: B1 segmented lower-chamber gauge pills (at Now and
+     * stepped +3 hours via _nextHourBtn click) and C all-in-one rich pills */
+    'hourly-gauge-pills': {city: 'San Francisco', lat: 37.77, lon: -122.42,
+        local: '2026-10-07T18:37-07:00', condition: 'partly',
+        hourlyView: 'gauge-pills'},
+    'hourly-gauge-scrolled': {city: 'San Francisco', lat: 37.77, lon: -122.42,
+        local: '2026-10-07T18:37-07:00', condition: 'partly',
+        hourlyView: 'gauge-pills', stepNext: true},
+    'hourly-rich-pills': {city: 'Berlin', lat: 52.52, lon: 13.4,
+        local: '2026-11-03T14:10+01:00', condition: 'rain',
+        hourlyView: 'rich-pills'},
 };
 
 /* card-demo's buildData, ported verbatim (consumes the pinned LCG) */
@@ -568,6 +579,7 @@ export async function renderCards(slugs, cssPath, pngFor, captureRegion) {
         panel.setAccent([0.208, 0.518, 0.894]);   // #3584e4, as the extension does
         panel.setCondPos('bottom');
         panel.setHourFormat(false);
+        panel.setHourlyView(fx.hourlyView ?? 'chart');
         // the SHIPPED default: extension.js calls setEmboss(get_boolean(
         // 'text-emboss')) and text-emboss defaults false -> .aw-flat kills
         // the inherited .aw-content text-shadow. A settings-free harness
@@ -586,6 +598,15 @@ export async function renderCards(slugs, cssPath, pngFor, captureRegion) {
         Main.uiGroup.add_child(host);
         host.set_position(100, 120);   // clear of the topbar's shadow edge
         panel.render(buildState(weather, moon, fx));
+        if (fx.hourlyView && fx.hourlyView !== 'chart') {
+            if (panel._prevHourBtn.visible || !panel._nextHourBtn.visible)
+                throw new Error(`${slug}: at Now, _prevHourBtn must be hidden and _nextHourBtn visible`);
+            if (fx.stepNext) {
+                panel._nextHourBtn.emit('clicked', 1);
+                if (!panel._prevHourBtn.visible || !panel._nextHourBtn.visible || panel._pillScroll <= 0)
+                    throw new Error(`${slug}: clicking _nextHourBtn did not advance scroll and reveal _prevHourBtn`);
+            }
+        }
         if (fx.lang && RTL_LANGS.has(fx.lang))
             setTreeDir(panel.actor, Clutter.TextDirection.RTL);
         if (panel._alertRows.length > 0) {

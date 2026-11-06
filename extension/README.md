@@ -16,7 +16,7 @@ precipitation or wind), and eight days of forecast tiles.
   live scene previews in preferences
 - Animations drawn with cairo on `St.DrawingArea` (~20 fps, pauses when
   unmapped), HiDPI aware, adaptive ink for legibility over any sky
-- GNOME Shell **45–50** (ES modules)
+- GNOME Shell **45–51** (ES modules)
 
 ## Gallery
 

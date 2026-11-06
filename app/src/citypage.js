@@ -105,6 +105,7 @@ class CityPage extends Gtk.Box {
     #skyScene = 'loading';
     #skyNight = false;
     #skyCode = null;
+    #skyTemp = null;
     #moonPhase = 0.62;
 
     #stack; #overlay; #vadj;
@@ -206,6 +207,7 @@ class CityPage extends Gtk.Box {
             scene: this.#skyScene,
             night: this.#skyNight,
             code: this.#skyCode,
+            temp: this.#skyTemp,
             phase: this.#moonPhase,
             glow, solar,
         };
@@ -680,16 +682,20 @@ class CityPage extends Gtk.Box {
     #syncSkyScene() {
         if (!this.#data) return;
         if (this.#dayIndex > 0 && this.#data.daily[this.#dayIndex]) {
-            const code = this.#data.daily[this.#dayIndex].code;
+            const day = this.#data.daily[this.#dayIndex];
+            const code = day.code;
             const info = sceneFor(code, true);
             this.#skyScene = info.scene;
             this.#skyNight = false;
             this.#skyCode = code;
+            this.#skyTemp = Number.isFinite(day.tmax) ? day.tmax : null;
         } else {
             const eff = effectiveScene(this.#data.current);
             this.#skyScene = eff.scene;
             this.#skyNight = eff.night;
             this.#skyCode = this.#data.current.code;
+            this.#skyTemp = Number.isFinite(this.#data.current.temp)
+                ? this.#data.current.temp : null;
         }
     }
 

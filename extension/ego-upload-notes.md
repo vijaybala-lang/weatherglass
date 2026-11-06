@@ -1,4 +1,4 @@
-# EGO upload kit -- integer 12
+# EGO upload kit -- integer 13
 
 The release ritual (every command, in order: review, bump, certify,
 GitHub release, live gate, captures, publish, README links, upload)
@@ -7,50 +7,43 @@ EGO-page material: the artifact identity, the capture list, the
 canonical description block, and the standing reviewer answers.
 
 Upload at: https://extensions.gnome.org/upload/
-Artifact:  dist/weatherglass@vijaybala.dev.zip  (integer 12; certified
+Artifact:  dist/weatherglass@vijaybala.dev.zip  (integer 13; certified
 on every declared shell; the EGO-served bytes must match).
 
 ## Last shipped (the step-0 audit anchor; update at every upload)
 
-Last shipped commit: 8853f45
-(integer 11, EGO serial 19 / pk 77151; the integer-12 audit used
-8853f45, the release-v11 merge, as its base: shipped changes since are
-the top-bar next-24h advisory icon, centered popup alignment, bolder
-Cairo `WarningIcon` badge in panel and menu, `notify::mapped` + adaptive
-FPS timer gating for `WeatherIcon` and `_cityClockTimerId`, split `Use
-system theme` switch + auto-hiding `Background style` dropdown in
-prefs.js, advisory layout, text-unwrap/summary, symmetric day-tile
-corner dot, narrow-card sky height-resize scale/floor-ripple
-preservation, and RTL chart slot fixes in animation.js, extension.js,
-menu.js, prefs.js, sky.js, stylesheet.css, weather.js, chart.js, and
-po/locale, plus 5 advisory shell goldens and 21 per-language clear-day
-goldens; dead-code sweep clean.)
+Last shipped commit: 8d2e37c
+(integer 12, EGO serial 20 / pk 77276; the integer-13 audit used
+8d2e37c, the release-v12-updates merge, as its base: shipped changes
+since are the `hourly-view` preference (`chart`, `gauge-pills`,
+`rich-pills`) defaulting to `rich-pills` (All-in-one pills) with
+vertical overlay navigation (`menu.js`, `chart.js`, `prefs.js`,
+`stylesheet.css`, `schemas/`, `po/locale`), realistic seasonal and
+weather-themed sky floors in `sky.js` (`drawPondFloor` submerged koi
+pond with connected rain ripples, `drawStormLotusFloor` storm lotus,
+sparrow, and frog, `drawSnowmanChaletFloor` Option A 4-tree snow
+woodland with chalet and snowman, `drawClearHillsFloor` pastoral rolling
+hills with foreground Dutch windmill and hot-air balloon, and
+`drawClearBeachFloor` tropical shoreline), consistent top-crown sheen
+and outer rim across all clouds and light-ground rain droplets in
+`painter.js`, and GNOME Shell 51 support in `metadata.json` and
+`menu.js` replacing `StBoxLayout.vertical` with `Clutter.BoxLayout`
+orientation; dead-code sweep clean.)
 
-Integer 12 adds a severity-colored 50% (`10px`) top-bar advisory badge
-(`WarningIcon` overlaid top-left on the weather icon when an advisory is
-active or starts within the next 24 hours), centers the popup card under
-the top-bar indicator (`0.5` menu alignment), gates `WeatherIcon` and
-`_cityClockTimerId` timers on `notify::mapped` with adaptive 5/10 FPS
-top-bar frame rates to reduce background CPU/GPU wakeups when the menu
-is closed, splits the `menu-style` preference into a `Use system theme`
-toggle and an auto-hiding `Background style` dropdown (`Animated sky` vs
-`Animated sky with theme tint`), fixes weather advisory rows starting
-expanded and having a misaligned/unclickable expander chevron
-(`pan-down-symbolic` / `pan-up-symbolic` with center alignment and
-full-header click padding), draws a bolder warning triangle with
-exclamation (`WarningIcon`) in both the top bar and menu advisory rows,
-moves the day-tile severity circle to a top-right corner overlay
-(`Clutter.BinLayout`) with symmetric 4px top/right corner inset and
-vertical clearance above day labels, unwraps hard-wrapped NWS teletype
-newlines into a concise popup summary with a `Full advisory` link button,
-anchors narrow-card (`width <= 360`) sky feature scale (`CARD_SCENE_H`)
-and shifts puddle ripples / raindrop splash floors (`adjustSkyHeight`)
-across advisory height changes without re-randomizing clouds or drops,
-fixes RTL chart hour-column retention (`chart.js`), translates advisory
-and theme UI strings across all 21 catalogs, and locks 5 advisory shell
-goldens (`advisory-yellow`, `advisory-orange`, `advisory-red`,
-`advisory-neutral`, `advisory-stack`) plus 21 per-language clear-day
-goldens (`i18n-ar` .. `i18n-zh_CN`).
+Integer 13 adds GNOME Shell 51 support (`"51"` in `shell-version` and
+`Clutter.BoxLayout` vertical orientation in `menu.js` for `StBoxLayout`
+compatibility across GNOME Shell 45-51), introduces hourly forecast pill
+views (`hourly-view` setting in `prefs.js` and `menu.js` with `chart`,
+`gauge-pills`, and `rich-pills` defaulting to `rich-pills` All-in-one
+capsules with horizontal scrolling and vertical overlay `<` / `>`
+buttons), paints realistic seasonal and weather-condition sky floors in
+`sky.js` (submerged koi pond with lily pads and 3-tier rain ripples,
+storm lotus with huddled sparrow and frog, Option A 4-tree snow woodland
+with glowing alpine chalet and snowman, pastoral clear/overcast hills
+with foreground Dutch windmill and hot-air balloon, and tropical beach
+shoreline for hot clear days), and applies a consistent top-crown sheen
+and subtle outer rim across all clouds and light-ground raindrops in
+`painter.js`.
 The upload imagery is the goldens,
 so the v7-era lesson -- live-photo sets that "photograph whatever bugs
 shipped then" -- no longer applies: see skill step 5.
@@ -202,4 +195,4 @@ way during the v8 review round:
 - The metadata "url" points at the GitHub repo per the EGO review
   guidelines (must be a GitHub/GitLab project URL) -- keep it there even
   after approval; link the EGO page from the repo README instead.
-- Keep integer version bumps for every future upload (next: 13).
+- Keep integer version bumps for every future upload (next: 14).

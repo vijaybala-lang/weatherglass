@@ -35,9 +35,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_WORKDIR = ROOT / 'tools' / 'out' / 'demo-transitions'
 DEFAULT_SEGMENTS = (
     ('sunny', 'demo-berlin-sunny'),
+    ('night', 'demo-berlin-fullmoon'),
     ('rain', 'demo-berlin-rain'),
-    ('golden', 'demo-berlin-golden'),
-    ('fullmoon', 'demo-berlin-fullmoon'),
+    ('snow', 'demo-berlin-snow'),
 )
 ALL_CONDITIONS = (
     'clear', 'wind', 'partly', 'cloud', 'fog',

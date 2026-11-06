@@ -109,6 +109,19 @@ looks off, try another model before doubting the
 provider</description>
     </key>
 
+    <key name="hourly-view" type="s">
+      <choices>
+        <choice value="chart"/>
+        <choice value="gauge-pills"/>
+        <choice value="rich-pills"/>
+      </choices>
+      <default>'rich-pills'</default>
+      <summary>Hourly forecast view style</summary>
+      <description>chart = continuous line chart with metric tabs;
+gauge-pills = horizontally scrollable hourly pills with a lower gauge chamber and metric tabs;
+rich-pills = horizontally scrollable all-in-one hourly pills showing temperature, precipitation, and wind together</description>
+    </key>
+
     <key name="condition-strip" type="s">
       <choices>
         <choice value="off"/>
