@@ -428,11 +428,18 @@ test('header decouples condition width from city column width', () => {
 
 test('prefs splits Use system theme toggle from sky background style dropdown', () => {
     const prefs = sources['prefs.js'];
+    const xml = read(`${ROOT}/schemas/org.gnome.shell.extensions.weatherglass.gschema.xml`);
     ok(prefs.includes("_('Use system theme')") &&
        prefs.includes("_('Animated sky')") &&
        prefs.includes("_('Animated sky with theme tint')") &&
        prefs.includes('styleRow.visible = !themeRow.active'),
        'prefs must expose a Use system theme switch that hides the sky style dropdown when active');
+    ok(prefs.includes("_('Show floor scenes')") &&
+       prefs.includes("settings.bind('sky-floor', floorRow, 'active'") &&
+       prefs.includes('floorRow.visible = !themeRow.active'),
+       'prefs must expose a Show floor scenes switch bound to sky-floor and hidden when Use system theme is active');
+    ok(/name="sky-floor"\s+type="b"[\s\S]*?<default>true<\/default>/.test(xml),
+       'gschema must declare sky-floor boolean defaulting to true');
 });
 
 test('the hourly-view picker mirrors the schema choices', () => {

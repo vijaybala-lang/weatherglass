@@ -191,6 +191,14 @@ under a wash, accent = no sky: the shell theme's own popup background with
 the charts drawn in the OS accent colour</description>
     </key>
 
+    <key name="sky-floor" type="b">
+      <default>true</default>
+      <summary>Show floor scenes in the sky backdrop</summary>
+      <description>Render weather-specific floor art and animations (pastoral
+hills, beach, winter snow scenes, koi pond, and storm lotus pond) along the
+bottom of the sky backdrop</description>
+    </key>
+
     <key name="preview-scene" type="s">
       <default>''</default>
       <summary>Temporarily preview an animation on the panel icon</summary>

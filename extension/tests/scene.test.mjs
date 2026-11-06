@@ -4,6 +4,7 @@
  * the source so a wrong scene never reaches a correct-looking cell.
  */
 import Cairo from 'gi://cairo';
+import GdkPixbuf from 'gi://GdkPixbuf';
 import { file, test, ok, near, eq, report } from './harness.mjs';
 import { sceneFor, fmtTemp, sunGeometry, daySlice } from '../weather.js';
 import { createSky, paintSky, resolveFloorScene } from '../sky.js';
@@ -181,21 +182,45 @@ test('resolveFloorScene routes snow, storm, and temperature-banded clear day flo
     eq(resolveFloorScene('sun', true, 20), null, 'clear night does not paint daytime floor');
     eq(resolveFloorScene('moon', true, -20), null, 'moon night does not paint daytime floor');
 
-    // Render all floor scenes cleanly through paintSky
-    const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
-    const cr = new Cairo.Context(surf);
-    const sky = createSky();
-    for (const [scene, night, temp] of [
-        ['snow', false, -21],
-        ['snow', false, -5],
-        ['storm', true, 19],
-        ['sun', false, 20],
-        ['cloud', false, 15],
-        ['sun', false, 29],
+    // Render all floor scenes cleanly through paintSky, and verify floor: true suppresses them
+    const surfOn = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
+    const surfOff = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
+    const crOn = new Cairo.Context(surfOn);
+    const crOff = new Cairo.Context(surfOff);
+    const tmpOn = '/tmp/wg-test-floor-on.png';
+    const tmpOff = '/tmp/wg-test-floor-off.png';
+    for (const [scene, night, temp, code] of [
+        ['snow', false, -21, 75],
+        ['snow', false, -5, 73],
+        ['storm', true, 19, 95],
+        ['sun', false, 20, 0],
+        ['cloud', false, 15, 3],
+        ['sun', false, 29, 0],
+        ['rain', false, 16, 63],
     ]) {
-        paintSky(cr, { w: 330, h: 472, time: 1.5, scene, night, sky, temp });
+        const sky = createSky();
+        paintSky(crOn, { w: 330, h: 472, time: 1.5, scene, night, sky, temp, code, floor: true, fxScale: 1 });
+        sky.fx.writeToPNG(tmpOn);
+        paintSky(crOff, { w: 330, h: 472, time: 1.5, scene, night, sky, temp, code, floor: false, fxScale: 1 });
+        sky.fx.writeToPNG(tmpOff);
+        const pbOn = GdkPixbuf.Pixbuf.new_from_file(tmpOn);
+        const pbOff = GdkPixbuf.Pixbuf.new_from_file(tmpOff);
+        const pxOn = pbOn.get_pixels(), pxOff = pbOff.get_pixels();
+        const stride = pbOn.get_rowstride(), nChan = pbOn.get_n_channels();
+        let bottomDiff = 0;
+        for (let y = 390; y < 470; y += 2) {
+            for (let x = 16; x < 314; x += 4) {
+                const idx = y * stride + x * nChan;
+                if (Math.abs(pxOn[idx] - pxOff[idx]) +
+                    Math.abs(pxOn[idx + 1] - pxOff[idx + 1]) +
+                    Math.abs(pxOn[idx + 2] - pxOff[idx + 2]) > 12)
+                    bottomDiff++;
+            }
+        }
+        ok(bottomDiff > 20, `${scene} (temp=${temp}) floor: true must suppress bottom floor art (diff=${bottomDiff})`);
     }
-    cr.$dispose();
+    crOn.$dispose();
+    crOff.$dispose();
 });
 
 report('scene');

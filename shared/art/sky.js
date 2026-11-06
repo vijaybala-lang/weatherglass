@@ -1975,10 +1975,10 @@ function isStormForegroundZone(x, y, width, height, scale) {
 }
 
 /* Rain, Drizzle & Showers: 3-tier WMO intensity + connected raindrop-to-ripple impacts + koi pond */
-function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 0, night = false) {
+function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 0, night = false, floor = true) {
     if (!sky.drops.length)
         return;
-    if (scene === 'rain')
+    if (floor && scene === 'rain')
         drawKoiPond(cr, sky, width, height, scale, dt, time, night);
 
     const isLightRain = code === 51 || code === 56 || code === 61 || code === 80;
@@ -2043,13 +2043,13 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 
         const alpha = layer === 2 ? 0.62 : (layer === 1 ? 0.44 : 0.28);
         const lw = (layer === 2 ? 1.65 : (layer === 1 ? 1.25 : 0.92)) * scale;
         const tx = drop.x - length * slant, ty = drop.y + length;
-        if (scene === 'storm' && (
+        if (floor && scene === 'storm' && (
             isStormForegroundZone(tx, ty, width, height, scale) ||
             isStormForegroundZone((drop.x + tx) * 0.5, (drop.y + ty) * 0.5, width, height, scale) ||
             isStormForegroundZone(drop.x, drop.y, width, height, scale)
         ))
             continue;
-        if (scene === 'rain' && (
+        if (floor && scene === 'rain' && (
             isKoiPadZone(tx, ty, sky, scale) ||
             isKoiPadZone((drop.x + tx) * 0.5, (drop.y + ty) * 0.5, sky, scale)
         ))
@@ -2075,9 +2075,9 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 
         const rp = sky.ripples[i];
         if (rp.phase >= 1)
             continue;
-        if (scene === 'storm' && isStormForegroundZone(rp.x, rp.y, width, height, scale))
+        if (floor && scene === 'storm' && isStormForegroundZone(rp.x, rp.y, width, height, scale))
             continue;
-        if (scene === 'rain' && isKoiPadZone(rp.x, rp.y, sky, scale))
+        if (floor && scene === 'rain' && isKoiPadZone(rp.x, rp.y, sky, scale))
             continue;
         const depth = Math.max(0, Math.min(1, (rp.y - (groundOffset + 0.68 * sh)) / (0.31 * sh)));
         const pScale = (0.52 + 0.54 * depth) * scale;
@@ -5084,7 +5084,7 @@ function drawLightning(cr, width, height, scale, time) {
  * plane unless pinned with fxScale: 1. */
 export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
     scrim = null, radius = 0, phase = null, glow = 0, solar = null,
-    code = null, variant = null, temp = null, quiet = false, fxScale = null }) {
+    code = null, variant = null, temp = null, floor = true, quiet = false, fxScale = null }) {
     const tStartMs = Date.now();
     const rw = Math.round(width), rh = Math.round(height);
     const sh = sceneHeight(width, height);
@@ -5171,8 +5171,9 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
         drawClouds(fc, sky, width, height, scale, dt, time, scene, night, twilight,
             Boolean(features.bolt));
         drawFog(fc, sky, width, dt, time, night, scale);
-        drawSceneFloor(fc, width, height, scale, time, scene, night, temp);
-        drawRain(fc, sky, width, height, scale, dt, scene, code, time, night);
+        if (floor)
+            drawSceneFloor(fc, width, height, scale, time, scene, night, temp);
+        drawRain(fc, sky, width, height, scale, dt, scene, code, time, night, floor);
         drawSnow(fc, sky, width, height, scale, dt, time, code, variant);
         drawSleetPellets(fc, sky, width, height, scale, dt);
         drawHail(fc, sky, width, height, dt);

@@ -473,8 +473,15 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             visible: initialStyle !== 'accent',
         });
         styleRow.set_selected(initialStyle === 'solid' ? 1 : 0);
+        const floorRow = new Adw.SwitchRow({
+            title: _('Show floor scenes'),
+            subtitle: _('Weather landscapes and animations along the bottom of the sky'),
+            visible: initialStyle !== 'accent',
+        });
+        settings.bind('sky-floor', floorRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         const syncStyle = () => {
             styleRow.visible = !themeRow.active;
+            floorRow.visible = !themeRow.active;
             settings.set_string('menu-style', themeRow.active
                 ? 'accent' : (SKY_STYLES[styleRow.get_selected()] ?? 'animated'));
         };
@@ -482,6 +489,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         styleRow.connect('notify::selected', syncStyle);
         bgGroup.add(themeRow);
         bgGroup.add(styleRow);
+        bgGroup.add(floorRow);
 
         const embossRow = new Adw.SwitchRow({
             title: _('Text emboss'),
@@ -665,7 +673,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         const { sceneGroup, glyphArea: previewGlyphArea } = this._buildPreviewSceneGroup(previewController, styleManager);
         glyphArea = previewGlyphArea;
         barArea = this._buildBarPreview(settings, previewController, styleManager);
-        skyArea = this._buildLiveSky(previewController, styleManager);
+        skyArea = this._buildLiveSky(settings, previewController, styleManager);
 
         const panelGroup = new Adw.PreferencesGroup({
             title: _('Panel preview'),
@@ -692,6 +700,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         };
         settings.connect('changed::live-scene', liveSync);
         settings.connect('changed::live-night', liveSync);
+        settings.connect('changed::sky-floor', () => skyArea.queue_draw());
         styleManager.connect('notify::dark-mode', () => {
             skyArea.queue_draw();
             barArea.queue_draw();
@@ -819,7 +828,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         return barArea;
     }
 
-    _buildLiveSky(previewController, styleManager) {
+    _buildLiveSky(settings, previewController, styleManager) {
         let skyPool = null;
         const skyArea = new Gtk.DrawingArea();
         skyArea.set_size_request(-1, 170);
@@ -829,6 +838,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                 w: width, h: height, time: previewController.elapsed,
                 scene: previewController.scene,
                 night: previewController.isNight,
+                floor: settings.get_boolean('sky-floor'),
                 sky: skyPool,
                 radius: 14,
                 scrim: styleManager.dark ? null : [1, 1, 1, 0.42],

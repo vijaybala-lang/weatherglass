@@ -2,17 +2,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-29 20:35-0700\n"
+"POT-Creation-Date: 2026-11-05 18:18-0800\n"
 "Language: id\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:297 prefs.js:824
+#: extension.js:297 prefs.js:857
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
-#: extension.js:318 menu.js:354
+#: extension.js:318 menu.js:404
 msgid "Fetching weather…"
 msgstr "Mengambil cuaca…"
 
@@ -36,83 +36,92 @@ msgstr "Presipitasi"
 msgid "Wind"
 msgstr "Angin"
 
-#: menu.js:397 menu.js:674 menu.js:678
-msgid "Weather"
-msgstr "Cuaca"
-
-#: menu.js:410
-msgid "Refresh now"
-msgstr "Muat ulang sekarang"
-
-#: menu.js:416
-msgid "Preferences"
-msgstr "Preferensi"
-
-#: menu.js:453
-msgid "Show"
-msgstr "Tampilkan"
-
-#: menu.js:453
-msgid "chart"
-msgstr "grafik"
-
-#: menu.js:479 menu.js:1142
-msgid "Orange"
-msgstr "Oranye"
-
-#: menu.js:479 menu.js:1142
-msgid "Red"
-msgstr "Merah"
-
-#: menu.js:479 menu.js:1142
-msgid "Yellow"
-msgstr "Kuning"
-
-#: menu.js:495
-msgid "in effect now"
-msgstr "berlaku sekarang"
-
-#: menu.js:496 menu.js:501 menu.js:503
-msgid "starts"
-msgstr "mulai"
-
-#: menu.js:499
-msgid "now until"
-msgstr "sekarang hingga"
-
-#: menu.js:504
-msgid "until"
-msgstr "hingga"
-
-#: menu.js:572
-msgid "Issued by"
-msgstr "Diterbitkan oleh"
-
-#: menu.js:580
-msgid "Full advisory"
-msgstr "Peringatan lengkap"
-
-#: menu.js:648
-msgid "more advisories"
-msgstr "peringatan lainnya"
-
-#: menu.js:679
-msgid "Could not load the forecast"
-msgstr "Prakiraan gagal dimuat"
-
-#: menu.js:853
-msgid "Refresh forecast — updated"
-msgstr "Muat ulang prakiraan — diperbarui"
-
-#: menu.js:919
+#: menu.js:232 menu.js:1133
 msgid "Now"
 msgstr "Sekarang"
 
-#: menu.js:1081 menu.js:1144
+#: menu.js:443 menu.js:747 menu.js:751
+msgid "Weather"
+msgstr "Cuaca"
+
+#: menu.js:456
+msgid "Refresh now"
+msgstr "Muat ulang sekarang"
+
+#: menu.js:462
+msgid "Preferences"
+msgstr "Preferensi"
+
+#: menu.js:501
+msgid "Show"
+msgstr "Tampilkan"
+
+#: menu.js:501
+msgid "chart"
+msgstr "grafik"
+
+#: menu.js:519
+msgid "Previous hours"
+msgstr ""
+
+#: menu.js:520
+#, fuzzy
+msgid "Next hours"
+msgstr "Di atas jam"
+
+#: menu.js:554 menu.js:1368
+msgid "Orange"
+msgstr "Oranye"
+
+#: menu.js:554 menu.js:1368
+msgid "Red"
+msgstr "Merah"
+
+#: menu.js:554 menu.js:1368
+msgid "Yellow"
+msgstr "Kuning"
+
+#: menu.js:570
+msgid "in effect now"
+msgstr "berlaku sekarang"
+
+#: menu.js:571 menu.js:576 menu.js:578
+msgid "starts"
+msgstr "mulai"
+
+#: menu.js:574
+msgid "now until"
+msgstr "sekarang hingga"
+
+#: menu.js:579
+msgid "until"
+msgstr "hingga"
+
+#: menu.js:645
+msgid "Issued by"
+msgstr "Diterbitkan oleh"
+
+#: menu.js:653
+msgid "Full advisory"
+msgstr "Peringatan lengkap"
+
+#: menu.js:721
+msgid "more advisories"
+msgstr "peringatan lainnya"
+
+#: menu.js:752
+msgid "Could not load the forecast"
+msgstr "Prakiraan gagal dimuat"
+
+#: menu.js:1056
+msgid "Refresh forecast — updated"
+msgstr "Muat ulang prakiraan — diperbarui"
+
+#: menu.js:1307 menu.js:1370
 msgid "Today"
 msgstr "Hari ini"
 
-#: menu.js:1144
+#: menu.js:1370
 msgid "advisory"
 msgstr "peringatan"
 
@@ -261,107 +270,138 @@ msgstr "Langit beranimasi"
 msgid "Animated sky with theme tint"
 msgstr "Langit beranimasi dengan rona tema"
 
-#: prefs.js:487
+#: prefs.js:477
+msgid "Show floor scenes"
+msgstr "Tampilkan pemandangan dasar"
+
+#: prefs.js:478
+msgid "Weather landscapes and animations along the bottom of the sky"
+msgstr "Lanskap cuaca dan animasi di bagian bawah langit"
+
+#: prefs.js:495
 msgid "Text emboss"
 msgstr "Tekstil teks"
 
-#: prefs.js:488
+#: prefs.js:496
 msgid "Soft shadow under card text and icons over the sky"
 msgstr "Bayangan lembut di bawah teks dan ikon kartu di atas langit"
 
-#: prefs.js:495
+#: prefs.js:503
+#, fuzzy
+msgid "Hourly forecast"
+msgstr "Format jam"
+
+#: prefs.js:504
+msgid "Line chart or scrollable hourly pills"
+msgstr ""
+
+#: prefs.js:506
+msgid "All-in-one pills"
+msgstr ""
+
+#: prefs.js:506
+#, fuzzy
+msgid "Gauge pills"
+msgstr "Pil berkelompok"
+
+#: prefs.js:506
+#, fuzzy
+msgid "Line chart"
+msgstr "grafik"
+
+#: prefs.js:515
 msgid "Weather conditions"
 msgstr "Kondisi cuaca"
 
-#: prefs.js:496
+#: prefs.js:516
 msgid "How hourly conditions ride the chart"
 msgstr "Bagaimana kondisi per jam melintasi grafik"
 
-#: prefs.js:498
+#: prefs.js:518
 msgid "Grouped pills"
 msgstr "Pil berkelompok"
 
-#: prefs.js:498
+#: prefs.js:518
 msgid "Hourly icons"
 msgstr "Ikon per jam"
 
-#: prefs.js:498
+#: prefs.js:518
 msgid "Off"
 msgstr "Nonaktif"
 
-#: prefs.js:509
+#: prefs.js:529
 msgid "Condition band position"
 msgstr "Posisi pita kondisi"
 
-#: prefs.js:510
+#: prefs.js:530
 msgid "Along the chart top, or above the hour labels"
 msgstr "Di sepanjang bagian atas grafik, atau di atas label jam"
 
-#: prefs.js:512
+#: prefs.js:532
 msgid "Above hours"
 msgstr "Di atas jam"
 
-#: prefs.js:512
+#: prefs.js:532
 msgid "Chart top"
 msgstr "Atas grafik"
 
-#: prefs.js:523
+#: prefs.js:554
 msgid "Data text"
 msgstr "Teks data"
 
-#: prefs.js:524
+#: prefs.js:555
 msgid "Bolder or larger metric values and chart hours"
 msgstr "Jadikan nilai metrik dan jam grafik lebih tebal atau besar"
 
-#: prefs.js:526
+#: prefs.js:557
 msgid "Bold"
 msgstr "Tebal"
 
-#: prefs.js:526
+#: prefs.js:557
 msgid "Bold & large"
 msgstr "Tebal dan besar"
 
-#: prefs.js:526
+#: prefs.js:557
 msgid "Large"
 msgstr "Besar"
 
-#: prefs.js:526
+#: prefs.js:557
 msgid "Normal"
 msgstr "Biasa"
 
-#: prefs.js:539
+#: prefs.js:570
 msgid "Data"
 msgstr "Data"
 
-#: prefs.js:548
+#: prefs.js:579
 msgid "Data source"
 msgstr "Sumber data"
 
-#: prefs.js:550
+#: prefs.js:581
 msgid "Weather provider"
 msgstr "Penyedia cuaca"
 
-#: prefs.js:551
+#: prefs.js:582
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "Semua tanpa kunci · data MET Norway berlisensi CC BY-SA 4.0"
 
-#: prefs.js:554
+#: prefs.js:585
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo (bawaan)"
 
-#: prefs.js:555
+#: prefs.js:586
 msgid "MET Norway (api.met.no)"
 msgstr "MET Norwegia (api.met.no)"
 
-#: prefs.js:556
+#: prefs.js:587
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS (hanya lokasi AS)"
 
-#: prefs.js:568
+#: prefs.js:599
 msgid "Forecast model"
 msgstr "Model prakiraan"
 
-#: prefs.js:569
+#: prefs.js:600
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
@@ -369,65 +409,65 @@ msgstr ""
 "Hanya Open-Meteo · hingga seminggu ke depan model berbeda — akhir pekan "
 "tampak aneh, coba model lain"
 
-#: prefs.js:572
+#: prefs.js:603
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "Cocok terbaik (pilihan regional Open-Meteo; AS → GFS)"
 
-#: prefs.js:573
+#: prefs.js:604
 #, fuzzy
 msgid "ECMWF IFS high-res (recommended)"
 msgstr "ECMWF IFS (disarankan)"
 
-#: prefs.js:574
+#: prefs.js:605
 #, fuzzy
 msgid "ECMWF IFS (0.25° grid)"
 msgstr "ECMWF IFS (disarankan)"
 
-#: prefs.js:575
+#: prefs.js:606
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON (jangkauan lebih pendek)"
 
-#: prefs.js:576
+#: prefs.js:607
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:577
+#: prefs.js:608
 msgid "GEM global (Canada)"
 msgstr ""
 
-#: prefs.js:578
+#: prefs.js:609
 msgid "JMA (Japan · rain chance derived)"
 msgstr ""
 
-#: prefs.js:579
+#: prefs.js:610
 msgid "UK Met Office global (10 km)"
 msgstr ""
 
-#: prefs.js:599
+#: prefs.js:630
 msgid "Updates"
 msgstr "Pembaruan"
 
-#: prefs.js:601
+#: prefs.js:632
 msgid "Refresh interval (minutes)"
 msgstr "Selang muat ulang (menit)"
 
-#: prefs.js:610
+#: prefs.js:641
 msgid "Wind animation threshold (km/h)"
 msgstr "Ambang animasi angin (km/h)"
 
-#: prefs.js:611
+#: prefs.js:642
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "Hari yang lebih berangin menukar ikon ke animasi angin"
 
-#: prefs.js:625
+#: prefs.js:656
 msgid "Preview"
 msgstr "Pratinjau"
 
-#: prefs.js:648
+#: prefs.js:679
 msgid "Panel preview"
 msgstr "Pratinjau panel"
 
-#: prefs.js:649
+#: prefs.js:680
 #, fuzzy
 msgid ""
 "How the panel button looks for this scene — sample temperature, real icon "
@@ -436,56 +476,56 @@ msgstr ""
 "Bagaimana tombol panel tampak untuk adegan ini — suhu simulasi, animasi ikon "
 "asli"
 
-#: prefs.js:654
+#: prefs.js:685
 msgid "Menu backdrop preview"
 msgstr "Pratinjau latar menu"
 
-#: prefs.js:655
+#: prefs.js:686
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "Langit menu Anda saat ini, langsung — pilih kondisi di atas untuk "
 "menganimasikannya di sini"
 
-#: prefs.js:682
+#: prefs.js:714
 msgid "Preview scene"
 msgstr "Adegan pratinjau"
 
-#: prefs.js:683
+#: prefs.js:715
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "Berulang di sini selama ~12 d — panel asli Anda tetap seperti adanya"
 
-#: prefs.js:715
+#: prefs.js:747
 msgid "Scene"
 msgstr "Adegan"
 
-#: prefs.js:820
+#: prefs.js:853
 msgid "About"
 msgstr "Tentang"
 
-#: prefs.js:826
+#: prefs.js:859
 msgid "Version"
 msgstr "Versi"
 
-#: prefs.js:830
+#: prefs.js:863
 msgid "Contact"
 msgstr "Kontak"
 
-#: prefs.js:834
+#: prefs.js:867
 msgid "Free and open source"
 msgstr "Gratis dan sumber terbuka"
 
-#: prefs.js:835
+#: prefs.js:868
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr ""
 "Tanpa iklan, tanpa akun, tanpa pengumpulan data — langit seharusnya cukup "
 "bekerja"
 
-#: prefs.js:840
+#: prefs.js:873
 msgid "Support the development"
 msgstr "Dukung pengembangannya"
 
-#: prefs.js:841
+#: prefs.js:874
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -493,11 +533,11 @@ msgstr ""
 "Weatherglass gratis selamanya. Jika itu membuat desktop Anda lebih enak "
 "dilihat, secangkir kopi membuat piksel tetap berjatuhan."
 
-#: prefs.js:854
+#: prefs.js:887
 msgid "Buy me a coffee"
 msgstr "Traktir saya kopi"
 
-#: prefs.js:855
+#: prefs.js:888
 msgid "PayPal"
 msgstr ""
 

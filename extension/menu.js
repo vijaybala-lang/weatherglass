@@ -148,7 +148,7 @@ const SkyArea = GObject.registerClass(
                     sky: skyOptions.sky, radius: skyOptions.radius ?? 0, phase: skyOptions.phase ?? null,
                     code: skyOptions.scene === 'wind' || skyOptions.scene === 'rain'
                         ? skyOptions.code : null,
-                    temp: skyOptions.temp,
+                    temp: skyOptions.temp, floor: skyOptions.floor !== false,
                     glow, solar, fxScale: 1,
                 });
             }
@@ -335,7 +335,7 @@ export class ForecastPanel {
         // radius 18 matches the shell's polished-popup corner radius
         this._skyOpts = {
             scene: 'loading', night: false, scrim: null, code: null, temp: null,
-            sky: this._sky, radius: 18
+            floor: true, sky: this._sky, radius: 18
         };
         this._nowFrac = null;
         this._style = 'animated';                 // animated | solid | accent
@@ -799,6 +799,15 @@ export class ForecastPanel {
         this._accent = rgb;
         this._skyArea.queue_repaint();
         this._chart.queue_repaint();
+    }
+
+    /** bottom floor scenes & animations (hills, beach, winter snow, koi/storm pond) */
+    setFloor(enabled) {
+        const showFloor = enabled !== false;
+        if (this._skyOpts.floor === showFloor)
+            return;
+        this._skyOpts.floor = showFloor;
+        this._skyArea.queue_repaint();
     }
 
     /** hourly forecast view: 'chart' | 'gauge-pills' | 'rich-pills' */
