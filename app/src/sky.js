@@ -2802,7 +2802,7 @@ export function resolveFloorScene(scene, night, temp = null) {
 /* Snow-laden evergreen pine for S1 and S2 winter floors */
 function drawSnowPine(cr, x, baseY, treeH, snowCap = true, bend = 0, alpha = 1.0, night = false, slender = 1.0) {
     cr.save();
-    const trunkW = Math.max(1.5, treeH * 0.055 * slender);
+    const trunkW = Math.max(1.5, treeH * 0.052 * slender);
     drawSmoothLimb(
         cr, x, baseY + 2, trunkW,
         x + bend * 0.2, baseY - treeH * 0.3,
@@ -2811,16 +2811,16 @@ function drawSnowPine(cr, x, baseY, treeH, snowCap = true, bend = 0, alpha = 1.0
     cr.setSourceRGBA(0.28, 0.19, 0.13, 0.95 * alpha);
     cr.fill();
 
-    const tiers = slender < 0.9 ? 6 : 5;
+    const tiers = slender < 0.72 ? 7 : (slender < 0.90 ? 6 : 5);
     for (let t = tiers - 1; t >= 0; t--) {
         const f = t / tiers;
-        const hTop = 1.0 - f * 0.58;
-        const hBot = 0.66 - f * 0.50;
+        const hTop = 1.0 - f * 0.60;
+        const hBot = 0.68 - f * 0.52;
         const topShift = bend * (hTop ** 1.3);
         const botShift = bend * (hBot ** 1.3);
         const topY = baseY - treeH * hTop;
         const botY = baseY - treeH * hBot;
-        const hw = treeH * (0.15 + f * 0.23) * slender;
+        const hw = treeH * (0.14 + f * 0.22) * slender;
 
         const g = new Cairo.LinearGradient(x - hw, topY, x + hw, botY + 3);
         if (night) {
@@ -3573,22 +3573,18 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night) {
     cr.fill();
     cr.restore();
 
-    // 2. 8-Tree Snow-Laden Evergreen Pine Woodland (several midground/foreground firs tower taller than the snowman)
+    // 2. 4-Tree Snow-Laden Evergreen Pine Woodland (2 distant ridge pines + 2 tall outer framing firs)
     const sway = Math.sin((time - 1.1) * 1.6) * 0.5 * scale;
-    drawSnowPine(cr, width * 0.460, floorTop + 8 * scale, 26 * scale, true, 0.3 * scale + sway, 0.72, night, 0.92);
-    drawSnowPine(cr, width * 0.527, floorTop + 11 * scale, 34 * scale, true, -0.4 * scale + sway, 0.76, night, 0.88);
-    drawSnowPine(cr, width * 0.497, height - 48 * scale, 58 * scale, true, 0.5 * scale + sway, 0.92, night, 0.76);
-    drawSnowPine(cr, width * 0.733, height - 44 * scale, 52 * scale, true, -0.4 * scale + sway, 0.94, night, 0.78);
-    drawSnowPine(cr, width * 0.042, height - 58 * scale, 58 * scale, true, 0.8 * scale + sway, 1.0, night, 0.76);
-    drawSnowPine(cr, width * 0.090, height - 44 * scale, 36 * scale, true, 0.5 * scale + sway, 1.0, night, 0.88);
-    drawSnowPine(cr, width * 0.903, height - 58 * scale, 52 * scale, true, -0.8 * scale + sway, 1.0, night, 0.78);
-    drawSnowPine(cr, width * 0.954, height - 24 * scale, 64 * scale, true, -1.2 * scale + sway, 1.0, night, 0.75);
+    drawSnowPine(cr, width * 0.480, floorTop + 8 * scale, 24 * scale, true, 0.2 * scale + sway * 0.6, 0.62, night, 0.86);
+    drawSnowPine(cr, width * 0.525, floorTop + 10 * scale, 29 * scale, true, -0.3 * scale + sway * 0.6, 0.66, night, 0.84);
+    drawSnowPine(cr, width * 0.040, height - 52 * scale, 74 * scale, true, 0.7 * scale + sway, 0.96, night, 0.66);
+    drawSnowPine(cr, width * 0.955, height - 44 * scale, 78 * scale, true, -0.9 * scale + sway, 0.98, night, 0.65);
 
     // 3. 3-Tier Snowman in Alley 1 (x = 0.267w, y = h - 54*scale)
     const smX = width * 0.267, smY = height - 54 * scale;
     cr.save();
     cr.translate(smX, smY);
-    cr.scale(1.58 * scale, 1.58 * scale);
+    cr.scale(1.45 * scale, 1.45 * scale);
 
     cr.save();
     cr.scale(10.5, 3.6);
