@@ -35,7 +35,6 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_WORKDIR = ROOT / 'tools' / 'out' / 'demo-transitions'
 DEFAULT_SEGMENTS = (
     ('sunny', 'demo-berlin-sunny'),
-    ('golden', 'demo-berlin-golden'),
     ('night', 'demo-berlin-fullmoon'),
     ('rain', 'demo-berlin-rain'),
     ('snow', 'demo-berlin-snow'),
