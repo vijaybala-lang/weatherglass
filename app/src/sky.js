@@ -5451,26 +5451,25 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.rectangle(0, floorTop - 4 * scale, width, 32 * scale);
     cr.fill();
 
-    // 3. Band 2: Deeply Curved Coastal Bay & Scalloped Tidal Shoreline Pushing Further Down
+    // 3. Band 2: Exaggerated S-Curve Tidal Shoreline Pushing Further Down Onto the Beach
     const tWave = (time - 1.1) + 1.15;
 
-    // Deep, smooth downward-curving coastal bay arc pushing well below the Row 1 tiles
+    // Pronounced, sweeping S-curve shoreline pushed further down onto the beach
     const stepsShore = 40;
     const baseShoreY = u => {
-        const bayCurve = Math.pow(Math.sin(u * Math.PI), 0.90) * 21.5;
-        const gentleScallop = Math.sin(u * Math.PI * 3.0 - 0.35) * 1.65
-                            + Math.cos(u * Math.PI * 5.0 + 0.4) * 0.75;
-        return floorTop + (16.5 + bayCurve + gentleScallop) * scale;
+        const sCurveMain = Math.sin(u * Math.PI * 2.15 + 0.25) * 8.4;
+        const bayArch = Math.sin(u * Math.PI) * 3.6;
+        const sHarmonic = -Math.cos(u * Math.PI * 4.1 - 0.45) * 1.9;
+        return floorTop + (31.5 + sCurveMain + bayArch + sHarmonic) * scale;
     };
     const wetSandY = u => {
-        const bayReach = 0.36 + 0.64 * Math.sin(u * Math.PI);
-        const wetScallop = Math.sin(u * Math.PI * 3.0 + 0.25) * 1.85
-                         + Math.cos(u * Math.PI * 5.0 - 0.55) * 0.95;
-        return baseShoreY(u) + (12.8 * bayReach + wetScallop) * scale;
+        const wetSCurve = Math.sin(u * Math.PI * 2.25 + 0.45) * 3.8
+                        + Math.cos(u * Math.PI * 4.4 - 0.65) * 1.8;
+        return baseShoreY(u) + (10.5 + wetSCurve) * scale;
     };
 
-    // 3a. Nearshore Turquoise Shoal Water (feathered top from deep Atlantic down to curved baseShoreY)
-    const h2Water = new Cairo.LinearGradient(0, floorTop + 6 * scale, 0, floorTop + 42 * scale);
+    // 3a. Nearshore Turquoise Shoal Water (feathered top from deep Atlantic down to S-curved baseShoreY)
+    const h2Water = new Cairo.LinearGradient(0, floorTop + 6 * scale, 0, floorTop + 44 * scale);
     if (night) {
         h2Water.addColorStopRGBA(0.00, 0.08, 0.27, 0.40, 0.00);
         h2Water.addColorStopRGBA(0.25, 0.08, 0.27, 0.40, 0.58);
@@ -5495,8 +5494,8 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.closePath();
     cr.fill();
 
-    // 3b. Base warm dry sandy beach flat (starts organically along curved baseShoreY)
-    const h2Beach = new Cairo.LinearGradient(0, floorTop + 18 * scale, 0, height);
+    // 3b. Base warm dry sandy beach flat (starts organically along S-curved baseShoreY)
+    const h2Beach = new Cairo.LinearGradient(0, floorTop + 22 * scale, 0, height);
     if (night) {
         h2Beach.addColorStopRGBA(0.00, 0.35, 0.31, 0.25, 0.68);
         h2Beach.addColorStopRGBA(0.22, 0.42, 0.37, 0.29, 0.74);
@@ -5523,8 +5522,8 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.closePath();
     cr.fill();
 
-    // 3c. Glistening darker wet-sand tidal apron (between curved baseShoreY and wetSandY)
-    const wetG = new Cairo.LinearGradient(0, floorTop + 18 * scale, 0, floorTop + 53 * scale);
+    // 3c. Glistening darker wet-sand tidal apron (between S-curved baseShoreY and wetSandY)
+    const wetG = new Cairo.LinearGradient(0, floorTop + 22 * scale, 0, floorTop + 56 * scale);
     if (night) {
         wetG.addColorStopRGBA(0.00, 0.18, 0.22, 0.27, 0.56);
         wetG.addColorStopRGBA(0.65, 0.23, 0.20, 0.17, 0.46);
@@ -5568,16 +5567,16 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     }
     cr.stroke();
 
-    // Rolling nearshore wave swells that refract from the flat horizon into the deeply curved bay
+    // Rolling nearshore wave swells that transition from the flat horizon into the S-curve shoreline
     for (let rib = 0; rib < 3; rib++) {
         const rProg = ((tWave * 0.28 + rib / 3) % 1.0 + 1.0) % 1.0;
         const rEnv = Math.sin(rProg * Math.PI);
 
         const ribYAt = u => {
             const offshoreY = floorTop + 7.5 * scale;
-            const nearshoreY = baseShoreY(u) - 1.5 * scale;
-            const ripple = Math.sin(u * Math.PI * 2.6 + rib * 1.8 + tWave * 0.7) * (0.9 + 1.4 * rProg) * scale;
-            return offshoreY + (nearshoreY - offshoreY) * (0.16 + 0.80 * rProg) + ripple;
+            const nearshoreY = baseShoreY(u) - 1.8 * scale;
+            const ripple = Math.sin(u * Math.PI * 2.3 + rib * 1.6 + tWave * 0.7) * (1.2 + 2.0 * rProg) * scale;
+            return offshoreY + (nearshoreY - offshoreY) * (0.18 + 0.78 * rProg) + ripple;
         };
 
         if (night)
@@ -5612,7 +5611,7 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
         cr.stroke();
     }
 
-    // 3d. Two Overlapping Phase-Shifted Deeply Curved Tidal Swash Waves Pushing Further Down
+    // 3d. Two Overlapping Phase-Shifted S-Curved Scalloped Tidal Swash Waves Pushing Further Down
     for (let w = 0; w < 2; w++) {
         const c = ((tWave * 0.22 + w * 0.5) % 1.0 + 1.0) % 1.0;
         const runup = c < 0.44
@@ -5626,15 +5625,14 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
         const swashPts = [];
         for (let i = 0; i <= stepsShore; i++) {
             const u = i / stepsShore;
-            const bayReach = 0.34 + 0.66 * Math.sin(u * Math.PI);
-            const waveScallop = 0.72
-                + 0.22 * Math.sin(u * Math.PI * 3.0 + w * 2.1 + Math.sin(tWave * 0.45) * 0.25)
-                + 0.10 * Math.cos(u * Math.PI * 5.0 - w * 1.4);
-            const sy = baseShoreY(u) + runup * bayReach * (4.8 + waveScallop * 10.2) * scale;
+            const arch1 = Math.max(0, Math.sin(u * Math.PI * 2.5 + w * 1.95 + Math.sin(tWave * 0.45) * 0.25));
+            const arch2 = 0.5 + 0.5 * Math.sin(u * Math.PI * 2.1 - w * 1.35 + 0.35);
+            const lobe = 0.28 + 0.72 * Math.pow(arch1, 0.82) + 0.42 * arch2;
+            const sy = baseShoreY(u) + runup * (3.8 + lobe * 9.6) * scale;
             swashPts.push({ x: u * width, y: sy, base: baseShoreY(u) });
         }
 
-        const swG = new Cairo.LinearGradient(0, floorTop + 17 * scale, 0, floorTop + 53 * scale);
+        const swG = new Cairo.LinearGradient(0, floorTop + 22 * scale, 0, floorTop + 56 * scale);
         if (night) {
             swG.addColorStopRGBA(0.00, 0.15, 0.41, 0.54, 0.48 * sheetAlpha);
             swG.addColorStopRGBA(0.72, 0.29, 0.54, 0.66, 0.40 * sheetAlpha);
