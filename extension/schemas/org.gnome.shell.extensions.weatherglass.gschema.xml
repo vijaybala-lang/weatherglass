@@ -199,6 +199,23 @@ hills, beach, winter snow scenes, koi pond, and storm lotus pond) along the
 bottom of the sky backdrop</description>
     </key>
 
+    <key name="sky-floor-scene" type="s">
+      <choices>
+        <choice value="auto"/>
+        <choice value="hills"/>
+        <choice value="beach"/>
+        <choice value="chalet"/>
+        <choice value="arctic"/>
+        <choice value="koi"/>
+        <choice value="frogs"/>
+      </choices>
+      <default>'auto'</default>
+      <summary>Ground scene to render along the bottom of the sky</summary>
+      <description>auto matches the current weather condition across all
+temperatures; hills, beach, chalet, arctic, koi, and frogs pin a specific
+ground landscape across all weather conditions</description>
+    </key>
+
     <key name="preview-scene" type="s">
       <default>''</default>
       <summary>Temporarily preview an animation on the panel icon</summary>

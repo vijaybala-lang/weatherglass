@@ -422,6 +422,7 @@ const WeatherIndicator = GObject.registerClass(
             this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
             this._panel.setStyle(this._settings.get_string('menu-style'));
             this._panel.setFloor(this._settings.get_boolean('sky-floor'));
+            this._panel.setFloorScene(this._settings.get_string('sky-floor-scene'));
             this._panel.setHourlyView(this._settings.get_string('hourly-view'));
             this._panel.setConditions(this._settings.get_string('condition-strip'));
             this._panel.setCondPos(this._settings.get_string('condition-pos'));
@@ -547,6 +548,9 @@ const WeatherIndicator = GObject.registerClass(
                     break;
                 case 'sky-floor':
                     this._panel.setFloor(this._settings.get_boolean('sky-floor'));
+                    break;
+                case 'sky-floor-scene':
+                    this._panel.setFloorScene(this._settings.get_string('sky-floor-scene'));
                     break;
                 case 'hourly-view':
                     this._panel.setHourlyView(this._settings.get_string('hourly-view'));

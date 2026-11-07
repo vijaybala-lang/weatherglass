@@ -479,17 +479,45 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             visible: initialStyle !== 'accent',
         });
         settings.bind('sky-floor', floorRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        const FLOOR_SCENES = ['auto', 'hills', 'beach', 'chalet', 'arctic', 'koi', 'frogs'];
+        const floorSceneRow = new Adw.ComboRow({
+            title: _('Ground scene'),
+            subtitle: _('Landscape shown along the bottom when ground scenes are enabled'),
+            model: new Gtk.StringList({
+                strings: [
+                    _('Automatic (by weather)'),
+                    _('Pastoral hills & windmill'),
+                    _('Cape Cod seashore'),
+                    _('Alpine chalet & snowman'),
+                    _('Arctic husky sled & igloo'),
+                    _('Nishikigoi koi pond'),
+                    _('Lotus & tree frog pond'),
+                ],
+            }),
+            visible: initialStyle !== 'accent' && settings.get_boolean('sky-floor'),
+        });
+        const floorSceneIndex = FLOOR_SCENES.indexOf(settings.get_string('sky-floor-scene'));
+        floorSceneRow.set_selected(floorSceneIndex < 0 ? 0 : floorSceneIndex);
+        floorSceneRow.connect('notify::selected', () => {
+            settings.set_string('sky-floor-scene',
+                FLOOR_SCENES[floorSceneRow.get_selected()] ?? 'auto');
+        });
         const syncStyle = () => {
             styleRow.visible = !themeRow.active;
             floorRow.visible = !themeRow.active;
+            floorSceneRow.visible = !themeRow.active && floorRow.active;
             settings.set_string('menu-style', themeRow.active
                 ? 'accent' : (SKY_STYLES[styleRow.get_selected()] ?? 'animated'));
         };
         themeRow.connect('notify::active', syncStyle);
         styleRow.connect('notify::selected', syncStyle);
+        floorRow.connect('notify::active', () => {
+            floorSceneRow.visible = !themeRow.active && floorRow.active;
+        });
         bgGroup.add(themeRow);
         bgGroup.add(styleRow);
         bgGroup.add(floorRow);
+        bgGroup.add(floorSceneRow);
 
         const embossRow = new Adw.SwitchRow({
             title: _('Text emboss'),
@@ -701,6 +729,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         settings.connect('changed::live-scene', liveSync);
         settings.connect('changed::live-night', liveSync);
         settings.connect('changed::sky-floor', () => skyArea.queue_draw());
+        settings.connect('changed::sky-floor-scene', () => skyArea.queue_draw());
         styleManager.connect('notify::dark-mode', () => {
             skyArea.queue_draw();
             barArea.queue_draw();
@@ -839,6 +868,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                 scene: previewController.scene,
                 night: previewController.isNight,
                 floor: settings.get_boolean('sky-floor'),
+                floorScene: settings.get_string('sky-floor-scene'),
                 sky: skyPool,
                 radius: 14,
                 scrim: styleManager.dark ? null : [1, 1, 1, 0.42],

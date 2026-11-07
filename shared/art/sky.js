@@ -475,37 +475,42 @@ function rebuild(sky, width, height, scene) {
             variant: i % 2, isBack,
         };
     });
-    const gs = sh / 420;
-    if (scene === 'rain') {
-        sky.koi = [
-            {
-                variant: 'kohaku',
-                angle: -0.14, turnBend: 0.16,
-                length: 54, maxWidth: 7.0,
-                baseDepth: 0.28, headZ: 0.05, tailZ: 0.45,
-                swimPhase: 1.0, speed: 22, kissClock: 1.2, patrolPhase: 0.4,
-                pathSpine: buildInitialKoiSpine(
-                    width * 0.55, height - 83 * gs, -0.14, 0.16, 54 * gs, 0.05, 0.45),
-            },
-            {
-                variant: 'sanke',
-                angle: Math.PI + 0.12, turnBend: -0.12,
-                length: 42, maxWidth: 5.6,
-                baseDepth: 0.62, headZ: 0.60, tailZ: 0.70,
-                swimPhase: 2.1, speed: 18, kissClock: 4.5, patrolPhase: 2.6,
-                pathSpine: buildInitialKoiSpine(
-                    width * 0.675, height - 45 * gs, Math.PI + 0.12, -0.12, 42 * gs, 0.60, 0.70),
-            },
-        ];
-        sky.pads = [
-            { x: width * 0.273, y: height - 48 * gs, r: 25.5, notch: 0.42, hasFlower: true, hasBud: true, companionLeaf: true },
-            { x: width * 0.733, y: height - 87 * gs, r: 18.5, notch: 2.35, hasFlower: false },
-        ];
-    } else {
-        sky.koi = [];
-        sky.pads = [];
-    }
+    sky.koi = [];
+    sky.pads = [];
+    if (scene === 'rain')
+        ensureKoiPond(sky, width, height);
     sky.w = width; sky.h = height; sky.scene = scene; sky.lastTime = null; sky.lastT = null;
+}
+
+function ensureKoiPond(sky, width, height) {
+    if (sky.koi && sky.koi.length > 0 && sky.pads && sky.pads.length > 0)
+        return;
+    const sh = sceneHeight(width, height);
+    const gs = sh / 420;
+    sky.koi = [
+        {
+            variant: 'kohaku',
+            angle: -0.14, turnBend: 0.16,
+            length: 54, maxWidth: 7.0,
+            baseDepth: 0.28, headZ: 0.05, tailZ: 0.45,
+            swimPhase: 1.0, speed: 22, kissClock: 1.2, patrolPhase: 0.4,
+            pathSpine: buildInitialKoiSpine(
+                width * 0.55, height - 83 * gs, -0.14, 0.16, 54 * gs, 0.05, 0.45),
+        },
+        {
+            variant: 'sanke',
+            angle: Math.PI + 0.12, turnBend: -0.12,
+            length: 42, maxWidth: 5.6,
+            baseDepth: 0.62, headZ: 0.60, tailZ: 0.70,
+            swimPhase: 2.1, speed: 18, kissClock: 4.5, patrolPhase: 2.6,
+            pathSpine: buildInitialKoiSpine(
+                width * 0.675, height - 45 * gs, Math.PI + 0.12, -0.12, 42 * gs, 0.60, 0.70),
+        },
+    ];
+    sky.pads = [
+        { x: width * 0.273, y: height - 48 * gs, r: 25.5, notch: 0.42, hasFlower: true, hasBud: true, companionLeaf: true },
+        { x: width * 0.733, y: height - 87 * gs, r: 18.5, notch: 2.35, hasFlower: false },
+    ];
 }
 
 function adjustSkyHeight(sky, width, height) {
@@ -1484,6 +1489,7 @@ function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity) {
 
 /* Layered Submersion + Surface Kiss Koi Pond Floor (0.685h .. 1.0h) */
 function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
+    ensureKoiPond(sky, width, height);
     if (!sky.koi || !sky.koi.length)
         return;
     const sh = sceneHeight(width, height);
@@ -1975,11 +1981,9 @@ function isStormForegroundZone(x, y, width, height, scale) {
 }
 
 /* Rain, Drizzle & Showers: 3-tier WMO intensity + connected raindrop-to-ripple impacts + koi pond */
-function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 0, night = false, floor = true) {
+function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 0, night = false, floor = true, floorId = null) {
     if (!sky.drops.length)
         return;
-    if (floor && scene === 'rain')
-        drawKoiPond(cr, sky, width, height, scale, dt, time, night);
 
     const isLightRain = code === 51 || code === 56 || code === 61 || code === 80;
     const isModRain = code === 53 || code === 63 || code === 66 || code === 81;
@@ -2043,13 +2047,13 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 
         const alpha = layer === 2 ? 0.62 : (layer === 1 ? 0.44 : 0.28);
         const lw = (layer === 2 ? 1.65 : (layer === 1 ? 1.25 : 0.92)) * scale;
         const tx = drop.x - length * slant, ty = drop.y + length;
-        if (floor && scene === 'storm' && (
+        if (floor && floorId === 'T3' && (
             isStormForegroundZone(tx, ty, width, height, scale) ||
             isStormForegroundZone((drop.x + tx) * 0.5, (drop.y + ty) * 0.5, width, height, scale) ||
             isStormForegroundZone(drop.x, drop.y, width, height, scale)
         ))
             continue;
-        if (floor && scene === 'rain' && (
+        if (floor && floorId === 'K1' && (
             isKoiPadZone(tx, ty, sky, scale) ||
             isKoiPadZone((drop.x + tx) * 0.5, (drop.y + ty) * 0.5, sky, scale)
         ))
@@ -2075,9 +2079,9 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 
         const rp = sky.ripples[i];
         if (rp.phase >= 1)
             continue;
-        if (floor && scene === 'storm' && isStormForegroundZone(rp.x, rp.y, width, height, scale))
+        if (floor && floorId === 'T3' && isStormForegroundZone(rp.x, rp.y, width, height, scale))
             continue;
-        if (floor && scene === 'rain' && isKoiPadZone(rp.x, rp.y, sky, scale))
+        if (floor && floorId === 'K1' && isKoiPadZone(rp.x, rp.y, sky, scale))
             continue;
         const depth = Math.max(0, Math.min(1, (rp.y - (groundOffset + 0.68 * sh)) / (0.31 * sh)));
         const pScale = (0.52 + 0.54 * depth) * scale;
@@ -2777,24 +2781,32 @@ function drawWindStreaks(cr, sky, width, height, dt, time, night, scale = 1) {
 /* Multi-branch forked lightning emerging from the dark cloud underbelly */
 const BOLT_ORIGINS = [0.46, 0.56, 0.64];
 
-/* Resolve bottom floor scene ('S1', 'S2', 'T3', 'C1', 'C2', or null) from scene, night, and Celsius temp */
-export function resolveFloorScene(scene, night, temp = null) {
-    const hasTemp = temp !== null && temp !== undefined && Number.isFinite(temp);
-    const tempF = hasTemp ? temp * 9 / 5 + 32 : null;
-    if (scene === 'storm')
+const FLOOR_SCENE_IDS = {
+    hills: 'C1',
+    C1: 'C1',
+    beach: 'C2',
+    C2: 'C2',
+    chalet: 'S2',
+    S2: 'S2',
+    arctic: 'S1',
+    S1: 'S1',
+    koi: 'K1',
+    K1: 'K1',
+    frogs: 'T3',
+    T3: 'T3',
+};
+
+/* Resolve bottom ground scene ('S1', 'S2', 'T3', 'K1', 'C1', 'C2', or null) from scene, night, temp, and floorScene */
+export function resolveFloorScene(scene, night, temp = null, floorScene = 'auto') {
+    if (floorScene && floorScene !== 'auto' && FLOOR_SCENE_IDS[floorScene])
+        return FLOOR_SCENE_IDS[floorScene];
+    if (scene === 'storm' || scene === 'hail')
         return 'T3';
-    if (scene === 'snow')
-        return tempF !== null && tempF < 0 ? 'S1' : 'S2';
-    if ((scene === 'clear' || scene === 'sun' || scene === 'moon') && tempF !== null && tempF >= 76)
-        return 'C2';
-    if (scene === 'clear' || scene === 'sun' || scene === 'moon') {
-        if (tempF !== null && tempF < 0)
-            return 'S1';
-        if (tempF !== null && tempF <= 32)
-            return 'S2';
-        return 'C1';
-    }
-    if (scene === 'cloud' || scene === 'partly')
+    if (scene === 'rain')
+        return 'K1';
+    if (scene === 'snow' || scene === 'sleet')
+        return 'S2';
+    if (scene === 'clear' || scene === 'sun' || scene === 'moon' || scene === 'cloud' || scene === 'partly' || scene === 'wind')
         return 'C1';
     return null;
 }
@@ -5772,16 +5784,17 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     drawPureRosaRugosaAndBeachgrassDune(cr, width * 0.962, height - 24 * scale, 38 * scale,  1.0 * scale, time, night, isGolden);
 }
 
-function drawSceneFloor(cr, width, height, scale, time, scene, night, temp, twilight = 0) {
-    const floorId = resolveFloorScene(scene, night, temp);
+function drawSceneFloor(cr, sky, width, height, scale, dt, time, scene, night, twilight = 0, floorId = null) {
     if (floorId === 'S1')
         drawIceFishingFloor(cr, width, height, scale, time, night);
     else if (floorId === 'S2')
         drawSnowmanChaletFloor(cr, width, height, scale, time, night);
     else if (floorId === 'T3')
         drawStormFrogsFloor(cr, width, height, scale, time, night);
+    else if (floorId === 'K1')
+        drawKoiPond(cr, sky, width, height, scale, dt, time, night);
     else if (floorId === 'C1')
-        drawClearHillsFloor(cr, width, height, scale, time, scene === 'cloud' || scene === 'partly', night);
+        drawClearHillsFloor(cr, width, height, scale, time, scene !== 'sun' && scene !== 'clear' && scene !== 'moon', night);
     else if (floorId === 'C2')
         drawClearBeachFloor(cr, width, height, scale, time, night, twilight);
 }
@@ -5914,7 +5927,7 @@ function drawLightning(cr, width, height, scale, time) {
  * plane unless pinned with fxScale: 1. */
 export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
     scrim = null, radius = 0, phase = null, glow = 0, solar = null,
-    code = null, variant = null, temp = null, floor = true, quiet = false, fxScale = null }) {
+    code = null, variant = null, temp = null, floor = true, floorScene = 'auto', quiet = false, fxScale = null }) {
     const tStartMs = Date.now();
     const rw = Math.round(width), rh = Math.round(height);
     const sh = sceneHeight(width, height);
@@ -6001,9 +6014,10 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
         drawClouds(fc, sky, width, height, scale, dt, time, scene, night, twilight,
             Boolean(features.bolt));
         drawFog(fc, sky, width, dt, time, night, scale);
-        if (floor)
-            drawSceneFloor(fc, width, height, scale, time, scene, night, temp, twilight);
-        drawRain(fc, sky, width, height, scale, dt, scene, code, time, night, floor);
+        const floorId = floor ? resolveFloorScene(scene, night, temp, floorScene) : null;
+        if (floorId)
+            drawSceneFloor(fc, sky, width, height, scale, dt, time, scene, night, twilight, floorId);
+        drawRain(fc, sky, width, height, scale, dt, scene, code, time, night, floor, floorId);
         drawSnow(fc, sky, width, height, scale, dt, time, code, variant);
         drawSleetPellets(fc, sky, width, height, scale, dt);
         drawHail(fc, sky, width, height, dt);

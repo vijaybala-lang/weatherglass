@@ -149,6 +149,7 @@ const SkyArea = GObject.registerClass(
                     code: skyOptions.scene === 'wind' || skyOptions.scene === 'rain'
                         ? skyOptions.code : null,
                     temp: skyOptions.temp, floor: skyOptions.floor !== false,
+                    floorScene: skyOptions.floorScene ?? 'auto',
                     glow, solar, fxScale: 1,
                 });
             }
@@ -335,7 +336,7 @@ export class ForecastPanel {
         // radius 18 matches the shell's polished-popup corner radius
         this._skyOpts = {
             scene: 'loading', night: false, scrim: null, code: null, temp: null,
-            floor: true, sky: this._sky, radius: 18
+            floor: true, floorScene: 'auto', sky: this._sky, radius: 18
         };
         this._nowFrac = null;
         this._style = 'animated';                 // animated | solid | accent
@@ -807,6 +808,15 @@ export class ForecastPanel {
         if (this._skyOpts.floor === showFloor)
             return;
         this._skyOpts.floor = showFloor;
+        this._skyArea.queue_repaint();
+    }
+
+    /** selected ground scene: 'auto' | 'hills' | 'beach' | 'chalet' | 'arctic' | 'koi' | 'frogs' */
+    setFloorScene(floorScene) {
+        const nextScene = floorScene || 'auto';
+        if (this._skyOpts.floorScene === nextScene)
+            return;
+        this._skyOpts.floorScene = nextScene;
         this._skyArea.queue_repaint();
     }
 
