@@ -2787,14 +2787,14 @@ export function resolveFloorScene(scene, night, temp = null) {
         return tempF !== null && tempF < 0 ? 'S1' : 'S2';
     if ((scene === 'clear' || scene === 'sun' || scene === 'moon') && tempF !== null && tempF >= 76)
         return 'C2';
-    if ((scene === 'clear' || scene === 'sun') && !night) {
+    if (scene === 'clear' || scene === 'sun' || scene === 'moon') {
         if (tempF !== null && tempF < 0)
             return 'S1';
         if (tempF !== null && tempF <= 32)
             return 'S2';
         return 'C1';
     }
-    if ((scene === 'cloud' || scene === 'partly') && !night)
+    if (scene === 'cloud' || scene === 'partly')
         return 'C1';
     return null;
 }
@@ -4068,28 +4068,36 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.fill();
 }
 
-/* C1 (Clear Day 55–75°F & Overcast/Cloudy Day): Option C — 2 Dutch Windmills (Foreground + Horizon) & 3 Realistic Pastoral Oaks */
-function makeHazeTinter(subdued, lum, distFade) {
-    const hazeR = subdued ? 0.56 : 0.62;
-    const hazeG = subdued ? 0.64 : 0.75;
-    const hazeB = subdued ? 0.70 : 0.84;
+/* C1 (Clear 33–75°F & Overcast/Cloudy Day/Night): Option C — Dutch Windmill & 3 Realistic Pastoral Oaks */
+function makeHazeTinter(subdued, lum, distFade, night = false) {
+    const hazeR = night ? 0.14 : (subdued ? 0.56 : 0.62);
+    const hazeG = night ? 0.20 : (subdued ? 0.64 : 0.75);
+    const hazeB = night ? 0.34 : (subdued ? 0.70 : 0.84);
     const aMul = 1.0 - distFade * 0.22;
     return {
         aMul,
-        tint: (r, g, b) => [
-            (r * lum) * (1 - distFade) + hazeR * distFade,
-            (g * lum) * (1 - distFade) + hazeG * distFade,
-            (b * lum) * (1 - distFade) + hazeB * distFade,
-        ],
+        tint: (r, g, b) => {
+            let br = r * lum, bg = g * lum, bb = b * lum;
+            if (night) {
+                br = br * 0.76;
+                bg = bg * 0.86;
+                bb = Math.min(1, bb * 1.08 + 0.03);
+            }
+            return [
+                br * (1 - distFade) + hazeR * distFade,
+                bg * (1 - distFade) + hazeG * distFade,
+                bb * (1 - distFade) + hazeB * distFade,
+            ];
+        },
     };
 }
 
-function drawRealisticPastoralOak(cr, x, baseY, treeHeight, subdued = true, bend = 0, seed = 1, distFade = 0.0) {
+function drawRealisticPastoralOak(cr, x, baseY, treeHeight, subdued = true, bend = 0, seed = 1, distFade = 0.0, night = false) {
     cr.save();
     const r = seededRand(seed * 173 + 19);
     const s = treeHeight / 50;
-    const lum = subdued ? 0.84 : 0.98;
-    const { tint, aMul } = makeHazeTinter(subdued, lum, distFade);
+    const lum = night ? (subdued ? 0.56 : 0.64) : (subdued ? 0.84 : 0.98);
+    const { tint, aMul } = makeHazeTinter(subdued, lum, distFade, night);
 
     // 1. Soft ground shadow under tree
     cr.save();
@@ -4243,13 +4251,13 @@ function drawRealisticPastoralOak(cr, x, baseY, treeHeight, subdued = true, bend
     cr.restore();
 }
 
-function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade = 0.0, sailPhase = 0.0) {
+function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade = 0.0, sailPhase = 0.0, night = false) {
     cr.save();
     cr.translate(x, y);
     cr.scale(1.62 * scale, 1.62 * scale);
 
-    const lum = subdued ? 0.84 : 0.98;
-    const { tint, aMul } = makeHazeTinter(subdued, lum, distFade);
+    const lum = night ? (subdued ? 0.58 : 0.66) : (subdued ? 0.84 : 0.98);
+    const { tint, aMul } = makeHazeTinter(subdued, lum, distFade, night);
 
     // Elliptical ground shadow
     cr.save();
@@ -4340,12 +4348,25 @@ function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade
     cr.lineTo(1.35, -15.6);
     cr.stroke();
 
-    // Two mullioned 4-pane windows with white frames
+    // Two mullioned 4-pane windows with white frames (warm golden lantern glow at night)
     for (const [wx, wy, ww, wh] of [[0, -11.4, 1.8, 2.3], [0, -7.8, 1.9, 2.1]]) {
+        if (night) {
+            const wg = new Cairo.RadialGradient(wx, wy, 0.2, wx, wy, 3.0);
+            wg.addColorStopRGBA(0.0, 1.0, 0.91, 0.55, 0.85 * aMul);
+            wg.addColorStopRGBA(0.5, 1.0, 0.75, 0.29, 0.38 * aMul);
+            wg.addColorStopRGBA(1.0, 1.0, 0.67, 0.20, 0.0);
+            cr.setSource(wg);
+            cr.newPath();
+            cr.arc(wx, wy, 3.0, 0, TWO_PI);
+            cr.fill();
+        }
         cr.setSourceRGBA(...tint(0.84, 0.81, 0.74), 0.92 * aMul);
         cr.rectangle(wx - ww * 0.5 - 0.25, wy - wh * 0.5 - 0.25, ww + 0.5, wh + 0.5);
         cr.fill();
-        cr.setSourceRGBA(...tint(0.14, 0.18, 0.22), 0.94 * aMul);
+        if (night)
+            cr.setSourceRGBA(1.0, 0.92, 0.58, 0.96 * aMul);
+        else
+            cr.setSourceRGBA(...tint(0.14, 0.18, 0.22), 0.94 * aMul);
         cr.rectangle(wx - ww * 0.5, wy - wh * 0.5, ww, wh);
         cr.fill();
         cr.setSourceRGBA(...tint(0.82, 0.79, 0.72), 0.85 * aMul);
@@ -4482,14 +4503,18 @@ function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade
     cr.restore();
 }
 
-function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
+function drawClearHillsFloor(cr, width, height, scale, time, subdued = false, night = false) {
     const sh = sceneHeight(width, height);
     const groundOffset = height - sh;
     const floorTop = groundOffset + 0.685 * sh;
 
     // 1. Hill 1 (Distant horizon ridge — subtle atmospheric depth)
     const h1 = new Cairo.LinearGradient(0, floorTop - 14 * scale, 0, height);
-    if (subdued) {
+    if (night) {
+        h1.addColorStopRGBA(0.00, 0.16, 0.28, 0.34, subdued ? 0.40 : 0.46);
+        h1.addColorStopRGBA(0.45, 0.14, 0.25, 0.31, subdued ? 0.42 : 0.48);
+        h1.addColorStopRGBA(1.00, 0.12, 0.22, 0.28, subdued ? 0.38 : 0.44);
+    } else if (subdued) {
         h1.addColorStopRGBA(0.00, 0.54, 0.66, 0.59, 0.28);
         h1.addColorStopRGBA(0.45, 0.50, 0.62, 0.55, 0.30);
         h1.addColorStopRGBA(1.00, 0.46, 0.58, 0.50, 0.24);
@@ -4509,11 +4534,15 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
 
     // Distant oak on Hill 1 ridge (gentle depth fade so details stay crisp)
     const ridgeFade = subdued ? 0.28 : 0.22;
-    drawRealisticPastoralOak(cr, width * 0.733, floorTop + 12 * scale, 24 * scale, subdued, 0.4 * scale, 69, ridgeFade);
+    drawRealisticPastoralOak(cr, width * 0.733, floorTop + 12 * scale, 24 * scale, subdued, 0.4 * scale, 69, ridgeFade, night);
 
     // 2. Subtle Valley Atmospheric Mist Veil
     const mistG = new Cairo.LinearGradient(0, floorTop - 8 * scale, 0, floorTop + 38 * scale);
-    if (subdued) {
+    if (night) {
+        mistG.addColorStopRGBA(0.00, 0.52, 0.66, 0.84, 0.0);
+        mistG.addColorStopRGBA(0.45, 0.52, 0.66, 0.84, subdued ? 0.09 : 0.07);
+        mistG.addColorStopRGBA(1.00, 0.52, 0.66, 0.84, 0.0);
+    } else if (subdued) {
         mistG.addColorStopRGBA(0.00, 0.74, 0.80, 0.85, 0.0);
         mistG.addColorStopRGBA(0.42, 0.74, 0.80, 0.85, 0.10);
         mistG.addColorStopRGBA(0.75, 0.74, 0.80, 0.85, 0.06);
@@ -4529,7 +4558,11 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
 
     // 3. Hill 2 (Midground slope — silvery-sage tone that preserves icon & text contrast)
     const h2 = new Cairo.LinearGradient(0, floorTop + 32 * scale, 0, height);
-    if (subdued) {
+    if (night) {
+        h2.addColorStopRGBA(0.00, 0.15, 0.27, 0.30, subdued ? 0.46 : 0.52);
+        h2.addColorStopRGBA(0.50, 0.13, 0.24, 0.27, subdued ? 0.48 : 0.54);
+        h2.addColorStopRGBA(1.00, 0.11, 0.21, 0.24, subdued ? 0.44 : 0.50);
+    } else if (subdued) {
         h2.addColorStopRGBA(0.00, 0.48, 0.62, 0.51, 0.34);
         h2.addColorStopRGBA(0.50, 0.44, 0.58, 0.47, 0.34);
         h2.addColorStopRGBA(1.00, 0.40, 0.54, 0.43, 0.28);
@@ -4548,7 +4581,8 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     cr.fill();
 
     // Split-rail wooden fence on Hill 2 (light midground depth fade)
-    const fHaze = makeHazeTinter(subdued, subdued ? 0.84 : 0.98, subdued ? 0.15 : 0.12);
+    const fLum = night ? (subdued ? 0.58 : 0.66) : (subdued ? 0.84 : 0.98);
+    const fHaze = makeHazeTinter(subdued, fLum, subdued ? 0.15 : 0.12, night);
     cr.setLineCap(Cairo.LineCap.ROUND);
     for (let i = 0; i <= 7; i++) {
         const px = width * (0.44 + i * 0.042);
@@ -4578,16 +4612,21 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
 
     // Subtle lower-valley mist ribbon between Hill 2 and Hill 3
     const mistG2 = new Cairo.LinearGradient(0, height - 64 * scale, 0, height - 34 * scale);
-    mistG2.addColorStopRGBA(0.0, 0.74, 0.80, 0.85, 0.0);
-    mistG2.addColorStopRGBA(0.5, 0.74, 0.80, 0.85, subdued ? 0.07 : 0.04);
-    mistG2.addColorStopRGBA(1.0, 0.74, 0.80, 0.85, 0.0);
+    const m2Col = night ? [0.52, 0.66, 0.84] : [0.74, 0.80, 0.85];
+    mistG2.addColorStopRGBA(0.0, m2Col[0], m2Col[1], m2Col[2], 0.0);
+    mistG2.addColorStopRGBA(0.5, m2Col[0], m2Col[1], m2Col[2], subdued ? 0.07 : 0.04);
+    mistG2.addColorStopRGBA(1.0, m2Col[0], m2Col[1], m2Col[2], 0.0);
     cr.setSource(mistG2);
     cr.rectangle(0, height - 64 * scale, width, 30 * scale);
     cr.fill();
 
     // 4. Hill 3 (Foreground meadow slope — balanced luminance for bottom-row day tiles)
     const h3 = new Cairo.LinearGradient(0, height - 54 * scale, 0, height);
-    if (subdued) {
+    if (night) {
+        h3.addColorStopRGBA(0.00, 0.14, 0.26, 0.24, subdued ? 0.54 : 0.60);
+        h3.addColorStopRGBA(0.55, 0.12, 0.23, 0.21, subdued ? 0.58 : 0.64);
+        h3.addColorStopRGBA(1.00, 0.10, 0.20, 0.19, subdued ? 0.62 : 0.68);
+    } else if (subdued) {
         h3.addColorStopRGBA(0.00, 0.42, 0.57, 0.44, 0.36);
         h3.addColorStopRGBA(0.55, 0.38, 0.53, 0.40, 0.38);
         h3.addColorStopRGBA(1.00, 0.34, 0.49, 0.36, 0.40);
@@ -4607,7 +4646,7 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
 
     // Foreground wildflower dots
     const r = seededRand(77);
-    const flLum = subdued ? 0.80 : 0.96;
+    const flLum = night ? 0.54 : (subdued ? 0.80 : 0.96);
     for (let i = 0; i < 14; i++) {
         const fx = width * 0.055 + r(0, width * 0.89);
         const fy = height - (6 + r(0, 13)) * scale;
@@ -4619,9 +4658,9 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false) {
     }
 
     // 5. Foreground Objects (distFade = 0.0, matched luminance across windmill & outer margin oaks)
-    drawDutchWindmill(cr, width * 0.267, height - 42 * scale, scale, time, subdued, 0.0, 0.0);
-    drawRealisticPastoralOak(cr, width * 0.036, height - 44 * scale, 32 * scale, subdued, -1.2 * scale, 23, 0.0);
-    drawRealisticPastoralOak(cr, width * 0.962, height - 26 * scale, 36 * scale, subdued,  1.4 * scale, 11, 0.0);
+    drawDutchWindmill(cr, width * 0.267, height - 42 * scale, scale, time, subdued, 0.0, 0.0, night);
+    drawRealisticPastoralOak(cr, width * 0.036, height - 44 * scale, 32 * scale, subdued, -1.2 * scale, 23, 0.0, night);
+    drawRealisticPastoralOak(cr, width * 0.962, height - 26 * scale, 36 * scale, subdued,  1.4 * scale, 11, 0.0, night);
 }
 
 /* C2 (Clear ≥ 76°F): Cape Cod National Seashore — Red-Over-White Nauset Light (unlit by day, glowing beacon & sweeping beams at golden hour / night),
@@ -5717,7 +5756,7 @@ function drawSceneFloor(cr, width, height, scale, time, scene, night, temp, twil
     else if (floorId === 'T3')
         drawStormFrogsFloor(cr, width, height, scale, time, night);
     else if (floorId === 'C1')
-        drawClearHillsFloor(cr, width, height, scale, time, scene === 'cloud' || scene === 'partly');
+        drawClearHillsFloor(cr, width, height, scale, time, scene === 'cloud' || scene === 'partly', night);
     else if (floorId === 'C2')
         drawClearBeachFloor(cr, width, height, scale, time, night, twilight);
 }
