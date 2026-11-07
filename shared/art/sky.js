@@ -5059,54 +5059,42 @@ function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden
     }
     cr.stroke();
 
-    // 3D Spinning Twin-Bullseye Fresnel Lighthouse Beacon & Flash ONLY in Golden Hour & Nighttime!
+    // 3D Spinning Twin-Bullseye Fresnel Lighthouse Beacon & Glow ONLY in Golden Hour & Nighttime!
     if (lightOn) {
         const spinAngle = (time - 1.1) * 1.35 + 0.35;
-        const forwardFlash = Math.pow(Math.max(0, Math.abs(Math.sin(spinAngle))), 5);
-        const baseAlpha = night ? 0.42 : 0.32;
+        const forwardGlow = Math.pow(Math.max(0, Math.abs(Math.sin(spinAngle))), 3);
+        const baseAlpha = night ? 0.40 : 0.30;
 
         for (let b = 0; b < 2; b++) {
             const phi = spinAngle + b * Math.PI;
             const cosP = Math.cos(phi);
             const sinP = Math.sin(phi);
-            const reachX = cosP * 32.0;
             const absCos = Math.abs(cosP);
+            const reachX = cosP * 30.0;
 
-            if (absCos > 0.03) {
-                const depthBoost = sinP >= 0 ? (0.78 + 0.32 * sinP) : (0.52 + 0.18 * (1 + sinP));
-                const beamAlpha = baseAlpha * depthBoost * (0.35 + 0.65 * absCos);
-                const halfSpread = 3.8 + 2.2 * (1.0 - absCos * 0.5) + (sinP > 0 ? sinP * 0.9 : 0);
-                const yEndCenter = -22.6 + sinP * 0.7;
+            if (absCos > 0.08) {
+                const depthBoost = sinP >= 0 ? (0.82 + 0.25 * sinP) : (0.55 + 0.20 * (1 + sinP));
+                const beamAlpha = baseAlpha * depthBoost * Math.pow(absCos, 1.15);
+                const halfSpread = 0.6 + Math.abs(reachX) * 0.175;
 
-                const bg = new Cairo.LinearGradient(0, -22.6, reachX, yEndCenter);
-                bg.addColorStopRGBA(0.00, 1.0, 0.98, 0.80, Math.min(0.95, beamAlpha * 1.25));
-                bg.addColorStopRGBA(0.42, 1.0, 0.89, 0.52, beamAlpha * 0.60);
+                const bg = new Cairo.LinearGradient(0, -22.6, reachX, -22.6);
+                bg.addColorStopRGBA(0.00, 1.0, 0.96, 0.75, beamAlpha);
+                bg.addColorStopRGBA(0.45, 1.0, 0.88, 0.50, beamAlpha * 0.55);
                 bg.addColorStopRGBA(1.00, 1.0, 0.86, 0.47, 0.0);
                 cr.setSource(bg);
                 cr.newPath();
                 cr.moveTo(0, -22.6);
-                cr.lineTo(reachX, yEndCenter - halfSpread);
-                cr.lineTo(reachX, yEndCenter + halfSpread);
-                cr.closePath();
-                cr.fill();
-
-                const coreG = new Cairo.LinearGradient(0, -22.6, reachX * 0.85, yEndCenter);
-                coreG.addColorStopRGBA(0.0, 1.0, 1.0, 0.92, Math.min(0.95, beamAlpha * 1.45));
-                coreG.addColorStopRGBA(1.0, 1.0, 0.94, 0.67, 0.0);
-                cr.setSource(coreG);
-                cr.newPath();
-                cr.moveTo(0, -22.6);
-                cr.lineTo(reachX * 0.85, yEndCenter - halfSpread * 0.32);
-                cr.lineTo(reachX * 0.85, yEndCenter + halfSpread * 0.32);
+                cr.lineTo(reachX, -22.6 - halfSpread);
+                cr.lineTo(reachX, -22.6 + halfSpread);
                 cr.closePath();
                 cr.fill();
             }
         }
 
-        const haloR = (night ? 8.2 : 5.8) + forwardFlash * (night ? 4.8 : 3.4);
-        const lHalo = new Cairo.RadialGradient(0, -22.6, 0.3, 0, -22.6, haloR);
-        lHalo.addColorStopRGBA(0.0, 1.0, 0.99, 0.86, Math.min(0.98, 0.76 + forwardFlash * 0.22));
-        lHalo.addColorStopRGBA(0.45, 1.0, 0.85, 0.43, 0.32 + forwardFlash * 0.24);
+        const haloR = (night ? 8.2 : 5.8) + forwardGlow * (night ? 2.6 : 1.8);
+        const lHalo = new Cairo.RadialGradient(0, -22.6, 0.4, 0, -22.6, haloR);
+        lHalo.addColorStopRGBA(0.0, 1.0, 0.97, 0.80, 0.74 + forwardGlow * 0.18);
+        lHalo.addColorStopRGBA(0.45, 1.0, 0.84, 0.41, 0.32 + forwardGlow * 0.14);
         lHalo.addColorStopRGBA(1.0, 1.0, 0.78, 0.31, 0.0);
         cr.setSource(lHalo);
         cr.newPath();
@@ -5127,30 +5115,17 @@ function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden
             const cosP = Math.cos(phi);
             const sinP = Math.sin(phi);
             if (sinP > -0.25) {
-                const lensX = cosP * 1.45;
-                const lensRx = 0.32 + 0.68 * Math.max(0, sinP);
+                const lensX = cosP * 1.35;
+                const lensRx = 0.35 + 0.60 * Math.max(0, sinP);
                 cr.save();
                 cr.translate(lensX, -22.6);
-                cr.scale(lensRx, 1.25);
-                cr.setSourceRGBA(1.0, 1.0, 0.96, 0.55 + 0.44 * Math.max(0, sinP));
+                cr.scale(lensRx, 1.18);
+                cr.setSourceRGBA(1.0, 1.0, 0.95, 0.50 + 0.42 * Math.max(0, sinP));
                 cr.newPath();
                 cr.arc(0, 0, 1.0, 0, TWO_PI);
                 cr.fill();
                 cr.restore();
             }
-        }
-
-        // Crisp optical starburst diffraction glint when the bullseye sweeps directly toward the viewer
-        if (forwardFlash > 0.04) {
-            const glintLen = 4.5 + forwardFlash * 7.5;
-            cr.setSourceRGBA(1.0, 0.99, 0.92, forwardFlash * 0.85);
-            cr.setLineWidth(0.55);
-            cr.newPath();
-            cr.moveTo(-glintLen, -22.6);
-            cr.lineTo(glintLen, -22.6);
-            cr.moveTo(0, -22.6 - glintLen * 0.55);
-            cr.lineTo(0, -22.6 + glintLen * 0.55);
-            cr.stroke();
         }
     } else {
         // DAYTIME: Unlit sky-tinted crystal glass lantern panes + unlit Fresnel lens barrel inside
