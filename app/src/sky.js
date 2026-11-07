@@ -4984,7 +4984,7 @@ function drawPureRosaRugosaAndBeachgrassDune(cr, x, baseY, hScale, bend = 0, tim
 function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden = false) {
     cr.save();
     cr.translate(x, y);
-    cr.scale(1.88 * scale, 1.88 * scale);
+    cr.scale(2.28 * scale, 2.28 * scale);
     const { tint, aMul } = makeCapeCodTinter(night, isGolden, 0.0);
     const lightOn = night || isGolden;
 
@@ -5760,10 +5760,10 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     }
 
     // 5. Long Wooden Vertical-Slat & Twisted-Wire Sand Fence curving directly along the slope of the hill
-    drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, height, floorTop, 0.35, 0.77, 22, 0.92);
+    drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, height, floorTop, 0.36, 0.77, 22, 0.92);
 
-    // 6. Hero Red-Over-White Nauset Light on Left Bluff (x = 0.267w, y = height - 42*scale; no vegetation in front)
-    drawNausetLighthouseHero(cr, width * 0.267, height - 42 * scale, scale, time, night, isGolden);
+    // 6. Hero Red-Over-White Nauset Light on Left Bluff (x = 0.267w, y = height - 40*scale; no vegetation in front)
+    drawNausetLighthouseHero(cr, width * 0.267, height - 40 * scale, scale, time, night, isGolden);
 
     // 7. Small Atlantic Crab Scuttling Across the Foreground Beach
     drawCapeCodBeachCrab(cr, width, height, scale, time, night, isGolden);
