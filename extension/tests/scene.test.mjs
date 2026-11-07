@@ -178,30 +178,33 @@ test('resolveFloorScene routes snow, storm, and temperature-banded clear day flo
     eq(resolveFloorScene('cloud', false, 15), 'C1', '15°C overcast day -> subdued C1 rolling hills, mill & balloon');
     eq(resolveFloorScene('partly', false, 16), 'C1', '16°C partly cloudy day -> subdued C1 rolling hills, mill & balloon');
     eq(resolveFloorScene('cloud', true, 12), null, 'overcast night does not paint daytime floor');
-    eq(resolveFloorScene('sun', false, 28), 'C2', '28°C (82.4°F) clear day -> C2 sandy beach & sailboat');
-    eq(resolveFloorScene('sun', true, 20), null, 'clear night does not paint daytime floor');
-    eq(resolveFloorScene('moon', true, -20), null, 'moon night does not paint daytime floor');
+    eq(resolveFloorScene('sun', false, 28), 'C2', '28°C (82.4°F) clear day -> C2 Cape Cod beach & lighthouse');
+    eq(resolveFloorScene('moon', true, 28), 'C2', '28°C (82.4°F) clear night -> C2 moonlit Cape Cod beach & lit lighthouse');
+    eq(resolveFloorScene('sun', true, 20), null, 'mild clear night (< 76°F) does not paint daytime floor');
+    eq(resolveFloorScene('moon', true, -20), null, 'cold moon night does not paint daytime floor');
 
-    // Render all floor scenes cleanly through paintSky, and verify floor: true suppresses them
+    // Render all floor scenes cleanly through paintSky, and verify floor: false suppresses them
     const surfOn = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
     const surfOff = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
     const crOn = new Cairo.Context(surfOn);
     const crOff = new Cairo.Context(surfOff);
     const tmpOn = '/tmp/wg-test-floor-on.png';
     const tmpOff = '/tmp/wg-test-floor-off.png';
-    for (const [scene, night, temp, code] of [
-        ['snow', false, -21, 75],
-        ['snow', false, -5, 73],
-        ['storm', true, 19, 95],
-        ['sun', false, 20, 0],
-        ['cloud', false, 15, 3],
-        ['sun', false, 29, 0],
-        ['rain', false, 16, 63],
+    for (const [scene, night, temp, code, glow] of [
+        ['snow', false, -21, 75, 0],
+        ['snow', false, -5, 73, 0],
+        ['storm', true, 19, 95, 0],
+        ['sun', false, 20, 0, 0],
+        ['cloud', false, 15, 3, 0],
+        ['sun', false, 29, 0, 0],
+        ['sun', false, 29, 0, 0.9],
+        ['moon', true, 29, 0, 0],
+        ['rain', false, 16, 63, 0],
     ]) {
         const sky = createSky();
-        paintSky(crOn, { w: 330, h: 472, time: 1.5, scene, night, sky, temp, code, floor: true, fxScale: 1 });
+        paintSky(crOn, { w: 330, h: 472, time: 1.5, scene, night, sky, temp, code, glow, floor: true, fxScale: 1 });
         sky.fx.writeToPNG(tmpOn);
-        paintSky(crOff, { w: 330, h: 472, time: 1.5, scene, night, sky, temp, code, floor: false, fxScale: 1 });
+        paintSky(crOff, { w: 330, h: 472, time: 1.5, scene, night, sky, temp, code, glow, floor: false, fxScale: 1 });
         sky.fx.writeToPNG(tmpOff);
         const pbOn = GdkPixbuf.Pixbuf.new_from_file(tmpOn);
         const pbOff = GdkPixbuf.Pixbuf.new_from_file(tmpOff);
