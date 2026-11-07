@@ -4738,44 +4738,77 @@ function drawCapeCodSchooner(cr, x, y, scale, time, night = false, isGolden = fa
     cr.restore();
 }
 
-function drawCapeCodSlatFenceRun(cr, time, scale, night, isGolden, x0, x1, yBase0, yBase1, numSlats = 21, scaleMul = 0.92) {
-    const { tint, aMul } = makeCapeCodTinter(night, isGolden, 0.04);
-    const xm = (x0 + x1) * 0.5;
-    const ym = (yBase0 + yBase1) * 0.5;
+function evalCapeCodHillRidge(u, width, height, floorTop, scale) {
+    const inv = 1 - u;
+    const b0 = inv * inv * inv;
+    const b1 = 3 * inv * inv * u;
+    const b2 = 3 * inv * u * u;
+    const b3 = u * u * u;
+    const x = b1 * (width * 0.38) + b2 * (width * 0.72) + b3 * width;
+    const y = b0 * (height - 44 * scale)
+            + b1 * (floorTop + 52 * scale)
+            + b2 * (floorTop + 46 * scale)
+            + b3 * (height - 40 * scale);
+    const dx = 3 * inv * inv * (width * 0.38)
+             + 6 * inv * u * (width * 0.72 - width * 0.38)
+             + 3 * u * u * (width - width * 0.72);
+    const dy = 3 * inv * inv * ((floorTop + 52 * scale) - (height - 44 * scale))
+             + 6 * inv * u * ((floorTop + 46 * scale) - (floorTop + 52 * scale))
+             + 3 * u * u * ((height - 40 * scale) - (floorTop + 46 * scale));
+    return { x, y, slope: dy / (dx || 1) };
+}
 
-    // Soft wind-drifted sand mound & shadow along fence foot
+function drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, height, floorTop, u0 = 0.35, u1 = 0.77, numSlats = 22, scaleMul = 0.92) {
+    const { tint, aMul } = makeCapeCodTinter(night, isGolden, 0.04);
+    const pts = [];
+    for (let i = 0; i <= numSlats; i++) {
+        const u = u0 + (i / numSlats) * (u1 - u0);
+        const p = evalCapeCodHillRidge(u, width, height, floorTop, scale);
+        pts.push({ x: p.x, y: p.y + 1.1 * scale, slope: p.slope });
+    }
+
+    // Soft wind-drifted sand mound & shadow hugging the curved hillside slope
+    cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setSourceRGBA(...tint(0.94, 0.82, 0.62), 0.45 * scaleMul * aMul);
     cr.setLineWidth(2.6 * scale * scaleMul);
     cr.newPath();
-    cr.moveTo(x0 - 2 * scale, yBase0 + 0.3 * scale);
-    cr.curveTo(xm - (x1 - x0) * 0.16, ym + 1.2 * scale, xm + (x1 - x0) * 0.16, ym + 1.2 * scale, x1 + 2 * scale, yBase1 + 0.3 * scale);
+    pts.forEach((p, idx) => {
+        if (idx === 0) cr.moveTo(p.x - 1.5 * scale, p.y + 0.4 * scale);
+        else cr.lineTo(p.x, p.y + 0.4 * scale);
+    });
     cr.stroke();
 
     cr.setSourceRGBA(...tint(0.24, 0.17, 0.10), 0.28 * scaleMul * aMul);
     cr.setLineWidth(1.6 * scale * scaleMul);
     cr.newPath();
-    cr.moveTo(x0, yBase0 + 0.9 * scale);
-    cr.curveTo(xm - (x1 - x0) * 0.16, ym + 1.8 * scale, xm + (x1 - x0) * 0.16, ym + 1.8 * scale, x1, yBase1 + 0.9 * scale);
+    pts.forEach((p, idx) => {
+        if (idx === 0) cr.moveTo(p.x, p.y + 1.0 * scale);
+        else cr.lineTo(p.x, p.y + 1.0 * scale);
+    });
     cr.stroke();
 
-    // Two horizontal twisted galvanized wire strands connecting the slats
+    // Two horizontal twisted galvanized wire strands curving along the hillside posts
     cr.setSourceRGBA(...tint(0.32, 0.30, 0.28), 0.72 * scaleMul * aMul);
     cr.setLineWidth(0.65 * scale * scaleMul);
     cr.newPath();
-    cr.moveTo(x0, yBase0 - 5.4 * scale * scaleMul);
-    cr.curveTo(xm, ym - 4.6 * scale * scaleMul, xm, ym - 4.6 * scale * scaleMul, x1, yBase1 - 5.4 * scale * scaleMul);
-    cr.moveTo(x0, yBase0 - 2.3 * scale * scaleMul);
-    cr.curveTo(xm, ym - 1.5 * scale * scaleMul, xm, ym - 1.5 * scale * scaleMul, x1, yBase1 - 2.3 * scale * scaleMul);
+    pts.forEach((p, idx) => {
+        const wy = p.y - 5.1 * scale * scaleMul;
+        if (idx === 0) cr.moveTo(p.x, wy);
+        else cr.lineTo(p.x, wy);
+    });
+    pts.forEach((p, idx) => {
+        const wy = p.y - 2.2 * scale * scaleMul;
+        if (idx === 0) cr.moveTo(p.x, wy);
+        else cr.lineTo(p.x, wy);
+    });
     cr.stroke();
 
-    // Closely spaced vertical weathered cedar lath slats
-    cr.setLineCap(Cairo.LineCap.ROUND);
+    // Closely spaced vertical weathered cedar lath slats following the hill contour
     for (let i = 0; i <= numSlats; i++) {
-        const u = i / numSlats;
-        const px = x0 + u * (x1 - x0);
-        const curveDip = Math.sin(u * Math.PI) * 1.0 * scale;
-        const py = yBase0 + u * (yBase1 - yBase0) + curveDip;
-        const tilt = Math.sin(i * 1.7) * 0.45 * scale;
+        const p = pts[i];
+        const px = p.x;
+        const py = p.y;
+        const tilt = (Math.sin(i * 1.7) * 0.42 - p.slope * 1.1) * scale;
         const isPost = (i % 5 === 0);
         const slatH = (isPost ? 7.4 : 6.5 + (i % 2) * 0.35) * scale * scaleMul;
 
@@ -4797,11 +4830,12 @@ function drawCapeCodSlatFenceRun(cr, time, scale, night, isGolden, x0, x1, yBase
         cr.stroke();
     }
 
-    // Tufts of American Beachgrass (Ammophila) sprouting along the fence base
+    // Tufts of American Beachgrass (Ammophila) sprouting along the hillside fence base
     const sway = Math.sin((time - 1.1) * 1.8) * 0.8 * scale;
     for (const uGrass of [0.06, 0.24, 0.44, 0.64, 0.82, 0.96]) {
-        const gx = x0 + uGrass * (x1 - x0);
-        const gy = yBase0 + uGrass * (yBase1 - yBase0) + 0.8 * scale;
+        const p = evalCapeCodHillRidge(u0 + uGrass * (u1 - u0), width, height, floorTop, scale);
+        const gx = p.x;
+        const gy = p.y + 1.6 * scale;
         for (const [b, gh, isGold] of [[-2.2, 4.6, false], [-0.9, 5.4, true], [0.6, 5.2, false], [2.0, 4.4, true]]) {
             if (isGold)
                 cr.setSourceRGBA(...tint(0.66, 0.58, 0.32), 0.82 * scaleMul * aMul);
@@ -5025,28 +5059,54 @@ function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden
     }
     cr.stroke();
 
-    // Sweeping Twin Lighthouse Beams & Warm Lantern Glow ONLY in Golden Hour & Nighttime!
+    // 3D Spinning Twin-Bullseye Fresnel Lighthouse Beacon & Flash ONLY in Golden Hour & Nighttime!
     if (lightOn) {
-        const pulse = 0.78 + 0.22 * Math.sin((time - 1.1) * 2.4);
-        const beamAlpha = (night ? 0.38 : 0.28) * pulse;
-        for (const dir of [-1, 1]) {
-            const bg = new Cairo.LinearGradient(0, -22.6, dir * 28, -22.6);
-            bg.addColorStopRGBA(0.0, 1.0, 0.96, 0.73, beamAlpha);
-            bg.addColorStopRGBA(0.45, 1.0, 0.88, 0.50, beamAlpha * 0.55);
-            bg.addColorStopRGBA(1.0, 1.0, 0.86, 0.47, 0.0);
-            cr.setSource(bg);
-            cr.newPath();
-            cr.moveTo(0, -22.6);
-            cr.lineTo(dir * 28, -27.5);
-            cr.lineTo(dir * 28, -17.8);
-            cr.closePath();
-            cr.fill();
+        const spinAngle = (time - 1.1) * 1.35 + 0.35;
+        const forwardFlash = Math.pow(Math.max(0, Math.abs(Math.sin(spinAngle))), 5);
+        const baseAlpha = night ? 0.42 : 0.32;
+
+        for (let b = 0; b < 2; b++) {
+            const phi = spinAngle + b * Math.PI;
+            const cosP = Math.cos(phi);
+            const sinP = Math.sin(phi);
+            const reachX = cosP * 32.0;
+            const absCos = Math.abs(cosP);
+
+            if (absCos > 0.03) {
+                const depthBoost = sinP >= 0 ? (0.78 + 0.32 * sinP) : (0.52 + 0.18 * (1 + sinP));
+                const beamAlpha = baseAlpha * depthBoost * (0.35 + 0.65 * absCos);
+                const halfSpread = 3.8 + 2.2 * (1.0 - absCos * 0.5) + (sinP > 0 ? sinP * 0.9 : 0);
+                const yEndCenter = -22.6 + sinP * 0.7;
+
+                const bg = new Cairo.LinearGradient(0, -22.6, reachX, yEndCenter);
+                bg.addColorStopRGBA(0.00, 1.0, 0.98, 0.80, Math.min(0.95, beamAlpha * 1.25));
+                bg.addColorStopRGBA(0.42, 1.0, 0.89, 0.52, beamAlpha * 0.60);
+                bg.addColorStopRGBA(1.00, 1.0, 0.86, 0.47, 0.0);
+                cr.setSource(bg);
+                cr.newPath();
+                cr.moveTo(0, -22.6);
+                cr.lineTo(reachX, yEndCenter - halfSpread);
+                cr.lineTo(reachX, yEndCenter + halfSpread);
+                cr.closePath();
+                cr.fill();
+
+                const coreG = new Cairo.LinearGradient(0, -22.6, reachX * 0.85, yEndCenter);
+                coreG.addColorStopRGBA(0.0, 1.0, 1.0, 0.92, Math.min(0.95, beamAlpha * 1.45));
+                coreG.addColorStopRGBA(1.0, 1.0, 0.94, 0.67, 0.0);
+                cr.setSource(coreG);
+                cr.newPath();
+                cr.moveTo(0, -22.6);
+                cr.lineTo(reachX * 0.85, yEndCenter - halfSpread * 0.32);
+                cr.lineTo(reachX * 0.85, yEndCenter + halfSpread * 0.32);
+                cr.closePath();
+                cr.fill();
+            }
         }
 
-        const haloR = night ? 8.5 : 6.0;
-        const lHalo = new Cairo.RadialGradient(0, -22.6, 0.4, 0, -22.6, haloR);
-        lHalo.addColorStopRGBA(0.0, 1.0, 0.97, 0.78, 0.75 * pulse);
-        lHalo.addColorStopRGBA(0.45, 1.0, 0.84, 0.41, 0.32 * pulse);
+        const haloR = (night ? 8.2 : 5.8) + forwardFlash * (night ? 4.8 : 3.4);
+        const lHalo = new Cairo.RadialGradient(0, -22.6, 0.3, 0, -22.6, haloR);
+        lHalo.addColorStopRGBA(0.0, 1.0, 0.99, 0.86, Math.min(0.98, 0.76 + forwardFlash * 0.22));
+        lHalo.addColorStopRGBA(0.45, 1.0, 0.85, 0.43, 0.32 + forwardFlash * 0.24);
         lHalo.addColorStopRGBA(1.0, 1.0, 0.78, 0.31, 0.0);
         cr.setSource(lHalo);
         cr.newPath();
@@ -5060,6 +5120,38 @@ function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden
         cr.setSource(lg);
         cr.rectangle(-2.1, -24.4, 4.2, 3.6);
         cr.fill();
+
+        // Revolving Fresnel bullseye lens carriages orbiting inside the lantern glass
+        for (let b = 0; b < 2; b++) {
+            const phi = spinAngle + b * Math.PI;
+            const cosP = Math.cos(phi);
+            const sinP = Math.sin(phi);
+            if (sinP > -0.25) {
+                const lensX = cosP * 1.45;
+                const lensRx = 0.32 + 0.68 * Math.max(0, sinP);
+                cr.save();
+                cr.translate(lensX, -22.6);
+                cr.scale(lensRx, 1.25);
+                cr.setSourceRGBA(1.0, 1.0, 0.96, 0.55 + 0.44 * Math.max(0, sinP));
+                cr.newPath();
+                cr.arc(0, 0, 1.0, 0, TWO_PI);
+                cr.fill();
+                cr.restore();
+            }
+        }
+
+        // Crisp optical starburst diffraction glint when the bullseye sweeps directly toward the viewer
+        if (forwardFlash > 0.04) {
+            const glintLen = 4.5 + forwardFlash * 7.5;
+            cr.setSourceRGBA(1.0, 0.99, 0.92, forwardFlash * 0.85);
+            cr.setLineWidth(0.55);
+            cr.newPath();
+            cr.moveTo(-glintLen, -22.6);
+            cr.lineTo(glintLen, -22.6);
+            cr.moveTo(0, -22.6 - glintLen * 0.55);
+            cr.lineTo(0, -22.6 + glintLen * 0.55);
+            cr.stroke();
+        }
     } else {
         // DAYTIME: Unlit sky-tinted crystal glass lantern panes + unlit Fresnel lens barrel inside
         const dayGlassG = new Cairo.LinearGradient(-2.1, -24.4, 2.1, -20.8);
@@ -5112,6 +5204,156 @@ function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden
     cr.newPath();
     cr.arc(0, -27.4, 0.55, 0, TWO_PI);
     cr.fill();
+
+    cr.restore();
+}
+
+function drawCapeCodBeachCrab(cr, width, height, scale, time, night = false, isGolden = false) {
+    const { tint, aMul } = makeCapeCodTinter(night, isGolden, 0.0);
+
+    // Sideways-scuttling traverse across the open foreground beach (x = 0.22w .. 0.76w)
+    const ct = (time - 1.1) + 4.2;
+    const cycle = ((ct * 0.13) % 2.0 + 2.0) % 2.0;
+    const dir = cycle < 1.0 ? 1 : -1;
+    const rawU = cycle < 1.0 ? cycle : (2.0 - cycle);
+    const u = Math.max(0, Math.min(1, rawU - 0.028 * Math.sin(rawU * Math.PI * 6)));
+    const speed = Math.max(0.08, 1.0 - 0.55 * Math.cos(rawU * Math.PI * 6));
+
+    const cx = width * (0.22 + u * 0.54);
+    const cy = height - 12.5 * scale - Math.sin(u * Math.PI) * 3.2 * scale;
+    const bodyTilt = Math.sin(ct * 16.0) * 0.045 * speed;
+
+    cr.save();
+    cr.translate(cx, cy);
+    cr.scale(1.12 * scale, 1.12 * scale);
+
+    // 1. Faint trailing crab tracks (paired tiny sand dimples behind direction of travel)
+    for (let k = 1; k <= 6; k++) {
+        const tx = -dir * (3.8 + k * 2.2);
+        const ty = Math.sin(k * 0.9) * 0.25;
+        const trAlpha = (1.0 - k / 7.0) * 0.26 * aMul;
+        cr.setSourceRGBA(...tint(0.28, 0.20, 0.12), trAlpha);
+        cr.newPath();
+        cr.arc(tx, ty + 0.6, 0.42, 0, TWO_PI);
+        cr.fill();
+        cr.newPath();
+        cr.arc(tx + dir * 0.6, ty + 1.8, 0.38, 0, TWO_PI);
+        cr.fill();
+    }
+
+    cr.rotate(bodyTilt);
+
+    // 2. Soft oval contact shadow on the warm sand
+    cr.save();
+    cr.translate(0, 1.35);
+    cr.scale(4.8, 1.65);
+    cr.setSourceRGBA(...tint(0.18, 0.13, 0.08), 0.30 * aMul);
+    cr.newPath();
+    cr.arc(0, 0, 1.0, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    // 3. Eight jointed walking legs (4 on left, 4 on right) with rapid metachronal scuttle wave
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.setLineJoin(Cairo.LineJoin.ROUND);
+    cr.setSourceRGBA(...tint(0.68, 0.21, 0.13), 0.95 * aMul);
+    cr.setLineWidth(0.68);
+    for (const side of [-1, 1]) {
+        for (let i = 0; i < 4; i++) {
+            const phase = ct * 19.0 + i * 1.45 + (side > 0 ? 0 : Math.PI);
+            const step = Math.sin(phase) * speed;
+            const lift = Math.max(0, Math.cos(phase)) * speed;
+
+            const sx = side * (2.4 + i * 0.22);
+            const sy = -0.65 + i * 0.58;
+            const kx = side * (4.35 + i * 0.28 + step * 0.55);
+            const ky = sy - 1.15 - lift * 0.45;
+            const fx = side * (5.95 + i * 0.20 + step * 0.95);
+            const fy = sy + 1.45 - lift * 0.85;
+
+            cr.newPath();
+            cr.moveTo(sx, sy);
+            cr.lineTo(kx, ky);
+            cr.lineTo(fx, fy);
+            cr.stroke();
+        }
+    }
+
+    // 4. Two front raised chelipeds (claws / pincers)
+    const clawBob = Math.sin(ct * 7.5) * 0.35;
+    for (const side of [-1, 1]) {
+        const shX = side * 2.1, shY = -1.4;
+        const elX = side * 3.9, elY = -2.85 - clawBob * side * 0.4;
+        const clX = side * 3.15, clY = -4.05 - clawBob;
+
+        cr.setSourceRGBA(...tint(0.74, 0.24, 0.15), 0.96 * aMul);
+        cr.setLineWidth(0.85);
+        cr.newPath();
+        cr.moveTo(shX, shY);
+        cr.lineTo(elX, elY);
+        cr.lineTo(clX, clY);
+        cr.stroke();
+
+        cr.save();
+        cr.translate(clX, clY);
+        cr.rotate(side * -0.45);
+        cr.scale(1.15, 0.72);
+        cr.setSourceRGBA(...tint(0.88, 0.31, 0.18), 0.98 * aMul);
+        cr.newPath();
+        cr.arc(0, 0, 1.0, 0, TWO_PI);
+        cr.fill();
+        cr.restore();
+
+        cr.setSourceRGBA(...tint(0.95, 0.45, 0.26), 0.96 * aMul);
+        cr.setLineWidth(0.52);
+        cr.newPath();
+        cr.moveTo(clX - side * 0.4, clY - 0.3);
+        cr.lineTo(clX - side * 1.35, clY - 0.85);
+        cr.moveTo(clX - side * 0.3, clY + 0.25);
+        cr.lineTo(clX - side * 1.25, clY - 0.20);
+        cr.stroke();
+    }
+
+    // 5. Sculpted Atlantic crab carapace (shell)
+    cr.save();
+    cr.scale(3.45, 2.35);
+    const shG = new Cairo.RadialGradient(-0.23, -0.38, 0.08, 0, 0, 1.1);
+    shG.addColorStopRGBA(0.00, ...tint(0.95, 0.42, 0.24), 0.99 * aMul);
+    shG.addColorStopRGBA(0.62, ...tint(0.80, 0.25, 0.15), 0.99 * aMul);
+    shG.addColorStopRGBA(1.00, ...tint(0.54, 0.15, 0.09), 0.99 * aMul);
+    cr.setSource(shG);
+    cr.newPath();
+    cr.arc(0, 0, 1.0, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    cr.setSourceRGBA(...tint(1.0, 0.74, 0.56), 0.55 * aMul);
+    cr.setLineWidth(0.45);
+    cr.newPath();
+    cr.arc(0, 0, 3.1, Math.PI * 1.15, Math.PI * 1.85);
+    cr.stroke();
+
+    // 6. Two upright eyestalks with glossy black bead eyes & white catchlights
+    for (const side of [-1, 1]) {
+        const ex = side * 1.25;
+        const ey = -3.05;
+        cr.setSourceRGBA(...tint(0.76, 0.26, 0.16), 0.95 * aMul);
+        cr.setLineWidth(0.52);
+        cr.newPath();
+        cr.moveTo(side * 1.05, -2.0);
+        cr.lineTo(ex, ey);
+        cr.stroke();
+
+        cr.setSourceRGBA(...tint(0.08, 0.10, 0.14), 0.98 * aMul);
+        cr.newPath();
+        cr.arc(ex, ey, 0.52, 0, TWO_PI);
+        cr.fill();
+
+        cr.setSourceRGBA(1.0, 1.0, 1.0, 0.88);
+        cr.newPath();
+        cr.arc(ex - 0.15, ey - 0.15, 0.18, 0, TWO_PI);
+        cr.fill();
+    }
 
     cr.restore();
 }
@@ -5229,7 +5471,7 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.closePath();
     cr.fill();
 
-    // Foaming whitewater surf edge along yWave (~42px above the long fence)
+    // Foaming whitewater surf edge along yWave
     cr.save();
     if (night)
         cr.setSourceRGBA(0.25, 0.22, 0.18, 0.34);
@@ -5255,7 +5497,7 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.restore();
 
     // 4. Band 3: Foreground Wind-Carved Cape Cod Sand Dune Ridge
-    const h3 = new Cairo.LinearGradient(0, floorTop + 52 * scale, 0, height);
+    const h3 = new Cairo.LinearGradient(0, floorTop + 50 * scale, 0, height);
     if (night) {
         h3.addColorStopRGBA(0.00, 0.50, 0.44, 0.35, 0.78);
         h3.addColorStopRGBA(0.45, 0.44, 0.38, 0.29, 0.82);
@@ -5273,9 +5515,9 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.newPath();
     cr.moveTo(0, height - 44 * scale);
     cr.curveTo(
-        width * 0.38, floorTop + 56 * scale,
-        width * 0.72, floorTop + 54 * scale,
-        width, height - 38 * scale);
+        width * 0.38, floorTop + 52 * scale,
+        width * 0.72, floorTop + 46 * scale,
+        width, height - 40 * scale);
     cr.lineTo(width, height);
     cr.lineTo(0, height);
     cr.closePath();
@@ -5292,12 +5534,12 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.newPath();
     cr.moveTo(0, height - 44 * scale);
     cr.curveTo(
-        width * 0.38, floorTop + 56 * scale,
-        width * 0.72, floorTop + 54 * scale,
-        width, height - 38 * scale);
+        width * 0.38, floorTop + 52 * scale,
+        width * 0.72, floorTop + 46 * scale,
+        width, height - 40 * scale);
     cr.stroke();
 
-    // Subtle wind-carved sand ripple lines on the foreground dune (clean sand in front of lighthouse)
+    // Subtle wind-carved sand ripple lines on the foreground dune
     if (night)
         cr.setSourceRGBA(0.27, 0.21, 0.15, 0.28);
     else
@@ -5313,18 +5555,16 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
         cr.stroke();
     }
 
-    // 5. Long Wooden Vertical-Slat & Twisted-Wire Sand Fence along the dry foreground dune crest
-    // (Sits at floorTop + 60.2*scale .. 57.5*scale, ~42px below the ocean waves!)
-    drawCapeCodSlatFenceRun(
-        cr, time, scale, night, isGolden,
-        width * 0.430, width * 0.740,
-        floorTop + 60.2 * scale, floorTop + 57.5 * scale,
-        21, 0.92);
+    // 5. Long Wooden Vertical-Slat & Twisted-Wire Sand Fence curving directly along the slope of the hill
+    drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, height, floorTop, 0.35, 0.77, 22, 0.92);
 
     // 6. Hero Red-Over-White Nauset Light on Left Bluff (x = 0.267w, y = height - 42*scale; no vegetation in front)
     drawNausetLighthouseHero(cr, width * 0.267, height - 42 * scale, scale, time, night, isGolden);
 
-    // 7. Pure Mounding Rosa rugosa & Tall Beachgrass Plumes on Outer Left & Right Margins
+    // 7. Small Atlantic Crab Scuttling Across the Foreground Beach
+    drawCapeCodBeachCrab(cr, width, height, scale, time, night, isGolden);
+
+    // 8. Pure Mounding Rosa rugosa & Tall Beachgrass Plumes on Outer Left & Right Margins
     drawPureRosaRugosaAndBeachgrassDune(cr, width * 0.036, height - 40 * scale, 34 * scale, -1.0 * scale, time, night, isGolden);
     drawPureRosaRugosaAndBeachgrassDune(cr, width * 0.962, height - 24 * scale, 38 * scale,  1.0 * scale, time, night, isGolden);
 }
