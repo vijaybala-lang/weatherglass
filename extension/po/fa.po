@@ -271,7 +271,7 @@ msgid "Animated sky with theme tint"
 msgstr "آسمان متحرک با ته‌رنگ پوسته"
 
 #: prefs.js:477
-msgid "Show floor scenes"
+msgid "Show ground scenes"
 msgstr "نمایش صحنه‌های زمین"
 
 #: prefs.js:478

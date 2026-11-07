@@ -474,7 +474,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         });
         styleRow.set_selected(initialStyle === 'solid' ? 1 : 0);
         const floorRow = new Adw.SwitchRow({
-            title: _('Show floor scenes'),
+            title: _('Show ground scenes'),
             subtitle: _('Weather landscapes and animations along the bottom of the sky'),
             visible: initialStyle !== 'accent',
         });

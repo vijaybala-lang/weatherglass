@@ -271,7 +271,7 @@ msgid "Animated sky with theme tint"
 msgstr "Langit beranimasi dengan rona tema"
 
 #: prefs.js:477
-msgid "Show floor scenes"
+msgid "Show ground scenes"
 msgstr "Tampilkan pemandangan dasar"
 
 #: prefs.js:478

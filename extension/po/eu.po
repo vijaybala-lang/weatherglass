@@ -282,7 +282,7 @@ msgid "Animated sky with theme tint"
 msgstr "Zeru animatua gaiaren tinduarekin"
 
 #: prefs.js:477
-msgid "Show floor scenes"
+msgid "Show ground scenes"
 msgstr "Erakutsi lurzoruko eszenak"
 
 #: prefs.js:478

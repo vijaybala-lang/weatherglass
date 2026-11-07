@@ -271,7 +271,7 @@ msgid "Animated sky with theme tint"
 msgstr "थीम टिंट के साथ एनिमेटेड आकाश"
 
 #: prefs.js:477
-msgid "Show floor scenes"
+msgid "Show ground scenes"
 msgstr "धरातल दृश्य दिखाएँ"
 
 #: prefs.js:478

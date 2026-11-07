@@ -271,7 +271,7 @@ msgid "Animated sky with theme tint"
 msgstr "שמיים מונפשים עם גוון ערכת הנושא"
 
 #: prefs.js:477
-msgid "Show floor scenes"
+msgid "Show ground scenes"
 msgstr "הצג סצנות קרקע"
 
 #: prefs.js:478
