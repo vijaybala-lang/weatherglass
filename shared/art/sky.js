@@ -5451,38 +5451,38 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.rectangle(0, floorTop - 4 * scale, width, 32 * scale);
     cr.fill();
 
-    // 3. Band 2: Curved Coastal Bay & Scalloped Tidal Shoreline (Middle of Day Tiles)
+    // 3. Band 2: Deeply Curved Coastal Bay & Scalloped Tidal Shoreline Pushing Further Down
     const tWave = (time - 1.1) + 1.15;
 
-    // Sweeping coastal cove curvature + pronounced crescent tidal scallops
-    const stepsShore = 36;
-    const baseShoreY = u => floorTop + (
-        24.5
-        + Math.sin(u * Math.PI) * 5.8
-        + Math.sin(u * Math.PI * 2.4 + 0.35) * 3.2
-        - Math.cos(u * Math.PI * 4.2 - 0.45) * 1.5
-    ) * scale;
-    const wetSandY = u => baseShoreY(u) + (
-        8.8
-        + Math.sin(u * Math.PI) * 2.4
-        + Math.sin(u * Math.PI * 2.8 + 0.55) * 3.8
-        + Math.cos(u * Math.PI * 4.8 - 0.65) * 1.9
-    ) * scale;
+    // Deep, smooth downward-curving coastal bay arc pushing well below the Row 1 tiles
+    const stepsShore = 40;
+    const baseShoreY = u => {
+        const bayCurve = Math.pow(Math.sin(u * Math.PI), 0.90) * 21.5;
+        const gentleScallop = Math.sin(u * Math.PI * 3.0 - 0.35) * 1.65
+                            + Math.cos(u * Math.PI * 5.0 + 0.4) * 0.75;
+        return floorTop + (16.5 + bayCurve + gentleScallop) * scale;
+    };
+    const wetSandY = u => {
+        const bayReach = 0.36 + 0.64 * Math.sin(u * Math.PI);
+        const wetScallop = Math.sin(u * Math.PI * 3.0 + 0.25) * 1.85
+                         + Math.cos(u * Math.PI * 5.0 - 0.55) * 0.95;
+        return baseShoreY(u) + (12.8 * bayReach + wetScallop) * scale;
+    };
 
     // 3a. Nearshore Turquoise Shoal Water (feathered top from deep Atlantic down to curved baseShoreY)
-    const h2Water = new Cairo.LinearGradient(0, floorTop + 6 * scale, 0, floorTop + 36 * scale);
+    const h2Water = new Cairo.LinearGradient(0, floorTop + 6 * scale, 0, floorTop + 42 * scale);
     if (night) {
         h2Water.addColorStopRGBA(0.00, 0.08, 0.27, 0.40, 0.00);
-        h2Water.addColorStopRGBA(0.28, 0.08, 0.27, 0.40, 0.58);
-        h2Water.addColorStopRGBA(1.00, 0.14, 0.40, 0.53, 0.58);
+        h2Water.addColorStopRGBA(0.25, 0.08, 0.27, 0.40, 0.58);
+        h2Water.addColorStopRGBA(1.00, 0.14, 0.40, 0.53, 0.60);
     } else if (isGolden) {
         h2Water.addColorStopRGBA(0.00, 0.19, 0.46, 0.58, 0.00);
-        h2Water.addColorStopRGBA(0.28, 0.19, 0.46, 0.58, 0.56);
-        h2Water.addColorStopRGBA(1.00, 0.35, 0.60, 0.65, 0.56);
+        h2Water.addColorStopRGBA(0.25, 0.19, 0.46, 0.58, 0.56);
+        h2Water.addColorStopRGBA(1.00, 0.35, 0.60, 0.65, 0.58);
     } else {
         h2Water.addColorStopRGBA(0.00, 0.13, 0.49, 0.64, 0.00);
-        h2Water.addColorStopRGBA(0.28, 0.13, 0.49, 0.64, 0.56);
-        h2Water.addColorStopRGBA(1.00, 0.27, 0.64, 0.73, 0.56);
+        h2Water.addColorStopRGBA(0.25, 0.13, 0.49, 0.64, 0.56);
+        h2Water.addColorStopRGBA(1.00, 0.27, 0.64, 0.73, 0.58);
     }
     cr.setSource(h2Water);
     cr.newPath();
@@ -5496,7 +5496,7 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.fill();
 
     // 3b. Base warm dry sandy beach flat (starts organically along curved baseShoreY)
-    const h2Beach = new Cairo.LinearGradient(0, floorTop + 24 * scale, 0, height);
+    const h2Beach = new Cairo.LinearGradient(0, floorTop + 18 * scale, 0, height);
     if (night) {
         h2Beach.addColorStopRGBA(0.00, 0.35, 0.31, 0.25, 0.68);
         h2Beach.addColorStopRGBA(0.22, 0.42, 0.37, 0.29, 0.74);
@@ -5524,7 +5524,7 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.fill();
 
     // 3c. Glistening darker wet-sand tidal apron (between curved baseShoreY and wetSandY)
-    const wetG = new Cairo.LinearGradient(0, floorTop + 24 * scale, 0, floorTop + 46 * scale);
+    const wetG = new Cairo.LinearGradient(0, floorTop + 18 * scale, 0, floorTop + 53 * scale);
     if (night) {
         wetG.addColorStopRGBA(0.00, 0.18, 0.22, 0.27, 0.56);
         wetG.addColorStopRGBA(0.65, 0.23, 0.20, 0.17, 0.46);
@@ -5568,16 +5568,16 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     }
     cr.stroke();
 
-    // Rolling nearshore wave swells that refract and curve as they approach the bay shoreline
+    // Rolling nearshore wave swells that refract from the flat horizon into the deeply curved bay
     for (let rib = 0; rib < 3; rib++) {
         const rProg = ((tWave * 0.28 + rib / 3) % 1.0 + 1.0) % 1.0;
         const rEnv = Math.sin(rProg * Math.PI);
-        const yRibFlat = floorTop + (9.5 + rProg * 14.0) * scale;
 
         const ribYAt = u => {
-            const shoreMatch = (baseShoreY(u) - (floorTop + 28.0 * scale)) * (0.25 + 0.65 * rProg);
-            const ripple = Math.sin(u * Math.PI * 2.6 + rib * 1.8 + tWave * 0.7) * (1.2 + 1.4 * rProg) * scale;
-            return yRibFlat + shoreMatch + ripple;
+            const offshoreY = floorTop + 7.5 * scale;
+            const nearshoreY = baseShoreY(u) - 1.5 * scale;
+            const ripple = Math.sin(u * Math.PI * 2.6 + rib * 1.8 + tWave * 0.7) * (0.9 + 1.4 * rProg) * scale;
+            return offshoreY + (nearshoreY - offshoreY) * (0.16 + 0.80 * rProg) + ripple;
         };
 
         if (night)
@@ -5586,8 +5586,8 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
             cr.setSourceRGBA(0.07, 0.33, 0.45, 0.24 * rEnv);
         cr.setLineWidth(1.55 * scale);
         cr.newPath();
-        for (let i = 0; i <= 28; i++) {
-            const u = i / 28;
+        for (let i = 0; i <= 32; i++) {
+            const u = i / 32;
             const ry = ribYAt(u);
             if (i === 0) cr.moveTo(0, ry + 0.75 * scale);
             else cr.lineTo(u * width, ry + 0.75 * scale);
@@ -5603,8 +5603,8 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
             cr.setSourceRGBA(0.96, 0.99, 1.0, crestAlpha);
         cr.setLineWidth((0.80 + 0.50 * rProg) * scale);
         cr.newPath();
-        for (let i = 0; i <= 28; i++) {
-            const u = i / 28;
+        for (let i = 0; i <= 32; i++) {
+            const u = i / 32;
             const ry = ribYAt(u);
             if (i === 0) cr.moveTo(0, ry);
             else cr.lineTo(u * width, ry);
@@ -5612,7 +5612,7 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
         cr.stroke();
     }
 
-    // 3d. Two Overlapping Phase-Shifted Deeply Curved Scalloped Tidal Swash Waves
+    // 3d. Two Overlapping Phase-Shifted Deeply Curved Tidal Swash Waves Pushing Further Down
     for (let w = 0; w < 2; w++) {
         const c = ((tWave * 0.22 + w * 0.5) % 1.0 + 1.0) % 1.0;
         const runup = c < 0.44
@@ -5626,14 +5626,15 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
         const swashPts = [];
         for (let i = 0; i <= stepsShore; i++) {
             const u = i / stepsShore;
-            const arch1 = Math.max(0, Math.sin(u * Math.PI * 2.6 + w * 1.95 + Math.sin(tWave * 0.45) * 0.25));
-            const arch2 = 0.5 + 0.5 * Math.sin(u * Math.PI * 1.8 - w * 1.4 + 0.4);
-            const lobe = 0.25 + 0.65 * Math.pow(arch1, 0.85) + 0.35 * arch2;
-            const sy = baseShoreY(u) + runup * (3.2 + lobe * 8.6) * scale;
+            const bayReach = 0.34 + 0.66 * Math.sin(u * Math.PI);
+            const waveScallop = 0.72
+                + 0.22 * Math.sin(u * Math.PI * 3.0 + w * 2.1 + Math.sin(tWave * 0.45) * 0.25)
+                + 0.10 * Math.cos(u * Math.PI * 5.0 - w * 1.4);
+            const sy = baseShoreY(u) + runup * bayReach * (4.8 + waveScallop * 10.2) * scale;
             swashPts.push({ x: u * width, y: sy, base: baseShoreY(u) });
         }
 
-        const swG = new Cairo.LinearGradient(0, floorTop + 24 * scale, 0, floorTop + 46 * scale);
+        const swG = new Cairo.LinearGradient(0, floorTop + 17 * scale, 0, floorTop + 53 * scale);
         if (night) {
             swG.addColorStopRGBA(0.00, 0.15, 0.41, 0.54, 0.48 * sheetAlpha);
             swG.addColorStopRGBA(0.72, 0.29, 0.54, 0.66, 0.40 * sheetAlpha);
