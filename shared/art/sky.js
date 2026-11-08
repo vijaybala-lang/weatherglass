@@ -2891,15 +2891,13 @@ const FLOOR_SCENE_IDS = {
     C2: 'C2',
     chalet: 'S2',
     S2: 'S2',
-    arctic: 'S1',
-    S1: 'S1',
     koi: 'K1',
     K1: 'K1',
     frogs: 'T3',
     T3: 'T3',
 };
 
-/* Resolve bottom ground scene ('S1', 'S2', 'T3', 'K1', 'C1', 'C2', or null) from scene, night, temp, and floorScene */
+/* Resolve bottom ground scene ('S2', 'T3', 'K1', 'C1', 'C2', or null) from scene, night, temp, and floorScene */
 export function resolveFloorScene(scene, night, temp = null, floorScene = 'auto') {
     if (floorScene && floorScene !== 'auto' && FLOOR_SCENE_IDS[floorScene])
         return FLOOR_SCENE_IDS[floorScene];
@@ -2914,7 +2912,7 @@ export function resolveFloorScene(scene, night, temp = null, floorScene = 'auto'
     return null;
 }
 
-/* Snow-laden evergreen pine for S1 and S2 winter floors */
+/* Snow-laden evergreen pine for S2 winter floor */
 function drawSnowPine(cr, x, baseY, treeH, snowCap = true, bend = 0, alpha = 1.0, night = false, slender = 1.0) {
     cr.save();
     const trunkW = Math.max(1.5, treeH * 0.052 * slender);
@@ -2990,619 +2988,6 @@ function drawSnowPine(cr, x, baseY, treeH, snowCap = true, bend = 0, alpha = 1.0
         }
     }
     cr.restore();
-}
-
-/* Articulated 2-jointed Siberian Husky with X-back harness and 4-beat gallop kinematics */
-function drawHusky(cr, x, y, scale, stridePhase, coat = 'agouti') {
-    cr.save();
-    cr.translate(x, y);
-    cr.scale(scale, scale);
-
-    const palettes = {
-        agouti: {
-            dark: [0.16, 0.22, 0.30], mid: [0.34, 0.42, 0.52],
-            belly: [0.90, 0.95, 0.99], harness: [0.84, 0.24, 0.22],
-        },
-        white: {
-            dark: [0.60, 0.70, 0.82], mid: [0.82, 0.89, 0.96],
-            belly: [0.97, 0.99, 1.00], harness: [0.18, 0.56, 0.76],
-        },
-        black: {
-            dark: [0.10, 0.14, 0.20], mid: [0.22, 0.28, 0.36],
-            belly: [0.88, 0.93, 0.98], harness: [0.88, 0.56, 0.18],
-        },
-    };
-    const pal = palettes[coat] ?? palettes.agouti;
-
-    const s1 = Math.sin(stridePhase);
-    const bodyBob = Math.abs(s1) * 0.8;
-    const pitch = s1 * 0.05;
-
-    cr.translate(0, -bodyBob);
-    cr.rotate(pitch);
-
-    const drawLeg = (hipX, hipY, ph, isHind, isFar) => {
-        const sw = Math.sin(ph);
-        const lift = Math.max(0, -Math.cos(ph));
-        const thighLen = isHind ? 3.2 : 2.9;
-        const shinLen = isHind ? 3.0 : 2.8;
-        const a1 = (isHind ? 0.30 : -0.15) + sw * 0.46;
-        const a2 = a1 + (isHind ? -0.40 - lift * 0.50 : 0.32 + lift * 0.55);
-
-        const kx = hipX + Math.sin(a1) * thighLen;
-        const ky = hipY + Math.cos(a1) * thighLen;
-        const px = kx + Math.sin(a2) * shinLen;
-        const py = ky + Math.cos(a2) * shinLen;
-
-        cr.setLineCap(Cairo.LineCap.ROUND);
-        cr.setLineJoin(Cairo.LineJoin.ROUND);
-        const col = isFar ? pal.dark : pal.belly;
-        cr.setSourceRGBA(col[0], col[1], col[2], isFar ? 0.85 : 0.96);
-        cr.setLineWidth(isHind ? 1.5 : 1.35);
-        cr.newPath();
-        cr.moveTo(hipX, hipY);
-        cr.lineTo(kx, ky);
-        cr.lineTo(px, py);
-        cr.stroke();
-    };
-
-    drawLeg(-4.2, -3.6, stridePhase + 0.55, true, true);
-    drawLeg(3.4, -3.8, stridePhase + Math.PI + 0.55, false, true);
-
-    // Plumed sickle tail
-    cr.setSourceRGBA(pal.mid[0], pal.mid[1], pal.mid[2], 0.94);
-    cr.setLineWidth(2.0);
-    cr.setLineCap(Cairo.LineCap.ROUND);
-    cr.newPath();
-    cr.moveTo(-4.8, -5.0);
-    cr.curveTo(-7.2, -6.2, -8.5, -8.4, -6.8, -9.6);
-    cr.stroke();
-
-    // Ribcage & tucked loin torso
-    const tg = new Cairo.LinearGradient(0, -6.8, 0, -2.0);
-    tg.addColorStopRGBA(0, pal.dark[0], pal.dark[1], pal.dark[2], 0.98);
-    tg.addColorStopRGBA(0.58, pal.mid[0], pal.mid[1], pal.mid[2], 0.98);
-    tg.addColorStopRGBA(1, pal.belly[0], pal.belly[1], pal.belly[2], 0.98);
-    cr.setSource(tg);
-    cr.newPath();
-    cr.moveTo(-5.2, -5.4);
-    cr.curveTo(-2.5, -6.4, 2.2, -6.6, 4.8, -6.2);
-    cr.curveTo(6.2, -5.2, 5.8, -2.5, 3.6, -2.4);
-    cr.curveTo(1.2, -2.4, -1.8, -3.6, -4.6, -3.4);
-    cr.closePath();
-    cr.fill();
-
-    // X-back racing harness
-    cr.setSourceRGBA(pal.harness[0], pal.harness[1], pal.harness[2], 0.95);
-    cr.setLineWidth(0.95);
-    cr.newPath();
-    cr.moveTo(4.2, -6.0);
-    cr.lineTo(2.8, -2.8);
-    cr.moveTo(4.0, -5.6);
-    cr.lineTo(-4.0, -5.0);
-    cr.stroke();
-
-    drawLeg(-4.0, -3.5, stridePhase, true, false);
-    drawLeg(3.6, -3.8, stridePhase + Math.PI * 1.1, false, false);
-
-    // Wolf-like head, white mask & erect ears
-    cr.setSourceRGBA(pal.dark[0], pal.dark[1], pal.dark[2], 0.98);
-    cr.newPath();
-    cr.moveTo(3.6, -5.8);
-    cr.lineTo(5.4, -8.4);
-    cr.lineTo(7.4, -8.0);
-    cr.lineTo(9.2, -7.0);
-    cr.lineTo(8.8, -6.0);
-    cr.lineTo(6.6, -6.0);
-    cr.lineTo(4.8, -3.8);
-    cr.closePath();
-    cr.fill();
-
-    cr.setSourceRGBA(pal.belly[0], pal.belly[1], pal.belly[2], 0.96);
-    cr.newPath();
-    cr.moveTo(6.6, -7.6);
-    cr.lineTo(9.0, -7.0);
-    cr.lineTo(8.7, -6.0);
-    cr.lineTo(6.2, -5.8);
-    cr.closePath();
-    cr.fill();
-
-    cr.setSourceRGBA(pal.dark[0], pal.dark[1], pal.dark[2], 0.98);
-    cr.newPath();
-    cr.moveTo(5.0, -8.0);
-    cr.lineTo(5.5, -10.6);
-    cr.lineTo(6.6, -8.1);
-    cr.moveTo(6.0, -8.0);
-    cr.lineTo(6.7, -10.4);
-    cr.lineTo(7.4, -7.9);
-    cr.closePath();
-    cr.fill();
-
-    cr.restore();
-}
-
-/* 7-segment S-flexing Arctic Char (Salvelinus alpinus) with forked tail & white-edged crimson fins */
-function drawArcticChar(cr, x, y, scale, baseAngle, time) {
-    cr.save();
-    cr.translate(x, y);
-    cr.scale(scale, scale);
-    cr.rotate(baseAngle);
-
-    const N = 7;
-    const len = 17.5;
-    const halfW = [0.65, 2.2, 3.1, 2.9, 2.2, 1.3, 0.75];
-    const spine = [];
-    for (let i = 0; i < N; i++) {
-        const u = i / (N - 1);
-        const sx = (0.48 - u) * len;
-        const env = (u ** 1.1) * 2.6;
-        const sy = Math.sin(time * 14 - u * 4.6) * env;
-        spine.push({ x: sx, y: sy, r: halfW[i] });
-    }
-
-    const leftPts = [], rightPts = [];
-    for (let i = 0; i < N; i++) {
-        const p0 = spine[Math.max(0, i - 1)];
-        const p1 = spine[Math.min(N - 1, i + 1)];
-        const dx = p1.x - p0.x, dy = p1.y - p0.y;
-        const l = Math.hypot(dx, dy) || 1;
-        const nx = -dy / l, ny = dx / l;
-        leftPts.push({ x: spine[i].x + nx * spine[i].r, y: spine[i].y + ny * spine[i].r });
-        rightPts.push({ x: spine[i].x - nx * spine[i].r, y: spine[i].y - ny * spine[i].r });
-    }
-
-    const tail = spine[N - 1], prev = spine[N - 2];
-    const tAng = Math.atan2(tail.y - prev.y, tail.x - prev.x);
-    cr.save();
-    cr.translate(tail.x, tail.y);
-    cr.rotate(tAng);
-    cr.setSourceRGBA(0.62, 0.74, 0.84, 0.94);
-    cr.newPath();
-    cr.moveTo(0, 0);
-    cr.lineTo(4.8, -3.5);
-    cr.lineTo(2.6, 0);
-    cr.lineTo(4.8, 3.5);
-    cr.closePath();
-    cr.fill();
-    cr.restore();
-
-    const mid = spine[2];
-    cr.setSourceRGBA(0.88, 0.36, 0.30, 0.92);
-    cr.newPath();
-    cr.moveTo(mid.x, rightPts[2].y);
-    cr.lineTo(mid.x - 2.6, rightPts[2].y + 3.4);
-    cr.lineTo(mid.x + 1.2, rightPts[2].y + 0.5);
-    cr.closePath();
-    cr.fill();
-    cr.setSourceRGBA(0.96, 0.99, 1.0, 0.92);
-    cr.setLineWidth(0.55);
-    cr.newPath();
-    cr.moveTo(mid.x + 1.0, rightPts[2].y + 0.4);
-    cr.lineTo(mid.x - 2.6, rightPts[2].y + 3.4);
-    cr.stroke();
-
-    cr.setSourceRGBA(0.30, 0.44, 0.58, 0.92);
-    cr.newPath();
-    cr.moveTo(leftPts[2].x, leftPts[2].y);
-    cr.lineTo(leftPts[3].x - 0.8, leftPts[3].y - 2.8);
-    cr.lineTo(leftPts[4].x, leftPts[4].y);
-    cr.closePath();
-    cr.fill();
-
-    const bg = new Cairo.LinearGradient(0, -3.5, 0, 3.5);
-    bg.addColorStopRGBA(0.0, 0.20, 0.32, 0.46, 0.98);
-    bg.addColorStopRGBA(0.46, 0.80, 0.88, 0.96, 0.98);
-    bg.addColorStopRGBA(0.76, 0.94, 0.46, 0.36, 0.96);
-    bg.addColorStopRGBA(1.0, 0.98, 0.90, 0.84, 0.96);
-    cr.setSource(bg);
-    cr.newPath();
-    cr.moveTo(spine[0].x + 1.0, spine[0].y);
-    for (let i = 0; i < N; i++)
-        cr.lineTo(leftPts[i].x, leftPts[i].y);
-    for (let i = N - 1; i >= 0; i--)
-        cr.lineTo(rightPts[i].x, rightPts[i].y);
-    cr.closePath();
-    cr.fill();
-
-    cr.setSourceRGBA(1.0, 1.0, 1.0, 0.62);
-    cr.setLineWidth(0.75);
-    cr.newPath();
-    for (let i = 1; i < N - 1; i++) {
-        if (i === 1)
-            cr.moveTo(spine[i].x, spine[i].y - 0.4);
-        else
-            cr.lineTo(spine[i].x, spine[i].y - 0.4);
-    }
-    cr.stroke();
-
-    cr.setSourceRGBA(0.08, 0.10, 0.14, 0.98);
-    cr.newPath();
-    cr.arc(spine[0].x - 0.8, spine[0].y - 0.4, 0.85, 0, TWO_PI);
-    cr.fill();
-
-    cr.restore();
-}
-
-/* S1 (< 0°F Snow & Clear Day, or Arctic scene): Inuit Ice/Fjord Fishing, Flexing Arctic Char, Igloo/Tupiq & Husky Trail */
-function drawIceFishingFloor(cr, width, height, scale, time, night, isWinter = true) {
-    const sh = sceneHeight(width, height);
-    const groundOffset = height - sh;
-    const floorTop = groundOffset + 0.685 * sh;
-    const ridgeY = floorTop - 14 * scale;
-
-    // Upper ridge wash (snow in winter, mossy Arctic tundra in summer)
-    const rg = new Cairo.LinearGradient(0, ridgeY - 6 * scale, 0, floorTop + 14 * scale);
-    if (!isWinter) {
-        if (night) {
-            rg.addColorStopRGBA(0, 0.14, 0.26, 0.28, 0.0);
-            rg.addColorStopRGBA(0.35, 0.14, 0.26, 0.28, 0.34);
-            rg.addColorStopRGBA(1, 0.10, 0.20, 0.22, 0.48);
-        } else {
-            rg.addColorStopRGBA(0, 0.42, 0.64, 0.44, 0.0);
-            rg.addColorStopRGBA(0.35, 0.38, 0.60, 0.40, 0.36);
-            rg.addColorStopRGBA(1, 0.28, 0.48, 0.32, 0.48);
-        }
-    } else if (night) {
-        rg.addColorStopRGBA(0, 0.78, 0.86, 0.96, 0.0);
-        rg.addColorStopRGBA(0.35, 0.74, 0.83, 0.94, 0.34);
-        rg.addColorStopRGBA(1, 0.62, 0.74, 0.88, 0.46);
-    } else {
-        rg.addColorStopRGBA(0, 0.88, 0.94, 1.0, 0.0);
-        rg.addColorStopRGBA(0.35, 0.84, 0.91, 0.98, 0.34);
-        rg.addColorStopRGBA(1, 0.72, 0.82, 0.92, 0.46);
-    }
-    cr.setSource(rg);
-    cr.newPath();
-    cr.moveTo(0, ridgeY + 4 * scale);
-    cr.curveTo(width * 0.35, ridgeY - 5 * scale, width * 0.68, ridgeY + 4 * scale, width, ridgeY - 1 * scale);
-    cr.lineTo(width, floorTop + 14 * scale);
-    cr.lineTo(0, floorTop + 14 * scale);
-    cr.closePath();
-    cr.fill();
-
-    // Glacial ice sheet floor wash (winter) or open Arctic fjord water + mossy shoreline bank (summer)
-    const iceG = new Cairo.LinearGradient(0, floorTop + 8 * scale, 0, height);
-    if (!isWinter) {
-        if (night) {
-            iceG.addColorStopRGBA(0, 0.06, 0.18, 0.30, 0.42);
-            iceG.addColorStopRGBA(1, 0.04, 0.12, 0.22, 0.64);
-        } else {
-            iceG.addColorStopRGBA(0, 0.12, 0.44, 0.64, 0.44);
-            iceG.addColorStopRGBA(1, 0.08, 0.32, 0.50, 0.62);
-        }
-    } else if (night) {
-        iceG.addColorStopRGBA(0, 0.58, 0.72, 0.88, 0.38);
-        iceG.addColorStopRGBA(1, 0.44, 0.60, 0.78, 0.56);
-    } else {
-        iceG.addColorStopRGBA(0, 0.66, 0.80, 0.92, 0.36);
-        iceG.addColorStopRGBA(1, 0.52, 0.68, 0.84, 0.52);
-    }
-    cr.setSource(iceG);
-    cr.rectangle(0, floorTop + 8 * scale, width, height - floorTop - 8 * scale);
-    cr.fill();
-
-    if (!isWinter) {
-        // Summer mossy tundra bank curving from left across Alley 1 & Alley 2 to the fjord water's edge
-        const bankG = new Cairo.LinearGradient(0, floorTop + 12 * scale, 0, height);
-        if (night) {
-            bankG.addColorStopRGBA(0, 0.12, 0.24, 0.20, 0.54);
-            bankG.addColorStopRGBA(1, 0.08, 0.18, 0.15, 0.72);
-        } else {
-            bankG.addColorStopRGBA(0, 0.34, 0.56, 0.32, 0.52);
-            bankG.addColorStopRGBA(1, 0.24, 0.44, 0.24, 0.68);
-        }
-        cr.setSource(bankG);
-        cr.newPath();
-        cr.moveTo(0, floorTop + 10 * scale);
-        cr.lineTo(width * 0.56, floorTop + 12 * scale);
-        cr.curveTo(width * 0.64, height - 64 * scale, width * 0.58, height - 24 * scale, width * 0.62, height);
-        cr.lineTo(0, height);
-        cr.closePath();
-        cr.fill();
-    }
-
-    // 1. Qamutiik Dog Sled + Musher (winter) + 3 Articulated Huskies on upper ridge
-    const span = width + 180 * scale;
-    const dtShift = ((time - 1.1) * 22 * scale % span + span) % span;
-    const sledX = ((width * 0.388 + dtShift + 90 * scale) % span) - 90 * scale;
-    if (isWinter) {
-        cr.save();
-        cr.translate(sledX, ridgeY);
-        cr.scale(1.42 * scale, 1.42 * scale);
-
-        cr.setSourceRGBA(0.16, 0.24, 0.34, 0.92);
-        cr.setLineWidth(1.3);
-        cr.newPath();
-        cr.moveTo(-28, 0);
-        cr.lineTo(-4, 0);
-        cr.curveTo(0, 0, 2, -3.5, -1, -5.0);
-        cr.lineTo(-22, -5.0);
-        cr.moveTo(-24, 0);
-        cr.lineTo(-22, -9.5);
-        cr.moveTo(-14, 0);
-        cr.lineTo(-14, -5.0);
-        cr.moveTo(-6, 0);
-        cr.lineTo(-6, -5.0);
-        cr.stroke();
-
-        cr.setSourceRGBA(0.30, 0.40, 0.50, 0.92);
-        cr.newPath();
-        cr.moveTo(-20, -5.0);
-        cr.curveTo(-16, -9.2, -8, -8.8, -4, -5.0);
-        cr.closePath();
-        cr.fill();
-
-        const kick = Math.sin(time * 7.0) * 1.8;
-        cr.setSourceRGBA(0.18, 0.26, 0.36, 0.95);
-        cr.setLineWidth(1.5);
-        cr.newPath();
-        cr.moveTo(-25, -4.5);
-        cr.lineTo(-27, 0);
-        cr.moveTo(-25, -4.5);
-        cr.lineTo(-29 - kick, -1.2);
-        cr.moveTo(-23, -9.0);
-        cr.lineTo(-21, -8.5);
-        cr.stroke();
-        cr.newPath();
-        cr.arc(-23, -11.8, 2.0, 0, TWO_PI);
-        cr.fill();
-        cr.rectangle(-25.5, -10.2, 3.6, 5.6);
-        cr.fill();
-
-        // Sled lantern glow + gangline
-        const lg = new Cairo.RadialGradient(-1, -4.5, 0.5, -1, -4.5, 7.5);
-        lg.addColorStopRGBA(0, 1.0, 0.90, 0.48, 0.95);
-        lg.addColorStopRGBA(1, 1.0, 0.68, 0.20, 0.0);
-        cr.setSource(lg);
-        cr.newPath();
-        cr.arc(-1, -4.5, 7.5, 0, TWO_PI);
-        cr.fill();
-
-        cr.setSourceRGBA(0.75, 0.85, 0.95, 0.65);
-        cr.setLineWidth(0.75);
-        cr.newPath();
-        cr.moveTo(0, -3.2);
-        cr.lineTo(58, -3.8);
-        cr.stroke();
-        cr.restore();
-    }
-
-    drawHusky(cr, sledX + 18 * scale, ridgeY, 1.42 * scale, time * 10 + 0.4, 'agouti');
-    drawHusky(cr, sledX + 48 * scale, ridgeY - 0.5 * scale, 1.42 * scale, time * 10 + 2.2, 'white');
-    drawHusky(cr, sledX + 78 * scale, ridgeY - 1.0 * scale, 1.42 * scale, time * 10 + 4.0, 'black');
-
-    // 2. Spiral-Coursed Snow-Block Igloo (winter) or Caribou-Hide Summer Tupiq Tent (summer) in Alley 1 (x = 0.267w, y = h - 70*scale)
-    const igX = width * 0.267, igY = height - 70 * scale;
-    cr.save();
-    cr.translate(igX, igY);
-    cr.scale(1.68 * scale, 1.68 * scale);
-
-    cr.save();
-    cr.scale(16.0, 5.2);
-    cr.setSourceRGBA(0.06, 0.14, 0.24, 0.34);
-    cr.newPath();
-    cr.arc(0, 0.4, 1, 0, TWO_PI);
-    cr.fill();
-    cr.restore();
-
-    if (isWinter) {
-        const domeG = new Cairo.RadialGradient(-5, -8, 2, 0, 0, 16);
-        domeG.addColorStopRGBA(0, 0.95, 0.98, 1.0, 0.96);
-        domeG.addColorStopRGBA(0.58, 0.72, 0.84, 0.95, 0.95);
-        domeG.addColorStopRGBA(1, 0.46, 0.62, 0.78, 0.96);
-        cr.setSource(domeG);
-        cr.newPath();
-        cr.arc(0, 0, 14, Math.PI, 0);
-        cr.curveTo(14, 3.2, -14, 3.2, -14, 0);
-        cr.closePath();
-        cr.fill();
-
-        cr.setSourceRGBA(0.28, 0.44, 0.62, 0.50);
-        cr.setLineWidth(0.70);
-        cr.newPath();
-        cr.moveTo(-13.2, -3.8);
-        cr.curveTo(-4, -5.8, 4, -5.8, 13.2, -3.8);
-        cr.moveTo(-11.2, -8.2);
-        cr.curveTo(-3, -9.8, 3, -9.8, 11.2, -8.2);
-        cr.moveTo(-6.8, -11.8);
-        cr.curveTo(-2, -12.8, 2, -12.8, 6.8, -11.8);
-        cr.moveTo(-6, 0.8);
-        cr.lineTo(-5.5, -4.4);
-        cr.moveTo(2, 1.2);
-        cr.lineTo(2.2, -4.5);
-        cr.moveTo(-2, -4.6);
-        cr.lineTo(-1.6, -9.0);
-        cr.moveTo(5, -4.2);
-        cr.lineTo(4.4, -8.6);
-        cr.stroke();
-
-        // Barrel-vaulted torsuk entrance tunnel
-        cr.setSourceRGBA(0.76, 0.88, 0.98, 0.96);
-        cr.newPath();
-        cr.arc(10.5, 1.2, 5.2, Math.PI * 1.08, Math.PI * 1.96);
-        cr.lineTo(15.5, 3.8);
-        cr.lineTo(5.5, 3.8);
-        cr.closePath();
-        cr.fill();
-    } else {
-        // Traditional Inuit summer caribou-skin & driftwood ridge tupiq tent
-        const tentG = new Cairo.LinearGradient(-13, -16, 13, 3);
-        tentG.addColorStopRGBA(0, 0.78, 0.66, 0.50, 0.96);
-        tentG.addColorStopRGBA(0.55, 0.62, 0.48, 0.34, 0.96);
-        tentG.addColorStopRGBA(1, 0.44, 0.32, 0.22, 0.97);
-        cr.setSource(tentG);
-        cr.newPath();
-        cr.moveTo(-14.0, 2.0);
-        cr.lineTo(-2.0, -15.5);
-        cr.lineTo(4.0, -14.5);
-        cr.lineTo(14.5, 2.2);
-        cr.curveTo(6.0, 3.6, -6.0, 3.6, -14.0, 2.0);
-        cr.closePath();
-        cr.fill();
-
-        // Crossed driftwood ridge pole tips & hide seam lines
-        cr.setSourceRGBA(0.32, 0.22, 0.14, 0.85);
-        cr.setLineWidth(0.75);
-        cr.newPath();
-        cr.moveTo(-3.5, -18.0);
-        cr.lineTo(-0.5, -13.5);
-        cr.moveTo(-0.5, -18.0);
-        cr.lineTo(-3.2, -13.5);
-        cr.moveTo(-2.0, -15.5);
-        cr.lineTo(-5.5, 2.8);
-        cr.moveTo(4.0, -14.5);
-        cr.lineTo(5.5, 2.8);
-        cr.stroke();
-
-        // Open doorway flap on right facing the angler
-        cr.setSourceRGBA(0.24, 0.16, 0.10, 0.94);
-        cr.newPath();
-        cr.moveTo(6.5, 2.6);
-        cr.lineTo(9.2, -6.5);
-        cr.lineTo(13.2, 2.2);
-        cr.closePath();
-        cr.fill();
-    }
-
-    const lampG = new Cairo.RadialGradient(12.2, 2.2, 0.8, 13.5, 3.2, 10.5);
-    lampG.addColorStopRGBA(0, 1.0, 0.88, 0.44, 0.96);
-    lampG.addColorStopRGBA(0.45, 1.0, 0.68, 0.22, 0.58);
-    lampG.addColorStopRGBA(1, 1.0, 0.54, 0.14, 0.0);
-    cr.setSource(lampG);
-    cr.newPath();
-    cr.arc(12.2, 2.2, 10.5, 0, TWO_PI);
-    cr.fill();
-    cr.restore();
-
-    // 3. Inuit Angler in Alley 2 (x = 0.485w) + Glowing Aqua Ice Hole / Fjord Ripples & Flexing Char in Alley 3 (x = 0.715w)
-    const angX = width * 0.485, angY = height - 50 * scale;
-    const holeX = width * 0.715, holeY = height - 46 * scale;
-    const haul = 0.5 + 0.5 * Math.sin((time - 1.1) * 1.8 + 0.65);
-
-    // Glowing aqua ice hole (winter) or concentric fjord splash rings (summer) in Alley 3
-    cr.save();
-    cr.translate(holeX, holeY);
-    cr.scale(1.68 * scale, 1.68 * scale);
-    cr.save();
-    cr.scale(11.0, 3.8);
-    if (isWinter) {
-        cr.setSourceRGBA(0.86, 0.94, 1.0, 0.94);
-        cr.newPath();
-        cr.arc(0, 0, 1.15, 0, TWO_PI);
-        cr.fill();
-        const hg = new Cairo.RadialGradient(0, 0, 0.1, 0, 0, 1.0);
-        hg.addColorStopRGBA(0, 0.24, 0.88, 0.98, 0.96);
-        hg.addColorStopRGBA(0.65, 0.08, 0.52, 0.74, 0.96);
-        hg.addColorStopRGBA(1, 0.04, 0.26, 0.44, 0.98);
-        cr.setSource(hg);
-        cr.newPath();
-        cr.arc(0, 0, 1.0, 0, TWO_PI);
-        cr.fill();
-    } else {
-        cr.setSourceRGBA(0.78, 0.94, 1.0, 0.65);
-        cr.setLineWidth(0.14);
-        cr.newPath();
-        cr.arc(0, 0, 0.75, 0, TWO_PI);
-        cr.stroke();
-        cr.setSourceRGBA(0.78, 0.94, 1.0, 0.35);
-        cr.newPath();
-        cr.arc(0, 0, 1.25, 0, TWO_PI);
-        cr.stroke();
-    }
-    cr.restore();
-    cr.restore();
-
-    // Inuit Angler in Caribou Parka with Wolverine Sunburst Ruff in Alley 2
-    cr.save();
-    cr.translate(angX, angY);
-    cr.scale(1.68 * scale, 1.68 * scale);
-
-    // Snow-block seat (winter) or coastal granite boulder seat (summer)
-    if (isWinter)
-        cr.setSourceRGBA(0.84, 0.92, 0.99, 0.95);
-    else
-        cr.setSourceRGBA(0.42, 0.45, 0.48, 0.95);
-    cr.rectangle(-10.5, -3.5, 9.5, 6.2);
-    cr.fill();
-
-    // Kamik mukluk boots
-    cr.setSourceRGBA(0.32, 0.20, 0.12, 0.98);
-    cr.newPath();
-    cr.arc(2.5, 1.2, 3.2, Math.PI, 0);
-    cr.lineTo(5.7, 2.8);
-    cr.lineTo(-0.7, 2.8);
-    cr.closePath();
-    cr.fill();
-
-    // Caribou-skin atigi parka with decorative cream trim
-    const pkG = new Cairo.LinearGradient(-8, -16, 6, 0);
-    pkG.addColorStopRGBA(0, 0.64, 0.38, 0.20, 0.98);
-    pkG.addColorStopRGBA(0.6, 0.48, 0.26, 0.14, 0.98);
-    pkG.addColorStopRGBA(1, 0.34, 0.18, 0.09, 0.98);
-    cr.setSource(pkG);
-    cr.newPath();
-    cr.moveTo(-7.5, -1.2);
-    cr.curveTo(-8.2, -8.5, -5.5, -14.8, -1.2, -15.5);
-    cr.curveTo(3.2, -15.2, 4.8, -9.5, 4.2, -1.2);
-    cr.closePath();
-    cr.fill();
-
-    cr.setSourceRGBA(0.96, 0.92, 0.82, 0.94);
-    cr.setLineWidth(1.1);
-    cr.newPath();
-    cr.moveTo(-7.2, -2.2);
-    cr.lineTo(4.0, -2.2);
-    cr.stroke();
-
-    // Extended arm & mitten holding jigging rod
-    cr.setSourceRGBA(0.56, 0.32, 0.16, 0.98);
-    cr.setLineWidth(3.0);
-    cr.setLineCap(Cairo.LineCap.ROUND);
-    cr.newPath();
-    cr.moveTo(0.5, -11.5);
-    cr.lineTo(7.2, -9.8);
-    cr.stroke();
-
-    // Plush multi-ringed wolverine/wolf sunburst fur ruff (nasak)
-    cr.setSourceRGBA(0.42, 0.28, 0.16, 0.96);
-    cr.newPath();
-    cr.arc(-0.5, -17.2, 5.2, 0, TWO_PI);
-    cr.fill();
-    cr.setSourceRGBA(0.86, 0.76, 0.62, 0.96);
-    cr.newPath();
-    cr.arc(0.2, -17.2, 4.1, 0, TWO_PI);
-    cr.fill();
-    cr.setSourceRGBA(0.82, 0.58, 0.42, 0.98);
-    cr.newPath();
-    cr.arc(1.0, -17.2, 2.5, 0, TWO_PI);
-    cr.fill();
-    cr.restore();
-
-    // Parabolic bending jigging rod + taut line + 7-segment flexing Arctic char
-    const rodBaseX = angX + 12.0 * scale, rodBaseY = angY - 16.5 * scale;
-    const tipX = holeX - 6.0 * scale, tipY = holeY - (29.0 - haul * 5.0) * scale;
-    cr.setSourceRGBA(0.42, 0.26, 0.14, 0.96);
-    cr.setLineWidth(1.5 * scale);
-    cr.setLineCap(Cairo.LineCap.ROUND);
-    cr.newPath();
-    cr.moveTo(rodBaseX, rodBaseY);
-    cr.curveTo(
-        (rodBaseX + tipX) * 0.45, rodBaseY - 14 * scale,
-        (rodBaseX + tipX) * 0.78, tipY - 6 * scale,
-        tipX, tipY);
-    cr.stroke();
-
-    const fishX = holeX - 2.0 * scale;
-    const fishY = holeY - (8.0 + haul * 11.0) * scale;
-    cr.setSourceRGBA(0.88, 0.95, 1.0, 0.78);
-    cr.setLineWidth(0.95 * scale);
-    cr.newPath();
-    cr.moveTo(tipX, tipY);
-    cr.lineTo(fishX + 3.5 * scale, fishY - 7.5 * scale);
-    cr.stroke();
-
-    drawArcticChar(cr, fishX, fishY, 1.52 * scale, -Math.PI * 0.44, time);
-    drawSnowPine(cr, width * 0.945, height - 28 * scale, 36 * scale, isWinter, -1.5 * scale, 1.0, night);
 }
 
 /* S2 (0°F .. 32°F Snow & Clear Day, or Chalet scene): Snowman/Oak, Pine Woodland & Distant Thu–Fri Smoking Chalet */
@@ -6207,10 +5592,22 @@ function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden
     cr.restore();
 }
 
-function drawCapeCodBeachCrab(cr, width, height, scale, time, night = false, isGolden = false) {
+function evalCapeCodShoreline(u, floorTop, scale) {
+    const sCurveMain = Math.sin(u * Math.PI * 2.15 + 0.25) * 8.4;
+    const bayArch = Math.sin(u * Math.PI) * 3.6;
+    const sHarmonic = -Math.cos(u * Math.PI * 4.1 - 0.45) * 1.9;
+    const base = floorTop + (31.5 + sCurveMain + bayArch + sHarmonic) * scale;
+    const wetSCurve = Math.sin(u * Math.PI * 2.25 + 0.45) * 3.8
+                    + Math.cos(u * Math.PI * 4.4 - 0.65) * 1.8;
+    const wet = base + (10.5 + wetSCurve) * scale;
+    return { base, wet };
+}
+
+function drawCapeCodBeachCrab(cr, width, height, floorTop, scale, time, night = false, isGolden = false) {
     const { tint, aMul } = makeCapeCodTinter(night, isGolden, 0.0);
 
-    // Sideways-scuttling traverse across the open foreground beach (x = 0.22w .. 0.76w)
+    // Sideways-scuttling traverse along the dry sandy beach corridor (x = 0.46w .. 0.88w),
+    // staying cleanly below the wet-sand tidal swash line and above the grassy hill & fence.
     const ct = (time - 1.1) + 4.2;
     const cycle = ((ct * 0.13) % 2.0 + 2.0) % 2.0;
     const dir = cycle < 1.0 ? 1 : -1;
@@ -6218,18 +5615,28 @@ function drawCapeCodBeachCrab(cr, width, height, scale, time, night = false, isG
     const u = Math.max(0, Math.min(1, rawU - 0.028 * Math.sin(rawU * Math.PI * 6)));
     const speed = Math.max(0.08, 1.0 - 0.55 * Math.cos(rawU * Math.PI * 6));
 
-    const cx = width * (0.22 + u * 0.54);
-    const cy = height - 12.5 * scale - Math.sin(u * Math.PI) * 3.2 * scale;
+    const crabYAtU = (uVal) => {
+        const xFrac = 0.46 + uVal * 0.42;
+        const { wet } = evalCapeCodShoreline(xFrac, floorTop, scale);
+        return wet + (8.6 + (xFrac - 0.46) * 19.5 - Math.sin(uVal * Math.PI) * 1.0) * scale;
+    };
+
+    const xFrac = 0.46 + u * 0.42;
+    const cx = width * xFrac;
+    const cy = crabYAtU(u);
+    const du = 0.02;
+    const beachSlope = (crabYAtU(Math.min(1, u + du)) - crabYAtU(Math.max(0, u - du)))
+        / (Math.max(0.001, (Math.min(1, u + du) - Math.max(0, u - du)) * 0.42 * width));
     const bodyTilt = Math.sin(ct * 16.0) * 0.045 * speed;
 
     cr.save();
     cr.translate(cx, cy);
     cr.scale(1.12 * scale, 1.12 * scale);
 
-    // 1. Faint trailing crab tracks (paired tiny sand dimples behind direction of travel)
+    // 1. Faint trailing crab tracks (paired tiny sand dimples following the beach contour behind travel)
     for (let k = 1; k <= 6; k++) {
         const tx = -dir * (3.8 + k * 2.2);
-        const ty = Math.sin(k * 0.9) * 0.25;
+        const ty = tx * beachSlope + Math.sin(k * 0.9) * 0.25;
         const trAlpha = (1.0 - k / 7.0) * 0.26 * aMul;
         cr.setSourceRGBA(...tint(0.28, 0.20, 0.12), trAlpha);
         cr.newPath();
@@ -6441,17 +5848,8 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
 
     // Pronounced, sweeping S-curve shoreline pushed further down onto the beach
     const stepsShore = 40;
-    const baseShoreY = u => {
-        const sCurveMain = Math.sin(u * Math.PI * 2.15 + 0.25) * 8.4;
-        const bayArch = Math.sin(u * Math.PI) * 3.6;
-        const sHarmonic = -Math.cos(u * Math.PI * 4.1 - 0.45) * 1.9;
-        return floorTop + (31.5 + sCurveMain + bayArch + sHarmonic) * scale;
-    };
-    const wetSandY = u => {
-        const wetSCurve = Math.sin(u * Math.PI * 2.25 + 0.45) * 3.8
-                        + Math.cos(u * Math.PI * 4.4 - 0.65) * 1.8;
-        return baseShoreY(u) + (10.5 + wetSCurve) * scale;
-    };
+    const baseShoreY = u => evalCapeCodShoreline(u, floorTop, scale).base;
+    const wetSandY = u => evalCapeCodShoreline(u, floorTop, scale).wet;
 
     // 3a. Nearshore Turquoise Shoal Water (feathered top from deep Atlantic down to S-curved baseShoreY)
     const h2Water = new Cairo.LinearGradient(0, floorTop + 6 * scale, 0, floorTop + 44 * scale);
@@ -6623,8 +6021,10 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
             const arch1 = Math.max(0, Math.sin(u * Math.PI * 2.5 + w * 1.95 + Math.sin(tWave * 0.45) * 0.25));
             const arch2 = 0.5 + 0.5 * Math.sin(u * Math.PI * 2.1 - w * 1.35 + 0.35);
             const lobe = 0.28 + 0.72 * Math.pow(arch1, 0.82) + 0.42 * arch2;
-            const sy = baseShoreY(u) + runup * (3.8 + lobe * 9.6) * scale;
-            swashPts.push({ x: u * width, y: sy, base: baseShoreY(u) });
+            const { base, wet } = evalCapeCodShoreline(u, floorTop, scale);
+            const maxSwashSpan = Math.max(3.5 * scale, (wet - base) - 1.2 * scale);
+            const sy = base + runup * Math.min(maxSwashSpan, (3.8 + lobe * 9.6) * scale);
+            swashPts.push({ x: u * width, y: sy, base });
         }
 
         const swG = new Cairo.LinearGradient(0, floorTop + 22 * scale, 0, floorTop + 56 * scale);
@@ -6749,9 +6149,9 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     // 6. Hero Red-Over-White Nauset Light on Left Bluff (x = 0.267w, y = height - 40*scale; no vegetation in front)
     drawNausetLighthouseHero(cr, width * 0.267, height - 40 * scale, scale, time, night, isGolden, isWinter);
 
-    // 7. Small Atlantic Crab Scuttling Across the Foreground Beach (warm seasons only)
+    // 7. Small Atlantic Crab Scuttling Along the Dry Sandy Beach Corridor (warm seasons only)
     if (!isWinter)
-        drawCapeCodBeachCrab(cr, width, height, scale, time, night, isGolden);
+        drawCapeCodBeachCrab(cr, width, height, floorTop, scale, time, night, isGolden);
 
     // 8. Pure Mounding Rosa rugosa & Tall Beachgrass Plumes on Outer Left & Right Margins
     drawPureRosaRugosaAndBeachgrassDune(cr, width * 0.036, height - 40 * scale, 34 * scale, -1.0 * scale, time, night, isGolden, isWinter);
@@ -6762,9 +6162,7 @@ function drawSceneFloor(cr, sky, width, height, scale, dt, time, scene, night, t
     const isWinter = scene === 'snow' || scene === 'sleet'
         || (temp !== null && temp !== undefined && Number.isFinite(temp) && temp <= 0);
     const subdued = scene !== 'sun' && scene !== 'clear' && scene !== 'moon';
-    if (floorId === 'S1')
-        drawIceFishingFloor(cr, width, height, scale, time, night, isWinter);
-    else if (floorId === 'S2')
+    if (floorId === 'S2')
         drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter, subdued);
     else if (floorId === 'T3')
         drawStormFrogsFloor(cr, width, height, scale, time, night, isWinter);

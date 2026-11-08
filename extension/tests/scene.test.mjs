@@ -162,7 +162,7 @@ test('rain sky initializes submerged Nishikigoi pond floor and connects drop imp
     cr.$dispose();
 });
 
-test('resolveFloorScene routes temperature-stable weather defaults and pinned ground scenes (S1, S2, T3, K1, C1, C2)', () => {
+test('resolveFloorScene routes temperature-stable weather defaults and pinned ground scenes (S2, T3, K1, C1, C2)', () => {
     // Auto mode is temperature-stable across all temperatures
     for (const temp of [-25, -5, 15, 30, null]) {
         eq(resolveFloorScene('storm', false, temp, 'auto'), 'T3', `storm temp=${temp} -> T3`);
@@ -181,7 +181,6 @@ test('resolveFloorScene routes temperature-stable weather defaults and pinned gr
         eq(resolveFloorScene(scene, false, 18, 'hills'), 'C1');
         eq(resolveFloorScene(scene, false, 18, 'beach'), 'C2');
         eq(resolveFloorScene(scene, false, 18, 'chalet'), 'S2');
-        eq(resolveFloorScene(scene, false, 18, 'arctic'), 'S1');
         eq(resolveFloorScene(scene, false, 18, 'koi'), 'K1');
         eq(resolveFloorScene(scene, false, 18, 'frogs'), 'T3');
     }
@@ -194,7 +193,6 @@ test('resolveFloorScene routes temperature-stable weather defaults and pinned gr
     const tmpOn = '/tmp/wg-test-floor-on.png';
     const tmpOff = '/tmp/wg-test-floor-off.png';
     for (const [scene, night, temp, code, glow, floorScene] of [
-        ['snow', false, -21, 75, 0, 'arctic'],
         ['snow', false, -5, 73, 0, 'chalet'],
         ['moon', true, -4, 0, 0, 'chalet'],
         ['moon', true, -4, 0, 0, 'hills'],

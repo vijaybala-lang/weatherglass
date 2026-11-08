@@ -811,7 +811,7 @@ export class ForecastPanel {
         this._skyArea.queue_repaint();
     }
 
-    /** selected ground scene: 'auto' | 'hills' | 'beach' | 'chalet' | 'arctic' | 'koi' | 'frogs' */
+    /** selected ground scene: 'auto' | 'hills' | 'beach' | 'chalet' | 'koi' | 'frogs' */
     setFloorScene(floorScene) {
         const nextScene = floorScene || 'auto';
         if (this._skyOpts.floorScene === nextScene)
