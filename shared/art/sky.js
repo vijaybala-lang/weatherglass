@@ -4353,7 +4353,7 @@ function makeHazeTinter(subdued, lum, distFade, night = false) {
     };
 }
 
-function drawRealisticPastoralOak(cr, x, baseY, treeHeight, subdued = true, bend = 0, seed = 1, distFade = 0.0, night = false) {
+function drawRealisticPastoralOak(cr, x, baseY, treeHeight, subdued = true, bend = 0, seed = 1, distFade = 0.0, night = false, isWinter = false) {
     cr.save();
     const r = seededRand(seed * 173 + 19);
     const s = treeHeight / 50;
@@ -4365,8 +4365,13 @@ function drawRealisticPastoralOak(cr, x, baseY, treeHeight, subdued = true, bend
     cr.translate(x + 2 * s, baseY + 1.5 * s);
     cr.scale(14 * s, 3.6 * s);
     const shG = new Cairo.RadialGradient(0, 0, 0.1, 0, 0, 1.0);
-    shG.addColorStopRGBA(0, ...tint(0.05, 0.11, 0.07), 0.34 * aMul);
-    shG.addColorStopRGBA(1, ...tint(0.05, 0.11, 0.07), 0.0);
+    if (isWinter) {
+        shG.addColorStopRGBA(0, ...tint(0.28, 0.36, 0.48), 0.32 * aMul);
+        shG.addColorStopRGBA(1, ...tint(0.28, 0.36, 0.48), 0.0);
+    } else {
+        shG.addColorStopRGBA(0, ...tint(0.05, 0.11, 0.07), 0.34 * aMul);
+        shG.addColorStopRGBA(1, ...tint(0.05, 0.11, 0.07), 0.0);
+    }
     cr.setSource(shG);
     cr.newPath();
     cr.arc(0, 0, 1.0, 0, TWO_PI);
@@ -4406,7 +4411,10 @@ function drawRealisticPastoralOak(cr, x, baseY, treeHeight, subdued = true, bend
         const cx = x + bend * 0.55 + ox;
         const cy = baseY + oy + 2.2 * s;
         traceScallopedDome(cx, cy, rx * 0.98, ry * 0.96, 10, ph);
-        cr.setSourceRGBA(...tint(0.10, 0.19, 0.12), 0.92 * aMul);
+        if (isWinter)
+            cr.setSourceRGBA(...tint(0.18, 0.24, 0.30), 0.90 * aMul);
+        else
+            cr.setSourceRGBA(...tint(0.10, 0.19, 0.12), 0.92 * aMul);
         cr.fill();
     }
 
@@ -4448,6 +4456,16 @@ function drawRealisticPastoralOak(cr, x, baseY, treeHeight, subdued = true, bend
     cr.curveTo(x + 0.6 * s, baseY - 7 * s, forkX + 0.5 * s, forkY + 4 * s, forkX + 0.4 * s, forkY + 1 * s);
     cr.stroke();
 
+    if (isWinter) {
+        // Snowdrift pillow around trunk base
+        cr.setSourceRGBA(...tint(0.94, 0.97, 1.0), 0.90 * aMul);
+        cr.newPath();
+        cr.moveTo(x - baseW * 1.8, baseY + 2.3 * s);
+        cr.curveTo(x - baseW * 0.9, baseY - 0.5 * s, x + baseW * 0.9, baseY - 0.5 * s, x + baseW * 1.8, baseY + 2.3 * s);
+        cr.closePath();
+        cr.fill();
+    }
+
     // 4. Unified canopy gradient with toned-down luminance matching the windmill & hills
     const crownX = x + bend * 0.55;
     const crownY = baseY - 34.5 * s;
@@ -4455,7 +4473,11 @@ function drawRealisticPastoralOak(cr, x, baseY, treeHeight, subdued = true, bend
         crownX - 18 * s, crownY - 14 * s,
         crownX + 18 * s, crownY + 14 * s
     );
-    if (subdued) {
+    if (isWinter) {
+        globalCanopyG.addColorStopRGBA(0.00, ...tint(0.32, 0.42, 0.40), 0.95 * aMul);
+        globalCanopyG.addColorStopRGBA(0.45, ...tint(0.24, 0.34, 0.33), 0.95 * aMul);
+        globalCanopyG.addColorStopRGBA(1.00, ...tint(0.16, 0.24, 0.25), 0.95 * aMul);
+    } else if (subdued) {
         globalCanopyG.addColorStopRGBA(0.00, ...tint(0.30, 0.44, 0.28), 0.96 * aMul);
         globalCanopyG.addColorStopRGBA(0.45, ...tint(0.22, 0.35, 0.22), 0.96 * aMul);
         globalCanopyG.addColorStopRGBA(0.82, ...tint(0.16, 0.27, 0.17), 0.96 * aMul);
@@ -4482,37 +4504,48 @@ function drawRealisticPastoralOak(cr, x, baseY, treeHeight, subdued = true, bend
         cr.setSource(globalCanopyG);
         cr.fill();
 
-        traceScallopedDome(cx - rx * 0.16, cy - ry * 0.18, rx * 0.68, ry * 0.64, 9, ph + 1.1);
-        cr.setSourceRGBA(
-            ...tint(subdued ? 0.32 : 0.39, subdued ? 0.47 : 0.57, subdued ? 0.30 : 0.31),
-            0.22 * aMul
-        );
-        cr.fill();
-
-        cr.setSourceRGBA(
-            ...tint(subdued ? 0.34 : 0.42, subdued ? 0.49 : 0.60, subdued ? 0.31 : 0.32),
-            0.46 * aMul
-        );
-        for (let k = 0; k < 6; k++) {
-            const a = -Math.PI * 0.90 + (k / 5) * Math.PI * 0.75 + r(-0.08, 0.08);
-            const lx = cx + Math.cos(a) * rx * r(0.52, 0.82);
-            const ly = cy + Math.sin(a) * ry * r(0.52, 0.82);
-            const lr = r(1.3, 2.0) * s;
-            cr.save();
-            cr.translate(lx, ly);
-            cr.rotate(a + 1.2);
-            cr.scale(1.35, 0.72);
-            cr.newPath();
-            cr.arc(0, 0, lr, 0, TWO_PI);
-            cr.restore();
+        if (isWinter) {
+            // Thick sculpted snow cap draped across the upper half of each bough dome
+            const snowCapG = new Cairo.LinearGradient(cx, cy - ry, cx, cy + ry * 0.25);
+            snowCapG.addColorStopRGBA(0.0, ...tint(0.98, 0.99, 1.0), 0.96 * aMul);
+            snowCapG.addColorStopRGBA(0.7, ...tint(0.88, 0.93, 0.99), 0.94 * aMul);
+            snowCapG.addColorStopRGBA(1.0, ...tint(0.76, 0.84, 0.94), 0.88 * aMul);
+            cr.setSource(snowCapG);
+            traceScallopedDome(cx, cy - ry * 0.20, rx * 0.92, ry * 0.68, 9, ph + 0.6);
             cr.fill();
+        } else {
+            traceScallopedDome(cx - rx * 0.16, cy - ry * 0.18, rx * 0.68, ry * 0.64, 9, ph + 1.1);
+            cr.setSourceRGBA(
+                ...tint(subdued ? 0.32 : 0.39, subdued ? 0.47 : 0.57, subdued ? 0.30 : 0.31),
+                0.22 * aMul
+            );
+            cr.fill();
+
+            cr.setSourceRGBA(
+                ...tint(subdued ? 0.34 : 0.42, subdued ? 0.49 : 0.60, subdued ? 0.31 : 0.32),
+                0.46 * aMul
+            );
+            for (let k = 0; k < 6; k++) {
+                const a = -Math.PI * 0.90 + (k / 5) * Math.PI * 0.75 + r(-0.08, 0.08);
+                const lx = cx + Math.cos(a) * rx * r(0.52, 0.82);
+                const ly = cy + Math.sin(a) * ry * r(0.52, 0.82);
+                const lr = r(1.3, 2.0) * s;
+                cr.save();
+                cr.translate(lx, ly);
+                cr.rotate(a + 1.2);
+                cr.scale(1.35, 0.72);
+                cr.newPath();
+                cr.arc(0, 0, lr, 0, TWO_PI);
+                cr.restore();
+                cr.fill();
+            }
         }
     }
 
     cr.restore();
 }
 
-function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade = 0.0, sailPhase = 0.0, night = false) {
+function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade = 0.0, sailPhase = 0.0, night = false, isWinter = false) {
     cr.save();
     cr.translate(x, y);
     cr.scale(1.62 * scale, 1.62 * scale);
@@ -4609,9 +4642,10 @@ function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade
     cr.lineTo(1.35, -15.6);
     cr.stroke();
 
-    // Two mullioned 4-pane windows with white frames (warm golden lantern glow at night)
+    // Two mullioned 4-pane windows with white frames (warm golden lantern glow at night or winter)
+    const winLit = night || isWinter;
     for (const [wx, wy, ww, wh] of [[0, -11.4, 1.8, 2.3], [0, -7.8, 1.9, 2.1]]) {
-        if (night) {
+        if (winLit) {
             const wg = new Cairo.RadialGradient(wx, wy, 0.2, wx, wy, 3.0);
             wg.addColorStopRGBA(0.0, 1.0, 0.91, 0.55, 0.85 * aMul);
             wg.addColorStopRGBA(0.5, 1.0, 0.75, 0.29, 0.38 * aMul);
@@ -4624,7 +4658,7 @@ function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade
         cr.setSourceRGBA(...tint(0.84, 0.81, 0.74), 0.92 * aMul);
         cr.rectangle(wx - ww * 0.5 - 0.25, wy - wh * 0.5 - 0.25, ww + 0.5, wh + 0.5);
         cr.fill();
-        if (night)
+        if (winLit)
             cr.setSourceRGBA(1.0, 0.92, 0.58, 0.96 * aMul);
         else
             cr.setSourceRGBA(...tint(0.14, 0.18, 0.22), 0.94 * aMul);
@@ -4658,6 +4692,24 @@ function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade
     cr.rectangle(-7.1, -5.3, 14.2, 0.75);
     cr.fill();
 
+    if (isWinter) {
+        // Snowdrift on the Stelling gallery deck and around the brick base
+        cr.setSourceRGBA(...tint(0.95, 0.98, 1.0), 0.92 * aMul);
+        cr.newPath();
+        cr.moveTo(-7.1, -5.2);
+        cr.curveTo(-3.5, -5.85, 3.5, -5.85, 7.1, -5.2);
+        cr.lineTo(7.1, -4.9);
+        cr.lineTo(-7.1, -4.9);
+        cr.closePath();
+        cr.fill();
+
+        cr.newPath();
+        cr.moveTo(-5.8, 2.5);
+        cr.curveTo(-2.8, 1.3, 2.8, 1.3, 5.8, 2.5);
+        cr.closePath();
+        cr.fill();
+    }
+
     cr.setSourceRGBA(...tint(0.80, 0.76, 0.68), 0.85 * aMul);
     cr.setLineWidth(0.38);
     cr.newPath();
@@ -4687,6 +4739,21 @@ function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade
     cr.curveTo( 1.8, -19.4,  3.8, -18.2, 3.6, -15.8);
     cr.closePath();
     cr.fill();
+
+    if (isWinter) {
+        // Thick snowpack cap on the domed Kap roof
+        const kapSnowG = new Cairo.LinearGradient(0, -19.6, 0, -16.2);
+        kapSnowG.addColorStopRGBA(0.0, ...tint(0.98, 0.99, 1.0), 0.96 * aMul);
+        kapSnowG.addColorStopRGBA(1.0, ...tint(0.82, 0.89, 0.97), 0.92 * aMul);
+        cr.setSource(kapSnowG);
+        cr.newPath();
+        cr.moveTo(-3.5, -16.8);
+        cr.curveTo(-3.5, -18.5, -1.7, -19.6, 0, -19.6);
+        cr.curveTo( 1.7, -19.6,  3.5, -18.5, 3.5, -16.8);
+        cr.curveTo( 1.8, -17.3, -1.8, -17.3, -3.5, -16.8);
+        cr.closePath();
+        cr.fill();
+    }
 
     // 4 Realistic Dutch Lattice & Canvas Sails (Wieken) centered at (0, -16.8)
     cr.save();
@@ -4764,14 +4831,18 @@ function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade
     cr.restore();
 }
 
-function drawClearHillsFloor(cr, width, height, scale, time, subdued = false, night = false) {
+function drawClearHillsFloor(cr, width, height, scale, time, subdued = false, night = false, isWinter = false) {
     const sh = sceneHeight(width, height);
     const groundOffset = height - sh;
     const floorTop = groundOffset + 0.685 * sh;
 
     // 1. Hill 1 (Distant horizon ridge — subtle atmospheric depth)
     const h1 = new Cairo.LinearGradient(0, floorTop - 14 * scale, 0, height);
-    if (night) {
+    if (isWinter) {
+        h1.addColorStopRGBA(0.00, 0.78, 0.85, 0.94, night ? 0.14 : 0.20);
+        h1.addColorStopRGBA(0.45, 0.74, 0.82, 0.92, night ? 0.16 : 0.24);
+        h1.addColorStopRGBA(1.00, 0.68, 0.77, 0.89, night ? 0.12 : 0.18);
+    } else if (night) {
         h1.addColorStopRGBA(0.00, 0.16, 0.28, 0.34, subdued ? 0.40 : 0.46);
         h1.addColorStopRGBA(0.45, 0.14, 0.25, 0.31, subdued ? 0.42 : 0.48);
         h1.addColorStopRGBA(1.00, 0.12, 0.22, 0.28, subdued ? 0.38 : 0.44);
@@ -4795,7 +4866,7 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false, ni
 
     // Distant oak on Hill 1 ridge (gentle depth fade so details stay crisp)
     const ridgeFade = subdued ? 0.28 : 0.22;
-    drawRealisticPastoralOak(cr, width * 0.733, floorTop + 12 * scale, 24 * scale, subdued, 0.4 * scale, 69, ridgeFade, night);
+    drawRealisticPastoralOak(cr, width * 0.733, floorTop + 12 * scale, 24 * scale, subdued, 0.4 * scale, 69, ridgeFade, night, isWinter);
 
     // 2. Subtle Valley Atmospheric Mist Veil
     const mistG = new Cairo.LinearGradient(0, floorTop - 8 * scale, 0, floorTop + 38 * scale);
@@ -4819,7 +4890,11 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false, ni
 
     // 3. Hill 2 (Midground slope — silvery-sage tone that preserves icon & text contrast)
     const h2 = new Cairo.LinearGradient(0, floorTop + 32 * scale, 0, height);
-    if (night) {
+    if (isWinter) {
+        h2.addColorStopRGBA(0.00, 0.84, 0.90, 0.97, night ? 0.20 : 0.30);
+        h2.addColorStopRGBA(0.50, 0.78, 0.86, 0.95, night ? 0.22 : 0.32);
+        h2.addColorStopRGBA(1.00, 0.72, 0.81, 0.92, night ? 0.18 : 0.26);
+    } else if (night) {
         h2.addColorStopRGBA(0.00, 0.15, 0.27, 0.30, subdued ? 0.46 : 0.52);
         h2.addColorStopRGBA(0.50, 0.13, 0.24, 0.27, subdued ? 0.48 : 0.54);
         h2.addColorStopRGBA(1.00, 0.11, 0.21, 0.24, subdued ? 0.44 : 0.50);
@@ -4871,6 +4946,16 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false, ni
     cr.lineTo(width * 0.734, floorTop + 39.9 * scale);
     cr.stroke();
 
+    if (isWinter) {
+        // Crisp snow cap along the top rail of the split-rail fence
+        cr.setSourceRGBA(...fHaze.tint(0.96, 0.98, 1.0), 0.78 * fHaze.aMul);
+        cr.setLineWidth(0.75 * scale);
+        cr.newPath();
+        cr.moveTo(width * 0.44, floorTop + 48.1 * scale);
+        cr.lineTo(width * 0.734, floorTop + 39.3 * scale);
+        cr.stroke();
+    }
+
     // Subtle lower-valley mist ribbon between Hill 2 and Hill 3
     const mistG2 = new Cairo.LinearGradient(0, height - 64 * scale, 0, height - 34 * scale);
     const m2Col = night ? [0.52, 0.66, 0.84] : [0.74, 0.80, 0.85];
@@ -4883,7 +4968,11 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false, ni
 
     // 4. Hill 3 (Foreground meadow slope — balanced luminance for bottom-row day tiles)
     const h3 = new Cairo.LinearGradient(0, height - 54 * scale, 0, height);
-    if (night) {
+    if (isWinter) {
+        h3.addColorStopRGBA(0.00, 0.88, 0.94, 1.00, night ? 0.24 : 0.36);
+        h3.addColorStopRGBA(0.55, 0.80, 0.88, 0.98, night ? 0.28 : 0.42);
+        h3.addColorStopRGBA(1.00, 0.72, 0.82, 0.95, night ? 0.32 : 0.48);
+    } else if (night) {
         h3.addColorStopRGBA(0.00, 0.14, 0.26, 0.24, subdued ? 0.54 : 0.60);
         h3.addColorStopRGBA(0.55, 0.12, 0.23, 0.21, subdued ? 0.58 : 0.64);
         h3.addColorStopRGBA(1.00, 0.10, 0.20, 0.19, subdued ? 0.62 : 0.68);
@@ -4905,23 +4994,33 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false, ni
     cr.closePath();
     cr.fill();
 
-    // Foreground wildflower dots
-    const r = seededRand(77);
-    const flLum = night ? 0.54 : (subdued ? 0.80 : 0.96);
-    for (let i = 0; i < 14; i++) {
-        const fx = width * 0.055 + r(0, width * 0.89);
-        const fy = height - (6 + r(0, 13)) * scale;
-        const isGold = i % 3 !== 0;
-        cr.setSourceRGBA((isGold ? 0.95 : 0.88) * flLum, (isGold ? 0.78 : 0.28) * flLum, (isGold ? 0.20 : 0.24) * flLum, subdued ? 0.65 : 0.85);
+    if (isWinter) {
+        // Crisp snow-crest highlight along foreground Hill 3 ridge
+        cr.setSourceRGBA(0.96, 0.98, 1.0, night ? 0.24 : 0.42);
+        cr.setLineWidth(1.1 * scale);
         cr.newPath();
-        cr.arc(fx, fy, 1.25 * scale, 0, TWO_PI);
-        cr.fill();
+        cr.moveTo(0, height - 42 * scale);
+        cr.curveTo(width * 0.45, height - 56 * scale, width * 0.78, height - 44 * scale, width, height - 36 * scale);
+        cr.stroke();
+    } else {
+        // Foreground wildflower dots
+        const r = seededRand(77);
+        const flLum = night ? 0.54 : (subdued ? 0.80 : 0.96);
+        for (let i = 0; i < 14; i++) {
+            const fx = width * 0.055 + r(0, width * 0.89);
+            const fy = height - (6 + r(0, 13)) * scale;
+            const isGold = i % 3 !== 0;
+            cr.setSourceRGBA((isGold ? 0.95 : 0.88) * flLum, (isGold ? 0.78 : 0.28) * flLum, (isGold ? 0.20 : 0.24) * flLum, subdued ? 0.65 : 0.85);
+            cr.newPath();
+            cr.arc(fx, fy, 1.25 * scale, 0, TWO_PI);
+            cr.fill();
+        }
     }
 
     // 5. Foreground Objects (distFade = 0.0, matched luminance across windmill & outer margin oaks)
-    drawDutchWindmill(cr, width * 0.267, height - 42 * scale, scale, time, subdued, 0.0, 0.0, night);
-    drawRealisticPastoralOak(cr, width * 0.036, height - 44 * scale, 32 * scale, subdued, -1.2 * scale, 23, 0.0, night);
-    drawRealisticPastoralOak(cr, width * 0.962, height - 26 * scale, 36 * scale, subdued,  1.4 * scale, 11, 0.0, night);
+    drawDutchWindmill(cr, width * 0.267, height - 42 * scale, scale, time, subdued, 0.0, 0.0, night, isWinter);
+    drawRealisticPastoralOak(cr, width * 0.036, height - 44 * scale, 32 * scale, subdued, -1.2 * scale, 23, 0.0, night, isWinter);
+    drawRealisticPastoralOak(cr, width * 0.962, height - 26 * scale, 36 * scale, subdued,  1.4 * scale, 11, 0.0, night, isWinter);
 }
 
 /* C2 (Clear ≥ 76°F): Cape Cod National Seashore — Red-Over-White Nauset Light (unlit by day, glowing beacon & sweeping beams at golden hour / night),
@@ -5058,7 +5157,7 @@ function evalCapeCodHillRidge(u, width, height, floorTop, scale) {
     return { x, y, slope: dy / (dx || 1) };
 }
 
-function drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, height, floorTop, u0 = 0.35, u1 = 0.77, numSlats = 22, scaleMul = 0.92) {
+function drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, height, floorTop, u0 = 0.35, u1 = 0.77, numSlats = 22, scaleMul = 0.92, isWinter = false) {
     const { tint, aMul } = makeCapeCodTinter(night, isGolden, 0.04);
     const pts = [];
     for (let i = 0; i <= numSlats; i++) {
@@ -5067,10 +5166,13 @@ function drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, 
         pts.push({ x: p.x, y: p.y + 1.1 * scale, slope: p.slope });
     }
 
-    // Soft wind-drifted sand mound & shadow hugging the curved hillside slope
+    // Soft wind-drifted sand/snow mound & shadow hugging the curved hillside slope
     cr.setLineCap(Cairo.LineCap.ROUND);
-    cr.setSourceRGBA(...tint(0.94, 0.82, 0.62), 0.45 * scaleMul * aMul);
-    cr.setLineWidth(2.6 * scale * scaleMul);
+    if (isWinter)
+        cr.setSourceRGBA(...tint(0.95, 0.98, 1.0), 0.78 * scaleMul * aMul);
+    else
+        cr.setSourceRGBA(...tint(0.94, 0.82, 0.62), 0.45 * scaleMul * aMul);
+    cr.setLineWidth((isWinter ? 3.2 : 2.6) * scale * scaleMul);
     cr.newPath();
     pts.forEach((p, idx) => {
         if (idx === 0) cr.moveTo(p.x - 1.5 * scale, p.y + 0.4 * scale);
@@ -5078,7 +5180,10 @@ function drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, 
     });
     cr.stroke();
 
-    cr.setSourceRGBA(...tint(0.24, 0.17, 0.10), 0.28 * scaleMul * aMul);
+    if (isWinter)
+        cr.setSourceRGBA(...tint(0.32, 0.44, 0.58), 0.28 * scaleMul * aMul);
+    else
+        cr.setSourceRGBA(...tint(0.24, 0.17, 0.10), 0.28 * scaleMul * aMul);
     cr.setLineWidth(1.6 * scale * scaleMul);
     cr.newPath();
     pts.forEach((p, idx) => {
@@ -5137,7 +5242,9 @@ function drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, 
         const gx = p.x;
         const gy = p.y + 1.6 * scale;
         for (const [b, gh, isGold] of [[-2.2, 4.6, false], [-0.9, 5.4, true], [0.6, 5.2, false], [2.0, 4.4, true]]) {
-            if (isGold)
+            if (isWinter)
+                cr.setSourceRGBA(...tint(isGold ? 0.78 : 0.62, isGold ? 0.74 : 0.68, isGold ? 0.64 : 0.66), 0.82 * scaleMul * aMul);
+            else if (isGold)
                 cr.setSourceRGBA(...tint(0.66, 0.58, 0.32), 0.82 * scaleMul * aMul);
             else
                 cr.setSourceRGBA(...tint(0.30, 0.46, 0.24), 0.85 * scaleMul * aMul);
@@ -5153,7 +5260,7 @@ function drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, 
     }
 }
 
-function drawPureRosaRugosaAndBeachgrassDune(cr, x, baseY, hScale, bend = 0, time = 0, night = false, isGolden = false) {
+function drawPureRosaRugosaAndBeachgrassDune(cr, x, baseY, hScale, bend = 0, time = 0, night = false, isGolden = false, isWinter = false) {
     cr.save();
     const s = hScale / 48;
     const { tint, aMul } = makeCapeCodTinter(night, isGolden, 0.0);
@@ -5188,7 +5295,10 @@ function drawPureRosaRugosaAndBeachgrassDune(cr, x, baseY, hScale, bend = 0, tim
         [ 8.5, 26, [0.28, 0.44, 0.22]],
     ];
     for (const [dx, gh, col] of plumes) {
-        cr.setSourceRGBA(...tint(col[0], col[1], col[2]), 0.88 * aMul);
+        if (isWinter)
+            cr.setSourceRGBA(...tint(0.76, 0.75, 0.68), 0.86 * aMul);
+        else
+            cr.setSourceRGBA(...tint(col[0], col[1], col[2]), 0.88 * aMul);
         cr.setLineWidth(1.05 * s);
         cr.newPath();
         cr.moveTo(x + dx * 0.5 * s, baseY - 4 * s);
@@ -5213,41 +5323,62 @@ function drawPureRosaRugosaAndBeachgrassDune(cr, x, baseY, hScale, bend = 0, tim
         cr.fill();
 
         const g = new Cairo.RadialGradient(cx + rx * 0.2, cy - ry * 0.3, rx * 0.1, cx, cy, rx * 1.1);
-        g.addColorStopRGBA(0.0, ...tint(0.36, 0.54, 0.26), 0.96 * aMul);
-        g.addColorStopRGBA(0.55, ...tint(0.22, 0.38, 0.18), 0.96 * aMul);
-        g.addColorStopRGBA(1.0, ...tint(0.12, 0.24, 0.12), 0.96 * aMul);
+        if (isWinter) {
+            g.addColorStopRGBA(0.0, ...tint(0.30, 0.42, 0.36), 0.95 * aMul);
+            g.addColorStopRGBA(0.55, ...tint(0.20, 0.32, 0.28), 0.95 * aMul);
+            g.addColorStopRGBA(1.0, ...tint(0.12, 0.22, 0.20), 0.95 * aMul);
+        } else {
+            g.addColorStopRGBA(0.0, ...tint(0.36, 0.54, 0.26), 0.96 * aMul);
+            g.addColorStopRGBA(0.55, ...tint(0.22, 0.38, 0.18), 0.96 * aMul);
+            g.addColorStopRGBA(1.0, ...tint(0.12, 0.24, 0.12), 0.96 * aMul);
+        }
         cr.setSource(g);
         traceScallopedDome(cx, cy, rx * 0.95, ry * 0.92, 9, ph + 0.5);
         cr.fill();
+
+        if (isWinter) {
+            // Sculpted snow pillow draped on the upper half of each coastal shrub mound
+            cr.setSourceRGBA(...tint(0.96, 0.98, 1.0), 0.94 * aMul);
+            traceScallopedDome(cx, cy - ry * 0.22, rx * 0.88, ry * 0.62, 9, ph + 0.8);
+            cr.fill();
+        }
     }
 
-    // Vibrant magenta & white 5-petaled Rosa rugosa beach-rose blooms
+    // Vibrant magenta & white 5-petaled Rosa rugosa beach-rose blooms (or crimson winter rosehips)
     for (const [rx, ry, isWhite] of [
         [-6.5, -10.5, false], [-2.0, -14.8, false], [3.2, -13.2, true],
         [ 7.0,  -9.2, false], [ 0.8,  -8.5, true],  [-4.2, -6.5, false],
     ]) {
-        if (isWhite)
-            cr.setSourceRGBA(...tint(0.98, 0.95, 0.96), 0.94 * aMul);
-        else
-            cr.setSourceRGBA(...tint(0.88, 0.26, 0.50), 0.94 * aMul);
-        cr.newPath();
-        cr.arc(x + rx * s, baseY + ry * s, 1.85 * s, 0, TWO_PI);
-        cr.fill();
-        cr.setSourceRGBA(...tint(0.96, 0.78, 0.20), 0.96 * aMul);
-        cr.newPath();
-        cr.arc(x + rx * s, baseY + ry * s, 0.68 * s, 0, TWO_PI);
-        cr.fill();
+        if (isWinter) {
+            cr.setSourceRGBA(...tint(0.86, 0.20, 0.18), 0.95 * aMul);
+            cr.newPath();
+            cr.arc(x + rx * s, baseY + ry * s, 1.35 * s, 0, TWO_PI);
+            cr.fill();
+        } else {
+            if (isWhite)
+                cr.setSourceRGBA(...tint(0.98, 0.95, 0.96), 0.94 * aMul);
+            else
+                cr.setSourceRGBA(...tint(0.88, 0.26, 0.50), 0.94 * aMul);
+            cr.newPath();
+            cr.arc(x + rx * s, baseY + ry * s, 1.85 * s, 0, TWO_PI);
+            cr.fill();
+            cr.setSourceRGBA(...tint(0.96, 0.78, 0.20), 0.96 * aMul);
+            cr.newPath();
+            cr.arc(x + rx * s, baseY + ry * s, 0.68 * s, 0, TWO_PI);
+            cr.fill();
+        }
     }
 
     cr.restore();
 }
 
-function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden = false) {
+function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden = false, isWinter = false) {
     cr.save();
     cr.translate(x, y);
     cr.scale(2.28 * scale, 2.28 * scale);
     const { tint, aMul } = makeCapeCodTinter(night, isGolden, 0.0);
     const lightOn = night || isGolden;
+    const cottageLit = lightOn || isWinter;
 
     // Ground shadow
     cr.save();
@@ -5273,8 +5404,21 @@ function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden
     cr.closePath();
     cr.fill();
 
-    // Keeper's cottage window (dark slate in daytime, warm golden glow at golden hour & night)
-    if (lightOn) {
+    if (isWinter) {
+        // Thick snowpack cap on the pitched roof of the Keeper's Oil House
+        cr.setSourceRGBA(...tint(0.97, 0.99, 1.0), 0.96 * aMul);
+        cr.setLineWidth(0.95);
+        cr.setLineCap(Cairo.LineCap.ROUND);
+        cr.setLineJoin(Cairo.LineJoin.ROUND);
+        cr.newPath();
+        cr.moveTo(2.1, -4.6);
+        cr.lineTo(5.4, -7.5);
+        cr.lineTo(8.7, -4.6);
+        cr.stroke();
+    }
+
+    // Keeper's cottage window (dark slate in daytime, warm golden glow at golden hour, night & winter)
+    if (cottageLit) {
         const kwG = new Cairo.RadialGradient(5.4, -2.1, 0.2, 5.4, -2.1, 3.2);
         kwG.addColorStopRGBA(0.0, 1.0, 0.91, 0.55, 0.95);
         kwG.addColorStopRGBA(0.5, 1.0, 0.75, 0.29, 0.45);
@@ -5299,6 +5443,18 @@ function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden
     cr.lineTo(-4.3, 0.0);
     cr.closePath();
     cr.fill();
+
+    if (isWinter) {
+        // Snowdrift along the base of the lighthouse plinth and oil house
+        cr.setSourceRGBA(...tint(0.95, 0.98, 1.0), 0.92 * aMul);
+        cr.newPath();
+        cr.moveTo(-5.2, 2.1);
+        cr.curveTo(-1.0, 0.8, 4.5, 0.8, 8.6, 1.8);
+        cr.lineTo(8.6, 2.2);
+        cr.lineTo(-5.2, 2.2);
+        cr.closePath();
+        cr.fill();
+    }
 
     // Conical Tower: Lower Half Crisp White (0 .. -10.5)
     const lowG = new Cairo.LinearGradient(-4.2, -5, 4.2, -5);
@@ -5633,7 +5789,7 @@ function drawCapeCodBeachCrab(cr, width, height, scale, time, night = false, isG
     cr.restore();
 }
 
-function drawClearBeachFloor(cr, width, height, scale, time, night = false, twilight = 0) {
+function drawClearBeachFloor(cr, width, height, scale, time, night = false, twilight = 0, isWinter = false) {
     const sh = sceneHeight(width, height);
     const groundOffset = height - sh;
     const floorTop = groundOffset + 0.685 * sh;
@@ -5755,9 +5911,13 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.closePath();
     cr.fill();
 
-    // 3b. Base warm dry sandy beach flat (starts organically along S-curved baseShoreY)
+    // 3b. Base sandy or snow-covered beach flat (starts organically along S-curved baseShoreY)
     const h2Beach = new Cairo.LinearGradient(0, floorTop + 22 * scale, 0, height);
-    if (night) {
+    if (isWinter) {
+        h2Beach.addColorStopRGBA(0.00, 0.78, 0.86, 0.95, night ? 0.42 : 0.56);
+        h2Beach.addColorStopRGBA(0.25, 0.86, 0.92, 0.98, night ? 0.48 : 0.64);
+        h2Beach.addColorStopRGBA(1.00, 0.90, 0.95, 1.00, night ? 0.52 : 0.68);
+    } else if (night) {
         h2Beach.addColorStopRGBA(0.00, 0.35, 0.31, 0.25, 0.68);
         h2Beach.addColorStopRGBA(0.22, 0.42, 0.37, 0.29, 0.74);
         h2Beach.addColorStopRGBA(1.00, 0.46, 0.40, 0.31, 0.78);
@@ -5785,7 +5945,11 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
 
     // 3c. Glistening darker wet-sand tidal apron (between S-curved baseShoreY and wetSandY)
     const wetG = new Cairo.LinearGradient(0, floorTop + 22 * scale, 0, floorTop + 56 * scale);
-    if (night) {
+    if (isWinter) {
+        wetG.addColorStopRGBA(0.00, 0.34, 0.42, 0.48, night ? 0.56 : 0.52);
+        wetG.addColorStopRGBA(0.75, 0.44, 0.42, 0.38, night ? 0.48 : 0.46);
+        wetG.addColorStopRGBA(1.00, 0.54, 0.50, 0.44, 0.22);
+    } else if (night) {
         wetG.addColorStopRGBA(0.00, 0.18, 0.22, 0.27, 0.56);
         wetG.addColorStopRGBA(0.65, 0.23, 0.20, 0.17, 0.46);
         wetG.addColorStopRGBA(1.00, 0.28, 0.24, 0.20, 0.12);
@@ -5813,12 +5977,14 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.closePath();
     cr.fill();
 
-    // Subtle high-water tide mark along the lower edge of the wet sand
-    if (night)
+    // Subtle high-water tide mark (or frosted snow rim in winter) along the lower edge of the wet sand
+    if (isWinter)
+        cr.setSourceRGBA(0.95, 0.98, 1.0, night ? 0.45 : 0.68);
+    else if (night)
         cr.setSourceRGBA(0.19, 0.16, 0.13, 0.26);
     else
         cr.setSourceRGBA(0.49, 0.36, 0.23, 0.22);
-    cr.setLineWidth(0.75 * scale);
+    cr.setLineWidth((isWinter ? 1.1 : 0.75) * scale);
     cr.newPath();
     for (let i = 0; i <= stepsShore; i++) {
         const u = i / stepsShore;
@@ -5960,9 +6126,13 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
         cr.stroke();
     }
 
-    // 4. Band 3: Foreground Wind-Carved Cape Cod Sand Dune Ridge
+    // 4. Band 3: Foreground Wind-Carved Cape Cod Sand / Snow Dune Ridge
     const h3 = new Cairo.LinearGradient(0, floorTop + 52 * scale, 0, height);
-    if (night) {
+    if (isWinter) {
+        h3.addColorStopRGBA(0.00, 0.92, 0.96, 1.00, night ? 0.46 : 0.64);
+        h3.addColorStopRGBA(0.45, 0.84, 0.90, 0.98, night ? 0.50 : 0.68);
+        h3.addColorStopRGBA(1.00, 0.76, 0.84, 0.95, night ? 0.54 : 0.72);
+    } else if (night) {
         h3.addColorStopRGBA(0.00, 0.50, 0.44, 0.35, 0.78);
         h3.addColorStopRGBA(0.45, 0.44, 0.38, 0.29, 0.82);
         h3.addColorStopRGBA(1.00, 0.36, 0.31, 0.23, 0.86);
@@ -5987,8 +6157,10 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     cr.closePath();
     cr.fill();
 
-    // Sunlit / moonlit sand crest highlight along the foreground dune ridge
-    if (night)
+    // Sunlit / moonlit sand or snow crest highlight along the foreground dune ridge
+    if (isWinter)
+        cr.setSourceRGBA(0.98, 0.99, 1.0, night ? 0.40 : 0.62);
+    else if (night)
         cr.setSourceRGBA(0.69, 0.64, 0.56, 0.32);
     else if (isGolden)
         cr.setSourceRGBA(1.0, 0.86, 0.64, 0.45);
@@ -6003,8 +6175,10 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
         width, height - 40 * scale);
     cr.stroke();
 
-    // Subtle wind-carved sand ripple lines on the foreground dune
-    if (night)
+    // Subtle wind-carved sand or snow ripple lines on the foreground dune
+    if (isWinter)
+        cr.setSourceRGBA(0.54, 0.66, 0.82, night ? 0.28 : 0.32);
+    else if (night)
         cr.setSourceRGBA(0.27, 0.21, 0.15, 0.28);
     else
         cr.setSourceRGBA(0.56, 0.42, 0.26, 0.24);
@@ -6020,17 +6194,18 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     }
 
     // 5. Long Wooden Vertical-Slat & Twisted-Wire Sand Fence curving directly along the slope of the hill
-    drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, height, floorTop, 0.36, 0.77, 22, 0.92);
+    drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, height, floorTop, 0.36, 0.77, 22, 0.92, isWinter);
 
     // 6. Hero Red-Over-White Nauset Light on Left Bluff (x = 0.267w, y = height - 40*scale; no vegetation in front)
-    drawNausetLighthouseHero(cr, width * 0.267, height - 40 * scale, scale, time, night, isGolden);
+    drawNausetLighthouseHero(cr, width * 0.267, height - 40 * scale, scale, time, night, isGolden, isWinter);
 
-    // 7. Small Atlantic Crab Scuttling Across the Foreground Beach
-    drawCapeCodBeachCrab(cr, width, height, scale, time, night, isGolden);
+    // 7. Small Atlantic Crab Scuttling Across the Foreground Beach (warm seasons only)
+    if (!isWinter)
+        drawCapeCodBeachCrab(cr, width, height, scale, time, night, isGolden);
 
     // 8. Pure Mounding Rosa rugosa & Tall Beachgrass Plumes on Outer Left & Right Margins
-    drawPureRosaRugosaAndBeachgrassDune(cr, width * 0.036, height - 40 * scale, 34 * scale, -1.0 * scale, time, night, isGolden);
-    drawPureRosaRugosaAndBeachgrassDune(cr, width * 0.962, height - 24 * scale, 38 * scale,  1.0 * scale, time, night, isGolden);
+    drawPureRosaRugosaAndBeachgrassDune(cr, width * 0.036, height - 40 * scale, 34 * scale, -1.0 * scale, time, night, isGolden, isWinter);
+    drawPureRosaRugosaAndBeachgrassDune(cr, width * 0.962, height - 24 * scale, 38 * scale,  1.0 * scale, time, night, isGolden, isWinter);
 }
 
 function drawSceneFloor(cr, sky, width, height, scale, dt, time, scene, night, temp = null, twilight = 0, floorId = null) {
@@ -6046,9 +6221,9 @@ function drawSceneFloor(cr, sky, width, height, scale, dt, time, scene, night, t
     else if (floorId === 'K1')
         drawKoiPond(cr, sky, width, height, scale, dt, time, night, isWinter);
     else if (floorId === 'C1')
-        drawClearHillsFloor(cr, width, height, scale, time, subdued, night);
+        drawClearHillsFloor(cr, width, height, scale, time, subdued, night, isWinter);
     else if (floorId === 'C2')
-        drawClearBeachFloor(cr, width, height, scale, time, night, twilight);
+        drawClearBeachFloor(cr, width, height, scale, time, night, twilight, isWinter);
 }
 
 function drawLightning(cr, width, height, scale, time) {
