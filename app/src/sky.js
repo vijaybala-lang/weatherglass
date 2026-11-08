@@ -6394,23 +6394,23 @@ function drawSanFranciscoFloor(cr, width, height, scale, time, night = false, tw
     //   - South (Far) Tower: 18 * scale below roadway deck (2 tiers of X-bracing), sitting on a
     //     stepped Art Deco twin concrete pedestal + offshore elliptical concrete fender base!
     const orSun = night
-        ? [0.84, 0.27, 0.16]
+        ? [0.72, 0.24, 0.15]
         : (darkGround
-            ? [0.86, 0.28, 0.16]
-            : (isGolden ? [1.00, 0.37, 0.18] : [0.96, 0.29, 0.15]));
+            ? [0.74, 0.25, 0.15]
+            : (isGolden ? [0.85, 0.34, 0.20] : (subdued ? [0.76, 0.30, 0.22] : [0.82, 0.30, 0.19])));
     const orMid = night
-        ? [0.65, 0.19, 0.11]
+        ? [0.56, 0.17, 0.10]
         : (darkGround
-            ? [0.68, 0.20, 0.12]
-            : (isGolden ? [0.85, 0.24, 0.12] : [0.80, 0.20, 0.11]));
+            ? [0.58, 0.18, 0.11]
+            : (isGolden ? [0.72, 0.25, 0.15] : (subdued ? [0.64, 0.24, 0.17] : [0.69, 0.23, 0.15])));
     const orDark = night
-        ? [0.42, 0.10, 0.07]
-        : (darkGround ? [0.46, 0.11, 0.08] : [0.55, 0.11, 0.07]);
-    const concreteSun = darkGround ? [0.58, 0.61, 0.67] : (isGolden ? [0.95, 0.85, 0.74] : [0.92, 0.90, 0.86]);
-    const concreteLit = darkGround ? [0.47, 0.50, 0.56] : (isGolden ? [0.86, 0.75, 0.65] : [0.82, 0.80, 0.76]);
-    const concreteShade = darkGround ? [0.31, 0.34, 0.40] : (isGolden ? [0.64, 0.53, 0.47] : [0.61, 0.59, 0.56]);
-    const concreteDark = darkGround ? [0.21, 0.24, 0.30] : (isGolden ? [0.48, 0.39, 0.35] : [0.45, 0.44, 0.42]);
-    const bAlpha = 0.99;
+        ? [0.36, 0.09, 0.07]
+        : (darkGround ? [0.39, 0.10, 0.08] : [0.49, 0.15, 0.11]);
+    const concreteSun = darkGround ? [0.52, 0.55, 0.61] : (isGolden ? [0.87, 0.78, 0.69] : [0.85, 0.83, 0.80]);
+    const concreteLit = darkGround ? [0.42, 0.45, 0.51] : (isGolden ? [0.79, 0.69, 0.60] : [0.76, 0.74, 0.71]);
+    const concreteShade = darkGround ? [0.28, 0.31, 0.37] : (isGolden ? [0.59, 0.49, 0.44] : [0.57, 0.55, 0.52]);
+    const concreteDark = darkGround ? [0.19, 0.22, 0.28] : (isGolden ? [0.44, 0.36, 0.32] : [0.42, 0.41, 0.39]);
+    const bAlpha = 0.96;
 
     // North (Near) Tower geometry: 78*scale above deck + 31*scale steel legs below deck (2/3 of 47*scale!)
     const nearX = width * 0.252;

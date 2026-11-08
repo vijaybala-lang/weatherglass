@@ -48,42 +48,6 @@ export function paintChart(cr, w, h, state) {
     const fg = (alpha = 1) => {
         cr.setSourceRGBA(...FG, alpha);
     };
-    const isDarkFg = (0.2126 * FG[0] + 0.7152 * FG[1] + 0.0722 * FG[2]) < 0.35;
-    if (isDarkFg) {
-        // Full-bleed vertical gradient: clear -> light gray scrim -> clear
-        // stretched to the top of the graph and spanning the graph, weather
-        // condition icons, and time text.
-        const [sR, sG, sB] = [234 / 255, 236 / 255, 238 / 255];
-        const scrimG = new Cairo.LinearGradient(0, 0, 0, h);
-        scrimG.addColorStopRGBA(0.00, sR, sG, sB, 0.00);
-        scrimG.addColorStopRGBA(0.05, sR, sG, sB, 0.14);
-        scrimG.addColorStopRGBA(0.11, sR, sG, sB, 0.46);
-        scrimG.addColorStopRGBA(0.17, sR, sG, sB, 0.70);
-        scrimG.addColorStopRGBA(0.50, sR, sG, sB, 0.76);
-        scrimG.addColorStopRGBA(0.86, sR, sG, sB, 0.72);
-        scrimG.addColorStopRGBA(0.93, sR, sG, sB, 0.42);
-        scrimG.addColorStopRGBA(0.97, sR, sG, sB, 0.14);
-        scrimG.addColorStopRGBA(1.00, sR, sG, sB, 0.00);
-        cr.save();
-        cr.setSource(scrimG);
-        cr.rectangle(0, 0, w, h);
-        cr.fill();
-        cr.restore();
-    }
-    const haloRgb = isDarkFg ? [1, 1, 1] : [0.02, 0.04, 0.09];
-    const showHaloText = (txt, tx, ty, alpha) => {
-        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkFg ? 0.78 : 0.74));
-        cr.moveTo(tx, ty + 1.0);
-        cr.showText(txt);
-        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkFg ? 0.52 : 0.30));
-        for (const [dx, dy] of [[-0.55, 0], [0.55, 0], [0, -0.55], [0, 0.55]]) {
-            cr.moveTo(tx + dx, ty + dy);
-            cr.showText(txt);
-        }
-        fg(alpha);
-        cr.moveTo(tx, ty);
-        cr.showText(txt);
-    };
 
     cr.selectFontFace('Cantarell', Cairo.FontSlant.NORMAL, Cairo.FontWeight.NORMAL);
 
@@ -167,9 +131,11 @@ export function paintChart(cr, w, h, state) {
         if (labeled) {
             const txt = valueLabel(metric, vals[i], units);
             cr.setFontSize(10.5);
+            fg(0.9);
             const ext = cr.textExtents(txt);
-            showHaloText(txt, clamp(xs(i) - ext.width / 2, 2, w - ext.width - 2),
-                Math.max(PAD.top - 12, ys(vals[i]) - 11), 0.92);
+            cr.moveTo(clamp(xs(i) - ext.width / 2, 2, w - ext.width - 2),
+                Math.max(PAD.top - 12, ys(vals[i]) - 11));
+            cr.showText(txt);
         }
     }
 
@@ -219,8 +185,10 @@ export function paintChart(cr, w, h, state) {
         }
         const lbl = shortHourLabel(slice.time[i], h12);
         cr.setFontSize(9.5);
+        fg(0.55);
         const ext = cr.textExtents(lbl);
-        showHaloText(lbl, clamp(x - ext.width / 2, 2, w - ext.width - 2), h - 4, 0.84);
+        cr.moveTo(clamp(x - ext.width / 2, 2, w - ext.width - 2), h - 4);
+        cr.showText(lbl);
     }
 }
 
