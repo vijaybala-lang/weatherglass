@@ -148,14 +148,32 @@ function textPx(cr, text, size, bold, weight = 0) {
 export function drawText(cr, text, x, y, { size = 10, bold = false, weight = 0,
     rgba = [1, 1, 1, 1],
     anchor = 'middle',
-    vcenter = null } = {}) {
+    vcenter = null,
+    halo = false } = {}) {
     const [pixelWidth, pixelHeight, layout] = textPx(cr, text, size, bold, weight);
     const tx = anchor === 'start' ? x : anchor === 'end' ? x - pixelWidth : x - pixelWidth / 2;
+    const ty = vcenter === null ? y - pixelHeight : vcenter - pixelHeight / 2;
+    const show = PangoCairo.showLayout ?? PangoCairo.show_layout;
+    if (halo) {
+        const isDarkInk = lumOf(rgba) < 0.22;
+        const haloRgb = isDarkInk ? [1, 1, 1] : [0.03, 0.05, 0.09];
+        const haloAlpha = (rgba[3] ?? 1) * (isDarkInk ? 0.30 : 0.32);
+        cr.save();
+        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], haloAlpha);
+        for (const [dx, dy] of [
+            [-1.0, 0], [1.0, 0], [0, -1.0], [0, 1.0],
+            [-0.75, -0.75], [0.75, -0.75], [-0.75, 0.75], [0.75, 0.75],
+        ]) {
+            cr.moveTo(tx + dx, ty + dy);
+            show(cr, layout);
+        }
+        cr.restore();
+    }
     cr.setSourceRGBA(...rgba);
     // y is the baseline; vcenter instead centres the line box on cy -- the
     // prefs preview bar hangs its words on the same middle as the glyphs
-    cr.moveTo(tx, vcenter === null ? y - pixelHeight : vcenter - pixelHeight / 2);
-    (PangoCairo.showLayout ?? PangoCairo.show_layout)(cr, layout);
+    cr.moveTo(tx, ty);
+    show(cr, layout);
 }
 
 /** Catmull-Rom -> cubic Bezier smoothing for the chart curve. */
@@ -378,11 +396,11 @@ export function paintChart(cr, opts) {
     const unitHeight = fmtUnit ? textPx(cr, '0', unitSize, false, 0)[1] : 0;
     const drawValue = (text, unitText, labelX, y, anchor, rgba) => {
         drawText(cr, text, labelX, y,
-            { size: scaledFontSize, weight: valueFontWeight, rgba, anchor });
+            { size: scaledFontSize, weight: valueFontWeight, rgba, anchor, halo: true });
         if (unitText)
             drawText(cr, unitText, labelX, y + unitHeight + 1.5,
                 { size: unitSize, weight: 0,
-                    rgba: [rgba[0], rgba[1], rgba[2], rgba[3] * 0.78], anchor });
+                    rgba: [rgba[0], rgba[1], rgba[2], rgba[3] * 0.84], anchor, halo: true });
     };
     // left/right extent of the two-line block under one anchor
     const lineEdges = (mainWidth, unitWidth, labelX, anchor) => {
@@ -584,7 +602,7 @@ export function paintChart(cr, opts) {
             anchor, unitText);
         if (placed)
             drawValue(placed.text, unitText, labelX, placed.y, anchor,
-                [...inkAt(placed.y), 0.62]);
+                [...inkAt(placed.y), 0.88]);
     }
     // hour labels stay flat on their baseline -- a clash drops the label
     // instead of staggering the row
@@ -600,13 +618,13 @@ export function paintChart(cr, opts) {
             if (!slot)
                 continue;
             drawText(cr, hourText, slot.labelX, height - 5,
-                { size: scaledFontSize, weight: hourFontWeight, rgba: [...inkAt(height - 5), 0.62], anchor: 'middle' });
+                { size: scaledFontSize, weight: hourFontWeight, rgba: [...inkAt(height - 5), 0.84], anchor: 'middle', halo: true });
             continue;
         }
         const box = boxAt(hourText, labelX, height - 5, anchor);
         if (!hitsAny(box, usedBoxes)) {
             usedBoxes.push(box);
-            drawText(cr, hourText, labelX, height - 5, { size: scaledFontSize, weight: hourFontWeight, rgba: [...inkAt(height - 5), 0.62], anchor });
+            drawText(cr, hourText, labelX, height - 5, { size: scaledFontSize, weight: hourFontWeight, rgba: [...inkAt(height - 5), 0.84], anchor, halo: true });
         }
     }
 

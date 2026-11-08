@@ -48,6 +48,22 @@ export function paintChart(cr, w, h, state) {
     const fg = (alpha = 1) => {
         cr.setSourceRGBA(...FG, alpha);
     };
+    const isDarkFg = (0.2126 * FG[0] + 0.7152 * FG[1] + 0.0722 * FG[2]) < 0.35;
+    const haloRgb = isDarkFg ? [1, 1, 1] : [0.03, 0.05, 0.09];
+    const showHaloText = (txt, tx, ty, alpha) => {
+        const haloAlpha = alpha * (isDarkFg ? 0.30 : 0.32);
+        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], haloAlpha);
+        for (const [dx, dy] of [
+            [-1.0, 0], [1.0, 0], [0, -1.0], [0, 1.0],
+            [-0.75, -0.75], [0.75, -0.75], [-0.75, 0.75], [0.75, 0.75],
+        ]) {
+            cr.moveTo(tx + dx, ty + dy);
+            cr.showText(txt);
+        }
+        fg(alpha);
+        cr.moveTo(tx, ty);
+        cr.showText(txt);
+    };
 
     cr.selectFontFace('Cantarell', Cairo.FontSlant.NORMAL, Cairo.FontWeight.NORMAL);
 
@@ -131,11 +147,9 @@ export function paintChart(cr, w, h, state) {
         if (labeled) {
             const txt = valueLabel(metric, vals[i], units);
             cr.setFontSize(10.5);
-            fg(0.9);
             const ext = cr.textExtents(txt);
-            cr.moveTo(clamp(xs(i) - ext.width / 2, 2, w - ext.width - 2),
-                Math.max(PAD.top - 12, ys(vals[i]) - 11));
-            cr.showText(txt);
+            showHaloText(txt, clamp(xs(i) - ext.width / 2, 2, w - ext.width - 2),
+                Math.max(PAD.top - 12, ys(vals[i]) - 11), 0.92);
         }
     }
 
@@ -185,10 +199,8 @@ export function paintChart(cr, w, h, state) {
         }
         const lbl = shortHourLabel(slice.time[i], h12);
         cr.setFontSize(9.5);
-        fg(0.55);
         const ext = cr.textExtents(lbl);
-        cr.moveTo(clamp(x - ext.width / 2, 2, w - ext.width - 2), h - 4);
-        cr.showText(lbl);
+        showHaloText(lbl, clamp(x - ext.width / 2, 2, w - ext.width - 2), h - 4, 0.84);
     }
 }
 
