@@ -3611,71 +3611,330 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter 
     const groundOffset = height - sh;
     const floorTop = groundOffset + 0.685 * sh;
 
-    // Distant ridge wash (snow in winter, emerald alpine slope in summer)
-    const dg = new Cairo.LinearGradient(0, floorTop - 6 * scale, 0, height);
+    // Exact cubic Bezier y-coordinate of Hill 1's crest at normalized horizontal position u in [0, 1].
+    const hill1CrestY = (u) => {
+        const mt = 1 - u;
+        const y0 = floorTop + 12 * scale;
+        const y1 = floorTop - 8 * scale;
+        const y2 = floorTop + 4 * scale;
+        const y3 = floorTop + 22 * scale;
+        return mt * mt * mt * y0 + 3 * mt * mt * u * y1 + 3 * mt * u * u * y2 + u * u * u * y3;
+    };
+
+    // 0. High Alpine Mountain Range Rising Behind the Chalet to the Clouds
+    //    Continuous multi-peak massif grounded directly on Hill 1's crest (zero mid-air gaps,
+    //    zero overlapping triangle seams, and zero bleed-through below Hill 1).
+    const yMtnTop = groundOffset + 0.24 * sh;
+    const yMtnBase = floorTop + 22 * scale;
+
+    // Multi-stepped Alpine massif skyline profile (u, vf):
+    // - Western Peak (Peak 1):     u=0.19, vf=0.36
+    // - Glacial Saddle (Col 1):    u=0.33, vf=0.50
+    // - Main Alpine Horn (Peak 2): u=0.53, vf=0.24 (soaring into the clouds behind the chalet valley)
+    // - High Saddle (Col 2):       u=0.65, vf=0.43
+    // - Chalet Peak (Peak 3):      u=0.74, vf=0.32 (dramatic Alpine peak directly behind the chalet house)
+    // - Eastern Shoulder:          u=0.88, vf=0.46
+    const skyRidge = [
+        [0.00, 0.55],
+        [0.05, 0.49],
+        [0.09, 0.45],
+        [0.14, 0.39],
+        [0.19, 0.36], // Peak 1 (Western Alpine Peak)
+        [0.23, 0.40],
+        [0.28, 0.46],
+        [0.33, 0.50], // Col 1
+        [0.38, 0.45],
+        [0.42, 0.38],
+        [0.46, 0.33],
+        [0.50, 0.27],
+        [0.53, 0.24], // Peak 2 (Main Matterhorn-style Summit soaring to the clouds)
+        [0.56, 0.29],
+        [0.60, 0.37],
+        [0.65, 0.43], // Col 2 (High Glacial Saddle)
+        [0.69, 0.38],
+        [0.71, 0.35],
+        [0.74, 0.32], // Peak 3 (Chalet Backdrop Peak)
+        [0.78, 0.36],
+        [0.83, 0.42],
+        [0.88, 0.46], // Eastern rocky shoulder
+        [0.94, 0.51],
+        [1.00, 0.56],
+    ].map(([u, vf]) => [width * u, groundOffset + vf * sh]);
+
+    // 0a. Unified sunlit mountain massif bounded below by Hill 1's exact ridge curve
+    const mtnBaseG = new Cairo.LinearGradient(0, yMtnTop, 0, yMtnBase);
+    if (isWinter) {
+        mtnBaseG.addColorStopRGBA(0.00, 0.97, 0.99, 1.00, night ? 0.44 : 0.62);
+        mtnBaseG.addColorStopRGBA(0.32, 0.86, 0.92, 0.99, night ? 0.38 : 0.52);
+        mtnBaseG.addColorStopRGBA(0.68, 0.72, 0.82, 0.94, night ? 0.30 : 0.42);
+        mtnBaseG.addColorStopRGBA(1.00, 0.64, 0.75, 0.89, night ? 0.22 : 0.32);
+    } else if (night) {
+        mtnBaseG.addColorStopRGBA(0.00, 0.76, 0.84, 0.95, 0.44);
+        mtnBaseG.addColorStopRGBA(0.28, 0.42, 0.53, 0.68, 0.38);
+        mtnBaseG.addColorStopRGBA(0.65, 0.24, 0.34, 0.48, 0.32);
+        mtnBaseG.addColorStopRGBA(1.00, 0.18, 0.27, 0.39, 0.26);
+    } else {
+        mtnBaseG.addColorStopRGBA(0.00, 0.97, 0.99, 1.00, 0.58);
+        mtnBaseG.addColorStopRGBA(0.26, 0.82, 0.89, 0.97, 0.48);
+        mtnBaseG.addColorStopRGBA(0.58, 0.54, 0.66, 0.80, 0.38);
+        mtnBaseG.addColorStopRGBA(1.00, 0.44, 0.58, 0.70, 0.28);
+    }
+    cr.setSource(mtnBaseG);
+    cr.newPath();
+    skyRidge.forEach(([px, py], idx) => {
+        if (idx === 0) cr.moveTo(px, py);
+        else cr.lineTo(px, py);
+    });
+    // Trace Hill 1's crest right-to-left so the mountain base is seamlessly rooted to the hills
+    for (let s = 24; s >= 0; s--) {
+        const u = s / 24;
+        cr.lineTo(width * u, hill1CrestY(u));
+    }
+    cr.closePath();
+    cr.fill();
+
+    // 0b. 3D Shaded Right-Hand Leeward Slopes Extending to Hill 1's Crest & Feathering into Valley Haze
+    const shadeG = new Cairo.LinearGradient(0, yMtnTop, 0, yMtnBase);
+    if (isWinter) {
+        shadeG.addColorStopRGBA(0.00, 0.52, 0.66, 0.84, night ? 0.28 : 0.34);
+        shadeG.addColorStopRGBA(0.45, 0.46, 0.60, 0.78, night ? 0.18 : 0.22);
+        shadeG.addColorStopRGBA(0.78, 0.42, 0.56, 0.74, 0.0);
+        shadeG.addColorStopRGBA(1.00, 0.42, 0.56, 0.74, 0.0);
+    } else if (night) {
+        shadeG.addColorStopRGBA(0.00, 0.12, 0.20, 0.32, 0.32);
+        shadeG.addColorStopRGBA(0.45, 0.10, 0.17, 0.28, 0.20);
+        shadeG.addColorStopRGBA(0.78, 0.08, 0.15, 0.24, 0.0);
+        shadeG.addColorStopRGBA(1.00, 0.08, 0.15, 0.24, 0.0);
+    } else {
+        shadeG.addColorStopRGBA(0.00, 0.34, 0.46, 0.62, 0.30);
+        shadeG.addColorStopRGBA(0.45, 0.28, 0.40, 0.56, 0.18);
+        shadeG.addColorStopRGBA(0.78, 0.26, 0.38, 0.52, 0.0);
+        shadeG.addColorStopRGBA(1.00, 0.26, 0.38, 0.52, 0.0);
+    }
+    cr.setSource(shadeG);
+
+    const leewardFacets = [
+        {
+            // Peak 1 leeward slope (u = 0.19 .. 0.33)
+            sky: [[0.19, 0.36], [0.23, 0.40], [0.28, 0.46], [0.33, 0.50]],
+            rightBaseU: 0.35,
+            leftRidge: [[0.22, 0.56], [0.20, 0.46]],
+            leftBaseU: 0.23,
+        },
+        {
+            // Peak 2 (Main Horn) leeward slope (u = 0.53 .. 0.65)
+            sky: [[0.53, 0.24], [0.56, 0.29], [0.60, 0.37], [0.65, 0.43]],
+            rightBaseU: 0.66,
+            leftRidge: [[0.55, 0.54], [0.56, 0.42], [0.52, 0.33]],
+            leftBaseU: 0.54,
+        },
+        {
+            // Peak 3 (Chalet Peak) leeward slope (u = 0.74 .. 1.00)
+            sky: [[0.74, 0.32], [0.78, 0.36], [0.83, 0.42], [0.88, 0.46], [0.94, 0.51], [1.00, 0.56]],
+            rightBaseU: 1.00,
+            leftRidge: [[0.78, 0.56], [0.76, 0.44]],
+            leftBaseU: 0.79,
+        },
+    ];
+
+    for (const f of leewardFacets) {
+        cr.newPath();
+        f.sky.forEach(([u, vf], idx) => {
+            const px = width * u, py = groundOffset + vf * sh;
+            if (idx === 0) cr.moveTo(px, py);
+            else cr.lineTo(px, py);
+        });
+        // Descend from the col to Hill 1's crest and trace along Hill 1 back to the central ridge base
+        for (let s = 6; s >= 0; s--) {
+            const u = f.leftBaseU + (f.rightBaseU - f.leftBaseU) * (s / 6);
+            cr.lineTo(width * u, hill1CrestY(u));
+        }
+        // Ascend the central arête back to the summit
+        f.leftRidge.forEach(([u, vf]) => {
+            cr.lineTo(width * u, groundOffset + vf * sh);
+        });
+        cr.closePath();
+        cr.fill();
+    }
+
+    // 0c. Feathered Sunlit Snow-Glacier Mantles (each gradient reaches alpha=0 well above its bottom vertices)
+    const snowMantles = [
+        {
+            topVf: 0.36, botVf: 0.54,
+            pts: [[0.19, 0.36], [0.20, 0.48], [0.14, 0.52], [0.07, 0.47], [0.09, 0.45], [0.14, 0.39]],
+        },
+        {
+            topVf: 0.24, botVf: 0.48,
+            pts: [[0.53, 0.24], [0.52, 0.33], [0.55, 0.45], [0.47, 0.46], [0.40, 0.41], [0.42, 0.38], [0.46, 0.33], [0.50, 0.27]],
+        },
+        {
+            topVf: 0.32, botVf: 0.50,
+            pts: [[0.74, 0.32], [0.76, 0.46], [0.69, 0.48], [0.65, 0.43], [0.69, 0.38], [0.71, 0.35]],
+        },
+    ];
+    for (const m of snowMantles) {
+        const g = new Cairo.LinearGradient(0, groundOffset + m.topVf * sh, 0, groundOffset + m.botVf * sh);
+        g.addColorStopRGBA(0.00, 0.99, 1.00, 1.00, night ? 0.34 : 0.50);
+        g.addColorStopRGBA(0.42, 0.93, 0.97, 1.00, night ? 0.16 : 0.24);
+        g.addColorStopRGBA(0.68, 0.86, 0.93, 0.99, 0.0);
+        g.addColorStopRGBA(1.00, 0.86, 0.93, 0.99, 0.0);
+        cr.setSource(g);
+        cr.newPath();
+        m.pts.forEach(([u, vf], idx) => {
+            const px = width * u, py = groundOffset + vf * sh;
+            if (idx === 0) cr.moveTo(px, py);
+            else cr.lineTo(px, py);
+        });
+        cr.closePath();
+        cr.fill();
+    }
+
+    // 0d. Soft Orographic Cloud Wisps Wrapping the High Alpine Summits
+    const wispCol = night ? [0.68, 0.78, 0.92] : [0.96, 0.98, 1.00];
+    const wispDrift = Math.sin((time - 1.1) * 0.35) * 6.0 * scale;
+    drawSoftFogBand(cr, width * 0.52 + wispDrift, groundOffset + 0.31 * sh, 82 * scale, 14 * scale, wispCol, night ? 0.16 : 0.26);
+    drawSoftFogBand(cr, width * 0.74 - wispDrift * 0.7, groundOffset + 0.38 * sh, 68 * scale, 12 * scale, wispCol, night ? 0.14 : 0.22);
+    drawSoftFogBand(cr, width * 0.20 + wispDrift * 0.5, groundOffset + 0.42 * sh, 60 * scale, 11 * scale, wispCol, night ? 0.12 : 0.20);
+
+    // 1. Hill 1 (Distant Left-Center Rolling Foothill Knoll supporting the Distant Pines)
+    const h1 = new Cairo.LinearGradient(0, floorTop - 10 * scale, 0, height);
     if (!isWinter) {
         if (night) {
-            dg.addColorStopRGBA(0, 0.16, 0.28, 0.34, 0.0);
-            dg.addColorStopRGBA(0.28, 0.14, 0.25, 0.31, subdued ? 0.40 : 0.46);
-            dg.addColorStopRGBA(1, 0.12, 0.22, 0.28, subdued ? 0.44 : 0.50);
+            h1.addColorStopRGBA(0.00, 0.16, 0.28, 0.34, subdued ? 0.46 : 0.52);
+            h1.addColorStopRGBA(0.45, 0.14, 0.25, 0.31, subdued ? 0.48 : 0.54);
+            h1.addColorStopRGBA(1.00, 0.12, 0.22, 0.28, subdued ? 0.44 : 0.50);
         } else if (subdued) {
-            dg.addColorStopRGBA(0, 0.54, 0.66, 0.59, 0.0);
-            dg.addColorStopRGBA(0.28, 0.50, 0.62, 0.55, 0.32);
-            dg.addColorStopRGBA(1, 0.42, 0.56, 0.46, 0.42);
+            h1.addColorStopRGBA(0.00, 0.52, 0.65, 0.57, 0.42);
+            h1.addColorStopRGBA(0.45, 0.48, 0.61, 0.53, 0.46);
+            h1.addColorStopRGBA(1.00, 0.42, 0.56, 0.46, 0.48);
         } else {
-            dg.addColorStopRGBA(0, 0.50, 0.75, 0.48, 0.0);
-            dg.addColorStopRGBA(0.28, 0.44, 0.69, 0.42, 0.38);
-            dg.addColorStopRGBA(1, 0.34, 0.60, 0.32, 0.46);
+            h1.addColorStopRGBA(0.00, 0.48, 0.74, 0.46, 0.46);
+            h1.addColorStopRGBA(0.45, 0.42, 0.68, 0.40, 0.50);
+            h1.addColorStopRGBA(1.00, 0.34, 0.60, 0.32, 0.52);
         }
     } else if (night) {
-        dg.addColorStopRGBA(0, 0.22, 0.32, 0.46, 0.0);
-        dg.addColorStopRGBA(0.28, 0.20, 0.30, 0.44, 0.34);
-        dg.addColorStopRGBA(1, 0.10, 0.18, 0.28, 0.56);
+        h1.addColorStopRGBA(0.00, 0.24, 0.34, 0.48, 0.42);
+        h1.addColorStopRGBA(0.45, 0.19, 0.29, 0.43, 0.46);
+        h1.addColorStopRGBA(1.00, 0.10, 0.18, 0.28, 0.54);
     } else {
-        dg.addColorStopRGBA(0, 0.86, 0.92, 0.98, 0.0);
-        dg.addColorStopRGBA(0.28, 0.78, 0.86, 0.95, 0.34);
-        dg.addColorStopRGBA(1, 0.58, 0.70, 0.84, 0.52);
+        h1.addColorStopRGBA(0.00, 0.88, 0.94, 0.99, 0.48);
+        h1.addColorStopRGBA(0.45, 0.78, 0.86, 0.95, 0.52);
+        h1.addColorStopRGBA(1.00, 0.58, 0.70, 0.84, 0.56);
     }
-    cr.setSource(dg);
+    cr.setSource(h1);
     cr.newPath();
-    cr.moveTo(0, floorTop + 5 * scale);
-    cr.curveTo(width * 0.35, floorTop - 6 * scale, width * 0.68, floorTop + 6 * scale, width, floorTop + 2 * scale);
+    cr.moveTo(0, floorTop + 12 * scale);
+    cr.curveTo(width * 0.28, floorTop - 8 * scale, width * 0.56, floorTop + 4 * scale, width, floorTop + 22 * scale);
     cr.lineTo(width, height);
     cr.lineTo(0, height);
     cr.closePath();
     cr.fill();
 
-    // Foreground snowbank (winter) or wildflower alpine meadow contour (summer)
-    const fgSnow = new Cairo.LinearGradient(0, height - 62 * scale, 0, height);
+    // Crisp sunlit ridge highlight on Hill 1
+    if (isWinter)
+        cr.setSourceRGBA(0.96, 0.98, 1.0, night ? 0.28 : 0.52);
+    else if (night)
+        cr.setSourceRGBA(0.32, 0.48, 0.42, 0.32);
+    else
+        cr.setSourceRGBA(0.62, 0.82, 0.52, 0.40);
+    cr.setLineWidth(1.0 * scale);
+    cr.newPath();
+    cr.moveTo(0, floorTop + 12 * scale);
+    cr.curveTo(width * 0.28, floorTop - 8 * scale, width * 0.56, floorTop + 4 * scale, width, floorTop + 22 * scale);
+    cr.stroke();
+
+    // 2. Hill 2 (Midground Rolling Hillside rising on the Right under the Chalet)
+    const h2 = new Cairo.LinearGradient(0, floorTop + 10 * scale, 0, height);
     if (!isWinter) {
         if (night) {
-            fgSnow.addColorStopRGBA(0, 0.14, 0.26, 0.24, subdued ? 0.54 : 0.60);
-            fgSnow.addColorStopRGBA(1, 0.10, 0.20, 0.19, subdued ? 0.62 : 0.68);
+            h2.addColorStopRGBA(0.00, 0.15, 0.27, 0.28, subdued ? 0.52 : 0.58);
+            h2.addColorStopRGBA(0.50, 0.13, 0.24, 0.25, subdued ? 0.54 : 0.60);
+            h2.addColorStopRGBA(1.00, 0.11, 0.21, 0.22, subdued ? 0.50 : 0.56);
         } else if (subdued) {
-            fgSnow.addColorStopRGBA(0, 0.42, 0.57, 0.44, 0.38);
-            fgSnow.addColorStopRGBA(1, 0.34, 0.49, 0.36, 0.44);
+            h2.addColorStopRGBA(0.00, 0.46, 0.61, 0.48, 0.46);
+            h2.addColorStopRGBA(0.50, 0.42, 0.57, 0.44, 0.48);
+            h2.addColorStopRGBA(1.00, 0.38, 0.52, 0.40, 0.46);
         } else {
-            fgSnow.addColorStopRGBA(0, 0.38, 0.65, 0.34, 0.44);
-            fgSnow.addColorStopRGBA(1, 0.28, 0.53, 0.25, 0.52);
+            h2.addColorStopRGBA(0.00, 0.42, 0.68, 0.38, 0.50);
+            h2.addColorStopRGBA(0.50, 0.36, 0.62, 0.32, 0.54);
+            h2.addColorStopRGBA(1.00, 0.31, 0.56, 0.28, 0.50);
         }
     } else if (night) {
-        fgSnow.addColorStopRGBA(0, 0.16, 0.26, 0.38, 0.38);
-        fgSnow.addColorStopRGBA(1, 0.08, 0.15, 0.24, 0.58);
+        h2.addColorStopRGBA(0.00, 0.20, 0.30, 0.44, 0.46);
+        h2.addColorStopRGBA(1.00, 0.12, 0.20, 0.32, 0.56);
     } else {
-        fgSnow.addColorStopRGBA(0, 0.72, 0.82, 0.92, 0.38);
-        fgSnow.addColorStopRGBA(1, 0.52, 0.66, 0.80, 0.54);
+        h2.addColorStopRGBA(0.00, 0.84, 0.91, 0.98, 0.52);
+        h2.addColorStopRGBA(1.00, 0.64, 0.76, 0.88, 0.58);
     }
-    cr.setSource(fgSnow);
+    cr.setSource(h2);
     cr.newPath();
-    cr.moveTo(0, height - 48 * scale);
-    cr.curveTo(
-        width * 0.38, height - 62 * scale,
-        width * 0.72, height - 44 * scale,
-        width, height - 52 * scale);
+    cr.moveTo(0, floorTop + 44 * scale);
+    cr.curveTo(width * 0.34, floorTop + 48 * scale, width * 0.60, floorTop + 10 * scale, width, floorTop + 16 * scale);
     cr.lineTo(width, height);
     cr.lineTo(0, height);
     cr.closePath();
     cr.fill();
+
+    // Crisp sunlit ridge highlight on Hill 2 (Chalet hillside bench)
+    if (isWinter)
+        cr.setSourceRGBA(0.97, 0.99, 1.0, night ? 0.32 : 0.56);
+    else if (night)
+        cr.setSourceRGBA(0.34, 0.50, 0.42, 0.34);
+    else
+        cr.setSourceRGBA(0.58, 0.80, 0.46, 0.44);
+    cr.setLineWidth(1.05 * scale);
+    cr.newPath();
+    cr.moveTo(0, floorTop + 44 * scale);
+    cr.curveTo(width * 0.34, floorTop + 48 * scale, width * 0.60, floorTop + 10 * scale, width, floorTop + 16 * scale);
+    cr.stroke();
+
+    // 3. Hill 3: Foreground Rolling Snowbank (winter) or Wildflower Alpine Meadow Hill (summer)
+    const fgSnow = new Cairo.LinearGradient(0, height - 64 * scale, 0, height);
+    if (!isWinter) {
+        if (night) {
+            fgSnow.addColorStopRGBA(0, 0.14, 0.26, 0.24, subdued ? 0.58 : 0.64);
+            fgSnow.addColorStopRGBA(1, 0.10, 0.20, 0.19, subdued ? 0.64 : 0.70);
+        } else if (subdued) {
+            fgSnow.addColorStopRGBA(0, 0.40, 0.55, 0.42, 0.48);
+            fgSnow.addColorStopRGBA(1, 0.32, 0.47, 0.34, 0.54);
+        } else {
+            fgSnow.addColorStopRGBA(0, 0.36, 0.63, 0.32, 0.54);
+            fgSnow.addColorStopRGBA(1, 0.26, 0.51, 0.23, 0.62);
+        }
+    } else if (night) {
+        fgSnow.addColorStopRGBA(0, 0.16, 0.26, 0.38, 0.48);
+        fgSnow.addColorStopRGBA(1, 0.08, 0.15, 0.24, 0.64);
+    } else {
+        fgSnow.addColorStopRGBA(0, 0.76, 0.85, 0.94, 0.52);
+        fgSnow.addColorStopRGBA(1, 0.54, 0.68, 0.82, 0.62);
+    }
+    cr.setSource(fgSnow);
+    cr.newPath();
+    cr.moveTo(0, height - 44 * scale);
+    cr.curveTo(
+        width * 0.34, height - 64 * scale,
+        width * 0.68, height - 38 * scale,
+        width, height - 50 * scale);
+    cr.lineTo(width, height);
+    cr.lineTo(0, height);
+    cr.closePath();
+    cr.fill();
+
+    // Crisp sunlit ridge highlight on Foreground Hill 3
+    if (isWinter)
+        cr.setSourceRGBA(0.98, 0.99, 1.0, night ? 0.34 : 0.60);
+    else if (night)
+        cr.setSourceRGBA(0.36, 0.52, 0.44, 0.38);
+    else
+        cr.setSourceRGBA(0.56, 0.78, 0.44, 0.48);
+    cr.setLineWidth(1.15 * scale);
+    cr.newPath();
+    cr.moveTo(0, height - 44 * scale);
+    cr.curveTo(
+        width * 0.34, height - 64 * scale,
+        width * 0.68, height - 38 * scale,
+        width, height - 50 * scale);
+    cr.stroke();
 
     // 1. Smaller Distant Warm-Lit Alpine Timber & Stone Chalet with Curling Chimney Smoke
     //    Placed further in the distance between tiles Thu and Fri (x = 0.733w, y = floorTop + 18*scale)
