@@ -162,7 +162,7 @@ test('rain sky initializes submerged Nishikigoi pond floor and connects drop imp
     cr.$dispose();
 });
 
-test('resolveFloorScene routes temperature-stable weather defaults and pinned ground scenes (S2, T3, K1, C1, C2)', () => {
+test('resolveFloorScene routes temperature-stable weather defaults and pinned ground scenes (S2, T3, K1, C1, C2, F1)', () => {
     // Auto mode is temperature-stable across all temperatures
     for (const temp of [-25, -5, 15, 30, null]) {
         eq(resolveFloorScene('storm', false, temp, 'auto'), 'T3', `storm temp=${temp} -> T3`);
@@ -170,6 +170,8 @@ test('resolveFloorScene routes temperature-stable weather defaults and pinned gr
         eq(resolveFloorScene('rain', false, temp, 'auto'), 'K1', `rain temp=${temp} -> K1`);
         eq(resolveFloorScene('snow', false, temp, 'auto'), 'S2', `snow temp=${temp} -> S2`);
         eq(resolveFloorScene('snow', true, temp, 'auto'), 'S2', `snow night temp=${temp} -> S2`);
+        eq(resolveFloorScene('fog', false, temp, 'auto'), 'F1', `fog temp=${temp} -> F1`);
+        eq(resolveFloorScene('fog', true, temp, 'auto'), 'F1', `fog night temp=${temp} -> F1`);
         eq(resolveFloorScene('sun', false, temp, 'auto'), 'C1', `sun temp=${temp} -> C1`);
         eq(resolveFloorScene('moon', true, temp, 'auto'), 'C1', `moon temp=${temp} -> C1`);
         eq(resolveFloorScene('cloud', false, temp, 'auto'), 'C1', `cloud temp=${temp} -> C1`);
@@ -177,12 +179,13 @@ test('resolveFloorScene routes temperature-stable weather defaults and pinned gr
     }
 
     // Explicit ground scene selector pins the chosen landscape across all weather conditions
-    for (const scene of ['sun', 'moon', 'cloud', 'rain', 'snow', 'storm']) {
+    for (const scene of ['sun', 'moon', 'cloud', 'fog', 'rain', 'snow', 'storm']) {
         eq(resolveFloorScene(scene, false, 18, 'hills'), 'C1');
         eq(resolveFloorScene(scene, false, 18, 'beach'), 'C2');
         eq(resolveFloorScene(scene, false, 18, 'chalet'), 'S2');
         eq(resolveFloorScene(scene, false, 18, 'koi'), 'K1');
         eq(resolveFloorScene(scene, false, 18, 'frogs'), 'T3');
+        eq(resolveFloorScene(scene, false, 18, 'sf'), 'F1');
     }
 
     // Render all floor scenes cleanly through paintSky, and verify floor: false suppresses them
@@ -200,6 +203,13 @@ test('resolveFloorScene routes temperature-stable weather defaults and pinned gr
         ['sun', false, 20, 0, 0, 'hills'],
         ['moon', true, 18, 0, 0, 'hills'],
         ['cloud', false, 15, 3, 0, 'auto'],
+        ['fog', false, 12, 45, 0, 'auto'],
+        ['sun', false, 22, 0, 0, 'sf'],
+        ['fog', false, 12, 45, 0, 'sf'],
+        ['cloud', false, 15, 3, 0, 'sf'],
+        ['fog', false, 12, 45, 0, 'beach'],
+        ['cloud', false, 15, 3, 0, 'beach'],
+        ['fog', false, 12, 45, 0, 'chalet'],
         ['sun', false, 29, 0, 0, 'beach'],
         ['sun', false, 29, 0, 0.9, 'beach'],
         ['moon', true, 29, 0, 0, 'beach'],

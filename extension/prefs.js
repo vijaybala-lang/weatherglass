@@ -485,7 +485,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             visible: initialStyle !== 'accent',
         });
         settings.bind('sky-floor', floorRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-        const FLOOR_SCENES = ['auto', 'hills', 'beach', 'chalet', 'koi', 'frogs'];
+        const FLOOR_SCENES = ['auto', 'hills', 'beach', 'chalet', 'koi', 'frogs', 'sf'];
         const floorSceneRow = new Adw.ComboRow({
             title: _('Ground scene'),
             subtitle: _('Landscape shown along the bottom when ground scenes are enabled'),
@@ -497,6 +497,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                     _('Alpine chalet & snowman'),
                     _('Nishikigoi koi pond'),
                     _('Lotus & tree frog pond'),
+                    _('San Francisco Golden Gate'),
                 ],
             }),
             visible: initialStyle !== 'accent' && settings.get_boolean('sky-floor'),

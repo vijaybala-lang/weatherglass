@@ -1002,7 +1002,7 @@ function drawPineTree(cr, x, baseY, treeHeight, rgb, alpha, bend = 0) {
 
 /* F2 Fog background: veiled sun/moon halo + two receding horizon pine
  * treelines emerging from billowing ground mist (zero star sparkles). */
-function drawFogHills(cr, width, height, night) {
+function drawFogHills(cr, width, height, night, showTreelines = true) {
     const sh = sceneHeight(width, height);
     const scale = sh / 420;
     const sunX = width * 0.76, sunY = sh * 0.16;
@@ -1017,6 +1017,8 @@ function drawFogHills(cr, width, height, night) {
     cr.setSource(halo);
     cr.arc(sunX, sunY, haloRadius, 0, TWO_PI);
     cr.fill();
+    if (!showTreelines)
+        return;
 
     const mistRgb = night ? [0.46, 0.52, 0.62] : [0.85, 0.88, 0.91];
     const treeLayers = [
@@ -1488,7 +1490,7 @@ function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity, isWinter = false)
 }
 
 /* Layered Submersion + Surface Kiss Koi Pond Floor (0.685h .. 1.0h) */
-function drawKoiPond(cr, sky, width, height, scale, dt, time, night, isWinter = false) {
+function drawKoiPond(cr, sky, width, height, scale, dt, time, night, isWinter = false, subdued = false) {
     ensureKoiPond(sky, width, height);
     if (!sky.koi || !sky.koi.length)
         return;
@@ -1550,7 +1552,7 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night, isWinter = 
     for (let r = 0; r < 5; r++) {
         const by = pondTopY + (22 + r * 19) * scale;
         const vFade = Math.sin(((r + 0.5) / 5) * Math.PI);
-        cr.setSourceRGBA(0.85, 0.97, 1.0, (night ? 0.04 : 0.06) * vFade);
+        cr.setSourceRGBA(0.85, 0.97, 1.0, (night ? 0.04 : (subdued ? 0.035 : 0.06)) * vFade);
         cr.newPath();
         for (let dx = 0; dx <= width; dx += 10) {
             const py = by
@@ -2891,13 +2893,15 @@ const FLOOR_SCENE_IDS = {
     C2: 'C2',
     chalet: 'S2',
     S2: 'S2',
+    sf: 'F1',
+    F1: 'F1',
     koi: 'K1',
     K1: 'K1',
     frogs: 'T3',
     T3: 'T3',
 };
 
-/* Resolve bottom ground scene ('S2', 'T3', 'K1', 'C1', 'C2', or null) from scene, night, temp, and floorScene */
+/* Resolve bottom ground scene ('S2', 'T3', 'K1', 'C1', 'C2', 'F1', or null) from scene, night, temp, and floorScene */
 export function resolveFloorScene(scene, night, temp = null, floorScene = 'auto') {
     if (floorScene && floorScene !== 'auto' && FLOOR_SCENE_IDS[floorScene])
         return FLOOR_SCENE_IDS[floorScene];
@@ -2907,6 +2911,8 @@ export function resolveFloorScene(scene, night, temp = null, floorScene = 'auto'
         return 'K1';
     if (scene === 'snow' || scene === 'sleet')
         return 'S2';
+    if (scene === 'fog')
+        return 'F1';
     if (scene === 'clear' || scene === 'sun' || scene === 'moon' || scene === 'cloud' || scene === 'partly' || scene === 'wind')
         return 'C1';
     return null;
@@ -4596,7 +4602,7 @@ function drawDutchWindmill(cr, x, y, scale, time = 1.1, subdued = true, distFade
     cr.stroke();
 
     // Two mullioned 4-pane windows with white frames (warm golden lantern glow at night or winter)
-    const winLit = night || isWinter;
+    const winLit = night || isWinter || subdued;
     for (const [wx, wy, ww, wh] of [[0, -11.4, 1.8, 2.3], [0, -7.8, 1.9, 2.1]]) {
         if (winLit) {
             const wg = new Cairo.RadialGradient(wx, wy, 0.2, wx, wy, 3.0);
@@ -4978,32 +4984,36 @@ function drawClearHillsFloor(cr, width, height, scale, time, subdued = false, ni
 
 /* C2 (Clear ≥ 76°F): Cape Cod National Seashore — Red-Over-White Nauset Light (unlit by day, glowing beacon & sweeping beams at golden hour / night),
  * Two-Masted New England Gaff Schooner, Weathered Vertical-Slat & Wire Sand Fence on Dry Dune Crest, and Pure Rosa rugosa & American Beachgrass Foredunes */
-function makeCapeCodTinter(night = false, isGolden = false, distFade = 0.0) {
-    const lum = night ? 0.62 : (isGolden ? 0.92 : 0.98);
-    const hazeR = night ? 0.14 : (isGolden ? 0.88 : 0.62);
-    const hazeG = night ? 0.20 : (isGolden ? 0.62 : 0.75);
-    const hazeB = night ? 0.34 : (isGolden ? 0.48 : 0.84);
-    const aMul = 1.0 - distFade * 0.22;
-    return {
-        aMul,
-        tint: (r, g, b) => {
-            let br = r * lum, bg = g * lum, bb = b * lum;
-            if (isGolden) {
-                br = Math.min(1, br * 1.06 + 0.04);
-                bg = bg * 0.95;
-                bb = bb * 0.84;
-            } else if (night) {
-                br = br * 0.78;
-                bg = bg * 0.86;
-                bb = Math.min(1, bb * 1.10 + 0.03);
-            }
-            return [
-                br * (1 - distFade) + hazeR * distFade,
-                bg * (1 - distFade) + hazeG * distFade,
-                bb * (1 - distFade) + hazeB * distFade,
-            ];
-        },
+function makeCapeCodTinter(night = false, isGolden = false, distFade = 0.0, subdued = false) {
+    const lum = night ? 0.56 : (subdued ? 0.84 : (isGolden ? 0.94 : 0.98));
+    const aMul = 1.0 - distFade * 0.25;
+    const hCol = night
+        ? [0.18, 0.28, 0.44]
+        : (subdued ? [0.64, 0.70, 0.77] : (isGolden ? [0.96, 0.72, 0.52] : [0.74, 0.85, 0.95]));
+    const tint = (r, g, b) => {
+        let tr = r * lum, tg = g * lum, tb = b * lum;
+        if (night) {
+            const avg = (tr + tg + tb) * 0.333;
+            tr = tr * 0.52 + avg * 0.22 + 0.03;
+            tg = tg * 0.58 + avg * 0.26 + 0.06;
+            tb = tb * 0.68 + avg * 0.34 + 0.12;
+        } else if (subdued) {
+            const avg = (tr + tg + tb) * 0.333;
+            tr = tr * 0.74 + avg * 0.26;
+            tg = tg * 0.76 + avg * 0.24;
+            tb = tb * 0.80 + avg * 0.22 + 0.02;
+        } else if (isGolden) {
+            tr = Math.min(1.0, tr * 1.06 + 0.04);
+            tg = tg * 0.95 + 0.01;
+            tb = tb * 0.84;
+        }
+        return [
+            tr * (1 - distFade) + hCol[0] * distFade,
+            tg * (1 - distFade) + hCol[1] * distFade,
+            tb * (1 - distFade) + hCol[2] * distFade,
+        ];
     };
+    return { tint, aMul };
 }
 
 function drawCapeCodSchooner(cr, x, y, scale, time, night = false, isGolden = false, distFade = 0.18) {
@@ -5325,12 +5335,12 @@ function drawPureRosaRugosaAndBeachgrassDune(cr, x, baseY, hScale, bend = 0, tim
     cr.restore();
 }
 
-function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden = false, isWinter = false) {
+function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden = false, isWinter = false, subdued = false) {
     cr.save();
     cr.translate(x, y);
     cr.scale(2.28 * scale, 2.28 * scale);
-    const { tint, aMul } = makeCapeCodTinter(night, isGolden, 0.0);
-    const lightOn = night || isGolden;
+    const { tint, aMul } = makeCapeCodTinter(night, isGolden, 0.0, subdued);
+    const lightOn = night || isGolden || subdued;
     const cottageLit = lightOn || isWinter;
 
     // Ground shadow
@@ -5764,7 +5774,7 @@ function drawCapeCodBeachCrab(cr, width, height, floorTop, scale, time, night = 
     cr.restore();
 }
 
-function drawClearBeachFloor(cr, width, height, scale, time, night = false, twilight = 0, isWinter = false) {
+function drawClearBeachFloor(cr, width, height, scale, time, night = false, twilight = 0, isWinter = false, subdued = false) {
     const sh = sceneHeight(width, height);
     const groundOffset = height - sh;
     const floorTop = groundOffset + 0.685 * sh;
@@ -5781,6 +5791,10 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
         h1.addColorStopRGBA(0.00, 0.15, 0.32, 0.50, 0.56);
         h1.addColorStopRGBA(0.45, 0.20, 0.38, 0.54, 0.52);
         h1.addColorStopRGBA(1.00, 0.25, 0.42, 0.56, 0.46);
+    } else if (subdued) {
+        h1.addColorStopRGBA(0.00, 0.22, 0.33, 0.44, 0.52);
+        h1.addColorStopRGBA(0.45, 0.25, 0.37, 0.48, 0.48);
+        h1.addColorStopRGBA(1.00, 0.28, 0.40, 0.50, 0.44);
     } else {
         h1.addColorStopRGBA(0.00, 0.09, 0.32, 0.53, 0.52);
         h1.addColorStopRGBA(0.45, 0.11, 0.38, 0.57, 0.48);
@@ -5861,6 +5875,10 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
         h2Water.addColorStopRGBA(0.00, 0.19, 0.46, 0.58, 0.00);
         h2Water.addColorStopRGBA(0.25, 0.19, 0.46, 0.58, 0.56);
         h2Water.addColorStopRGBA(1.00, 0.35, 0.60, 0.65, 0.58);
+    } else if (subdued) {
+        h2Water.addColorStopRGBA(0.00, 0.24, 0.40, 0.50, 0.00);
+        h2Water.addColorStopRGBA(0.25, 0.24, 0.40, 0.50, 0.54);
+        h2Water.addColorStopRGBA(1.00, 0.34, 0.50, 0.58, 0.56);
     } else {
         h2Water.addColorStopRGBA(0.00, 0.13, 0.49, 0.64, 0.00);
         h2Water.addColorStopRGBA(0.25, 0.13, 0.49, 0.64, 0.56);
@@ -5891,6 +5909,10 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
         h2Beach.addColorStopRGBA(0.00, 0.72, 0.53, 0.35, 0.66);
         h2Beach.addColorStopRGBA(0.22, 0.83, 0.64, 0.43, 0.74);
         h2Beach.addColorStopRGBA(1.00, 0.86, 0.67, 0.45, 0.78);
+    } else if (subdued) {
+        h2Beach.addColorStopRGBA(0.00, 0.56, 0.49, 0.39, 0.66);
+        h2Beach.addColorStopRGBA(0.22, 0.65, 0.58, 0.47, 0.72);
+        h2Beach.addColorStopRGBA(1.00, 0.69, 0.61, 0.50, 0.76);
     } else {
         h2Beach.addColorStopRGBA(0.00, 0.69, 0.55, 0.38, 0.66);
         h2Beach.addColorStopRGBA(0.22, 0.81, 0.67, 0.49, 0.72);
@@ -6108,6 +6130,10 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
         h3.addColorStopRGBA(0.00, 0.45, 0.62, 0.33, 0.74);
         h3.addColorStopRGBA(0.45, 0.38, 0.55, 0.28, 0.78);
         h3.addColorStopRGBA(1.00, 0.31, 0.47, 0.24, 0.82);
+    } else if (subdued) {
+        h3.addColorStopRGBA(0.00, 0.34, 0.51, 0.33, 0.72);
+        h3.addColorStopRGBA(0.45, 0.29, 0.45, 0.29, 0.76);
+        h3.addColorStopRGBA(1.00, 0.24, 0.39, 0.25, 0.80);
     } else {
         h3.addColorStopRGBA(0.00, 0.40, 0.65, 0.34, 0.72);
         h3.addColorStopRGBA(0.45, 0.34, 0.58, 0.29, 0.76);
@@ -6147,7 +6173,7 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, height, floorTop, 0.36, 0.77, 22, 0.92, isWinter);
 
     // 6. Hero Red-Over-White Nauset Light on Left Bluff (x = 0.267w, y = height - 40*scale; no vegetation in front)
-    drawNausetLighthouseHero(cr, width * 0.267, height - 40 * scale, scale, time, night, isGolden, isWinter);
+    drawNausetLighthouseHero(cr, width * 0.267, height - 40 * scale, scale, time, night, isGolden, isWinter, subdued);
 
     // 7. Small Atlantic Crab Scuttling Along the Dry Sandy Beach Corridor (warm seasons only)
     if (!isWinter)
@@ -6158,20 +6184,915 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     drawPureRosaRugosaAndBeachgrassDune(cr, width * 0.962, height - 24 * scale, 38 * scale,  1.0 * scale, time, night, isGolden, isWinter);
 }
 
+/* F1 (San Francisco Golden Gate Scene): 3/4 Perspective Golden Gate Bridge in International Orange,
+ * Distant Marin/SF Hills & Skyline, Shimmering Bay Water with Bridge Reflection, Sailboats, Soaring Gull & Coastal Bluff Foliage */
+function drawSanFranciscoSailboat(cr, x, y, scale, boatScale, time, night, isGolden, subdued) {
+    cr.save();
+    cr.translate(x, y);
+    cr.scale(boatScale * scale, boatScale * scale);
+
+    const bob = Math.sin(time * 1.6 + x * 0.05) * 0.45;
+    cr.translate(0, bob);
+
+    // Long vertical mast/sail water reflection beneath the hull
+    const refCol = night ? [0.03, 0.09, 0.18] : (subdued ? [0.16, 0.32, 0.46] : [0.12, 0.42, 0.68]);
+    cr.setSourceRGBA(refCol[0], refCol[1], refCol[2], night ? 0.55 : 0.48);
+    cr.newPath();
+    cr.moveTo(-4.8, 0.8);
+    cr.lineTo(4.8, 0.8);
+    cr.lineTo(1.8, 3.2);
+    cr.lineTo(0.8, 17.5);
+    cr.lineTo(-0.8, 17.5);
+    cr.lineTo(-1.8, 3.2);
+    cr.closePath();
+    cr.fill();
+
+    // Crisp horizontal water ripple rings around the hull base
+    cr.setSourceRGBA(0.92, 0.98, 1.0, night ? 0.26 : (subdued ? 0.35 : 0.55));
+    cr.setLineWidth(0.55);
+    cr.newPath();
+    cr.moveTo(-6.2, 0.9);
+    cr.lineTo(6.2, 0.9);
+    cr.moveTo(-4.0, 2.2);
+    cr.lineTo(4.0, 2.2);
+    cr.stroke();
+
+    // Mast
+    cr.setSourceRGBA(0.88, 0.92, 0.96, night ? 0.72 : 0.92);
+    cr.setLineWidth(0.65);
+    cr.newPath();
+    cr.moveTo(-0.4, 0);
+    cr.lineTo(-0.4, -15.5);
+    cr.stroke();
+
+    // Mainsail (right triangle) & Jib (left triangle)
+    const sailCol = night ? [0.76, 0.83, 0.92] : (isGolden ? [1.0, 0.95, 0.86] : (subdued ? [0.88, 0.91, 0.94] : [0.98, 0.99, 1.0]));
+    cr.setSourceRGBA(sailCol[0], sailCol[1], sailCol[2], 0.95);
+    cr.newPath();
+    cr.moveTo(-0.1, -14.8);
+    cr.lineTo(-0.1, -1.5);
+    cr.lineTo(4.6, -1.5);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(sailCol[0] * 0.92, sailCol[1] * 0.94, sailCol[2] * 0.96, 0.90);
+    cr.newPath();
+    cr.moveTo(-0.7, -13.2);
+    cr.lineTo(-0.7, -1.6);
+    cr.lineTo(-3.8, -1.6);
+    cr.closePath();
+    cr.fill();
+
+    // White sloop hull with navy gunwale stripe
+    cr.setSourceRGBA(sailCol[0], sailCol[1], sailCol[2], 0.98);
+    cr.newPath();
+    cr.moveTo(-5.8, -1.1);
+    cr.lineTo(5.8, -1.1);
+    cr.lineTo(4.4, 0.7);
+    cr.lineTo(-4.4, 0.7);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.18, 0.42, 0.68, 0.90);
+    cr.setLineWidth(0.55);
+    cr.newPath();
+    cr.moveTo(-5.2, -0.3);
+    cr.lineTo(5.2, -0.3);
+    cr.stroke();
+
+    cr.restore();
+}
+
+function drawWesternGull(cr, x, y, scale, time, night, isGolden, subdued) {
+    cr.save();
+    const glideX = x + Math.sin(time * 0.65) * 4.5 * scale;
+    const glideY = y + Math.cos(time * 0.95) * 2.5 * scale;
+    const bank = Math.sin(time * 0.65) * 0.04;
+    cr.translate(glideX, glideY);
+    cr.scale(1.18 * scale, 1.18 * scale);
+    cr.rotate(bank);
+
+    const lum = night ? 0.68 : (subdued ? 0.88 : 1.0);
+    const bodyCol = isGolden ? [1.0 * lum, 0.96 * lum, 0.90 * lum] : [0.97 * lum, 0.98 * lum, 1.0 * lum];
+    const shadeCol = [0.76 * lum, 0.82 * lum, 0.90 * lum];
+    const tipCol = [0.16 * lum, 0.22 * lum, 0.34 * lum];
+
+    // Far (right/upper) wing arching out
+    cr.setSourceRGBA(bodyCol[0], bodyCol[1], bodyCol[2], 0.96);
+    cr.newPath();
+    cr.moveTo(1.5, -2.2);
+    cr.curveTo(5.5, -9.5, 11.5, -11.2, 18.5, -8.5);
+    cr.curveTo(14.5, -6.5, 9.5, -4.8, 3.8, -0.8);
+    cr.closePath();
+    cr.fill();
+
+    // Far wing dark slate-black primary wingtip
+    cr.setSourceRGBA(tipCol[0], tipCol[1], tipCol[2], 0.96);
+    cr.newPath();
+    cr.moveTo(11.2, -9.8);
+    cr.curveTo(14.2, -10.2, 16.8, -9.4, 18.8, -8.4);
+    cr.lineTo(15.2, -7.2);
+    cr.curveTo(13.2, -8.0, 11.8, -8.6, 10.5, -8.4);
+    cr.closePath();
+    cr.fill();
+
+    // Near (left/lower) wing sweeping downward in perspective
+    cr.setSourceRGBA(bodyCol[0], bodyCol[1], bodyCol[2], 0.98);
+    cr.newPath();
+    cr.moveTo(-1.2, -0.8);
+    cr.curveTo(-8.5, -1.8, -14.5, 2.2, -15.8, 9.8);
+    cr.curveTo(-11.2, 4.8, -5.8, 1.8, 1.2, 1.6);
+    cr.closePath();
+    cr.fill();
+
+    // Under-wing feather shading & primary feather ticks
+    cr.setSourceRGBA(shadeCol[0], shadeCol[1], shadeCol[2], 0.85);
+    cr.newPath();
+    cr.moveTo(-1.0, 0.4);
+    cr.curveTo(-6.5, 0.5, -11.2, 3.5, -14.2, 7.8);
+    cr.curveTo(-10.5, 4.2, -5.5, 1.8, 1.2, 1.6);
+    cr.closePath();
+    cr.fill();
+
+    // Near wing dark slate-black primary wingtip
+    cr.setSourceRGBA(tipCol[0], tipCol[1], tipCol[2], 0.96);
+    cr.newPath();
+    cr.moveTo(-14.2, 3.5);
+    cr.curveTo(-15.4, 5.8, -15.9, 8.2, -15.8, 10.2);
+    cr.lineTo(-12.6, 6.2);
+    cr.closePath();
+    cr.fill();
+
+    // Streamlined gull body & fanned white tail
+    cr.setSourceRGBA(bodyCol[0], bodyCol[1], bodyCol[2], 0.98);
+    cr.newPath();
+    cr.moveTo(-3.8, -2.2);
+    cr.curveTo(-0.5, -3.5, 4.2, -1.2, 7.5, 2.5);
+    cr.lineTo(5.2, 3.6);
+    cr.curveTo(1.5, 1.8, -2.2, 0.5, -3.8, -2.2);
+    cr.closePath();
+    cr.fill();
+
+    // Tucked yellow feet
+    cr.setSourceRGBA(0.95 * lum, 0.68 * lum, 0.18 * lum, 0.95);
+    cr.setLineWidth(0.75);
+    cr.newPath();
+    cr.moveTo(4.2, 2.2);
+    cr.lineTo(5.8, 3.8);
+    cr.stroke();
+
+    // Yellow hooked bill & dark eye
+    cr.setSourceRGBA(0.96 * lum, 0.72 * lum, 0.16 * lum, 0.98);
+    cr.newPath();
+    cr.moveTo(-3.6, -2.2);
+    cr.lineTo(-6.2, -1.4);
+    cr.lineTo(-3.4, -1.1);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(0.10, 0.12, 0.16, 0.95);
+    cr.newPath();
+    cr.arc(-2.8, -1.9, 0.42, 0, TWO_PI);
+    cr.fill();
+
+    cr.restore();
+}
+
+function drawSanFranciscoFloor(cr, width, height, scale, time, night = false, twilight = 0, isWinter = false, subdued = false) {
+    const sh = sceneHeight(width, height);
+    const groundOffset = height - sh;
+    const floorTop = groundOffset + 0.685 * sh;
+    const isGolden = !night && !subdued && twilight >= 0.15;
+    const horizonY = floorTop + 8.0 * scale;
+
+    // 1. Distant Marin / San Francisco Horizon Hills & City Skyline Silhouette (along horizonY)
+    const hillCol = isWinter
+        ? (night ? [0.52, 0.62, 0.76, 0.58] : [0.84, 0.90, 0.97, 0.74])
+        : (night
+            ? [0.12, 0.18, 0.28, 0.68]
+            : (subdued
+                ? [0.58, 0.62, 0.65, 0.58]
+                : (isGolden ? [0.90, 0.72, 0.48, 0.68] : [0.88, 0.78, 0.56, 0.64])));
+    cr.setSourceRGBA(...hillCol);
+    // Left distant horizon hills (u = 0.00 .. 0.44)
+    cr.newPath();
+    cr.moveTo(0, horizonY);
+    cr.curveTo(width * 0.08, horizonY - 11 * scale, width * 0.18, horizonY - 13 * scale, width * 0.28, horizonY - 6 * scale);
+    cr.curveTo(width * 0.35, horizonY - 3 * scale, width * 0.40, horizonY - 1 * scale, width * 0.45, horizonY);
+    cr.closePath();
+    cr.fill();
+
+    // Right distant headland hills behind the far tower (u = 0.68 .. 1.00)
+    cr.newPath();
+    cr.moveTo(width * 0.68, horizonY);
+    cr.curveTo(width * 0.77, horizonY - 9 * scale, width * 0.89, horizonY - 12 * scale, width, horizonY - 5 * scale);
+    cr.lineTo(width, horizonY);
+    cr.closePath();
+    cr.fill();
+
+    // Distant stepped city skyline blocks along the left & right shores
+    const cityCol = isWinter
+        ? (night ? [0.38, 0.48, 0.62, 0.65] : [0.68, 0.76, 0.86, 0.70])
+        : (night
+            ? [0.16, 0.22, 0.34, 0.78]
+            : (subdued ? [0.48, 0.52, 0.56, 0.62] : [0.82, 0.64, 0.42, 0.72]));
+    cr.setSourceRGBA(...cityCol);
+    const buildings = [
+        [0.07, 3.5, 4.5], [0.095, 2.8, 6.2], [0.12, 3.2, 4.0], [0.145, 2.5, 5.5],
+        [0.18, 3.0, 5.0], [0.20, 2.6, 7.8], [0.22, 2.8, 6.4], [0.33, 3.4, 4.8],
+        [0.355, 3.0, 5.6], [0.38, 2.6, 4.2], [0.405, 3.2, 3.6],
+        [0.81, 3.2, 4.5], [0.835, 2.8, 6.5], [0.86, 3.4, 5.2], [0.89, 3.0, 6.8], [0.92, 3.5, 4.2],
+    ];
+    for (const [bu, bw, bh] of buildings) {
+        cr.rectangle(width * bu, horizonY - bh * scale, bw * scale, bh * scale);
+    }
+    cr.fill();
+
+    // Tiny warm city lights on the distant shoreline at night
+    if (night) {
+        cr.setSourceRGBA(1.0, 0.88, 0.48, 0.78);
+        for (const [bu, bw, bh] of buildings) {
+            cr.rectangle(width * bu + 0.7 * scale, horizonY - (bh - 1.2) * scale, 0.9 * scale, 1.1 * scale);
+        }
+        cr.fill();
+    }
+
+    // 2. San Francisco Bay Water (horizonY .. height)
+    const bayG = new Cairo.LinearGradient(0, horizonY - 2 * scale, 0, height);
+    if (isWinter) {
+        bayG.addColorStopRGBA(0.00, 0.30, 0.54, 0.74, night ? 0.58 : 0.64);
+        bayG.addColorStopRGBA(0.35, 0.22, 0.46, 0.68, night ? 0.64 : 0.72);
+        bayG.addColorStopRGBA(1.00, 0.15, 0.36, 0.58, night ? 0.72 : 0.78);
+    } else if (night) {
+        bayG.addColorStopRGBA(0.00, 0.06, 0.17, 0.32, 0.68);
+        bayG.addColorStopRGBA(0.38, 0.05, 0.14, 0.27, 0.74);
+        bayG.addColorStopRGBA(1.00, 0.03, 0.10, 0.21, 0.82);
+    } else if (subdued) {
+        bayG.addColorStopRGBA(0.00, 0.32, 0.50, 0.64, 0.62);
+        bayG.addColorStopRGBA(0.38, 0.24, 0.43, 0.58, 0.70);
+        bayG.addColorStopRGBA(1.00, 0.18, 0.35, 0.50, 0.76);
+    } else if (isGolden) {
+        bayG.addColorStopRGBA(0.00, 0.38, 0.66, 0.82, 0.64);
+        bayG.addColorStopRGBA(0.35, 0.25, 0.56, 0.78, 0.72);
+        bayG.addColorStopRGBA(1.00, 0.16, 0.46, 0.72, 0.78);
+    } else {
+        bayG.addColorStopRGBA(0.00, 0.34, 0.70, 0.90, 0.64);
+        bayG.addColorStopRGBA(0.35, 0.22, 0.60, 0.85, 0.72);
+        bayG.addColorStopRGBA(1.00, 0.14, 0.50, 0.78, 0.78);
+    }
+    cr.setSource(bayG);
+    cr.rectangle(0, horizonY, width, height - horizonY);
+    cr.fill();
+
+    // Warm golden shoreline reflection ribbon along the distant horizon edge
+    const shoreSheen = new Cairo.LinearGradient(0, horizonY, 0, horizonY + 5.5 * scale);
+    if (night) {
+        shoreSheen.addColorStopRGBA(0, 0.55, 0.72, 0.95, 0.26);
+        shoreSheen.addColorStopRGBA(1, 0.55, 0.72, 0.95, 0.0);
+    } else if (subdued) {
+        shoreSheen.addColorStopRGBA(0, 0.82, 0.88, 0.94, 0.28);
+        shoreSheen.addColorStopRGBA(1, 0.82, 0.88, 0.94, 0.0);
+    } else {
+        shoreSheen.addColorStopRGBA(0, 1.0, 0.90, 0.65, 0.42);
+        shoreSheen.addColorStopRGBA(1, 1.0, 0.90, 0.65, 0.0);
+    }
+    cr.setSource(shoreSheen);
+    cr.rectangle(0, horizonY, width, 5.5 * scale);
+    cr.fill();
+
+    // Stylized zigzagging deep-blue water reflection band beneath the Golden Gate Bridge & Far Tower
+    const refR = night ? 0.02 : (subdued ? 0.14 : 0.10);
+    const refG = night ? 0.07 : (subdued ? 0.28 : 0.38);
+    const refB = night ? 0.16 : (subdued ? 0.42 : 0.68);
+    cr.setSourceRGBA(refR, refG, refB, night ? 0.44 : 0.36);
+    for (let k = 0; k < 22; k++) {
+        const f = k / 21;
+        const ry = horizonY + (10 + f * (height - horizonY - 14)) * scale;
+        const rx = width * (0.748 - f * 0.12) + Math.sin(k * 1.9 + time * 1.2) * 3.5 * scale;
+        const rw = (7.5 + Math.sin(f * Math.PI) * 17.0 + (k % 3) * 3.0) * scale;
+        const rh = 2.6 * scale;
+        cr.newPath();
+        cr.moveTo(rx - rw, ry);
+        cr.lineTo(rx + rw, ry - 0.6 * scale);
+        cr.lineTo(rx + rw * 0.75, ry + rh);
+        cr.lineTo(rx - rw * 0.85, ry + rh);
+        cr.closePath();
+        cr.fill();
+    }
+
+    // Crisp horizontal bay water shimmer lines
+    const glintCol = night ? [0.58, 0.76, 0.96, 0.22] : (subdued ? [0.82, 0.90, 0.96, 0.26] : [0.76, 0.93, 1.0, 0.38]);
+    cr.setSourceRGBA(...glintCol);
+    cr.setLineWidth(0.75 * scale);
+    const glints = [
+        [0.08, 12, 16], [0.18, 18, 20], [0.14, 30, 14], [0.36, 22, 18],
+        [0.48, 14, 20], [0.60, 22, 16], [0.44, 38, 22], [0.52, 58, 26],
+        [0.64, 72, 20], [0.46, 92, 24], [0.58, 112, 28], [0.70, 125, 22],
+        [0.86, 28, 16], [0.90, 48, 18], [0.83, 86, 20], [0.89, 108, 16],
+    ];
+    for (const [gx, gyOff, gw] of glints) {
+        const drift = Math.sin(time * 0.9 + gx * 12) * 2.0 * scale;
+        const gy = horizonY + gyOff * scale;
+        if (gy < height - 4 * scale) {
+            cr.newPath();
+            cr.moveTo(width * gx - gw * scale + drift, gy);
+            cr.lineTo(width * gx + gw * scale + drift, gy);
+            cr.stroke();
+        }
+    }
+
+    // 3. The Golden Gate Bridge (3/4 Perspective Hero Centerpiece aligned with UI Alleys 1 & 3)
+    const orSun = night
+        ? [0.66, 0.20, 0.13]
+        : (subdued ? [0.78, 0.25, 0.16] : (isGolden ? [0.95, 0.30, 0.14] : [0.91, 0.24, 0.12]));
+    const orMid = night
+        ? [0.48, 0.14, 0.09]
+        : (subdued ? [0.60, 0.18, 0.11] : [0.74, 0.17, 0.09]);
+    const orDark = night
+        ? [0.32, 0.09, 0.06]
+        : (subdued ? [0.44, 0.12, 0.08] : [0.54, 0.11, 0.06]);
+
+    // Near Tower in Alley 1 (x = 0.278w, between Today/Sun and Thu/Mon)
+    const nearX = width * 0.278;
+    const nearLeftX = nearX - 8.8 * scale;
+    const nearRightX = nearX + 8.8 * scale;
+    const nearTopY = floorTop - 42 * scale;
+    const nearLeftTopY = nearTopY + 2.8 * scale;
+    const nearRightTopY = nearTopY - 1.2 * scale;
+    const nearBaseY = height - 4 * scale;
+
+    // Far Tower in Alley 3 (x = 0.748w, between Fri/Tue and Sat/Wed)
+    const farX = width * 0.748;
+    const farLeftX = farX - 3.6 * scale;
+    const farRightX = farX + 3.6 * scale;
+    const farTopY = floorTop - 18 * scale;
+    const farBaseY = horizonY + 12 * scale;
+
+    // Roadway deck centerline curve from bottom-left (u=0.08) through Near Tower (u=0.278) to Far Tower (u=0.748) and Anchorage (u=0.790)
+    const xStart = width * 0.08;
+    const xEnd = width * 0.790;
+    const deckYAtX = (xVal) => {
+        const u = (xVal - xStart) / (xEnd - xStart);
+        const linearY = (height - 14 * scale) + u * ((horizonY - 2 * scale) - (height - 14 * scale));
+        const camber = -Math.sin(Math.max(0, Math.min(1, u)) * Math.PI) * 5.2 * scale;
+        return linearY + camber;
+    };
+    const trussHAtX = (xVal) => {
+        const u = Math.max(0, Math.min(1, (xVal - xStart) / (xEnd - xStart)));
+        return (10.2 * (1 - u) + 1.8 * u) * scale;
+    };
+    const deckWidthAtX = (xVal) => {
+        const u = Math.max(0, Math.min(1, (xVal - xStart) / (xEnd - xStart)));
+        return (10.6 * (1 - u) + 2.4 * u) * scale;
+    };
+
+    // 3a. Far Anchorage Viaduct & Far Tower Concrete Island Pier
+    cr.setSourceRGBA(night ? 0.42 : 0.72, night ? 0.46 : 0.74, night ? 0.52 : 0.72, 0.92);
+    cr.rectangle(farX - 2 * scale, deckYAtX(farX), xEnd - farX + 2 * scale, horizonY + 5 * scale - deckYAtX(farX));
+    cr.fill();
+    cr.setSourceRGBA(night ? 0.18 : 0.34, night ? 0.22 : 0.42, night ? 0.30 : 0.52, 0.90);
+    cr.rectangle(farX + 1.8 * scale, deckYAtX(farX) + 1.5 * scale, 3.4 * scale, horizonY + 4 * scale - deckYAtX(farX));
+    cr.rectangle(farX + 7.2 * scale, deckYAtX(farX) + 1.5 * scale, 3.4 * scale, horizonY + 4 * scale - deckYAtX(farX));
+    cr.fill();
+
+    // Far tower sandy/concrete fender pier island
+    cr.setSourceRGBA(night ? 0.38 : 0.76, night ? 0.36 : 0.68, night ? 0.28 : 0.46, 0.94);
+    cr.newPath();
+    cr.moveTo(farX - 11 * scale, farBaseY + 1.5 * scale);
+    cr.curveTo(farX - 5 * scale, farBaseY - 2.0 * scale, farX + 5 * scale, farBaseY - 2.0 * scale, farX + 11 * scale, farBaseY + 1.5 * scale);
+    cr.closePath();
+    cr.fill();
+
+    // 3b. Far Tower (x = 0.748w)
+    const farDeckY = deckYAtX(farX);
+    // Sub-deck X-bracing on Far Tower
+    cr.setSourceRGBA(...orDark, 0.94);
+    cr.setLineWidth(0.85 * scale);
+    cr.newPath();
+    cr.moveTo(farLeftX, farDeckY + 2 * scale);
+    cr.lineTo(farRightX, farBaseY);
+    cr.moveTo(farRightX, farDeckY + 2 * scale);
+    cr.lineTo(farLeftX, farBaseY);
+    cr.moveTo(farLeftX, (farDeckY + farBaseY) * 0.5);
+    cr.lineTo(farRightX, (farDeckY + farBaseY) * 0.5);
+    cr.stroke();
+
+    // Far Tower twin legs + 3 horizontal portal cross-struts
+    cr.setSourceRGBA(...orMid, 0.96);
+    cr.rectangle(farLeftX - 1.1 * scale, farTopY + 1 * scale, 2.2 * scale, farBaseY - farTopY - 1 * scale);
+    cr.rectangle(farRightX - 1.1 * scale, farTopY, 2.2 * scale, farBaseY - farTopY);
+    for (const sf of [0.16, 0.42, 0.68]) {
+        const sy = farTopY + sf * (farDeckY - farTopY);
+        cr.rectangle(farLeftX, sy, farRightX - farLeftX, 2.2 * scale);
+    }
+    cr.fill();
+
+    // 3c. Back (West) Suspension Cable & Back Suspender Ropes
+    const evalBackCableY = (xVal) => {
+        if (xVal <= nearLeftX) {
+            const u = xVal / nearLeftX;
+            const y0 = floorTop - 2 * scale;
+            const y1 = nearLeftTopY;
+            return y0 + (y1 - y0) * u + Math.sin(u * Math.PI) * 5.0 * scale;
+        } else if (xVal <= farLeftX) {
+            const u = (xVal - nearLeftX) / (farLeftX - nearLeftX);
+            const p0 = nearLeftTopY;
+            const p2 = farTopY + 1.0 * scale;
+            const sagX = 0.65;
+            const sagY = deckYAtX(nearLeftX + sagX * (farLeftX - nearLeftX)) - 3.2 * scale;
+            const ctrlY = (sagY - 0.25 * p0 - 0.25 * p2) / 0.5;
+            const mt = 1 - u;
+            return mt * mt * p0 + 2 * mt * u * ctrlY + u * u * p2;
+        } else {
+            const u = Math.min(1, (xVal - farLeftX) / (xEnd - farLeftX));
+            const y0 = farTopY + 1.0 * scale;
+            const y1 = deckYAtX(xEnd);
+            return y0 + (y1 - y0) * u + Math.sin(u * Math.PI) * 2.0 * scale;
+        }
+    };
+
+    // Back vertical suspender ropes
+    cr.setSourceRGBA(...orDark, 0.78);
+    cr.setLineWidth(0.55 * scale);
+    cr.newPath();
+    for (let sx = width * 0.09; sx < xEnd - 4 * scale; sx += (sx < nearLeftX ? 11.0 : 8.2) * scale) {
+        if (Math.abs(sx - nearLeftX) < 4 * scale || Math.abs(sx - farLeftX) < 3 * scale)
+            continue;
+        const cyTop = evalBackCableY(sx);
+        const cyBot = deckYAtX(sx) - deckWidthAtX(sx) * 0.32;
+        if (cyBot > cyTop + 1 * scale) {
+            cr.moveTo(sx, cyTop);
+            cr.lineTo(sx, cyBot);
+        }
+    }
+    cr.stroke();
+
+    // Back main catenary cable
+    cr.setSourceRGBA(...orMid, 0.94);
+    cr.setLineWidth(1.35 * scale);
+    cr.newPath();
+    for (let sx = 0; sx <= xEnd; sx += 4 * scale) {
+        const cy = evalBackCableY(sx);
+        if (sx === 0) cr.moveTo(sx, cy);
+        else cr.lineTo(sx, cy);
+    }
+    cr.stroke();
+
+    // 3d. Near Tower Back-Left Leg, Sub-Deck X-Bracing & 4 Art Deco Perspective Portal Cross-Struts
+    const nearDeckY = deckYAtX(nearX);
+    // Concrete base fender under Near Tower
+    cr.setSourceRGBA(night ? 0.36 : 0.72, night ? 0.40 : 0.70, night ? 0.46 : 0.66, 0.95);
+    cr.rectangle(nearLeftX - 5 * scale, nearBaseY - 3.5 * scale, (nearRightX - nearLeftX) + 10 * scale, 6 * scale);
+    cr.fill();
+
+    // Sub-deck X-bracing between Near Tower legs
+    cr.setSourceRGBA(...orDark, 0.96);
+    cr.setLineWidth(1.8 * scale);
+    cr.newPath();
+    cr.moveTo(nearLeftX + 1 * scale, nearDeckY + 4 * scale);
+    cr.lineTo(nearRightX - 1 * scale, nearBaseY - 2 * scale);
+    cr.moveTo(nearRightX - 1 * scale, nearDeckY + 4 * scale);
+    cr.lineTo(nearLeftX + 1 * scale, nearBaseY - 2 * scale);
+    cr.moveTo(nearLeftX, (nearDeckY + nearBaseY) * 0.52);
+    cr.lineTo(nearRightX, (nearDeckY + nearBaseY) * 0.52);
+    cr.stroke();
+
+    // Near Tower Back-Left Leg (3D side face + sunlit front face + pointed Art Deco finial cap)
+    const legW = 4.5 * scale;
+    cr.setSourceRGBA(...orDark, 0.98);
+    cr.rectangle(nearLeftX - legW * 0.3, nearLeftTopY, legW * 1.15, nearBaseY - nearLeftTopY);
+    cr.fill();
+    cr.setSourceRGBA(...orSun, 0.98);
+    cr.rectangle(nearLeftX - legW * 0.5, nearLeftTopY, legW * 0.85, nearBaseY - nearLeftTopY);
+    // Pointed finial cap on Back-Left Leg
+    cr.newPath();
+    cr.moveTo(nearLeftX - legW * 0.45, nearLeftTopY);
+    cr.lineTo(nearLeftX, nearLeftTopY - 3.2 * scale);
+    cr.lineTo(nearLeftX + legW * 0.45, nearLeftTopY);
+    cr.closePath();
+    cr.fill();
+
+    // 4 Art Deco Portal Cross-Struts above the roadway deck (angled in 3D perspective + vertical ribbed fluting)
+    for (const [sf, shFrac] of [[0.06, 0.072], [0.29, 0.088], [0.54, 0.088], [0.80, 0.096]]) {
+        const syL = nearLeftTopY + sf * (nearDeckY - nearLeftTopY);
+        const syR = nearRightTopY + sf * (nearDeckY - nearRightTopY);
+        const shStrut = shFrac * (nearDeckY - nearTopY);
+
+        // Dark crimson 3D soffit / underside reveal of strut
+        cr.setSourceRGBA(...orDark, 0.98);
+        cr.newPath();
+        cr.moveTo(nearLeftX, syL);
+        cr.lineTo(nearRightX, syR);
+        cr.lineTo(nearRightX, syR + shStrut + 1.8 * scale);
+        cr.lineTo(nearLeftX, syL + shStrut + 1.8 * scale);
+        cr.closePath();
+        cr.fill();
+
+        // Sunlit International Orange front fascia of strut
+        cr.setSourceRGBA(...orSun, 0.98);
+        cr.newPath();
+        cr.moveTo(nearLeftX, syL);
+        cr.lineTo(nearRightX, syR);
+        cr.lineTo(nearRightX, syR + shStrut);
+        cr.lineTo(nearLeftX, syL + shStrut);
+        cr.closePath();
+        cr.fill();
+
+        // Art Deco vertical ribbed louvres inside strut
+        cr.setSourceRGBA(...orDark, 0.72);
+        cr.setLineWidth(0.65 * scale);
+        for (let uS = 0.16; uS <= 0.84; uS += 0.136) {
+            const rx = nearLeftX + uS * (nearRightX - nearLeftX);
+            const ry = syL + uS * (syR - syL);
+            cr.newPath();
+            cr.moveTo(rx, ry + 1.0 * scale);
+            cr.lineTo(rx, ry + shStrut - 0.8 * scale);
+            cr.stroke();
+        }
+        if (isWinter) {
+            cr.setSourceRGBA(0.95, 0.98, 1.0, 0.85);
+            cr.setLineWidth(1.1 * scale);
+            cr.newPath();
+            cr.moveTo(nearLeftX, syL);
+            cr.lineTo(nearRightX, syR);
+            cr.stroke();
+        }
+    }
+
+    // 3e. Roadway Deck & Under-Deck Warren Stiffening Truss (passes in front of Back-Left Leg and behind Front-Right Leg)
+    const stepsDeck = 36;
+
+    // Dark crimson back-truss shadow band beneath deck
+    cr.setSourceRGBA(...orDark, 0.88);
+    cr.newPath();
+    for (let i = 0; i <= stepsDeck; i++) {
+        const x = xStart + (i / stepsDeck) * (xEnd - xStart);
+        const y = deckYAtX(x);
+        if (i === 0) cr.moveTo(x, y);
+        else cr.lineTo(x, y);
+    }
+    for (let i = stepsDeck; i >= 0; i--) {
+        const x = xStart + (i / stepsDeck) * (xEnd - xStart);
+        const y = deckYAtX(x) + trussHAtX(x);
+        cr.lineTo(x, y);
+    }
+    cr.closePath();
+    cr.fill();
+
+    // Open diagonal Warren Truss web along the front face of the stiffening truss
+    cr.setSourceRGBA(...orSun, 0.96);
+    cr.setLineWidth(1.05 * scale);
+    cr.newPath();
+    let curX = xStart;
+    let zig = 0;
+    while (curX < xEnd) {
+        const stepW = Math.max(2.2 * scale, trussHAtX(curX) * 0.95);
+        const nextX = Math.min(xEnd, curX + stepW);
+        const yTop0 = deckYAtX(curX) + 1.2 * scale;
+        const yBot0 = deckYAtX(curX) + trussHAtX(curX);
+        const yTop1 = deckYAtX(nextX) + 1.2 * scale;
+        const yBot1 = deckYAtX(nextX) + trussHAtX(nextX);
+        cr.moveTo(curX, yTop0);
+        cr.lineTo(curX, yBot0);
+        if (zig % 2 === 0) {
+            cr.moveTo(curX, yBot0);
+            cr.lineTo(nextX, yTop1);
+        } else {
+            cr.moveTo(curX, yTop0);
+            cr.lineTo(nextX, yBot1);
+        }
+        curX = nextX;
+        zig++;
+    }
+    cr.stroke();
+
+    // Bottom truss chord line
+    cr.setSourceRGBA(...orSun, 0.96);
+    cr.setLineWidth(1.2 * scale);
+    cr.newPath();
+    for (let i = 0; i <= stepsDeck; i++) {
+        const x = xStart + (i / stepsDeck) * (xEnd - xStart);
+        const y = deckYAtX(x) + trussHAtX(x);
+        if (i === 0) cr.moveTo(x, y);
+        else cr.lineTo(x, y);
+    }
+    cr.stroke();
+
+    // 3/4 Perspective Asphalt Roadbed on top of the deck
+    cr.setSourceRGBA(night ? 0.12 : 0.22, night ? 0.14 : 0.23, night ? 0.18 : 0.26, 0.98);
+    cr.newPath();
+    for (let i = 0; i <= stepsDeck; i++) {
+        const x = xStart + (i / stepsDeck) * (xEnd - xStart);
+        const y = deckYAtX(x) - deckWidthAtX(x) * 0.42;
+        if (i === 0) cr.moveTo(x, y);
+        else cr.lineTo(x, y);
+    }
+    for (let i = stepsDeck; i >= 0; i--) {
+        const x = xStart + (i / stepsDeck) * (xEnd - xStart);
+        const y = deckYAtX(x) + 1.0 * scale;
+        cr.lineTo(x, y);
+    }
+    cr.closePath();
+    cr.fill();
+
+    // Tiny animated cars travelling across the Golden Gate roadway deck
+    for (let c = 0; c < 5; c++) {
+        const cProg = (((time * 0.045 + c * 0.21) % 1.0) + 1.0) % 1.0;
+        const cx = xStart + (0.08 + cProg * 0.82) * (xEnd - xStart);
+        const cy = deckYAtX(cx) - deckWidthAtX(cx) * 0.18;
+        const cScale = Math.max(0.35, 1.0 - cProg * 0.68) * scale;
+        if (night || subdued) {
+            cr.setSourceRGBA(1.0, 0.94, 0.68, 0.92);
+        } else {
+            cr.setSourceRGBA(0.92, 0.72, 0.64, 0.90);
+        }
+        cr.rectangle(cx - 2.2 * cScale, cy - 1.1 * cScale, 4.4 * cScale, 1.5 * cScale);
+        cr.fill();
+    }
+
+    // Upper International Orange deck fascia beam
+    cr.setSourceRGBA(...orSun, 0.98);
+    cr.setLineWidth(1.8 * scale);
+    cr.newPath();
+    for (let i = 0; i <= stepsDeck; i++) {
+        const x = xStart + (i / stepsDeck) * (xEnd - xStart);
+        const y = deckYAtX(x) + 0.8 * scale;
+        if (i === 0) cr.moveTo(x, y);
+        else cr.lineTo(x, y);
+    }
+    cr.stroke();
+
+    // 3f. Near Tower Front-Right Leg (drawn IN FRONT of the roadway deck for true 3D pass-through!)
+    cr.setSourceRGBA(...orDark, 0.98);
+    cr.rectangle(nearRightX - legW * 0.25, nearRightTopY, legW * 1.18, nearBaseY - nearRightTopY);
+    cr.fill();
+    cr.setSourceRGBA(...orSun, 0.99);
+    cr.rectangle(nearRightX - legW * 0.55, nearRightTopY, legW * 0.90, nearBaseY - nearRightTopY);
+    // Pointed Art Deco finial cap on Front-Right Leg
+    cr.newPath();
+    cr.moveTo(nearRightX - legW * 0.50, nearRightTopY);
+    cr.lineTo(nearRightX - legW * 0.05, nearRightTopY - 3.6 * scale);
+    cr.lineTo(nearRightX + legW * 0.40, nearRightTopY);
+    cr.closePath();
+    cr.fill();
+
+    // Warm aircraft warning beacons at the top of the towers at night or overcast/fog
+    if (night || subdued) {
+        for (const [bx, by, br] of [
+            [nearLeftX, nearLeftTopY - 2 * scale, 5.5 * scale],
+            [nearRightX, nearRightTopY - 2.5 * scale, 6.0 * scale],
+            [farLeftX, farTopY - 1 * scale, 3.8 * scale],
+            [farRightX, farTopY - 1 * scale, 3.8 * scale],
+        ]) {
+            const bg = new Cairo.RadialGradient(bx, by, 0.4 * scale, bx, by, br);
+            bg.addColorStopRGBA(0, 1.0, 0.42, 0.22, night ? 0.90 : 0.55);
+            bg.addColorStopRGBA(0.45, 0.95, 0.24, 0.12, night ? 0.42 : 0.22);
+            bg.addColorStopRGBA(1, 0.90, 0.18, 0.08, 0.0);
+            cr.setSource(bg);
+            cr.newPath();
+            cr.arc(bx, by, br, 0, TWO_PI);
+            cr.fill();
+        }
+    }
+
+    // 3g. Front (East) Main Suspension Cable & Front Suspender Ropes (with red cable-band clamps)
+    const evalFrontCableY = (xVal) => {
+        if (xVal <= nearRightX) {
+            const u = xVal / nearRightX;
+            const y0 = floorTop + 8 * scale;
+            const y1 = nearRightTopY;
+            return y0 + (y1 - y0) * u + Math.sin(u * Math.PI) * 5.8 * scale;
+        } else if (xVal <= farRightX) {
+            const u = (xVal - nearRightX) / (farRightX - nearRightX);
+            const p0 = nearRightTopY;
+            const p2 = farTopY;
+            const sagX = 0.65;
+            const sagY = deckYAtX(nearRightX + sagX * (farRightX - nearRightX)) - 0.8 * scale;
+            const ctrlY = (sagY - 0.25 * p0 - 0.25 * p2) / 0.5;
+            const mt = 1 - u;
+            return mt * mt * p0 + 2 * mt * u * ctrlY + u * u * p2;
+        } else {
+            const u = Math.min(1, (xVal - farRightX) / (xEnd - farRightX));
+            const y0 = farTopY;
+            const y1 = deckYAtX(xEnd);
+            return y0 + (y1 - y0) * u + Math.sin(u * Math.PI) * 2.0 * scale;
+        }
+    };
+
+    // Front vertical suspender ropes + cable-band clamps
+    cr.setLineWidth(0.72 * scale);
+    for (let sx = width * 0.03; sx < xEnd - 4 * scale; sx += (sx < nearRightX ? 11.0 : 8.2) * scale) {
+        if (Math.abs(sx - nearRightX) < 4.5 * scale || Math.abs(sx - farRightX) < 3 * scale)
+            continue;
+        const cyTop = evalFrontCableY(sx);
+        const cyBot = sx < width * 0.12
+            ? height - 10 * scale
+            : deckYAtX(sx) + 0.6 * scale;
+        if (cyBot > cyTop + 1 * scale) {
+            cr.setSourceRGBA(...orSun, 0.90);
+            cr.newPath();
+            cr.moveTo(sx, cyTop);
+            cr.lineTo(sx, cyBot);
+            cr.stroke();
+
+            // Cable-band clamp ring on main cable
+            cr.setSourceRGBA(...orDark, 0.95);
+            cr.newPath();
+            cr.arc(sx, cyTop, 1.15 * scale, 0, TWO_PI);
+            cr.fill();
+        }
+    }
+
+    // Front main catenary cable
+    cr.setSourceRGBA(...orSun, 0.99);
+    cr.setLineWidth(1.75 * scale);
+    cr.newPath();
+    for (let sx = 0; sx <= xEnd; sx += 4 * scale) {
+        const cy = evalFrontCableY(sx);
+        if (sx === 0) cr.moveTo(sx, cy);
+        else cr.lineTo(sx, cy);
+    }
+    cr.stroke();
+
+    // 4. Two White Bay Sailboats on the open water (Alley 2 & Right Bay, clear of all forecast text)
+    drawSanFranciscoSailboat(cr, width * 0.505, height - 22 * scale, scale, 1.15, time, night, isGolden, subdued);
+    drawSanFranciscoSailboat(cr, width * 0.942, height - 56 * scale, scale, 0.90, time + 1.7, night, isGolden, subdued);
+
+    // 5. Soaring Western Gull in Alley 2 above the catenary sag (clear of hourly labels & daily tiles)
+    drawWesternGull(cr, width * 0.520, floorTop - 20 * scale, scale * 0.95, time, night, isGolden, subdued);
+
+    // 6. Foreground Left Coastal Bluff & Multi-Lobed Botanical Cypress / Eucalyptus Canopy Clusters
+    const folDeep = isWinter
+        ? (night ? [0.09, 0.17, 0.20] : [0.18, 0.30, 0.30])
+        : (night ? [0.08, 0.16, 0.11] : (subdued ? [0.18, 0.30, 0.16] : [0.21, 0.36, 0.12]));
+    const folDark = isWinter
+        ? (night ? [0.14, 0.24, 0.27] : [0.26, 0.40, 0.38])
+        : (night ? [0.12, 0.24, 0.16] : (subdued ? [0.25, 0.40, 0.20] : [0.29, 0.48, 0.16]));
+    const folMid = isWinter
+        ? (night ? [0.20, 0.32, 0.36] : [0.36, 0.52, 0.48])
+        : (night ? [0.18, 0.34, 0.22] : (subdued ? [0.34, 0.52, 0.26] : [0.40, 0.62, 0.21]));
+    const folHighlight = isWinter
+        ? (night ? [0.74, 0.84, 0.94] : [0.94, 0.98, 1.00])
+        : (night ? [0.28, 0.48, 0.30] : (subdued ? [0.48, 0.66, 0.34] : [0.68, 0.80, 0.26]));
+
+    // Helper to paint a scalloped multi-lobe botanical tree crown cluster (matching reference illustration)
+    const drawBotanicalCluster = (cx, cy, rBase, seed) => {
+        const subLobes = [
+            [-0.48,  0.12, 0.68],
+            [-0.22, -0.34, 0.74],
+            [ 0.18, -0.38, 0.72],
+            [ 0.48,  0.04, 0.66],
+            [ 0.00,  0.18, 0.82],
+        ];
+        // 1. Deep shadow under-canopy
+        cr.setSourceRGBA(...folDeep, 0.98);
+        for (const [dx, dy, sr] of subLobes) {
+            cr.newPath();
+            cr.arc(cx + dx * rBase, cy + (dy + 0.10) * rBase, sr * rBase * 1.03, 0, TWO_PI);
+            cr.fill();
+        }
+        // 2. Main olive-emerald canopy body
+        cr.setSourceRGBA(...folDark, 0.98);
+        for (const [dx, dy, sr] of subLobes) {
+            cr.newPath();
+            cr.arc(cx + dx * rBase, cy + dy * rBase, sr * rBase, 0, TWO_PI);
+            cr.fill();
+        }
+        // 3. Upper-left mid-green sunlit crown lobes
+        cr.setSourceRGBA(...folMid, 0.97);
+        for (const [dx, dy, sr] of subLobes.slice(0, 4)) {
+            cr.newPath();
+            cr.arc(cx + (dx - 0.05) * rBase, cy + (dy - 0.08) * rBase, sr * rBase * 0.86, 0, TWO_PI);
+            cr.fill();
+        }
+        // 4. Sunlit chartreuse-lime (or winter snow/frost) rim crescents & oval leaf-cluster dapples
+        cr.setSourceRGBA(...folHighlight, isWinter ? 0.90 : 0.86);
+        for (const [dx, dy, sr] of [subLobes[1], subLobes[2]]) {
+            const lx = cx + (dx - 0.06) * rBase;
+            const ly = cy + (dy - 0.14) * rBase;
+            const lr = sr * rBase * 0.62;
+            cr.newPath();
+            cr.arc(lx, ly, lr, Math.PI * 1.05, Math.PI * 1.95);
+            cr.curveTo(lx + lr * 0.3, ly - lr * 0.35, lx - lr * 0.3, ly - lr * 0.35, lx - Math.cos(0.05 * Math.PI) * lr, ly - Math.sin(0.05 * Math.PI) * lr);
+            cr.closePath();
+            cr.fill();
+        }
+        for (const [ox, oy, rx, ry, rot] of [
+            [-0.28, -0.36, 0.16, 0.09, -0.35],
+            [-0.04, -0.44, 0.14, 0.08, -0.15],
+            [ 0.22, -0.32, 0.15, 0.08,  0.25],
+            [-0.42, -0.05, 0.13, 0.07, -0.50],
+            [ 0.06, -0.12, 0.12, 0.07,  0.10],
+        ]) {
+            cr.save();
+            cr.translate(cx + ox * rBase, cy + oy * rBase);
+            cr.rotate(rot + (seed % 2) * 0.15);
+            cr.scale(rx * rBase, ry * rBase);
+            cr.newPath();
+            cr.arc(0, 0, 1.0, 0, TWO_PI);
+            cr.fill();
+            cr.restore();
+        }
+        // 5. Subtle dark interior branch/foliage crease accents (matching reference image)
+        cr.setSourceRGBA(...folDeep, 0.65);
+        for (const [cxOff, cyOff, cw, ch, cRot] of [
+            [-0.18, 0.14, 0.22, 0.07, 0.2],
+            [ 0.20, 0.08, 0.18, 0.06, -0.25],
+        ]) {
+            cr.save();
+            cr.translate(cx + cxOff * rBase, cy + cyOff * rBase);
+            cr.rotate(cRot);
+            cr.scale(cw * rBase, ch * rBase);
+            cr.newPath();
+            cr.arc(0, 0, 1.0, 0, TWO_PI);
+            cr.fill();
+            cr.restore();
+        }
+    };
+
+    const clusters = [
+        [width * 0.01, height - 48 * scale, 26 * scale, 1],
+        [width * 0.08, height - 28 * scale, 28 * scale, 2],
+        [width * 0.02, height -  6 * scale, 32 * scale, 3],
+        [width * 0.16, height - 12 * scale, 27 * scale, 4],
+        [width * 0.25, height -  2 * scale, 25 * scale, 5],
+        [width * 0.34, height +  7 * scale, 20 * scale, 6],
+    ];
+    for (const [cx, cy, rB, sd] of clusters) {
+        drawBotanicalCluster(cx, cy, rB, sd);
+    }
+}
+
+/* Scene-aware ground mist & advection fog banks when scene === 'fog' */
+function drawSceneFogOverlay(cr, width, height, scale, time, night, isWinter, floorId) {
+    const sh = sceneHeight(width, height);
+    const groundOffset = height - sh;
+    const floorTop = groundOffset + 0.685 * sh;
+    const mistRgb = night
+        ? (isWinter ? [0.52, 0.62, 0.76] : [0.44, 0.50, 0.60])
+        : (isWinter ? [0.90, 0.94, 0.99] : [0.86, 0.89, 0.92]);
+    const darkMistRgb = night ? [0.22, 0.27, 0.35] : [0.68, 0.73, 0.78];
+
+    // Soft atmospheric horizon fog veil blending the sky into the ground scene
+    const veilTop = floorId === 'S2' || floorId === 'F1'
+        ? floorTop - 48 * scale
+        : floorTop - 24 * scale;
+    const veilBot = height;
+    const vg = new Cairo.LinearGradient(0, veilTop, 0, veilBot);
+    vg.addColorStopRGBA(0.00, mistRgb[0], mistRgb[1], mistRgb[2], 0.0);
+    vg.addColorStopRGBA(0.38, mistRgb[0], mistRgb[1], mistRgb[2], night ? 0.24 : 0.32);
+    vg.addColorStopRGBA(0.72, mistRgb[0], mistRgb[1], mistRgb[2], night ? 0.18 : 0.24);
+    vg.addColorStopRGBA(1.00, mistRgb[0], mistRgb[1], mistRgb[2], night ? 0.08 : 0.12);
+    cr.setSource(vg);
+    cr.rectangle(0, veilTop, width, veilBot - veilTop);
+    cr.fill();
+
+    // Rolling advection fog banks drifting across the landscape/strait/valley
+    const bands = floorId === 'F1' ? [
+        [0.28, floorTop - 16 * scale, 0.52, 22 * scale,  12, 0.34, true],
+        [0.66, floorTop -  4 * scale, 0.58, 26 * scale, -10, 0.36, true],
+        [0.42, floorTop + 18 * scale, 0.62, 24 * scale,  14, 0.28, false],
+        [0.78, floorTop + 42 * scale, 0.48, 20 * scale,  -9, 0.24, true],
+    ] : floorId === 'S2' ? [
+        [0.24, floorTop - 32 * scale, 0.55, 24 * scale,  10, 0.34, true],
+        [0.72, floorTop - 18 * scale, 0.58, 26 * scale, -11, 0.36, true],
+        [0.46, floorTop +  8 * scale, 0.64, 24 * scale,  13, 0.32, false],
+        [0.54, floorTop + 36 * scale, 0.52, 20 * scale,  -8, 0.24, true],
+    ] : [
+        [0.26, floorTop -  6 * scale, 0.56, 22 * scale,  11, 0.32, true],
+        [0.74, floorTop + 10 * scale, 0.58, 24 * scale, -10, 0.34, true],
+        [0.45, floorTop + 32 * scale, 0.62, 22 * scale,  12, 0.26, false],
+        [0.62, floorTop + 58 * scale, 0.50, 18 * scale,  -9, 0.22, true],
+    ];
+
+    for (let i = 0; i < bands.length; i++) {
+        const [u0, cy, wFrac, hh, spd, baseA, isLit] = bands[i];
+        const drift = Math.sin(time * 0.45 + i * 1.7) * (spd * scale);
+        const cx = width * u0 + drift;
+        const rgb = isLit ? mistRgb : darkMistRgb;
+        const alpha = (night ? baseA * 0.78 : baseA);
+        drawSoftFogBand(cr, cx, cy, width * wFrac, hh, rgb, alpha);
+    }
+}
+
 function drawSceneFloor(cr, sky, width, height, scale, dt, time, scene, night, temp = null, twilight = 0, floorId = null) {
     const isWinter = scene === 'snow' || scene === 'sleet'
         || (temp !== null && temp !== undefined && Number.isFinite(temp) && temp <= 0);
     const subdued = scene !== 'sun' && scene !== 'clear' && scene !== 'moon';
     if (floorId === 'S2')
         drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter, subdued);
+    else if (floorId === 'F1')
+        drawSanFranciscoFloor(cr, width, height, scale, time, night, twilight, isWinter, subdued);
     else if (floorId === 'T3')
         drawStormFrogsFloor(cr, width, height, scale, time, night, isWinter);
     else if (floorId === 'K1')
-        drawKoiPond(cr, sky, width, height, scale, dt, time, night, isWinter);
+        drawKoiPond(cr, sky, width, height, scale, dt, time, night, isWinter, subdued);
     else if (floorId === 'C1')
         drawClearHillsFloor(cr, width, height, scale, time, subdued, night, isWinter);
     else if (floorId === 'C2')
-        drawClearBeachFloor(cr, width, height, scale, time, night, twilight, isWinter);
+        drawClearBeachFloor(cr, width, height, scale, time, night, twilight, isWinter, subdued);
+    if (scene === 'fog' && floorId)
+        drawSceneFogOverlay(cr, width, height, scale, time, night, isWinter, floorId);
 }
 
 function drawLightning(cr, width, height, scale, time) {
@@ -6320,10 +7241,11 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
     const noon = noonOf(scene, night, solar);
     const scale = sh / 420;
 
+    const hasFloor = Boolean(floor && resolveFloorScene(scene, night, temp, floorScene));
     const key = `${scene}|${night ? 'n' : 'd'}|${Number(glow).toFixed(3)}`
         + `|${Number.isFinite(solar) ? solar.toFixed(3) : '-'}|`
         + `${phase === null ? '-' : Number(phase).toFixed(4)}|${rw}x${rh}`
-        + `|${quiet ? 'q' : 'a'}`;
+        + `|${quiet ? 'q' : 'a'}|${hasFloor ? 'f' : 'n'}`;
     if (!sky.cache || sky.cacheKey !== key) {
         const reuse = sky.cache
             && sky.cache.getWidth() === rw && sky.cache.getHeight() === rh;
@@ -6337,7 +7259,7 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
         sc.setOperator(Cairo.Operator.OVER);
         drawBackdrop(sc, rh, skyStops(scene, night, glow, solar));
         if (scene === 'fog')
-            drawFogHills(sc, rw, rh, night);
+            drawFogHills(sc, rw, rh, night, !hasFloor);
         sc.$dispose();
         surface.flush();
         sky.cache = surface;

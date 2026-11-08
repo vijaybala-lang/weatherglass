@@ -207,11 +207,12 @@ bottom of the sky backdrop</description>
         <choice value="chalet"/>
         <choice value="koi"/>
         <choice value="frogs"/>
+        <choice value="sf"/>
       </choices>
       <default>'auto'</default>
       <summary>Ground scene to render along the bottom of the sky</summary>
       <description>auto matches the current weather condition across all
-temperatures; hills, beach, chalet, koi, and frogs pin a specific
+temperatures; hills, beach, chalet, koi, frogs, and sf pin a specific
 ground landscape across all weather conditions</description>
     </key>
 
