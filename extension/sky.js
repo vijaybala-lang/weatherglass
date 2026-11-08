@@ -3621,180 +3621,210 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter 
         return mt * mt * mt * y0 + 3 * mt * mt * u * y1 + 3 * mt * u * u * y2 + u * u * u * y3;
     };
 
-    // 0. High Alpine Mountain Range Rising Behind the Chalet to the Clouds
-    //    Continuous multi-peak massif grounded directly on Hill 1's crest (zero mid-air gaps,
-    //    zero overlapping triangle seams, and zero bleed-through below Hill 1).
-    const yMtnTop = groundOffset + 0.24 * sh;
+    const px = (u) => width * u;
+    const py = (vf) => groundOffset + vf * sh;
+
+    // 0. Authentic Swiss Alps Panorama (Three Distinct Iconic Swiss Peak Profiles):
+    //    - Left (u = 0.00..0.35):   Mönch / Breithorn — broad, smooth rounded snow dome & glacial saddle
+    //    - Center (u = 0.35..0.62): The Matterhorn (Zermatt profile) — sweeping concave Zmutt ridge,
+    //                               tilted chisel summit with overhang hook, and crooked Hörnli arête
+    //    - Right (u = 0.62..1.00):  The Eiger / Dufourspitze — broad, flat-crowned stepped rock massif
+    //                               with rugged cliff shoulders rising behind the chalet
+    const yMtnTop = py(0.225);
     const yMtnBase = floorTop + 22 * scale;
 
-    // Multi-stepped Alpine massif skyline profile (u, vf):
-    // - Western Peak (Peak 1):     u=0.19, vf=0.36
-    // - Glacial Saddle (Col 1):    u=0.33, vf=0.50
-    // - Main Alpine Horn (Peak 2): u=0.53, vf=0.24 (soaring into the clouds behind the chalet valley)
-    // - High Saddle (Col 2):       u=0.65, vf=0.43
-    // - Chalet Peak (Peak 3):      u=0.74, vf=0.32 (dramatic Alpine peak directly behind the chalet house)
-    // - Eastern Shoulder:          u=0.88, vf=0.46
-    const skyRidge = [
-        [0.00, 0.55],
-        [0.05, 0.49],
-        [0.09, 0.45],
-        [0.14, 0.39],
-        [0.19, 0.36], // Peak 1 (Western Alpine Peak)
-        [0.23, 0.40],
-        [0.28, 0.46],
-        [0.33, 0.50], // Col 1
-        [0.38, 0.45],
-        [0.42, 0.38],
-        [0.46, 0.33],
-        [0.50, 0.27],
-        [0.53, 0.24], // Peak 2 (Main Matterhorn-style Summit soaring to the clouds)
-        [0.56, 0.29],
-        [0.60, 0.37],
-        [0.65, 0.43], // Col 2 (High Glacial Saddle)
-        [0.69, 0.38],
-        [0.71, 0.35],
-        [0.74, 0.32], // Peak 3 (Chalet Backdrop Peak)
-        [0.78, 0.36],
-        [0.83, 0.42],
-        [0.88, 0.46], // Eastern rocky shoulder
-        [0.94, 0.51],
-        [1.00, 0.56],
-    ].map(([u, vf]) => [width * u, groundOffset + vf * sh]);
+    const traceSwissSkyline = () => {
+        cr.moveTo(px(0.00), py(0.51));
+        // 1. Mönch / Breithorn: Smooth, broad rounded snow dome (cubic Bezier arch, no pointed spike)
+        cr.curveTo(px(0.06), py(0.44), px(0.11), py(0.385), px(0.175), py(0.380));
+        cr.curveTo(px(0.235), py(0.376), px(0.285), py(0.425), px(0.350), py(0.475)); // Col 1 (Theodulpass)
 
-    // 0a. Unified sunlit mountain massif bounded below by Hill 1's exact ridge curve
+        // 2. The Matterhorn: Sweeping concave Zmutt ridge steepening up to the hooked chisel summit
+        cr.lineTo(px(0.380), py(0.445)); // Lower Zmutt rock step
+        cr.curveTo(px(0.420), py(0.395), px(0.455), py(0.315), px(0.482), py(0.236)); // Concave West wall
+        cr.lineTo(px(0.496), py(0.226)); // Swiss Summit (highest point)
+        cr.lineTo(px(0.510), py(0.234)); // Italian/East Summit shoulder (chisel top)
+        cr.lineTo(px(0.506), py(0.252)); // Signature overhanging hook notch on upper East Face
+        cr.lineTo(px(0.528), py(0.305)); // Steep upper East Face plunge
+        cr.lineTo(px(0.555), py(0.368));
+        cr.lineTo(px(0.582), py(0.408)); // Solvay / Furggen shoulder step
+        cr.lineTo(px(0.620), py(0.452)); // Col 2 (High eastern saddle)
+
+        // 3. The Eiger / Riffelhorn: Stepped limestone ledges rising to a broad, angled tabular crown
+        cr.lineTo(px(0.648), py(0.425)); // Western rock bench
+        cr.lineTo(px(0.675), py(0.382)); // Steep western ramp
+        cr.lineTo(px(0.705), py(0.348)); // Left corner of flat-tilted Eiger crown
+        cr.lineTo(px(0.745), py(0.336)); // Broad tabular summit ridge
+        cr.lineTo(px(0.778), py(0.344)); // East summit shoulder
+        cr.lineTo(px(0.798), py(0.378)); // Steep cliff drop step 1
+        cr.lineTo(px(0.828), py(0.392)); // Mittellegi rock bench
+        cr.lineTo(px(0.860), py(0.438)); // Steep cliff drop step 2
+        cr.lineTo(px(0.898), py(0.458)); // Eastern crag shoulder
+        cr.lineTo(px(0.945), py(0.505));
+        cr.lineTo(px(1.000), py(0.550));
+    };
+
+    // 0a. Unified Sunlit Swiss Alps Massif (single continuous path = zero internal overlap seams)
     const mtnBaseG = new Cairo.LinearGradient(0, yMtnTop, 0, yMtnBase);
     if (isWinter) {
-        mtnBaseG.addColorStopRGBA(0.00, 0.97, 0.99, 1.00, night ? 0.44 : 0.62);
+        mtnBaseG.addColorStopRGBA(0.00, 0.98, 0.99, 1.00, night ? 0.46 : 0.64);
         mtnBaseG.addColorStopRGBA(0.32, 0.86, 0.92, 0.99, night ? 0.38 : 0.52);
         mtnBaseG.addColorStopRGBA(0.68, 0.72, 0.82, 0.94, night ? 0.30 : 0.42);
-        mtnBaseG.addColorStopRGBA(1.00, 0.64, 0.75, 0.89, night ? 0.22 : 0.32);
+        mtnBaseG.addColorStopRGBA(1.00, 0.64, 0.75, 0.89, night ? 0.22 : 0.30);
     } else if (night) {
-        mtnBaseG.addColorStopRGBA(0.00, 0.76, 0.84, 0.95, 0.44);
+        mtnBaseG.addColorStopRGBA(0.00, 0.78, 0.86, 0.96, 0.46);
         mtnBaseG.addColorStopRGBA(0.28, 0.42, 0.53, 0.68, 0.38);
         mtnBaseG.addColorStopRGBA(0.65, 0.24, 0.34, 0.48, 0.32);
-        mtnBaseG.addColorStopRGBA(1.00, 0.18, 0.27, 0.39, 0.26);
+        mtnBaseG.addColorStopRGBA(1.00, 0.18, 0.27, 0.39, 0.24);
     } else {
-        mtnBaseG.addColorStopRGBA(0.00, 0.97, 0.99, 1.00, 0.58);
+        mtnBaseG.addColorStopRGBA(0.00, 0.98, 0.99, 1.00, 0.60);
         mtnBaseG.addColorStopRGBA(0.26, 0.82, 0.89, 0.97, 0.48);
         mtnBaseG.addColorStopRGBA(0.58, 0.54, 0.66, 0.80, 0.38);
-        mtnBaseG.addColorStopRGBA(1.00, 0.44, 0.58, 0.70, 0.28);
+        mtnBaseG.addColorStopRGBA(1.00, 0.44, 0.58, 0.70, 0.26);
     }
     cr.setSource(mtnBaseG);
     cr.newPath();
-    skyRidge.forEach(([px, py], idx) => {
-        if (idx === 0) cr.moveTo(px, py);
-        else cr.lineTo(px, py);
-    });
-    // Trace Hill 1's crest right-to-left so the mountain base is seamlessly rooted to the hills
+    traceSwissSkyline();
     for (let s = 24; s >= 0; s--) {
         const u = s / 24;
-        cr.lineTo(width * u, hill1CrestY(u));
+        cr.lineTo(px(u), hill1CrestY(u));
     }
     cr.closePath();
     cr.fill();
 
-    // 0b. 3D Shaded Right-Hand Leeward Slopes Extending to Hill 1's Crest & Feathering into Valley Haze
-    const shadeG = new Cairo.LinearGradient(0, yMtnTop, 0, yMtnBase);
-    if (isWinter) {
-        shadeG.addColorStopRGBA(0.00, 0.52, 0.66, 0.84, night ? 0.28 : 0.34);
-        shadeG.addColorStopRGBA(0.45, 0.46, 0.60, 0.78, night ? 0.18 : 0.22);
-        shadeG.addColorStopRGBA(0.78, 0.42, 0.56, 0.74, 0.0);
-        shadeG.addColorStopRGBA(1.00, 0.42, 0.56, 0.74, 0.0);
-    } else if (night) {
-        shadeG.addColorStopRGBA(0.00, 0.12, 0.20, 0.32, 0.32);
-        shadeG.addColorStopRGBA(0.45, 0.10, 0.17, 0.28, 0.20);
-        shadeG.addColorStopRGBA(0.78, 0.08, 0.15, 0.24, 0.0);
-        shadeG.addColorStopRGBA(1.00, 0.08, 0.15, 0.24, 0.0);
-    } else {
-        shadeG.addColorStopRGBA(0.00, 0.34, 0.46, 0.62, 0.30);
-        shadeG.addColorStopRGBA(0.45, 0.28, 0.40, 0.56, 0.18);
-        shadeG.addColorStopRGBA(0.78, 0.26, 0.38, 0.52, 0.0);
-        shadeG.addColorStopRGBA(1.00, 0.26, 0.38, 0.52, 0.0);
-    }
-    cr.setSource(shadeG);
-
-    const leewardFacets = [
-        {
-            // Peak 1 leeward slope (u = 0.19 .. 0.33)
-            sky: [[0.19, 0.36], [0.23, 0.40], [0.28, 0.46], [0.33, 0.50]],
-            rightBaseU: 0.35,
-            leftRidge: [[0.22, 0.56], [0.20, 0.46]],
-            leftBaseU: 0.23,
-        },
-        {
-            // Peak 2 (Main Horn) leeward slope (u = 0.53 .. 0.65)
-            sky: [[0.53, 0.24], [0.56, 0.29], [0.60, 0.37], [0.65, 0.43]],
-            rightBaseU: 0.66,
-            leftRidge: [[0.55, 0.54], [0.56, 0.42], [0.52, 0.33]],
-            leftBaseU: 0.54,
-        },
-        {
-            // Peak 3 (Chalet Peak) leeward slope (u = 0.74 .. 1.00)
-            sky: [[0.74, 0.32], [0.78, 0.36], [0.83, 0.42], [0.88, 0.46], [0.94, 0.51], [1.00, 0.56]],
-            rightBaseU: 1.00,
-            leftRidge: [[0.78, 0.56], [0.76, 0.44]],
-            leftBaseU: 0.79,
-        },
-    ];
-
-    for (const f of leewardFacets) {
-        cr.newPath();
-        f.sky.forEach(([u, vf], idx) => {
-            const px = width * u, py = groundOffset + vf * sh;
-            if (idx === 0) cr.moveTo(px, py);
-            else cr.lineTo(px, py);
-        });
-        // Descend from the col to Hill 1's crest and trace along Hill 1 back to the central ridge base
-        for (let s = 6; s >= 0; s--) {
-            const u = f.leftBaseU + (f.rightBaseU - f.leftBaseU) * (s / 6);
-            cr.lineTo(width * u, hill1CrestY(u));
+    // Helper for 3D leeward face shading that reaches alpha=0 AT the col elevation (zero vertical seams below cols)
+    const makeLeewardGradient = (topVf, colVf, strength = 1.0) => {
+        const g = new Cairo.LinearGradient(0, py(topVf), 0, py(colVf));
+        if (isWinter) {
+            g.addColorStopRGBA(0.00, 0.48, 0.62, 0.82, (night ? 0.30 : 0.36) * strength);
+            g.addColorStopRGBA(0.55, 0.44, 0.58, 0.78, (night ? 0.18 : 0.22) * strength);
+            g.addColorStopRGBA(0.95, 0.40, 0.54, 0.74, 0.0);
+            g.addColorStopRGBA(1.00, 0.40, 0.54, 0.74, 0.0);
+        } else if (night) {
+            g.addColorStopRGBA(0.00, 0.11, 0.19, 0.31, 0.36 * strength);
+            g.addColorStopRGBA(0.55, 0.09, 0.16, 0.27, 0.20 * strength);
+            g.addColorStopRGBA(0.95, 0.08, 0.14, 0.24, 0.0);
+            g.addColorStopRGBA(1.00, 0.08, 0.14, 0.24, 0.0);
+        } else {
+            g.addColorStopRGBA(0.00, 0.30, 0.42, 0.58, 0.34 * strength);
+            g.addColorStopRGBA(0.55, 0.26, 0.38, 0.54, 0.18 * strength);
+            g.addColorStopRGBA(0.95, 0.24, 0.36, 0.50, 0.0);
+            g.addColorStopRGBA(1.00, 0.24, 0.36, 0.50, 0.0);
         }
-        // Ascend the central arête back to the summit
-        f.leftRidge.forEach(([u, vf]) => {
-            cr.lineTo(width * u, groundOffset + vf * sh);
-        });
-        cr.closePath();
-        cr.fill();
-    }
+        return g;
+    };
 
-    // 0c. Feathered Sunlit Snow-Glacier Mantles (each gradient reaches alpha=0 well above its bottom vertices)
+    // 0b-1. Mönch / Breithorn Soft Curved Glacier Bowl Shadow (reaches alpha=0 at Col 1 vf=0.475)
+    cr.setSource(makeLeewardGradient(0.378, 0.475, 0.65));
+    cr.newPath();
+    cr.moveTo(px(0.195), py(0.380));
+    cr.curveTo(px(0.245), py(0.382), px(0.290), py(0.428), px(0.350), py(0.475));
+    cr.lineTo(px(0.350), py(0.52));
+    cr.lineTo(px(0.215), py(0.52));
+    // Soft curved glacier trough ascending back to the rounded dome crest
+    cr.curveTo(px(0.235), py(0.45), px(0.215), py(0.41), px(0.195), py(0.380));
+    cr.closePath();
+    cr.fill();
+
+    // 0b-2. Matterhorn Shaded East Face with Crooked Zig-Zagging Hörnli Arête (reaches alpha=0 at Col 2 vf=0.452)
+    cr.setSource(makeLeewardGradient(0.226, 0.452, 1.05));
+    cr.newPath();
+    cr.moveTo(px(0.496), py(0.226));
+    cr.lineTo(px(0.510), py(0.234));
+    cr.lineTo(px(0.506), py(0.252)); // Hook notch
+    cr.lineTo(px(0.528), py(0.305));
+    cr.lineTo(px(0.555), py(0.368));
+    cr.lineTo(px(0.582), py(0.408));
+    cr.lineTo(px(0.620), py(0.452));
+    cr.lineTo(px(0.620), py(0.50));
+    cr.lineTo(px(0.505), py(0.50));
+    // Crooked Hörnli Ridge spine ascending back to the summit
+    cr.lineTo(px(0.492), py(0.43));
+    cr.lineTo(px(0.506), py(0.37));
+    cr.lineTo(px(0.484), py(0.305));
+    cr.lineTo(px(0.494), py(0.258));
+    cr.closePath();
+    cr.fill();
+
+    // 0b-3. Eiger Stepped Cliff Face & Eastern Buttress Shadow (reaches alpha=0 at vf=0.54)
+    cr.setSource(makeLeewardGradient(0.336, 0.54, 0.95));
+    cr.newPath();
+    cr.moveTo(px(0.745), py(0.336));
+    cr.lineTo(px(0.778), py(0.344));
+    cr.lineTo(px(0.798), py(0.378));
+    cr.lineTo(px(0.828), py(0.392));
+    cr.lineTo(px(0.860), py(0.438));
+    cr.lineTo(px(0.898), py(0.458));
+    cr.lineTo(px(0.945), py(0.505));
+    cr.lineTo(px(1.000), py(0.550));
+    cr.lineTo(px(1.000), py(0.58));
+    cr.lineTo(px(0.715), py(0.58));
+    // Stepped western rock buttress ascending to the flat-tilted Eiger crown
+    cr.lineTo(px(0.710), py(0.47));
+    cr.lineTo(px(0.732), py(0.41));
+    cr.lineTo(px(0.720), py(0.365));
+    cr.closePath();
+    cr.fill();
+
+    // 0c. Feathered Sunlit Snow Mantles Adapted to Each Swiss Peak's Geometry
     const snowMantles = [
         {
-            topVf: 0.36, botVf: 0.54,
-            pts: [[0.19, 0.36], [0.20, 0.48], [0.14, 0.52], [0.07, 0.47], [0.09, 0.45], [0.14, 0.39]],
+            // Mönch / Breithorn broad domed glacier ice-cap
+            topVf: 0.378, botVf: 0.50,
+            draw: () => {
+                cr.moveTo(px(0.11), py(0.398));
+                cr.curveTo(px(0.14), py(0.382), px(0.175), py(0.378), px(0.195), py(0.380));
+                cr.curveTo(px(0.215), py(0.41), px(0.235), py(0.45), px(0.22), py(0.48));
+                cr.lineTo(px(0.08), py(0.48));
+            },
         },
         {
-            topVf: 0.24, botVf: 0.48,
-            pts: [[0.53, 0.24], [0.52, 0.33], [0.55, 0.45], [0.47, 0.46], [0.40, 0.41], [0.42, 0.38], [0.46, 0.33], [0.50, 0.27]],
+            // Matterhorn concave Zmutt snow apron
+            topVf: 0.226, botVf: 0.45,
+            draw: () => {
+                cr.moveTo(px(0.482), py(0.236));
+                cr.lineTo(px(0.496), py(0.226));
+                cr.lineTo(px(0.494), py(0.258));
+                cr.lineTo(px(0.484), py(0.305));
+                cr.lineTo(px(0.506), py(0.37));
+                cr.lineTo(px(0.492), py(0.43));
+                cr.lineTo(px(0.390), py(0.43));
+                cr.curveTo(px(0.420), py(0.395), px(0.455), py(0.315), px(0.482), py(0.236));
+            },
         },
         {
-            topVf: 0.32, botVf: 0.50,
-            pts: [[0.74, 0.32], [0.76, 0.46], [0.69, 0.48], [0.65, 0.43], [0.69, 0.38], [0.71, 0.35]],
+            // Eiger flat-tilted summit snowfield & western ramp
+            topVf: 0.336, botVf: 0.47,
+            draw: () => {
+                cr.moveTo(px(0.705), py(0.348));
+                cr.lineTo(px(0.745), py(0.336));
+                cr.lineTo(px(0.720), py(0.365));
+                cr.lineTo(px(0.732), py(0.41));
+                cr.lineTo(px(0.710), py(0.45));
+                cr.lineTo(px(0.648), py(0.425));
+                cr.lineTo(px(0.675), py(0.382));
+            },
         },
     ];
     for (const m of snowMantles) {
-        const g = new Cairo.LinearGradient(0, groundOffset + m.topVf * sh, 0, groundOffset + m.botVf * sh);
+        const g = new Cairo.LinearGradient(0, py(m.topVf), 0, py(m.botVf));
         g.addColorStopRGBA(0.00, 0.99, 1.00, 1.00, night ? 0.34 : 0.50);
         g.addColorStopRGBA(0.42, 0.93, 0.97, 1.00, night ? 0.16 : 0.24);
-        g.addColorStopRGBA(0.68, 0.86, 0.93, 0.99, 0.0);
+        g.addColorStopRGBA(0.70, 0.86, 0.93, 0.99, 0.0);
         g.addColorStopRGBA(1.00, 0.86, 0.93, 0.99, 0.0);
         cr.setSource(g);
         cr.newPath();
-        m.pts.forEach(([u, vf], idx) => {
-            const px = width * u, py = groundOffset + vf * sh;
-            if (idx === 0) cr.moveTo(px, py);
-            else cr.lineTo(px, py);
-        });
+        m.draw();
         cr.closePath();
         cr.fill();
     }
 
-    // 0d. Soft Orographic Cloud Wisps Wrapping the High Alpine Summits
+    // 0d. Soft Orographic Banner Cloud Streaming from the Matterhorn Horn & Mist Along the Eiger
     const wispCol = night ? [0.68, 0.78, 0.92] : [0.96, 0.98, 1.00];
     const wispDrift = Math.sin((time - 1.1) * 0.35) * 6.0 * scale;
-    drawSoftFogBand(cr, width * 0.52 + wispDrift, groundOffset + 0.31 * sh, 82 * scale, 14 * scale, wispCol, night ? 0.16 : 0.26);
-    drawSoftFogBand(cr, width * 0.74 - wispDrift * 0.7, groundOffset + 0.38 * sh, 68 * scale, 12 * scale, wispCol, night ? 0.14 : 0.22);
-    drawSoftFogBand(cr, width * 0.20 + wispDrift * 0.5, groundOffset + 0.42 * sh, 60 * scale, 11 * scale, wispCol, night ? 0.12 : 0.20);
+    drawSoftFogBand(cr, width * 0.53 + wispDrift, groundOffset + 0.28 * sh, 74 * scale, 13 * scale, wispCol, night ? 0.18 : 0.28);
+    drawSoftFogBand(cr, width * 0.75 - wispDrift * 0.7, groundOffset + 0.39 * sh, 70 * scale, 12 * scale, wispCol, night ? 0.14 : 0.22);
+    drawSoftFogBand(cr, width * 0.20 + wispDrift * 0.5, groundOffset + 0.42 * sh, 72 * scale, 12 * scale, wispCol, night ? 0.12 : 0.20);
 
     // 1. Hill 1 (Distant Left-Center Rolling Foothill Knoll supporting the Distant Pines)
     const h1 = new Cairo.LinearGradient(0, floorTop - 10 * scale, 0, height);
