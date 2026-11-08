@@ -3624,52 +3624,60 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter 
     const px = (u) => width * u;
     const py = (vf) => groundOffset + vf * sh;
 
-    // 0. Authentic Swiss Alps Panorama (Three Distinct Iconic Swiss Peak Profiles):
-    //    - Left (u = 0.00..0.265):   Mönch / Breithorn — broad, smooth rounded snow dome & glacial saddle
-    //    - Center (u = 0.265..0.665): The Matterhorn (Zermatt profile) — wide, commanding pyramidal horn
-    //                                with sweeping concave Zmutt ridge, tilted chisel summit with overhang
-    //                                hook, broad East Face, and crooked Hörnli arête
-    //    - Right (u = 0.665..1.00):  The Eiger / Dufourspitze — broad, flat-crowned stepped rock massif
-    //                                with rugged cliff shoulders rising behind the chalet
+    // 0. Realistic Interlocking 3D Faceted Swiss Alps Panorama:
+    //    - Left (u = 0.00..0.255):   Mönch / Breithorn — glaciated dome with central rock buttress, serac ice cap & eastern cirque
+    //    - Center (u = 0.255..0.675): The Matterhorn — interlocking 4-zone pyramidal horn (Sunlit West Zmutt Spur, Oblique North Face,
+    //                                 Zig-zagging Hörnli Arête, Sheer East Face, Furggen Rib, Summit Roof Glacier & Couloirs)
+    //    - Right (u = 0.675..1.00):  The Eiger — stepped limestone massif with sunlit West Flank, sheer Eigerwand & Mittellegi buttresses
     const yMtnTop = py(0.225);
     const yMtnBase = floorTop + 22 * scale;
 
     const traceSwissSkyline = () => {
-        cr.moveTo(px(0.00), py(0.50));
-        // 1. Mönch / Breithorn: Smooth, broad rounded snow dome (cubic Bezier arch, no pointed spike)
-        cr.curveTo(px(0.042), py(0.435), px(0.082), py(0.388), px(0.130), py(0.382));
-        cr.curveTo(px(0.178), py(0.378), px(0.218), py(0.430), px(0.255), py(0.482)); // Col 1 (Theodulpass)
+        cr.moveTo(px(0.000), py(0.500));
+        // 1. Mönch / Breithorn dome
+        cr.lineTo(px(0.035), py(0.445));
+        cr.lineTo(px(0.072), py(0.402));
+        cr.lineTo(px(0.105), py(0.385));
+        cr.lineTo(px(0.132), py(0.382)); // Mönch Summit
+        cr.lineTo(px(0.165), py(0.388));
+        cr.lineTo(px(0.200), py(0.415));
+        cr.lineTo(px(0.228), py(0.448));
+        cr.lineTo(px(0.255), py(0.482)); // Col 1 (Theodulpass)
 
-        // 2. The Matterhorn: Wide, commanding pyramidal horn (u = 0.255 .. 0.675)
-        cr.lineTo(px(0.305), py(0.428)); // Broad lower Zmutt rock step
-        cr.curveTo(px(0.352), py(0.365), px(0.398), py(0.292), px(0.446), py(0.238)); // Broad West/Zmutt shoulder & wall
-        cr.lineTo(px(0.482), py(0.226)); // Swiss Summit (highest point)
-        cr.lineTo(px(0.522), py(0.235)); // Wide Italian/East Summit chisel ridge
-        cr.lineTo(px(0.515), py(0.256)); // Signature overhanging hook notch on upper East Face
-        cr.lineTo(px(0.566), py(0.310)); // Broad upper East Face slope
-        cr.lineTo(px(0.606), py(0.364));
-        cr.lineTo(px(0.640), py(0.408)); // Solvay / Furggen shoulder step
-        cr.lineTo(px(0.675), py(0.456)); // Col 2 (High eastern saddle)
+        // 2. The Matterhorn
+        cr.lineTo(px(0.292), py(0.442)); // W1: Lower Zmutt spur
+        cr.lineTo(px(0.328), py(0.398)); // W2: Mid Zmutt ridge
+        cr.lineTo(px(0.368), py(0.345)); // W3: Upper Zmutt wall
+        cr.lineTo(px(0.408), py(0.288)); // W4: Zmutt Nose shoulder
+        cr.lineTo(px(0.446), py(0.238)); // W5: West Summit shoulder
+        cr.lineTo(px(0.482), py(0.226)); // S1: Swiss Summit (highest point)
+        cr.lineTo(px(0.520), py(0.235)); // S2: Italian/East Summit chisel ridge
+        cr.lineTo(px(0.513), py(0.256)); // E1: Overhanging hook notch on upper East Face
+        cr.lineTo(px(0.552), py(0.298)); // E2: Upper East Face crag
+        cr.lineTo(px(0.588), py(0.342)); // E3: Mid East Face slope
+        cr.lineTo(px(0.628), py(0.392)); // E4: Furggen shoulder
+        cr.lineTo(px(0.654), py(0.426)); // E5: Lower Furggen step
+        cr.lineTo(px(0.675), py(0.456)); // Col 2 (Eastern saddle)
 
-        // 3. The Eiger / Riffelhorn: Stepped limestone ledges rising to a broad, angled tabular crown
-        cr.lineTo(px(0.700), py(0.425)); // Western rock bench
-        cr.lineTo(px(0.726), py(0.382)); // Steep western ramp
-        cr.lineTo(px(0.755), py(0.348)); // Left corner of flat-tilted Eiger crown
-        cr.lineTo(px(0.792), py(0.336)); // Broad tabular summit ridge
-        cr.lineTo(px(0.824), py(0.344)); // East summit shoulder
-        cr.lineTo(px(0.846), py(0.378)); // Steep cliff drop step 1
-        cr.lineTo(px(0.874), py(0.392)); // Mittellegi rock bench
-        cr.lineTo(px(0.905), py(0.438)); // Steep cliff drop step 2
-        cr.lineTo(px(0.938), py(0.460)); // Eastern crag shoulder
-        cr.lineTo(px(0.972), py(0.508));
-        cr.lineTo(px(1.000), py(0.550));
+        // 3. The Eiger
+        cr.lineTo(px(0.700), py(0.425)); // EW1: Western rock bench
+        cr.lineTo(px(0.726), py(0.382)); // EW2: Steep western glacier ramp
+        cr.lineTo(px(0.755), py(0.348)); // EW3: Left corner of Eiger crown
+        cr.lineTo(px(0.792), py(0.336)); // ES1: Eiger Summit
+        cr.lineTo(px(0.824), py(0.344)); // ES2: East summit shoulder
+        cr.lineTo(px(0.846), py(0.378)); // EE1: Mittellegi step 1
+        cr.lineTo(px(0.874), py(0.392)); // EE2: Mittellegi bench
+        cr.lineTo(px(0.905), py(0.438)); // EE3: Mittellegi step 2
+        cr.lineTo(px(0.938), py(0.460)); // EE4: Eastern crag shoulder
+        cr.lineTo(px(0.972), py(0.508)); // EE5
+        cr.lineTo(px(1.000), py(0.550)); // EE6
     };
 
     // At night, occlude stars behind the solid mountain massif before painting rock/snow layers
     if (night) {
         const occG = new Cairo.LinearGradient(0, yMtnTop, 0, yMtnBase);
-        occG.addColorStopRGBA(0.0, 0.07, 0.10, 0.21, 0.90);
-        occG.addColorStopRGBA(1.0, 0.12, 0.16, 0.30, 0.94);
+        occG.addColorStopRGBA(0.0, 0.06, 0.09, 0.19, 0.94);
+        occG.addColorStopRGBA(1.0, 0.11, 0.15, 0.28, 0.96);
         cr.setSource(occG);
         cr.newPath();
         traceSwissSkyline();
@@ -3681,38 +3689,30 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter 
         cr.fill();
     }
 
-    // 0a. Unified Swiss Alps Massif with Seasonal Altitudinal Zonation:
-    //     - Winter (isWinter): Full snow & glacier blanket from summits to valley floor (day & night).
-    //     - Summer (!isWinter):
-    //         * Upper & Mid Alpine Zone (0.00..0.62): Weathered Swiss granite, gneiss & limestone rock
-    //           (warm grey-taupe stone topped by per-peak snow-caps in 0c)
-    //         * Subalpine Zone (0.68..1.00): Verdant subalpine forest & grassy lower slopes blending into Hill 1
+    // 0a. Base Alpine Massif with Seasonal Altitudinal Zonation (Rock -> Subalpine Green in Summer, Glacier Snow in Winter)
     const mtnBaseG = new Cairo.LinearGradient(0, yMtnTop, 0, yMtnBase);
     if (isWinter) {
-        mtnBaseG.addColorStopRGBA(0.00, 0.98, 0.99, 1.00, night ? 0.56 : 0.72);
-        mtnBaseG.addColorStopRGBA(0.32, 0.88, 0.93, 1.00, night ? 0.48 : 0.60);
-        mtnBaseG.addColorStopRGBA(0.68, 0.74, 0.84, 0.95, night ? 0.40 : 0.48);
-        mtnBaseG.addColorStopRGBA(1.00, 0.66, 0.77, 0.90, night ? 0.32 : 0.38);
+        mtnBaseG.addColorStopRGBA(0.00, 0.94, 0.97, 1.00, night ? 0.68 : 0.84);
+        mtnBaseG.addColorStopRGBA(0.36, 0.82, 0.89, 0.98, night ? 0.58 : 0.72);
+        mtnBaseG.addColorStopRGBA(0.70, 0.70, 0.80, 0.93, night ? 0.48 : 0.58);
+        mtnBaseG.addColorStopRGBA(1.00, 0.62, 0.74, 0.88, night ? 0.38 : 0.44);
     } else if (night) {
-        // Night Summer: Dark alpine granite/gneiss rock -> deep subalpine pine/meadow green at lower altitudes
-        mtnBaseG.addColorStopRGBA(0.00, 0.36, 0.38, 0.44, 0.64);
-        mtnBaseG.addColorStopRGBA(0.30, 0.28, 0.30, 0.36, 0.60);
-        mtnBaseG.addColorStopRGBA(0.58, 0.23, 0.26, 0.31, 0.56);
-        mtnBaseG.addColorStopRGBA(0.76, 0.16, 0.27, 0.26, 0.54);
-        mtnBaseG.addColorStopRGBA(1.00, 0.14, 0.26, 0.24, 0.52);
+        mtnBaseG.addColorStopRGBA(0.00, 0.36, 0.39, 0.45, 0.78);
+        mtnBaseG.addColorStopRGBA(0.34, 0.29, 0.31, 0.37, 0.74);
+        mtnBaseG.addColorStopRGBA(0.60, 0.23, 0.26, 0.31, 0.68);
+        mtnBaseG.addColorStopRGBA(0.78, 0.16, 0.27, 0.25, 0.62);
+        mtnBaseG.addColorStopRGBA(1.00, 0.14, 0.26, 0.23, 0.56);
     } else if (subdued) {
-        // Rain/Storm Summer: Wet charcoal-taupe granite rock -> misty olive-green subalpine lower slopes
-        mtnBaseG.addColorStopRGBA(0.00, 0.52, 0.51, 0.52, 0.68);
-        mtnBaseG.addColorStopRGBA(0.32, 0.46, 0.45, 0.46, 0.64);
-        mtnBaseG.addColorStopRGBA(0.58, 0.42, 0.44, 0.43, 0.60);
-        mtnBaseG.addColorStopRGBA(0.76, 0.38, 0.52, 0.38, 0.56);
-        mtnBaseG.addColorStopRGBA(1.00, 0.40, 0.56, 0.40, 0.52);
+        mtnBaseG.addColorStopRGBA(0.00, 0.54, 0.53, 0.55, 0.80);
+        mtnBaseG.addColorStopRGBA(0.35, 0.47, 0.46, 0.48, 0.76);
+        mtnBaseG.addColorStopRGBA(0.60, 0.41, 0.43, 0.42, 0.70);
+        mtnBaseG.addColorStopRGBA(0.78, 0.37, 0.51, 0.37, 0.64);
+        mtnBaseG.addColorStopRGBA(1.00, 0.39, 0.55, 0.39, 0.56);
     } else {
-        // Clear/Sunny Summer: Warm weathered Swiss granite/gneiss rock -> lush green subalpine lower slopes
-        mtnBaseG.addColorStopRGBA(0.00, 0.58, 0.54, 0.50, 0.72);
-        mtnBaseG.addColorStopRGBA(0.30, 0.52, 0.48, 0.44, 0.68);
-        mtnBaseG.addColorStopRGBA(0.56, 0.46, 0.45, 0.41, 0.64);
-        mtnBaseG.addColorStopRGBA(0.74, 0.38, 0.56, 0.32, 0.62);
+        mtnBaseG.addColorStopRGBA(0.00, 0.60, 0.56, 0.52, 0.84);
+        mtnBaseG.addColorStopRGBA(0.34, 0.52, 0.48, 0.45, 0.78);
+        mtnBaseG.addColorStopRGBA(0.58, 0.45, 0.44, 0.40, 0.72);
+        mtnBaseG.addColorStopRGBA(0.76, 0.38, 0.56, 0.33, 0.66);
         mtnBaseG.addColorStopRGBA(1.00, 0.38, 0.64, 0.32, 0.60);
     }
     cr.setSource(mtnBaseG);
@@ -3725,192 +3725,238 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter 
     cr.closePath();
     cr.fill();
 
-    // Helper for 3D leeward cliff-face shading (dark charcoal-granite cliff shadow in summer, icy blue in winter)
-    // Reaches alpha=0 AT the col elevation so there are zero vertical seams below the cols.
-    const makeLeewardGradient = (topVf, colVf, strength = 1.0) => {
-        const g = new Cairo.LinearGradient(0, py(topVf), 0, py(colVf));
-        if (isWinter) {
-            g.addColorStopRGBA(0.00, 0.42, 0.56, 0.78, (night ? 0.36 : 0.38) * strength);
-            g.addColorStopRGBA(0.55, 0.38, 0.52, 0.74, (night ? 0.22 : 0.24) * strength);
-            g.addColorStopRGBA(0.95, 0.34, 0.48, 0.70, 0.0);
-            g.addColorStopRGBA(1.00, 0.34, 0.48, 0.70, 0.0);
-        } else if (night) {
-            g.addColorStopRGBA(0.00, 0.10, 0.12, 0.17, 0.46 * strength);
-            g.addColorStopRGBA(0.55, 0.09, 0.11, 0.16, 0.28 * strength);
-            g.addColorStopRGBA(0.95, 0.08, 0.10, 0.15, 0.0);
-            g.addColorStopRGBA(1.00, 0.08, 0.10, 0.15, 0.0);
-        } else {
-            // Summer dark charcoal-granite cliff shadow (Matterhorn East Face & Eiger Nordwand)
-            g.addColorStopRGBA(0.00, 0.22, 0.21, 0.22, 0.46 * strength);
-            g.addColorStopRGBA(0.55, 0.20, 0.20, 0.21, 0.28 * strength);
-            g.addColorStopRGBA(0.95, 0.18, 0.20, 0.20, 0.0);
-            g.addColorStopRGBA(1.00, 0.18, 0.20, 0.20, 0.0);
-        }
-        return g;
-    };
-
-    // 0b-1. Mönch / Breithorn Soft Curved Glacier/Rock Bowl Shadow (reaches alpha=0 at Col 1 vf=0.482)
-    cr.setSource(makeLeewardGradient(0.380, 0.482, 0.70));
-    cr.newPath();
-    cr.moveTo(px(0.145), py(0.382));
-    cr.curveTo(px(0.184), py(0.382), px(0.218), py(0.430), px(0.255), py(0.482));
-    cr.lineTo(px(0.255), py(0.52));
-    cr.lineTo(px(0.158), py(0.52));
-    cr.curveTo(px(0.172), py(0.45), px(0.162), py(0.41), px(0.145), py(0.382));
-    cr.closePath();
-    cr.fill();
-
-    // 0b-2. Matterhorn Broad Shaded East Face with Crooked Zig-Zagging Hörnli Arête (reaches alpha=0 at Col 2 vf=0.456)
-    cr.setSource(makeLeewardGradient(0.226, 0.456, 1.10));
-    cr.newPath();
-    cr.moveTo(px(0.482), py(0.226));
-    cr.lineTo(px(0.522), py(0.235));
-    cr.lineTo(px(0.515), py(0.256)); // Hook notch
-    cr.lineTo(px(0.566), py(0.310));
-    cr.lineTo(px(0.606), py(0.364));
-    cr.lineTo(px(0.640), py(0.408));
-    cr.lineTo(px(0.675), py(0.456));
-    cr.lineTo(px(0.675), py(0.50));
-    cr.lineTo(px(0.500), py(0.50));
-    // Crooked Hörnli Ridge spine ascending back to the summit
-    cr.lineTo(px(0.484), py(0.43));
-    cr.lineTo(px(0.504), py(0.366));
-    cr.lineTo(px(0.470), py(0.305));
-    cr.lineTo(px(0.484), py(0.258));
-    cr.closePath();
-    cr.fill();
-
-    // 0b-3. Eiger Stepped Cliff Face & Eastern Buttress Shadow (reaches alpha=0 at vf=0.54)
-    cr.setSource(makeLeewardGradient(0.336, 0.54, 1.05));
-    cr.newPath();
-    cr.moveTo(px(0.792), py(0.336));
-    cr.lineTo(px(0.824), py(0.344));
-    cr.lineTo(px(0.846), py(0.378));
-    cr.lineTo(px(0.874), py(0.392));
-    cr.lineTo(px(0.905), py(0.438));
-    cr.lineTo(px(0.938), py(0.460));
-    cr.lineTo(px(0.972), py(0.508));
-    cr.lineTo(px(1.000), py(0.550));
-    cr.lineTo(px(1.000), py(0.58));
-    cr.lineTo(px(0.762), py(0.58));
-    cr.lineTo(px(0.756), py(0.47));
-    cr.lineTo(px(0.778), py(0.41));
-    cr.lineTo(px(0.766), py(0.365));
-    cr.closePath();
-    cr.fill();
-
-    // 0c. Snow-Capped Summits & Hanging Glaciers (Nival Zone):
-    const snowMantles = [
-        {
-            // Mönch / Breithorn sunlit glacier ice-cap dome
-            topVf: 0.380,
-            botVf: 0.448,
-            alpha: isWinter ? 0.58 : 0.84,
-            draw: () => {
-                cr.moveTo(px(0.052), py(0.428));
-                cr.curveTo(px(0.084), py(0.388), px(0.120), py(0.380), px(0.145), py(0.382));
-                cr.curveTo(px(0.162), py(0.41), px(0.170), py(0.43), px(0.166), py(0.45));
-                cr.lineTo(px(0.042), py(0.45));
-            },
-        },
-        {
-            // Mönch / Breithorn shaded eastern glacier rim
-            topVf: 0.380,
-            botVf: 0.438,
-            alpha: isWinter ? 0.34 : 0.52,
-            shaded: true,
-            draw: () => {
-                cr.moveTo(px(0.145), py(0.382));
-                cr.curveTo(px(0.180), py(0.382), px(0.208), py(0.412), px(0.228), py(0.44));
-                cr.lineTo(px(0.166), py(0.44));
-                cr.curveTo(px(0.168), py(0.42), px(0.162), py(0.40), px(0.145), py(0.382));
-            },
-        },
-        {
-            // Matterhorn wider sunlit upper snow-cap & Zmutt glacier rime
-            topVf: 0.226,
-            botVf: 0.358,
-            alpha: isWinter ? 0.62 : 0.88,
-            draw: () => {
-                cr.moveTo(px(0.446), py(0.238));
-                cr.lineTo(px(0.482), py(0.226));
-                cr.lineTo(px(0.484), py(0.258));
-                cr.lineTo(px(0.470), py(0.305));
-                cr.lineTo(px(0.502), py(0.362));
-                cr.lineTo(px(0.362), py(0.362));
-                cr.curveTo(px(0.390), py(0.318), px(0.418), py(0.272), px(0.446), py(0.238));
-            },
-        },
-        {
-            // Matterhorn wider shaded East-Face summit snow-crest (above the sheer rock wall)
-            topVf: 0.226,
-            botVf: 0.338,
-            alpha: isWinter ? 0.36 : 0.56,
-            shaded: true,
-            draw: () => {
-                cr.moveTo(px(0.482), py(0.226));
-                cr.lineTo(px(0.522), py(0.235));
-                cr.lineTo(px(0.515), py(0.256));
-                cr.lineTo(px(0.566), py(0.310));
-                cr.lineTo(px(0.586), py(0.34));
-                cr.lineTo(px(0.490), py(0.34));
-                cr.lineTo(px(0.470), py(0.305));
-                cr.lineTo(px(0.484), py(0.258));
-            },
-        },
-        {
-            // Eiger sunlit western summit snowfield & hanging glacier ramp
-            topVf: 0.336,
-            botVf: 0.420,
-            alpha: isWinter ? 0.58 : 0.84,
-            draw: () => {
-                cr.moveTo(px(0.755), py(0.348));
-                cr.lineTo(px(0.792), py(0.336));
-                cr.lineTo(px(0.766), py(0.365));
-                cr.lineTo(px(0.778), py(0.41));
-                cr.lineTo(px(0.766), py(0.425));
-                cr.lineTo(px(0.700), py(0.425));
-                cr.lineTo(px(0.726), py(0.382));
-            },
-        },
-        {
-            // Eiger shaded tabular crown snow-rim above the dark cliff face
-            topVf: 0.336,
-            botVf: 0.395,
-            alpha: isWinter ? 0.34 : 0.52,
-            shaded: true,
-            draw: () => {
-                cr.moveTo(px(0.792), py(0.336));
-                cr.lineTo(px(0.824), py(0.344));
-                cr.lineTo(px(0.846), py(0.378));
-                cr.lineTo(px(0.868), py(0.395));
-                cr.lineTo(px(0.774), py(0.395));
-                cr.lineTo(px(0.766), py(0.365));
-            },
-        },
-    ];
-    for (const m of snowMantles) {
-        const g = new Cairo.LinearGradient(0, py(m.topVf), 0, py(m.botVf));
-        const a0 = night ? m.alpha * 0.68 : m.alpha;
-        const cTop = m.shaded ? [0.84, 0.90, 0.98] : [0.99, 1.00, 1.00];
-        const cMid = m.shaded ? [0.76, 0.84, 0.94] : [0.94, 0.97, 1.00];
-        g.addColorStopRGBA(0.00, cTop[0], cTop[1], cTop[2], a0);
-        g.addColorStopRGBA(0.45, cMid[0], cMid[1], cMid[2], a0 * 0.58);
-        g.addColorStopRGBA(0.76, cMid[0], cMid[1], cMid[2], 0.0);
-        g.addColorStopRGBA(1.00, cMid[0], cMid[1], cMid[2], 0.0);
+    // Helper to paint a single contiguous 3D mountain facet polygon with vertical atmospheric fade
+    const paintPoly = (pts, topVf, botVf, cTop, cBot, aTop, aBot = 0.0) => {
+        const g = new Cairo.LinearGradient(0, py(topVf), 0, py(botVf));
+        g.addColorStopRGBA(0.00, cTop[0], cTop[1], cTop[2], aTop);
+        g.addColorStopRGBA(0.65, cBot[0], cBot[1], cBot[2], aTop * 0.65 + aBot * 0.35);
+        g.addColorStopRGBA(1.00, cBot[0], cBot[1], cBot[2], aBot);
         cr.setSource(g);
         cr.newPath();
-        m.draw();
+        pts.forEach(([u, vf], idx) => {
+            if (idx === 0) cr.moveTo(px(u), py(vf));
+            else cr.lineTo(px(u), py(vf));
+        });
         cr.closePath();
         cr.fill();
-    }
+    };
 
-    // 0d. Soft Orographic Banner Cloud Streaming from the Matterhorn Horn & Mist Along the Eiger
+    // Palette of 6 distinct 3D geological surface normals (from brightest sunlit snow to deepest cliff shadow)
+    const nMul = night ? 0.76 : 1.0;
+    const P = {
+        // 1. Direct Sunlit Snow / Glacier Ice
+        snowSunTop: [0.99, 1.00, 1.00],
+        snowSunBot: [0.91, 0.96, 1.00],
+        // 2. Cool Oblique / Shaded Glacier Snow
+        snowShadeTop: [0.78, 0.87, 0.97],
+        snowShadeBot: [0.66, 0.78, 0.92],
+        // 3. Sunlit Warm Alpine Granite / Gneiss (or sunlit snow-dusted rock in winter)
+        rockSunTop: isWinter ? [0.92, 0.96, 1.00] : (night ? [0.46, 0.48, 0.55] : [0.74, 0.69, 0.63]),
+        rockSunBot: isWinter ? [0.82, 0.89, 0.97] : (night ? [0.36, 0.39, 0.46] : [0.60, 0.56, 0.51]),
+        // 4. Oblique Mid-Tone Granite (Matterhorn North Face & Eiger West Buttress)
+        rockMidTop: isWinter ? [0.64, 0.76, 0.90] : (night ? [0.24, 0.27, 0.34] : [0.45, 0.43, 0.42]),
+        rockMidBot: isWinter ? [0.56, 0.69, 0.85] : (night ? [0.20, 0.23, 0.29] : [0.39, 0.38, 0.37]),
+        // 5. Deep Shaded Cliff Wall (Matterhorn East Face & Eiger Nordwand)
+        cliffDarkTop: isWinter ? [0.38, 0.51, 0.72] : (night ? [0.10, 0.12, 0.18] : [0.21, 0.21, 0.24]),
+        cliffDarkBot: isWinter ? [0.34, 0.47, 0.68] : (night ? [0.09, 0.11, 0.16] : [0.19, 0.20, 0.22]),
+        // 6. Sheer Exposed Crag Rib (Darkest vertical rock outcrops that jut through even in winter!)
+        cragTop: isWinter ? (night ? [0.20, 0.27, 0.40] : [0.30, 0.39, 0.55]) : (night ? [0.07, 0.09, 0.14] : [0.15, 0.15, 0.18]),
+        cragBot: isWinter ? (night ? [0.18, 0.25, 0.38] : [0.28, 0.36, 0.52]) : (night ? [0.06, 0.08, 0.12] : [0.14, 0.14, 0.17]),
+    };
+
+    // =========================================================================
+    // PEAK 1: MÖNCH / BREITHORN (u = 0.00 .. 0.255) — Interlocking Facet Mesh
+    // =========================================================================
+    // 1A. Sunlit Western Lower Rock/Glacier Slope
+    paintPoly([
+        [0.000, 0.500], [0.035, 0.445], [0.068, 0.448], [0.095, 0.438],
+        [0.125, 0.422], [0.138, 0.468], [0.048, 0.515], [0.000, 0.535],
+    ], 0.422, 0.540, P.rockSunTop, P.rockSunBot, 0.45 * nMul, 0.0);
+
+    // 1B. Central Shaded Rock Buttress Rib (below glacier cap)
+    paintPoly([
+        [0.125, 0.422], [0.156, 0.432], [0.172, 0.482], [0.138, 0.468],
+    ], 0.422, 0.495, P.cragTop, P.cliffDarkBot, 0.58 * nMul, 0.12 * nMul);
+
+    // 1C. Shaded Eastern Cirque Wall descending to Col 1 (interlocks cleanly with Matterhorn West spur at [0.225, 0.530])
+    paintPoly([
+        [0.132, 0.382], [0.165, 0.388], [0.200, 0.415], [0.228, 0.448],
+        [0.255, 0.482], [0.225, 0.530], [0.138, 0.468], [0.125, 0.422],
+    ], 0.382, 0.530, P.cliffDarkTop, P.cliffDarkBot, 0.52 * nMul, 0.0);
+
+    // 1D. Mönch Sunlit Upper Glacier Dome (with sculpted lower crevasse lobes)
+    paintPoly([
+        [0.035, 0.445], [0.072, 0.402], [0.105, 0.385], [0.132, 0.382],
+        [0.125, 0.422], [0.108, 0.442], [0.095, 0.428], [0.075, 0.452], [0.055, 0.438],
+    ], 0.382, 0.458, P.snowSunTop, P.snowSunBot, (isWinter ? 0.82 : 0.94) * nMul, 0.25 * nMul);
+
+    // 1E. Mönch Shaded Eastern Glacier Cap & Cirque Ice Chute
+    paintPoly([
+        [0.132, 0.382], [0.165, 0.388], [0.200, 0.415], [0.228, 0.448],
+        [0.195, 0.456], [0.175, 0.432], [0.156, 0.432], [0.125, 0.422],
+    ], 0.382, 0.460, P.snowShadeTop, P.snowShadeBot, (isWinter ? 0.58 : 0.72) * nMul, 0.18 * nMul);
+
+    // =========================================================================
+    // PEAK 2: THE MATTERHORN (u = 0.255 .. 0.675) — Interlocking 4-Zone 3D Mesh
+    // =========================================================================
+
+    // --- ZONE A: Multi-Faceted Sunlit West / Zmutt Flank (Between West Skyline and Zmutt Arête) ---
+    // A1. Upper Sunlit Zmutt Wall (W2 - W3 - Z2 - Z3)
+    paintPoly([
+        [0.328, 0.398], [0.368, 0.345], [0.402, 0.338], [0.382, 0.395], [0.354, 0.418],
+    ], 0.338, 0.420, P.rockSunTop, P.rockSunBot, 0.62 * nMul, 0.36 * nMul);
+
+    // A2. Recessed West Zmutt Gully Facet (gives chiseled 3D relief to the left slope)
+    paintPoly([
+        [0.328, 0.398], [0.354, 0.418], [0.382, 0.395], [0.346, 0.455], [0.312, 0.445],
+    ], 0.395, 0.460, P.rockMidTop, P.rockMidBot, 0.46 * nMul, 0.22 * nMul);
+
+    // A3. Lower Sunlit Zmutt Spur sweeping in front of Col 1 down to [0.225, 0.530]
+    paintPoly([
+        [0.255, 0.482], [0.292, 0.442], [0.328, 0.398], [0.312, 0.445],
+        [0.346, 0.455], [0.312, 0.525], [0.225, 0.530],
+    ], 0.398, 0.530, P.rockSunTop, P.rockSunBot, 0.52 * nMul, 0.0);
+
+    // --- ZONE B: Oblique North Face (Between Zmutt Arête and central Hörnli Ridge) ---
+    // B1. Zmutt Nose Steep Rock Bastion (Z1 - N1 - N2 - Z2)
+    paintPoly([
+        [0.432, 0.285], [0.458, 0.275], [0.442, 0.325], [0.402, 0.338],
+    ], 0.275, 0.345, P.cliffDarkTop, P.rockMidBot, 0.54 * nMul, 0.38 * nMul);
+
+    // B2. Mid-North Face Sunlit-Oblique Snow/Granite Terrace (Z2 - N2 - N3 - Z3)
+    paintPoly([
+        [0.402, 0.338], [0.442, 0.325], [0.446, 0.382], [0.382, 0.395],
+    ], 0.325, 0.400, isWinter ? P.snowSunTop : P.rockSunTop, P.rockMidBot, (isWinter ? 0.65 : 0.42) * nMul, 0.22 * nMul);
+
+    // B3. Mid-North Face Shaded Rock Rib along Hörnli Spine (N2 - H2 - H3 - N3)
+    paintPoly([
+        [0.442, 0.325], [0.472, 0.308], [0.498, 0.362], [0.446, 0.382],
+    ], 0.308, 0.390, P.cragTop, P.cliffDarkBot, 0.62 * nMul, 0.36 * nMul);
+
+    // B4. Lower North Face Oblique Facets (Z3 - N3 - N4 - Z4 and N3 - H3 - H4 - N4)
+    paintPoly([
+        [0.382, 0.395], [0.446, 0.382], [0.422, 0.445], [0.346, 0.455],
+    ], 0.382, 0.465, P.rockMidTop, P.rockMidBot, 0.46 * nMul, 0.16 * nMul);
+
+    paintPoly([
+        [0.446, 0.382], [0.498, 0.362], [0.482, 0.425], [0.422, 0.445],
+    ], 0.362, 0.455, P.rockSunTop, P.rockMidBot, 0.38 * nMul, 0.15 * nMul);
+
+    // B5. Base North Face Transition (Z4 - N4 - H4 - H5 - N5 - Z5)
+    paintPoly([
+        [0.346, 0.455], [0.422, 0.445], [0.482, 0.425],
+        [0.504, 0.495], [0.415, 0.515], [0.312, 0.525],
+    ], 0.425, 0.530, P.rockMidTop, P.rockMidBot, 0.34 * nMul, 0.0);
+
+    // --- ZONE C: Deep-Shaded Sheer East Face (Between Hörnli Ridge and Furggen Rib) ---
+    // C1. Upper East Face Sheer Cliff Wall below the Summit Hook (H1 - F1 - F2 - H2)
+    paintPoly([
+        [0.485, 0.262], [0.518, 0.292], [0.542, 0.345], [0.472, 0.308],
+    ], 0.262, 0.355, P.cragTop, P.cliffDarkBot, 0.76 * nMul, 0.54 * nMul);
+
+    // C2. Mid East Face Solvay Cliff Wall (H2 - F2 - F3 - H3)
+    paintPoly([
+        [0.472, 0.308], [0.542, 0.345], [0.568, 0.405], [0.498, 0.362],
+    ], 0.308, 0.415, P.cliffDarkTop, P.cliffDarkBot, 0.68 * nMul, 0.46 * nMul);
+
+    // C3. Lower East Face Wall (H3 - F3 - F4 - H4 - H5 - F5)
+    paintPoly([
+        [0.498, 0.362], [0.568, 0.405], [0.592, 0.468],
+        [0.582, 0.525], [0.504, 0.495], [0.482, 0.425],
+    ], 0.362, 0.525, P.cliffDarkTop, P.cliffDarkBot, 0.56 * nMul, 0.0);
+
+    // --- ZONE D: Outer East / Furggen Ridge Facets (Between Furggen Rib and East Skyline) ---
+    // D1. Upper Furggen Crag (F1 - E1 - E2 - E3 - F2) — catches subtle grazing sky light
+    paintPoly([
+        [0.518, 0.292], [0.513, 0.256], [0.552, 0.298], [0.588, 0.342], [0.542, 0.345],
+    ], 0.256, 0.355, P.cliffDarkTop, P.rockMidBot, 0.54 * nMul, 0.36 * nMul);
+
+    // D2. Mid Furggen Shoulder (F2 - E3 - E4 - F3) — dark crag rib
+    paintPoly([
+        [0.542, 0.345], [0.588, 0.342], [0.628, 0.392], [0.568, 0.405],
+    ], 0.342, 0.415, P.cragTop, P.cliffDarkBot, 0.66 * nMul, 0.42 * nMul);
+
+    // D3. Lower Furggen Slope descending across Col 2 to [0.695, 0.525] (interlocks with Eiger West Flank)
+    paintPoly([
+        [0.568, 0.405], [0.628, 0.392], [0.654, 0.426], [0.675, 0.456],
+        [0.695, 0.525], [0.582, 0.525], [0.592, 0.468],
+    ], 0.392, 0.525, P.cliffDarkTop, P.cliffDarkBot, 0.50 * nMul, 0.0);
+
+    // --- ZONE E: Matterhorn Sculpted Summit Snow-Cap, Roof Glacier & Interlocking V-Couloirs ---
+    // E1. Sunlit West Summit & Zmutt Nose Snow Mantle (with sharp V-couloir tongue at [0.384, 0.368])
+    paintPoly([
+        [0.368, 0.345], [0.408, 0.288], [0.446, 0.238], [0.482, 0.226],
+        [0.485, 0.262], [0.472, 0.308], [0.458, 0.275], [0.432, 0.285],
+        [0.402, 0.338], [0.384, 0.368],
+    ], 0.226, 0.368, P.snowSunTop, P.snowSunBot, (isWinter ? 0.90 : 0.96) * nMul, 0.45 * nMul);
+
+    // E2. Sunlit North-Face Upper Snow Couloir (deep V-couloir of snow plunging to [0.452, 0.358])
+    paintPoly([
+        [0.458, 0.275], [0.485, 0.262], [0.472, 0.308], [0.452, 0.358], [0.442, 0.325],
+    ], 0.262, 0.360, P.snowSunTop, P.snowShadeTop, (isWinter ? 0.84 : 0.90) * nMul, 0.25 * nMul);
+
+    // E3. Shaded Italian/East Summit Snow Crown & Overhanging Hook Rim
+    paintPoly([
+        [0.482, 0.226], [0.520, 0.235], [0.513, 0.256], [0.552, 0.298],
+        [0.535, 0.322], [0.518, 0.292], [0.485, 0.262],
+    ], 0.226, 0.325, P.snowShadeTop, P.snowShadeBot, (isWinter ? 0.72 : 0.82) * nMul, 0.28 * nMul);
+
+    // E4. Shaded East Face Upper Snow Chute (tapering into a V-gully at [0.562, 0.368])
+    paintPoly([
+        [0.518, 0.292], [0.552, 0.298], [0.588, 0.342], [0.562, 0.368], [0.542, 0.345],
+    ], 0.292, 0.368, P.snowShadeTop, P.snowShadeBot, (isWinter ? 0.58 : 0.64) * nMul, 0.12 * nMul);
+
+    // =========================================================================
+    // PEAK 3: THE EIGER (u = 0.675 .. 1.000) — Interlocking 3D Facet Mesh
+    // =========================================================================
+
+    // 3A. Sunlit Western Glacier Ramp & Flank (interlocks with Col 2 spur at [0.695, 0.525])
+    paintPoly([
+        [0.675, 0.456], [0.700, 0.425], [0.726, 0.382], [0.755, 0.348],
+        [0.792, 0.336], [0.768, 0.368], [0.778, 0.412], [0.756, 0.465],
+        [0.740, 0.530], [0.695, 0.525],
+    ], 0.336, 0.530, P.rockSunTop, P.rockSunBot, 0.54 * nMul, 0.0);
+
+    // 3B. Sheer Concave Eiger Nordwand Upper Cliff Wall (ER1 - EC1 - EC2 - ER2)
+    paintPoly([
+        [0.768, 0.368], [0.818, 0.382], [0.838, 0.428], [0.778, 0.412],
+    ], 0.368, 0.432, P.cragTop, P.cliffDarkBot, 0.74 * nMul, 0.52 * nMul);
+
+    // 3C. Eiger Nordwand Lower Cliff Wall (ER2 - EC2 - EC3 - ER3 - ER4)
+    paintPoly([
+        [0.778, 0.412], [0.838, 0.428], [0.825, 0.482], [0.740, 0.530], [0.756, 0.465],
+    ], 0.412, 0.530, P.cliffDarkTop, P.cliffDarkBot, 0.60 * nMul, 0.0);
+
+    // 3D. Mittellegi Grazing-Lit Limestone Buttress (EC1 - EE1 - EE2 - EE3 - EC2)
+    paintPoly([
+        [0.818, 0.382], [0.846, 0.378], [0.874, 0.392], [0.905, 0.438], [0.838, 0.428],
+    ], 0.378, 0.442, P.cliffDarkTop, P.rockMidBot, 0.50 * nMul, 0.34 * nMul);
+
+    // 3E. Eastern Stepped Crag Wall (EC2 - EE3 - EE4 - EE5 - EE6 - EC4 - EC3)
+    paintPoly([
+        [0.838, 0.428], [0.905, 0.438], [0.938, 0.460], [0.972, 0.508],
+        [1.000, 0.550], [1.000, 0.585], [0.825, 0.482],
+    ], 0.428, 0.585, P.cragTop, P.cliffDarkBot, 0.62 * nMul, 0.0);
+
+    // 3F. Eiger Sunlit Western Summit Snowfield & Hanging Glacier (EW2 - EW3 - ES1 - ER1 - ER2)
+    paintPoly([
+        [0.726, 0.382], [0.755, 0.348], [0.792, 0.336],
+        [0.768, 0.368], [0.778, 0.412], [0.748, 0.428], [0.738, 0.398],
+    ], 0.336, 0.430, P.snowSunTop, P.snowSunBot, (isWinter ? 0.86 : 0.92) * nMul, 0.28 * nMul);
+
+    // 3G. Eiger Shaded Tabular Crown Snowfield & "White Spider" Ice Chute (ES1 - ES2 - EE1 - EC1 - ER1)
+    paintPoly([
+        [0.792, 0.336], [0.824, 0.344], [0.846, 0.378],
+        [0.832, 0.395], [0.818, 0.382], [0.808, 0.415], [0.794, 0.385], [0.768, 0.368],
+    ], 0.336, 0.418, P.snowShadeTop, P.snowShadeBot, (isWinter ? 0.68 : 0.78) * nMul, 0.24 * nMul);
+
+    // 0f. Soft Orographic Banner Cloud Streaming from the Matterhorn Horn & Mist Along the Eiger & Valley
     const wispCol = night ? [0.68, 0.78, 0.92] : [0.96, 0.98, 1.00];
     const wispDrift = Math.sin((time - 1.1) * 0.35) * 6.0 * scale;
-    drawSoftFogBand(cr, width * 0.53 + wispDrift, groundOffset + 0.28 * sh, 80 * scale, 13 * scale, wispCol, night ? 0.18 : 0.28);
-    drawSoftFogBand(cr, width * 0.78 - wispDrift * 0.7, groundOffset + 0.39 * sh, 68 * scale, 12 * scale, wispCol, night ? 0.14 : 0.22);
-    drawSoftFogBand(cr, width * 0.16 + wispDrift * 0.5, groundOffset + 0.42 * sh, 66 * scale, 12 * scale, wispCol, night ? 0.12 : 0.20);
+    drawSoftFogBand(cr, width * 0.53 + wispDrift, groundOffset + 0.28 * sh, 80 * scale, 13 * scale, wispCol, night ? 0.16 : 0.24);
+    drawSoftFogBand(cr, width * 0.78 - wispDrift * 0.7, groundOffset + 0.39 * sh, 68 * scale, 12 * scale, wispCol, night ? 0.12 : 0.18);
+    drawSoftFogBand(cr, width * 0.16 + wispDrift * 0.5, groundOffset + 0.42 * sh, 66 * scale, 12 * scale, wispCol, night ? 0.10 : 0.16);
+    drawSoftFogBand(cr, width * 0.48 - wispDrift * 0.4, groundOffset + 0.56 * sh, 130 * scale, 16 * scale, wispCol, night ? 0.10 : 0.16);
 
     // 1. Hill 1 (Distant Left-Center Rolling Foothill Knoll supporting the Distant Pines)
     const h1 = new Cairo.LinearGradient(0, floorTop - 10 * scale, 0, height);
