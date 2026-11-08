@@ -1183,7 +1183,7 @@ function stepKoi(koi, dt, width, height, pondTopY, scale) {
     }
 }
 
-function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity) {
+function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity, isWinter = false) {
     const maxWidth = koi.maxWidth * scale;
     const pathSpine = koi.pathSpine;
     const sp = [];
@@ -1463,8 +1463,8 @@ function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity) {
         }
     }
 
-    // 7. Surface-kiss meniscus & concentric rings when headZ < 0.12
-    if (headZ < 0.12) {
+    // 7. Surface-kiss meniscus & concentric rings when headZ < 0.12 (open water only)
+    if (!isWinter && headZ < 0.12) {
         const kissT = 1 - headZ / 0.12;
         const noseX = sp[0].x + Math.cos(angles[0]) * maxWidth * 0.38;
         const noseY = sp[0].y + Math.sin(angles[0]) * maxWidth * 0.38;
@@ -1517,10 +1517,10 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night, isWinter = 
         stepKoi(koi, koiDt, width, height, pondTopY, scale);
     const orderedKoi = sky.koi.slice().sort((a, b) => b.pathSpine[5].z - a.pathSpine[5].z);
     for (const koi of orderedKoi)
-        drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity);
+        drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity, isWinter);
 
-    // Pass 3: Underwater shadows cast by floating lotus pads onto the water & koi below
-    const pads = sky.pads ?? [];
+    // Pass 3: Underwater shadows cast by floating lotus pads onto the water & koi below (warm seasons only)
+    const pads = isWinter ? [] : (sky.pads ?? []);
     for (const pad of pads) {
         if (pad.companionLeaf) {
             const cr2 = 15.5 * scale;
@@ -1572,53 +1572,107 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night, isWinter = 
     cr.fill();
     cr.restore();
 
-    // Pass 4b (Winter): Translucent frosted ice sheet with an open unfrozen breathing hole over the koi
+    // Pass 4b (Winter): Continuous translucent frozen pond ice sheet + snow-covered shoreline banks (no lotus plants)
     if (isWinter) {
-        const holeX = width * 0.58, holeY = height - 64 * scale;
-        const holeRx = 58 * scale, holeRy = 31 * scale;
-        cr.save();
-        cr.setFillRule(Cairo.FillRule.EVEN_ODD);
-        cr.newPath();
-        cr.rectangle(0, pondTopY - 4 * scale, width, pondH + 4 * scale);
-        cr.save();
-        cr.translate(holeX, holeY);
-        cr.scale(holeRx, holeRy);
-        cr.newSubPath();
-        cr.arc(0, 0, 1.0, 0, TWO_PI);
-        cr.restore();
+        // 1. Continuous frosted ice sheet over the submerged koi
         const iceG = new Cairo.LinearGradient(0, pondTopY - 4 * scale, 0, height);
-        iceG.addColorStopRGBA(0.0, 0.80, 0.90, 0.98, 0.0);
-        iceG.addColorStopRGBA(0.28, 0.80, 0.90, 0.98, night ? 0.30 : 0.42);
-        iceG.addColorStopRGBA(1.0, 0.68, 0.82, 0.95, night ? 0.42 : 0.54);
+        iceG.addColorStopRGBA(0.00, 0.82, 0.91, 0.99, 0.0);
+        iceG.addColorStopRGBA(0.24, 0.80, 0.90, 0.98, night ? 0.28 : 0.38);
+        iceG.addColorStopRGBA(0.65, 0.74, 0.86, 0.96, night ? 0.34 : 0.44);
+        iceG.addColorStopRGBA(1.00, 0.68, 0.82, 0.95, night ? 0.40 : 0.50);
         cr.setSource(iceG);
+        cr.rectangle(0, pondTopY - 4 * scale, width, pondH + 4 * scale);
         cr.fill();
-        cr.restore();
 
-        // Frosted ice rim & crystalline fracture lines around the breathing hole
+        // 2. Full-bleed diagonal specular ice-sheen bands across the frozen pond surface
         cr.save();
-        cr.translate(holeX, holeY);
-        cr.scale(holeRx, holeRy);
-        cr.setSourceRGBA(0.92, 0.97, 1.0, night ? 0.55 : 0.78);
-        cr.setLineWidth(1.5 / holeRx * scale);
+        cr.rectangle(0, pondTopY, width, pondH);
+        cr.clip();
+        for (const [x0, y0, x1, y1, wBand, aBand] of [
+            [-30 * scale, pondTopY + 58 * scale, width + 30 * scale, pondTopY + 4 * scale,  16 * scale, 0.11],
+            [-30 * scale, height - 8 * scale,    width + 30 * scale, pondTopY + 38 * scale, 20 * scale, 0.10],
+            [-30 * scale, height + 18 * scale,   width + 30 * scale, height - 28 * scale,   12 * scale, 0.08],
+        ]) {
+            cr.setSourceRGBA(0.95, 0.99, 1.0, (night ? 0.65 : 1.0) * aBand);
+            cr.setLineWidth(wBand);
+            cr.newPath();
+            cr.moveTo(x0, y0);
+            cr.lineTo(x1, y1);
+            cr.stroke();
+        }
+
+        // 3. Delicate branching frost crystal seams across the ice sheet
+        cr.setSourceRGBA(0.94, 0.98, 1.0, night ? 0.26 : 0.38);
+        cr.setLineWidth(0.75 * scale);
         cr.newPath();
-        cr.arc(0, 0, 1.0, 0, TWO_PI);
+        cr.moveTo(width * 0.18, pondTopY + 48 * scale);
+        cr.lineTo(width * 0.36, pondTopY + 41 * scale);
+        cr.lineTo(width * 0.52, pondTopY + 46 * scale);
+        cr.moveTo(width * 0.36, pondTopY + 41 * scale);
+        cr.lineTo(width * 0.44, pondTopY + 33 * scale);
+        cr.moveTo(width * 0.56, height - 44 * scale);
+        cr.lineTo(width * 0.74, height - 52 * scale);
+        cr.lineTo(width * 0.86, height - 47 * scale);
         cr.stroke();
         cr.restore();
 
-        cr.save();
-        cr.setSourceRGBA(0.92, 0.97, 1.0, night ? 0.34 : 0.48);
-        cr.setLineWidth(0.85 * scale);
+        // 4. Curved snow-covered distant shoreline bank along pondTopY (organic snow ridge, no flat top seam)
+        const bankSnowG = new Cairo.LinearGradient(0, pondTopY - 6 * scale, 0, pondTopY + 26 * scale);
+        bankSnowG.addColorStopRGBA(0.0, 0.96, 0.98, 1.0, night ? 0.42 : 0.66);
+        bankSnowG.addColorStopRGBA(0.6, 0.86, 0.92, 0.99, night ? 0.46 : 0.72);
+        bankSnowG.addColorStopRGBA(1.0, 0.76, 0.86, 0.96, night ? 0.30 : 0.48);
+        cr.setSource(bankSnowG);
         cr.newPath();
-        cr.moveTo(holeX - holeRx, holeY - 2 * scale);
-        cr.lineTo(holeX - holeRx - 28 * scale, holeY - 12 * scale);
-        cr.lineTo(holeX - holeRx - 52 * scale, holeY - 6 * scale);
-        cr.moveTo(holeX + holeRx * 0.88, holeY + 10 * scale);
-        cr.lineTo(holeX + holeRx + 26 * scale, holeY + 22 * scale);
+        cr.moveTo(0, pondTopY + 4 * scale);
+        cr.curveTo(width * 0.28, pondTopY - 4 * scale, width * 0.68, pondTopY + 5 * scale, width, pondTopY - 1 * scale);
+        cr.lineTo(width, pondTopY + 19 * scale);
+        cr.curveTo(width * 0.70, pondTopY + 11 * scale, width * 0.34, pondTopY + 23 * scale, 0, pondTopY + 16 * scale);
+        cr.closePath();
+        cr.fill();
+
+        // Crisp snow-ice shoreline rim along the distant bank
+        cr.setSourceRGBA(0.97, 0.99, 1.0, night ? 0.44 : 0.68);
+        cr.setLineWidth(1.0 * scale);
+        cr.newPath();
+        cr.moveTo(0, pondTopY + 16 * scale);
+        cr.curveTo(width * 0.34, pondTopY + 23 * scale, width * 0.70, pondTopY + 11 * scale, width, pondTopY + 19 * scale);
         cr.stroke();
-        cr.restore();
+
+        // Foreground left & right snowbank ledges encroaching onto the frozen pond edge
+        const fgSnowG = new Cairo.LinearGradient(0, height - 46 * scale, 0, height);
+        fgSnowG.addColorStopRGBA(0.0, 0.95, 0.98, 1.0, night ? 0.54 : 0.80);
+        fgSnowG.addColorStopRGBA(1.0, 0.80, 0.88, 0.97, night ? 0.62 : 0.88);
+        cr.setSource(fgSnowG);
+
+        // Left foreground snowbank
+        cr.newPath();
+        cr.moveTo(0, height - 36 * scale);
+        cr.curveTo(width * 0.15, height - 38 * scale, width * 0.28, height - 22 * scale, width * 0.38, height);
+        cr.lineTo(0, height);
+        cr.closePath();
+        cr.fill();
+
+        // Right foreground snowbank
+        cr.newPath();
+        cr.moveTo(width, height - 32 * scale);
+        cr.curveTo(width * 0.85, height - 34 * scale, width * 0.73, height - 18 * scale, width * 0.62, height);
+        cr.lineTo(width, height);
+        cr.closePath();
+        cr.fill();
+
+        // Crisp frost rim along the foreground snowbank edges
+        cr.setSourceRGBA(0.98, 0.99, 1.0, night ? 0.50 : 0.76);
+        cr.setLineWidth(1.1 * scale);
+        cr.newPath();
+        cr.moveTo(0, height - 36 * scale);
+        cr.curveTo(width * 0.15, height - 38 * scale, width * 0.28, height - 22 * scale, width * 0.38, height);
+        cr.moveTo(width, height - 32 * scale);
+        cr.curveTo(width * 0.85, height - 34 * scale, width * 0.73, height - 18 * scale, width * 0.62, height);
+        cr.stroke();
+        return;
     }
 
-    // Pass 5: Floating foreshortened botanical lotus pads, bud & 3D Sacred Lotus blossom
+    // Pass 5: Floating foreshortened botanical lotus pads, bud & 3D Sacred Lotus blossom (warm seasons only)
     const lum = night ? 0.54 : 0.72;
     for (const pad of pads) {
         if (pad.companionLeaf) {
@@ -4202,56 +4256,150 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night, isWinter = f
     cr.rectangle(0, floorTop - 10 * scale, width, height - floorTop + 10 * scale);
     cr.fill();
 
+    const lum = night ? 0.68 : (isWinter ? 0.90 : 0.74);
+
     if (isWinter) {
-        // Translucent frozen marsh ice glaze with an open breathing pocket around the foreground lotus pad
-        const holeX = width * 0.258, holeY = height - 42 * scale;
-        const holeRx = 42 * scale, holeRy = 22 * scale;
-        cr.save();
-        cr.setFillRule(Cairo.FillRule.EVEN_ODD);
-        cr.newPath();
-        cr.rectangle(0, floorTop - 4 * scale, width, height - floorTop + 4 * scale);
-        cr.save();
-        cr.translate(holeX, holeY);
-        cr.scale(holeRx, holeRy);
-        cr.newSubPath();
-        cr.arc(0, 0, 1.0, 0, TWO_PI);
-        cr.restore();
+        const pondH = height - floorTop;
+
+        // 1. Continuous frozen pond ice layer across the marsh (no lotus plants)
         const iceG = new Cairo.LinearGradient(0, floorTop - 4 * scale, 0, height);
-        iceG.addColorStopRGBA(0.0, 0.84, 0.92, 0.99, 0.0);
-        iceG.addColorStopRGBA(0.30, 0.84, 0.92, 0.99, night ? 0.26 : 0.36);
-        iceG.addColorStopRGBA(1.0, 0.74, 0.86, 0.96, night ? 0.36 : 0.48);
+        iceG.addColorStopRGBA(0.00, 0.84, 0.92, 0.99, 0.0);
+        iceG.addColorStopRGBA(0.24, 0.82, 0.91, 0.99, night ? 0.30 : 0.44);
+        iceG.addColorStopRGBA(0.65, 0.76, 0.87, 0.97, night ? 0.36 : 0.52);
+        iceG.addColorStopRGBA(1.00, 0.70, 0.83, 0.95, night ? 0.42 : 0.58);
         cr.setSource(iceG);
+        cr.rectangle(0, floorTop - 4 * scale, width, pondH + 4 * scale);
         cr.fill();
-        cr.restore();
 
-        // Crisp frosted ice rim & crystalline fracture lines around the unfrozen marsh pocket
+        // 2. Full-bleed diagonal specular ice-sheen bands & frost crystal veins on the frozen marsh pond
         cr.save();
-        cr.translate(holeX, holeY);
-        cr.scale(holeRx, holeRy);
-        cr.setSourceRGBA(0.95, 0.98, 1.0, night ? 0.55 : 0.78);
-        cr.setLineWidth(1.3 / Math.sqrt(holeRx * holeRy));
-        cr.newPath();
-        cr.arc(0, 0, 1.0, 0, TWO_PI);
-        cr.stroke();
-        cr.restore();
-
-        cr.save();
-        cr.setSourceRGBA(0.94, 0.98, 1.0, night ? 0.34 : 0.50);
-        cr.setLineWidth(0.75 * scale);
-        for (const [ang, len] of [[-0.35, 22], [0.42, 26], [2.65, 18], [-2.55, 16]]) {
-            const x0 = holeX + Math.cos(ang) * holeRx;
-            const y0 = holeY + Math.sin(ang) * holeRy;
-            const x1 = holeX + Math.cos(ang + 0.08) * (holeRx + len * scale);
-            const y1 = holeY + Math.sin(ang + 0.08) * (holeRy + len * 0.45 * scale);
+        cr.rectangle(0, floorTop, width, pondH);
+        cr.clip();
+        for (const [x0, y0, x1, y1, wBand, aBand] of [
+            [-30 * scale, floorTop + 58 * scale, width + 30 * scale, floorTop + 4 * scale,  16 * scale, 0.12],
+            [-30 * scale, height - 8 * scale,    width + 30 * scale, floorTop + 38 * scale, 20 * scale, 0.11],
+            [-30 * scale, height + 18 * scale,   width + 30 * scale, height - 28 * scale,   12 * scale, 0.09],
+        ]) {
+            cr.setSourceRGBA(0.96, 0.99, 1.0, (night ? 0.65 : 1.0) * aBand);
+            cr.setLineWidth(wBand);
             cr.newPath();
             cr.moveTo(x0, y0);
             cr.lineTo(x1, y1);
             cr.stroke();
         }
-        cr.restore();
-    }
 
-    const lum = night ? 0.68 : 0.74;
+        cr.setSourceRGBA(0.95, 0.98, 1.0, night ? 0.28 : 0.40);
+        cr.setLineWidth(0.75 * scale);
+        cr.newPath();
+        cr.moveTo(width * 0.34, floorTop + 56 * scale);
+        cr.lineTo(width * 0.56, floorTop + 48 * scale);
+        cr.lineTo(width * 0.70, floorTop + 54 * scale);
+        cr.moveTo(width * 0.56, floorTop + 48 * scale);
+        cr.lineTo(width * 0.64, floorTop + 39 * scale);
+        cr.moveTo(width * 0.46, height - 42 * scale);
+        cr.lineTo(width * 0.64, height - 50 * scale);
+        cr.stroke();
+        cr.restore();
+
+        // 3. Curved snow-blanketed upper shoreline ridge along floorTop (no flat horizontal line)
+        const bankSnowG = new Cairo.LinearGradient(0, floorTop - 6 * scale, 0, floorTop + 26 * scale);
+        bankSnowG.addColorStopRGBA(0.0, 0.96, 0.98, 1.0, night ? 0.42 : 0.66);
+        bankSnowG.addColorStopRGBA(0.6, 0.86, 0.92, 0.99, night ? 0.46 : 0.72);
+        bankSnowG.addColorStopRGBA(1.0, 0.76, 0.86, 0.96, night ? 0.30 : 0.48);
+        cr.setSource(bankSnowG);
+        cr.newPath();
+        cr.moveTo(0, floorTop + 4 * scale);
+        cr.curveTo(width * 0.30, floorTop - 4 * scale, width * 0.66, floorTop + 5 * scale, width, floorTop - 1 * scale);
+        cr.lineTo(width, floorTop + 19 * scale);
+        cr.curveTo(width * 0.68, floorTop + 11 * scale, width * 0.34, floorTop + 23 * scale, 0, floorTop + 16 * scale);
+        cr.closePath();
+        cr.fill();
+
+        // Crisp snow-ice shoreline rim along the distant bank
+        cr.setSourceRGBA(0.97, 0.99, 1.0, night ? 0.44 : 0.68);
+        cr.setLineWidth(1.0 * scale);
+        cr.newPath();
+        cr.moveTo(0, floorTop + 16 * scale);
+        cr.curveTo(width * 0.34, floorTop + 23 * scale, width * 0.68, floorTop + 11 * scale, width, floorTop + 19 * scale);
+        cr.stroke();
+
+        // 4. Dried winter marsh cattail reeds rising behind the left snow-covered shoreline bank
+        const xf = width * 0.258, yf = height - 42 * scale;
+        const sway = Math.sin((time - 1.1) * 1.4) * 0.7 * scale;
+        cr.save();
+        cr.setLineCap(Cairo.LineCap.ROUND);
+        for (const [dx, hReed, lean, hasHead] of [
+            [11.5, 42, -2.5, true],
+            [15.0, 48,  1.2, true],
+            [17.8, 35,  4.2, false],
+        ]) {
+            const x0 = xf + dx * scale, y0 = yf + 4 * scale;
+            const x1 = x0 + lean * scale + sway, y1 = y0 - hReed * scale;
+            cr.setSourceRGBA(0.68 * lum, 0.58 * lum, 0.40 * lum, 0.90);
+            cr.setLineWidth(1.15 * scale);
+            cr.newPath();
+            cr.moveTo(x0, y0);
+            cr.curveTo(x0 + lean * 0.3 * scale, y0 - hReed * 0.5 * scale, x1 - sway * 0.3, y0 - hReed * 0.8 * scale, x1, y1);
+            cr.stroke();
+
+            if (hasHead) {
+                const hx = x0 + (lean * 0.78) * scale + sway * 0.8;
+                const hy = y0 - hReed * 0.76 * scale;
+                // Velvety dark-brown cattail spike
+                cr.setSourceRGBA(0.32 * lum, 0.20 * lum, 0.13 * lum, 0.95);
+                cr.setLineWidth(3.1 * scale);
+                cr.newPath();
+                cr.moveTo(hx - lean * 0.06 * scale, hy + 4.2 * scale);
+                cr.lineTo(hx + lean * 0.06 * scale, hy - 4.2 * scale);
+                cr.stroke();
+
+                // White snow cap on top of cattail spike
+                cr.setSourceRGBA(0.97 * lum, 0.99 * lum, 1.0 * lum, 0.95);
+                cr.setLineWidth(2.4 * scale);
+                cr.newPath();
+                cr.moveTo(hx + lean * 0.02 * scale, hy - 1.5 * scale);
+                cr.lineTo(hx + lean * 0.07 * scale, hy - 4.6 * scale);
+                cr.stroke();
+            }
+        }
+        cr.restore();
+
+        // 5. Sweeping snow-covered foreground shoreline ground banks framing the frozen pond
+        const fgSnowG = new Cairo.LinearGradient(0, height - 60 * scale, 0, height);
+        fgSnowG.addColorStopRGBA(0.0, 0.96, 0.98, 1.0, night ? 0.62 : 0.88);
+        fgSnowG.addColorStopRGBA(1.0, 0.80, 0.88, 0.97, night ? 0.70 : 0.94);
+        cr.setSource(fgSnowG);
+
+        // Left snow-covered marsh ground bank extending directly beneath the sparrow (x = 0 .. 0.48w)
+        cr.newPath();
+        cr.moveTo(0, height - 54 * scale);
+        cr.curveTo(width * 0.18, height - 56 * scale, width * 0.34, height - 42 * scale, width * 0.48, height);
+        cr.lineTo(0, height);
+        cr.closePath();
+        cr.fill();
+
+        // Right snow-covered marsh shoreline bank (x = 0.56w .. width)
+        cr.newPath();
+        cr.moveTo(width, height - 38 * scale);
+        cr.curveTo(width * 0.84, height - 40 * scale, width * 0.68, height - 24 * scale, width * 0.56, height);
+        cr.lineTo(width, height);
+        cr.closePath();
+        cr.fill();
+
+        // Crisp frost rim along both foreground snowbanks
+        cr.setSourceRGBA(0.98, 0.99, 1.0, night ? 0.54 : 0.82);
+        cr.setLineWidth(1.15 * scale);
+        cr.newPath();
+        cr.moveTo(0, height - 54 * scale);
+        cr.curveTo(width * 0.18, height - 56 * scale, width * 0.34, height - 42 * scale, width * 0.48, height);
+        cr.moveTo(width, height - 38 * scale);
+        cr.curveTo(width * 0.84, height - 40 * scale, width * 0.68, height - 24 * scale, width * 0.56, height);
+        cr.stroke();
+
+        // Eurasian Tree Sparrow standing directly on the snow-covered shoreline ground bank
+        drawEurasianTreeSparrowOnPad(cr, xf - 9.5 * scale, yf - 9.5 * scale, 1.38 * scale, lum);
+        return;
+    }
 
     // 1. Mid-water stepping-stone lotus pad + pink bud in Mon–Tue pocket (x = 0.500w, y = h - 89*scale)
     const x1 = width * 0.500, y1 = height - 89 * scale, r1 = 17.5 * scale;
