@@ -2171,7 +2171,9 @@ function drawRain(cr, sky, width, height, scale, dt, scene, code = null, time = 
         }
     }
 
-    // Perspective-graded ground splashes & ripples from day-tiles top (0.685h) to card floor (0.99h)
+    // Perspective-graded ground splashes & ripples (only on Koi Pond K1 and Lotus & Sparrow T3)
+    if (!floor || (floorId !== 'K1' && floorId !== 'T3'))
+        return;
     const sh = sceneHeight(width, height);
     const groundOffset = height - sh;
     for (let i = 0; i < sky.ripples.length; i++) {
