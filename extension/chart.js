@@ -156,14 +156,14 @@ export function drawText(cr, text, x, y, { size = 10, bold = false, weight = 0,
     const show = PangoCairo.showLayout ?? PangoCairo.show_layout;
     if (halo) {
         const isDarkInk = lumOf(rgba) < 0.22;
-        const haloRgb = isDarkInk ? [1, 1, 1] : [0.03, 0.05, 0.09];
-        const haloAlpha = (rgba[3] ?? 1) * (isDarkInk ? 0.30 : 0.32);
+        const haloRgb = isDarkInk ? [1, 1, 1] : [0.02, 0.04, 0.09];
+        const alpha = rgba[3] ?? 1;
         cr.save();
-        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], haloAlpha);
-        for (const [dx, dy] of [
-            [-1.0, 0], [1.0, 0], [0, -1.0], [0, 1.0],
-            [-0.75, -0.75], [0.75, -0.75], [-0.75, 0.75], [0.75, 0.75],
-        ]) {
+        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkInk ? 0.55 : 0.74));
+        cr.moveTo(tx, ty + 1.0);
+        show(cr, layout);
+        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkInk ? 0.28 : 0.30));
+        for (const [dx, dy] of [[-0.55, 0], [0.55, 0], [0, -0.55], [0, 0.55]]) {
             cr.moveTo(tx + dx, ty + dy);
             show(cr, layout);
         }
@@ -345,7 +345,12 @@ export function paintChart(cr, opts) {
     const bgFn = opts.bgFn || null;
     const slotsProbe = opts.slotsProbe || NOOP_OBSERVER;
     const stripProbe = opts.stripProbe || NOOP_OBSERVER;
-    const inkAt = yPx => (bgFn ? pickInk(bgFn(yPx)) : defaultInk);
+    const inkAt = yPx => {
+        if (!bgFn)
+            return defaultInk;
+        const bg = bgFn(yPx);
+        return lumOf(bg) >= 0.52 ? INK_DARK : INK_LIGHT;
+    };
 
     // y window with asymmetric padding (headroom for labels);
     // an enabled condition strip asks for noticeably more sky above the line
@@ -374,6 +379,29 @@ export function paintChart(cr, opts) {
             curveBackdrops.push(bgFn(pts[i][1]));
     const [accentR, accentG, accentB] = lineInk(accent, curveBackdrops);
 
+    if (conditionScenes && opts.stripBottom && !opts.pills) {
+        const isDark = opts.dark !== false;
+        const dockBg = bgFn ? bgFn(height - 24) : null;
+        const useLightDock = !isDark || (dockBg && lumOf(dockBg) >= 0.52);
+        const topY = height - 54, botY = height;
+        const scrimG = new Cairo.LinearGradient(0, topY, 0, botY);
+        if (useLightDock) {
+            scrimG.addColorStopRGBA(0.0, 1, 1, 1, 0.0);
+            scrimG.addColorStopRGBA(0.30, 1, 1, 1, 0.28);
+            scrimG.addColorStopRGBA(0.82, 1, 1, 1, 0.32);
+            scrimG.addColorStopRGBA(1.0, 1, 1, 1, 0.0);
+        } else {
+            scrimG.addColorStopRGBA(0.0, 12 / 255, 16 / 255, 24 / 255, 0.0);
+            scrimG.addColorStopRGBA(0.30, 12 / 255, 16 / 255, 24 / 255, 0.24);
+            scrimG.addColorStopRGBA(0.82, 12 / 255, 16 / 255, 24 / 255, 0.28);
+            scrimG.addColorStopRGBA(1.0, 12 / 255, 16 / 255, 24 / 255, 0.0);
+        }
+        cr.save();
+        cr.setSource(scrimG);
+        cr.rectangle(0, topY, width, botY - topY);
+        cr.fill();
+        cr.restore();
+    }
     const hasNow = nowFrac !== null && nowFrac >= 0 && nowFrac <= 1;
     cr.save();
     cr.pushGroup();
@@ -602,8 +630,9 @@ export function paintChart(cr, opts) {
             anchor, unitText);
         if (placed)
             drawValue(placed.text, unitText, labelX, placed.y, anchor,
-                [...inkAt(placed.y), 0.88]);
+                [...inkAt(placed.y), 0.96]);
     }
+
     // hour labels stay flat on their baseline -- a clash drops the label
     // instead of staggering the row
     for (let i = firstLabelIndex; fmtHour && i < pointCount; i += labelInterval) {
@@ -618,13 +647,13 @@ export function paintChart(cr, opts) {
             if (!slot)
                 continue;
             drawText(cr, hourText, slot.labelX, height - 5,
-                { size: scaledFontSize, weight: hourFontWeight, rgba: [...inkAt(height - 5), 0.84], anchor: 'middle', halo: true });
+                { size: scaledFontSize, weight: hourFontWeight, rgba: [...inkAt(height - 5), 0.94], anchor: 'middle', halo: true });
             continue;
         }
         const box = boxAt(hourText, labelX, height - 5, anchor);
         if (!hitsAny(box, usedBoxes)) {
             usedBoxes.push(box);
-            drawText(cr, hourText, labelX, height - 5, { size: scaledFontSize, weight: hourFontWeight, rgba: [...inkAt(height - 5), 0.84], anchor, halo: true });
+            drawText(cr, hourText, labelX, height - 5, { size: scaledFontSize, weight: hourFontWeight, rgba: [...inkAt(height - 5), 0.94], anchor, halo: true });
         }
     }
 
@@ -668,7 +697,9 @@ export function paintChart(cr, opts) {
             // the glow family. (A luminance gate here used to read 0.55
             // -- but lumOf is WCAG, and no ordinary daylight ground
             // reaches that, so day strip glyphs were permanently pale.)
-            const inkHere = bgRgb ? pickInk(bgRgb) === INK_DARK : !isDark;
+            const inkHere = opts.stripBottom
+                ? (bgRgb ? bgLum >= 0.52 : !isDark)
+                : (bgRgb ? pickInk(bgRgb) === INK_DARK : !isDark);
             cr.save();
             cr.translate(centerX - 12 * scale, centerY - 12 * scale);
             cr.scale(scale, scale);
@@ -796,11 +827,13 @@ export function paintChart(cr, opts) {
     // exact slot reserved in the label pass (curve-cleared baseline, inward
     // flow near the edges) so nothing ever lands under it. With a bgFn the
     // accent is re-safened against the backdrop at ITS y, not the chart mid.
-    if (nowPlacement)
+    if (nowPlacement) {
+        const nowInk = inkAt(nowPlacement.y) === INK_DARK
+            ? (bgFn ? contrastSafe(accent, bgFn(nowPlacement.y)) : (opts.nowLabel ?? [accentR, accentG, accentB]))
+            : accent.map(c => c + (1 - c) * 0.32);
         drawValue(nowPlacement.text, nowPlacement.unitText, nowPlacement.labelX,
-            nowPlacement.y, nowPlacement.anchor,
-            [...(bgFn ? contrastSafe(accent, bgFn(nowPlacement.y))
-                : (opts.nowLabel ?? [accentR, accentG, accentB])), 1]);
+            nowPlacement.y, nowPlacement.anchor, [...nowInk, 1]);
+    }
 }
 
 export function hourlyPillsMetrics(width, count, mode) {
@@ -972,11 +1005,13 @@ export function paintHourlyPills(cr, opts) {
         const isNow = !!opts.isToday && i === 0;
         const rawBg = bgFn ? bgFn(midY, cx) : null;
         const slabRgb = isDark ? [16 / 255, 20 / 255, 28 / 255] : [1, 1, 1];
-        const slabAlpha = isDark ? (isNow ? 0.50 : 0.28) : (isNow ? 0.68 : 0.44);
+        const slabAlpha = isDark ? (isNow ? 0.50 : 0.36) : (isNow ? 0.68 : 0.44);
         const compBg = rawBg
             ? rawBg.map((ch, k) => ch * (1 - slabAlpha) + slabRgb[k] * slabAlpha)
             : null;
-        const pillInk = compBg ? pickInk(compBg) : defaultInk;
+        const pillInk = (isDark && isGlass)
+            ? (compBg && lumOf(compBg) >= 0.44 ? INK_DARK : INK_LIGHT)
+            : (compBg ? pickInk(compBg) : defaultInk);
 
         const fillRgba = isGlass
             ? [slabRgb[0], slabRgb[1], slabRgb[2], slabAlpha]
@@ -985,14 +1020,22 @@ export function paintHourlyPills(cr, opts) {
                 : (isDark ? [1, 1, 1, 0.07] : [0, 0, 0, 0.05]));
         const borderRgba = isGlass
             ? (isDark
-                ? [1, 1, 1, isNow ? 0.30 : 0.14]
+                ? [1, 1, 1, isNow ? 0.30 : 0.16]
                 : [16 / 255, 24 / 255, 35 / 255, isNow ? 0.36 : 0.18])
             : (isNow
                 ? [accent[0], accent[1], accent[2], 0.45]
                 : (isDark ? [1, 1, 1, 0.14] : [0, 0, 0, 0.12]));
 
         pillPath(cr, x + 0.5, m.topY + 0.5, x + m.pillW - 0.5, m.topY + m.pillH - 0.5, radius);
-        cr.setSourceRGBA(...fillRgba);
+        if (isGlass && isDark) {
+            const pGrad = new Cairo.LinearGradient(0, m.topY, 0, m.topY + m.pillH);
+            pGrad.addColorStopRGBA(0.0, slabRgb[0], slabRgb[1], slabRgb[2], isNow ? 0.46 : 0.28);
+            pGrad.addColorStopRGBA(0.50, slabRgb[0], slabRgb[1], slabRgb[2], isNow ? 0.52 : 0.36);
+            pGrad.addColorStopRGBA(1.0, slabRgb[0], slabRgb[1], slabRgb[2], isNow ? 0.62 : 0.48);
+            cr.setSource(pGrad);
+        } else {
+            cr.setSourceRGBA(...fillRgba);
+        }
         cr.fill();
 
         const hourText = isNow && opts.nowText ? opts.nowText : (fmtHour ? fmtHour(i) : '');
@@ -1048,6 +1091,7 @@ export function paintHourlyPills(cr, opts) {
                 rgba: [pillInk[0], pillInk[1], pillInk[2], isNow ? 1 : 0.88],
                 anchor: 'middle',
                 vcenter: m.topY + 15,
+                halo: true,
             });
 
             const iconScale = 23 / 24;
@@ -1076,13 +1120,15 @@ export function paintHourlyPills(cr, opts) {
                     rgba: [valInk[0], valInk[1], valInk[2], 0.98],
                     anchor: 'middle',
                     vcenter: m.topY + m.pillH - 23,
+                    halo: true,
                 });
                 drawText(cr, unitText, cx, 0, {
                     size: (baseFontSize - 1.4) * textScale,
                     weight: Pango.Weight.MEDIUM,
-                    rgba: [valInk[0], valInk[1], valInk[2], 0.82],
+                    rgba: [valInk[0], valInk[1], valInk[2], 0.90],
                     anchor: 'middle',
                     vcenter: m.topY + m.pillH - 10,
+                    halo: true,
                 });
             } else {
                 drawText(cr, valText, cx, 0, {
@@ -1091,6 +1137,7 @@ export function paintHourlyPills(cr, opts) {
                     rgba: [valInk[0], valInk[1], valInk[2], 0.98],
                     anchor: 'middle',
                     vcenter: m.topY + m.pillH - 17,
+                    halo: true,
                 });
             }
         } else {
@@ -1107,6 +1154,7 @@ export function paintHourlyPills(cr, opts) {
                 rgba: [pillInk[0], pillInk[1], pillInk[2], isNow ? 1 : 0.88],
                 anchor: 'middle',
                 vcenter: m.topY + 16,
+                halo: true,
             });
 
             const iconScale = 25 / 24;
@@ -1129,6 +1177,7 @@ export function paintHourlyPills(cr, opts) {
                 rgba: [pillInk[0], pillInk[1], pillInk[2], 1],
                 anchor: 'middle',
                 vcenter: m.topY + 84,
+                halo: true,
             });
 
             cr.setSourceRGBA(pillInk[0], pillInk[1], pillInk[2], 0.13);
@@ -1143,8 +1192,8 @@ export function paintHourlyPills(cr, opts) {
             const pSize = (baseFontSize - 0.6) * textScale;
             const pWeight = wet || textBold ? Pango.Weight.BOLD : Pango.Weight.NORMAL;
             const pColor = wet
-                ? (pillInk === INK_DARK ? [0.08, 0.42, 0.82, 0.96] : [0.52, 0.84, 1.0, 0.96])
-                : [pillInk[0], pillInk[1], pillInk[2], 0.65];
+                ? (pillInk === INK_DARK ? [0.08, 0.42, 0.82, 0.98] : [0.56, 0.86, 1.0, 0.98])
+                : [pillInk[0], pillInk[1], pillInk[2], 0.86];
             const [pW] = textPx(cr, precipStr, pSize, false, pWeight);
             const dropR = 2.8;
             const totalPW = dropR * 2 + 4 + pW;
@@ -1156,15 +1205,17 @@ export function paintHourlyPills(cr, opts) {
                 rgba: pColor,
                 anchor: 'start',
                 vcenter: m.topY + 121,
+                halo: true,
             });
 
             const windStr = pillData && pillData.winds ? (pillData.winds[i] ?? '') : '';
             drawText(cr, windStr, cx, 0, {
                 size: (baseFontSize - 1.1) * textScale,
                 weight: textBold ? Pango.Weight.MEDIUM : Pango.Weight.NORMAL,
-                rgba: [pillInk[0], pillInk[1], pillInk[2], 0.78],
+                rgba: [pillInk[0], pillInk[1], pillInk[2], 0.90],
                 anchor: 'middle',
                 vcenter: m.topY + 144,
+                halo: true,
             });
         }
     }

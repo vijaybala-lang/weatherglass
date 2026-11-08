@@ -49,14 +49,13 @@ export function paintChart(cr, w, h, state) {
         cr.setSourceRGBA(...FG, alpha);
     };
     const isDarkFg = (0.2126 * FG[0] + 0.7152 * FG[1] + 0.0722 * FG[2]) < 0.35;
-    const haloRgb = isDarkFg ? [1, 1, 1] : [0.03, 0.05, 0.09];
+    const haloRgb = isDarkFg ? [1, 1, 1] : [0.02, 0.04, 0.09];
     const showHaloText = (txt, tx, ty, alpha) => {
-        const haloAlpha = alpha * (isDarkFg ? 0.30 : 0.32);
-        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], haloAlpha);
-        for (const [dx, dy] of [
-            [-1.0, 0], [1.0, 0], [0, -1.0], [0, 1.0],
-            [-0.75, -0.75], [0.75, -0.75], [-0.75, 0.75], [0.75, 0.75],
-        ]) {
+        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkFg ? 0.55 : 0.74));
+        cr.moveTo(tx, ty + 1.0);
+        cr.showText(txt);
+        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkFg ? 0.28 : 0.30));
+        for (const [dx, dy] of [[-0.55, 0], [0.55, 0], [0, -0.55], [0, 0.55]]) {
             cr.moveTo(tx + dx, ty + dy);
             cr.showText(txt);
         }
