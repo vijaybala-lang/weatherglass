@@ -6196,12 +6196,12 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
 function drawSanFranciscoFloor(cr, width, height, scale, time, night = false, twilight = 0, isWinter = false, subdued = false, scene = 'clear') {
     const sh = sceneHeight(width, height);
     const groundOffset = height - sh;
-    const floorTop = groundOffset + 0.685 * sh;
+    const floorTop = groundOffset + 0.496 * sh;
     const isGolden = !night && !subdued && twilight >= 0.15;
     const darkGround = night || scene === 'rain' || scene === 'hail' || scene === 'storm';
     const isFogScene = (scene === 'fog');
 
-    // Distant strait waterline sits at floorTop - 20 * scale (y ≈ 299.4)
+    // Distant strait waterline sits at floorTop - 20 * scale
     const horizonY = floorTop - 20.0 * scale;
 
     // =========================================================================
@@ -6394,39 +6394,39 @@ function drawSanFranciscoFloor(cr, width, height, scale, time, night = false, tw
     //   - South (Far) Tower: 18 * scale below roadway deck (2 tiers of X-bracing), sitting on a
     //     stepped Art Deco twin concrete pedestal + offshore elliptical concrete fender base!
     const orSun = night
-        ? [0.72, 0.24, 0.15]
+        ? [0.68, 0.23, 0.15]
         : (darkGround
-            ? [0.74, 0.25, 0.15]
-            : (isGolden ? [0.85, 0.34, 0.20] : (subdued ? [0.76, 0.30, 0.22] : [0.82, 0.30, 0.19])));
+            ? [0.70, 0.24, 0.15]
+            : (isGolden ? [0.80, 0.33, 0.20] : (subdued ? [0.72, 0.29, 0.22] : [0.77, 0.29, 0.19])));
     const orMid = night
-        ? [0.56, 0.17, 0.10]
+        ? [0.53, 0.16, 0.10]
         : (darkGround
-            ? [0.58, 0.18, 0.11]
-            : (isGolden ? [0.72, 0.25, 0.15] : (subdued ? [0.64, 0.24, 0.17] : [0.69, 0.23, 0.15])));
+            ? [0.55, 0.17, 0.11]
+            : (isGolden ? [0.68, 0.24, 0.15] : (subdued ? [0.60, 0.23, 0.17] : [0.65, 0.22, 0.15])));
     const orDark = night
-        ? [0.36, 0.09, 0.07]
-        : (darkGround ? [0.39, 0.10, 0.08] : [0.49, 0.15, 0.11]);
-    const concreteSun = darkGround ? [0.52, 0.55, 0.61] : (isGolden ? [0.87, 0.78, 0.69] : [0.85, 0.83, 0.80]);
-    const concreteLit = darkGround ? [0.42, 0.45, 0.51] : (isGolden ? [0.79, 0.69, 0.60] : [0.76, 0.74, 0.71]);
-    const concreteShade = darkGround ? [0.28, 0.31, 0.37] : (isGolden ? [0.59, 0.49, 0.44] : [0.57, 0.55, 0.52]);
-    const concreteDark = darkGround ? [0.19, 0.22, 0.28] : (isGolden ? [0.44, 0.36, 0.32] : [0.42, 0.41, 0.39]);
-    const bAlpha = 0.96;
+        ? [0.34, 0.09, 0.07]
+        : (darkGround ? [0.37, 0.10, 0.08] : [0.46, 0.15, 0.11]);
+    const concreteSun = darkGround ? [0.50, 0.53, 0.59] : (isGolden ? [0.84, 0.75, 0.67] : [0.82, 0.80, 0.77]);
+    const concreteLit = darkGround ? [0.40, 0.43, 0.49] : (isGolden ? [0.76, 0.67, 0.58] : [0.73, 0.71, 0.68]);
+    const concreteShade = darkGround ? [0.27, 0.30, 0.36] : (isGolden ? [0.57, 0.48, 0.43] : [0.55, 0.53, 0.50]);
+    const concreteDark = darkGround ? [0.18, 0.21, 0.27] : (isGolden ? [0.42, 0.35, 0.31] : [0.40, 0.39, 0.37]);
+    const bAlpha = 0.95;
 
-    // North (Near) Tower geometry: 78*scale above deck + 31*scale steel legs below deck (2/3 of 47*scale!)
+    // North (Near) Tower geometry: 69*scale above deck + 31*scale steel legs below deck (2/3 of 47*scale!)
     const nearX = width * 0.252;
     const nearLeftX = nearX - 8.2 * scale;
     const nearRightX = nearX + 8.2 * scale;
-    const nearTopY = floorTop - 110 * scale;
+    const nearTopY = floorTop - 101 * scale;
     const nearLeftTopY = nearTopY + 2.6 * scale;
     const nearRightTopY = nearTopY - 1.4 * scale;
     const nearDeckY = floorTop - 32.0 * scale;
     const nearBaseY = floorTop - 1.0 * scale; // Top of the concrete pedestal!
 
-    // South (Far) Tower geometry: 41*scale above deck + 18*scale steel legs below deck (2/3 of 27*scale!)
+    // South (Far) Tower geometry: 38*scale above deck + 18*scale steel legs below deck (2/3 of 27*scale!)
     const farX = width * 0.724;
     const farLeftX = farX - 4.8 * scale;
     const farRightX = farX + 4.8 * scale;
-    const farTopY = floorTop - 78 * scale;
+    const farTopY = floorTop - 75 * scale;
     const farLeftTopY = farTopY + 1.0 * scale;
     const farRightTopY = farTopY - 0.6 * scale;
     const farDeckY = floorTop - 37.0 * scale;
