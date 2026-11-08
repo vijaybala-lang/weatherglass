@@ -5790,7 +5790,7 @@ function drawNausetLighthouseHero(cr, x, y, scale, time, night = false, isGolden
 function drawCapeCodBeachCrab(cr, width, height, scale, time, night = false, isGolden = false) {
     const { tint, aMul } = makeCapeCodTinter(night, isGolden, 0.0);
 
-    // Sideways-scuttling traverse across the open foreground beach (x = 0.22w .. 0.76w)
+    // Sideways-scuttling traverse across the open foreground beach (x = 0.48w .. 0.86w)
     const ct = (time - 1.1) + 4.2;
     const cycle = ((ct * 0.13) % 2.0 + 2.0) % 2.0;
     const dir = cycle < 1.0 ? 1 : -1;
@@ -5798,7 +5798,7 @@ function drawCapeCodBeachCrab(cr, width, height, scale, time, night = false, isG
     const u = Math.max(0, Math.min(1, rawU - 0.028 * Math.sin(rawU * Math.PI * 6)));
     const speed = Math.max(0.08, 1.0 - 0.55 * Math.cos(rawU * Math.PI * 6));
 
-    const cx = width * (0.22 + u * 0.54);
+    const cx = width * (0.48 + u * 0.38);
     const cy = height - 12.5 * scale - Math.sin(u * Math.PI) * 3.2 * scale;
     const bodyTilt = Math.sin(ct * 16.0) * 0.045 * speed;
 
@@ -6274,86 +6274,151 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
         cr.stroke();
     }
 
-    // 4. Band 3: Foreground Wind-Carved Cape Cod Sand / Snow Dune Ridge
-    const h3 = new Cairo.LinearGradient(0, floorTop + 52 * scale, 0, height);
+    // 4. Band 3: Clean Grassy Coastal Headland with Solid Granite Outcrop Ledge Under the Lighthouse
+    const { tint, aMul } = makeCapeCodTinter(night, isGolden, 0.0);
+
+    // 4a. Subtle dry-sand / snow contour along the lower-right open beach (x = 0.36w .. width)
+    const rightBermG = new Cairo.LinearGradient(0, height - 34 * scale, 0, height);
     if (isWinter) {
-        h3.addColorStopRGBA(0.00, 0.92, 0.96, 1.00, night ? 0.46 : 0.64);
-        h3.addColorStopRGBA(0.45, 0.84, 0.90, 0.98, night ? 0.50 : 0.68);
-        h3.addColorStopRGBA(1.00, 0.76, 0.84, 0.95, night ? 0.54 : 0.72);
+        rightBermG.addColorStopRGBA(0.0, 0.92, 0.96, 1.00, night ? 0.32 : 0.46);
+        rightBermG.addColorStopRGBA(1.0, 0.80, 0.87, 0.96, night ? 0.40 : 0.54);
     } else if (night) {
-        h3.addColorStopRGBA(0.00, 0.50, 0.44, 0.35, 0.78);
-        h3.addColorStopRGBA(0.45, 0.44, 0.38, 0.29, 0.82);
-        h3.addColorStopRGBA(1.00, 0.36, 0.31, 0.23, 0.86);
+        rightBermG.addColorStopRGBA(0.0, 0.46, 0.40, 0.32, 0.38);
+        rightBermG.addColorStopRGBA(1.0, 0.38, 0.33, 0.25, 0.50);
     } else if (isGolden) {
-        h3.addColorStopRGBA(0.00, 0.93, 0.74, 0.50, 0.78);
-        h3.addColorStopRGBA(0.45, 0.85, 0.64, 0.42, 0.80);
-        h3.addColorStopRGBA(1.00, 0.72, 0.52, 0.32, 0.84);
+        rightBermG.addColorStopRGBA(0.0, 0.90, 0.70, 0.47, 0.40);
+        rightBermG.addColorStopRGBA(1.0, 0.78, 0.58, 0.37, 0.52);
     } else {
-        h3.addColorStopRGBA(0.00, 0.92, 0.78, 0.57, 0.76);
-        h3.addColorStopRGBA(0.45, 0.84, 0.68, 0.48, 0.78);
-        h3.addColorStopRGBA(1.00, 0.71, 0.56, 0.37, 0.82);
+        rightBermG.addColorStopRGBA(0.0, 0.88, 0.74, 0.54, 0.40);
+        rightBermG.addColorStopRGBA(1.0, 0.76, 0.61, 0.42, 0.52);
     }
-    cr.setSource(h3);
+    cr.setSource(rightBermG);
     cr.newPath();
-    cr.moveTo(0, height - 44 * scale);
-    cr.curveTo(
-        width * 0.38, floorTop + 54 * scale,
-        width * 0.72, floorTop + 48 * scale,
-        width, height - 40 * scale);
+    cr.moveTo(width * 0.36, height);
+    cr.curveTo(width * 0.55, height - 24 * scale, width * 0.78, height - 28 * scale, width, height - 20 * scale);
     cr.lineTo(width, height);
+    cr.closePath();
+    cr.fill();
+
+    // 4b. Smooth Grassy Coastal Headland Slope on Left (x = 0 .. 0.46w)
+    //     Uncluttered lower slope so Sun & Mon forecast text has high contrast
+    const bluffG = new Cairo.LinearGradient(0, height - 48 * scale, 0, height);
+    if (isWinter) {
+        bluffG.addColorStopRGBA(0.00, 0.92, 0.96, 1.00, night ? 0.54 : 0.78);
+        bluffG.addColorStopRGBA(0.55, 0.84, 0.90, 0.98, night ? 0.58 : 0.84);
+        bluffG.addColorStopRGBA(1.00, 0.76, 0.84, 0.95, night ? 0.62 : 0.88);
+    } else if (night) {
+        bluffG.addColorStopRGBA(0.00, 0.17, 0.30, 0.24, 0.78);
+        bluffG.addColorStopRGBA(0.55, 0.14, 0.26, 0.21, 0.82);
+        bluffG.addColorStopRGBA(1.00, 0.11, 0.22, 0.18, 0.86);
+    } else if (isGolden) {
+        bluffG.addColorStopRGBA(0.00, 0.45, 0.61, 0.33, 0.76);
+        bluffG.addColorStopRGBA(0.55, 0.38, 0.54, 0.28, 0.80);
+        bluffG.addColorStopRGBA(1.00, 0.31, 0.46, 0.24, 0.84);
+    } else {
+        bluffG.addColorStopRGBA(0.00, 0.40, 0.64, 0.34, 0.74);
+        bluffG.addColorStopRGBA(0.55, 0.34, 0.57, 0.29, 0.78);
+        bluffG.addColorStopRGBA(1.00, 0.28, 0.49, 0.25, 0.82);
+    }
+    cr.setSource(bluffG);
+    cr.newPath();
+    cr.moveTo(0, height - 43 * scale);
+    cr.curveTo(
+        width * 0.22, height - 47 * scale,
+        width * 0.37, height - 43 * scale,
+        width * 0.48, height);
     cr.lineTo(0, height);
     cr.closePath();
     cr.fill();
 
-    // Sunlit / moonlit sand or snow crest highlight along the foreground dune ridge
+    // Soft sunlit highlight along the grassy/snowy headland ridge
     if (isWinter)
-        cr.setSourceRGBA(0.98, 0.99, 1.0, night ? 0.40 : 0.62);
+        cr.setSourceRGBA(0.98, 0.99, 1.0, night ? 0.44 : 0.70);
     else if (night)
-        cr.setSourceRGBA(0.69, 0.64, 0.56, 0.32);
-    else if (isGolden)
-        cr.setSourceRGBA(1.0, 0.86, 0.64, 0.45);
+        cr.setSourceRGBA(0.36, 0.52, 0.44, 0.38);
     else
-        cr.setSourceRGBA(0.98, 0.89, 0.73, 0.42);
-    cr.setLineWidth(1.2 * scale);
+        cr.setSourceRGBA(0.58, 0.78, 0.46, 0.48);
+    cr.setLineWidth(1.1 * scale);
     cr.newPath();
-    cr.moveTo(0, height - 44 * scale);
+    cr.moveTo(0, height - 43 * scale);
     cr.curveTo(
-        width * 0.38, floorTop + 54 * scale,
-        width * 0.72, floorTop + 48 * scale,
-        width, height - 40 * scale);
+        width * 0.22, height - 47 * scale,
+        width * 0.37, height - 43 * scale,
+        width * 0.48, height);
     cr.stroke();
 
-    // Subtle wind-carved sand or snow ripple lines on the foreground dune
+    // 4c. Cohesive Sculpted Coastal Granite Outcrop Ledge Supporting the Lighthouse (x = 0.18w .. 0.35w)
+    const lx = width * 0.267, ly = height - 39.5 * scale;
+    cr.save();
+    cr.translate(lx + 2.5 * scale, ly + 1.8 * scale);
+
+    // Subtle ground contact shadow beneath the granite ledge
+    cr.save();
+    cr.scale(31 * scale, 5.2 * scale);
+    cr.setSourceRGBA(...tint(0.10, 0.16, 0.10), 0.28 * aMul);
+    cr.newPath();
+    cr.arc(0, 0.25, 1.0, 0, TWO_PI);
+    cr.fill();
+    cr.restore();
+
+    // Main faceted New England granite rock outcrop body
+    const ledgeG = new Cairo.LinearGradient(-28 * scale, -6 * scale, 28 * scale, 6 * scale);
+    ledgeG.addColorStopRGBA(0.00, ...tint(0.68, 0.69, 0.71), 0.96 * aMul);
+    ledgeG.addColorStopRGBA(0.50, ...tint(0.52, 0.54, 0.57), 0.97 * aMul);
+    ledgeG.addColorStopRGBA(1.00, ...tint(0.36, 0.38, 0.42), 0.97 * aMul);
+    cr.setSource(ledgeG);
+    cr.newPath();
+    cr.moveTo(-29 * scale,  2.2 * scale);
+    cr.lineTo(-25 * scale, -3.2 * scale);
+    cr.lineTo(-14 * scale, -5.0 * scale);
+    cr.lineTo( 16 * scale, -4.8 * scale);
+    cr.lineTo( 26 * scale, -2.4 * scale);
+    cr.lineTo( 30 * scale,  2.4 * scale);
+    cr.curveTo(16 * scale,  4.8 * scale, -14 * scale, 4.8 * scale, -29 * scale, 2.2 * scale);
+    cr.closePath();
+    cr.fill();
+
+    // Sunlit upper granite shelf plane & chiseled facet seam
+    cr.setSourceRGBA(...tint(0.78, 0.79, 0.81), 0.55 * aMul);
+    cr.newPath();
+    cr.moveTo(-25 * scale, -3.2 * scale);
+    cr.lineTo(-14 * scale, -5.0 * scale);
+    cr.lineTo( 16 * scale, -4.8 * scale);
+    cr.lineTo( 26 * scale, -2.4 * scale);
+    cr.lineTo( 14 * scale, -1.2 * scale);
+    cr.lineTo(-15 * scale, -1.4 * scale);
+    cr.closePath();
+    cr.fill();
+
+    cr.setSourceRGBA(...tint(0.26, 0.28, 0.32), 0.45 * aMul);
+    cr.setLineWidth(0.75 * scale);
+    cr.newPath();
+    cr.moveTo(-14 * scale, -1.4 * scale);
+    cr.lineTo(-10 * scale,  3.6 * scale);
+    cr.moveTo(  9 * scale, -1.2 * scale);
+    cr.lineTo( 13 * scale,  3.5 * scale);
+    cr.stroke();
+
+    // Soft grassy turf (or winter snow) overlapping the lower rim of the granite outcrop so it sits embedded in the headland
     if (isWinter)
-        cr.setSourceRGBA(0.54, 0.66, 0.82, night ? 0.28 : 0.32);
-    else if (night)
-        cr.setSourceRGBA(0.27, 0.21, 0.15, 0.28);
+        cr.setSourceRGBA(...tint(0.95, 0.98, 1.0), 0.92 * aMul);
     else
-        cr.setSourceRGBA(0.56, 0.42, 0.26, 0.24);
-    cr.setLineWidth(0.85 * scale);
-    for (const [rx, ry, rw] of [[0.24, 18, 18], [0.48, 16, 20], [0.62, 10, 24], [0.76, 18, 16]]) {
-        cr.newPath();
-        cr.moveTo(width * rx - rw * scale, height - ry * scale);
-        cr.curveTo(
-            width * rx - rw * 0.3 * scale, height - (ry + 1.8) * scale,
-            width * rx + rw * 0.3 * scale, height - (ry + 1.8) * scale,
-            width * rx + rw * scale, height - (ry - 0.5) * scale);
-        cr.stroke();
-    }
+        cr.setSourceRGBA(...tint(0.36, 0.58, 0.30), 0.90 * aMul);
+    cr.newPath();
+    cr.moveTo(-30 * scale, 2.5 * scale);
+    cr.curveTo(-18 * scale, 0.4 * scale, -8 * scale, 3.2 * scale, 2 * scale, 2.2 * scale);
+    cr.curveTo( 12 * scale, 1.2 * scale, 22 * scale, 3.0 * scale, 31 * scale, 2.5 * scale);
+    cr.curveTo( 16 * scale, 5.2 * scale, -16 * scale, 5.2 * scale, -30 * scale, 2.5 * scale);
+    cr.closePath();
+    cr.fill();
+    cr.restore();
 
-    // 5. Long Wooden Vertical-Slat & Twisted-Wire Sand Fence curving directly along the slope of the hill
-    drawCapeCodSlatFenceAlongHill(cr, time, scale, night, isGolden, width, height, floorTop, 0.36, 0.77, 22, 0.92, isWinter);
+    // 5. Hero Red-Over-White Nauset Light Anchored on the Granite & Grassy Headland Bluff
+    drawNausetLighthouseHero(cr, lx, ly - 1.5 * scale, scale, time, night, isGolden, isWinter);
 
-    // 6. Hero Red-Over-White Nauset Light on Left Bluff (x = 0.267w, y = height - 40*scale; no vegetation in front)
-    drawNausetLighthouseHero(cr, width * 0.267, height - 40 * scale, scale, time, night, isGolden, isWinter);
-
-    // 7. Small Atlantic Crab Scuttling Across the Foreground Beach (warm seasons only)
+    // 6. Small Atlantic Crab Scuttling Across the Open Foreground Beach (warm seasons only)
     if (!isWinter)
         drawCapeCodBeachCrab(cr, width, height, scale, time, night, isGolden);
-
-    // 8. Pure Mounding Rosa rugosa & Tall Beachgrass Plumes on Outer Left & Right Margins
-    drawPureRosaRugosaAndBeachgrassDune(cr, width * 0.036, height - 40 * scale, 34 * scale, -1.0 * scale, time, night, isGolden, isWinter);
-    drawPureRosaRugosaAndBeachgrassDune(cr, width * 0.962, height - 24 * scale, 38 * scale,  1.0 * scale, time, night, isGolden, isWinter);
 }
 
 function drawSceneFloor(cr, sky, width, height, scale, dt, time, scene, night, temp = null, twilight = 0, floorId = null) {
