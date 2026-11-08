@@ -485,7 +485,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             visible: initialStyle !== 'accent',
         });
         settings.bind('sky-floor', floorRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-        const FLOOR_SCENES = ['auto', 'hills', 'beach', 'chalet', 'koi', 'frogs', 'sf'];
+        const FLOOR_SCENES = ['auto', 'hills', 'beach', 'chalet', 'koi', 'frogs'];
         const floorSceneRow = new Adw.ComboRow({
             title: _('Ground scene'),
             subtitle: _('Landscape shown along the bottom when ground scenes are enabled'),
@@ -497,16 +497,15 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                     _('Alpine chalet & snowman'),
                     _('Nishikigoi koi pond'),
                     _('Lotus & tree frog pond'),
-                    _('San Francisco Golden Gate'),
                 ],
             }),
             visible: initialStyle !== 'accent' && settings.get_boolean('sky-floor'),
         });
         const floorSceneIndex = FLOOR_SCENES.indexOf(settings.get_string('sky-floor-scene'));
-        floorSceneRow.set_selected(floorSceneIndex < 0 ? 0 : floorSceneIndex);
+        floorSceneRow.set_selected(floorSceneIndex < 0 ? FLOOR_SCENES.indexOf('beach') : floorSceneIndex);
         floorSceneRow.connect('notify::selected', () => {
             settings.set_string('sky-floor-scene',
-                FLOOR_SCENES[floorSceneRow.get_selected()] ?? 'auto');
+                FLOOR_SCENES[floorSceneRow.get_selected()] ?? 'beach');
         });
         const syncStyle = () => {
             styleRow.visible = !themeRow.active;

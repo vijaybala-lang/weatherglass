@@ -121,7 +121,7 @@ test('rain sky initializes submerged Nishikigoi pond floor and connects drop imp
     const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
     const cr = new Cairo.Context(surf);
     const sky = createSky();
-    paintSky(cr, { w: 330, h: 472, time: 1.0, scene: 'rain', night: false, sky, code: 63 });
+    paintSky(cr, { w: 330, h: 472, time: 1.0, scene: 'rain', night: false, sky, code: 63, floor: true, floorScene: 'koi' });
 
     eq(sky.koi.length, 2, 'rain pond must initialize two Nishikigoi');
     eq(sky.koi[0].variant, 'kohaku');
@@ -139,13 +139,13 @@ test('rain sky initializes submerged Nishikigoi pond floor and connects drop imp
     const drop0 = sky.drops[0];
     drop0.x = 180;
     drop0.y = drop0.floorY - 2;
-    paintSky(cr, { w: 330, h: 472, time: 1.05, scene: 'rain', night: false, sky, code: 63 });
+    paintSky(cr, { w: 330, h: 472, time: 1.05, scene: 'rain', night: false, sky, code: 63, floor: true, floorScene: 'koi' });
     near(sky.ripples[0].phase, 0.02, 1e-6, 'falling drop impact must reset expired ripple phase');
     near(sky.ripples[0].y, drop0.floorY, 1e-6, 'spawned ripple must sit at the drop floorY');
 
     // Step 120 frames (6.0 s) and verify pathSpine never accumulates runaway bend
     for (let f = 1; f <= 120; f++)
-        paintSky(cr, { w: 330, h: 472, time: 1.05 + f * 0.05, scene: 'rain', night: false, sky, code: 63 });
+        paintSky(cr, { w: 330, h: 472, time: 1.05 + f * 0.05, scene: 'rain', night: false, sky, code: 63, floor: true, floorScene: 'koi' });
     for (const koi of sky.koi) {
         for (let i = 2; i < koi.pathSpine.length; i++) {
             const p0 = koi.pathSpine[i - 2], p1 = koi.pathSpine[i - 1], p2 = koi.pathSpine[i];
@@ -162,7 +162,7 @@ test('rain sky initializes submerged Nishikigoi pond floor and connects drop imp
     cr.$dispose();
 });
 
-test('resolveFloorScene routes temperature-stable weather defaults and pinned ground scenes (S2, T3, K1, C1, C2, F1)', () => {
+test('resolveFloorScene routes temperature-stable weather defaults and pinned ground scenes (S2, T3, K1, C1, C2)', () => {
     // Auto mode is temperature-stable across all temperatures
     for (const temp of [-25, -5, 15, 30, null]) {
         eq(resolveFloorScene('storm', false, temp, 'auto'), 'T3', `storm temp=${temp} -> T3`);
@@ -170,8 +170,8 @@ test('resolveFloorScene routes temperature-stable weather defaults and pinned gr
         eq(resolveFloorScene('rain', false, temp, 'auto'), 'K1', `rain temp=${temp} -> K1`);
         eq(resolveFloorScene('snow', false, temp, 'auto'), 'S2', `snow temp=${temp} -> S2`);
         eq(resolveFloorScene('snow', true, temp, 'auto'), 'S2', `snow night temp=${temp} -> S2`);
-        eq(resolveFloorScene('fog', false, temp, 'auto'), 'F1', `fog temp=${temp} -> F1`);
-        eq(resolveFloorScene('fog', true, temp, 'auto'), 'F1', `fog night temp=${temp} -> F1`);
+        eq(resolveFloorScene('fog', false, temp, 'auto'), 'C1', `fog temp=${temp} -> C1`);
+        eq(resolveFloorScene('fog', true, temp, 'auto'), 'C1', `fog night temp=${temp} -> C1`);
         eq(resolveFloorScene('sun', false, temp, 'auto'), 'C1', `sun temp=${temp} -> C1`);
         eq(resolveFloorScene('moon', true, temp, 'auto'), 'C1', `moon temp=${temp} -> C1`);
         eq(resolveFloorScene('cloud', false, temp, 'auto'), 'C1', `cloud temp=${temp} -> C1`);
@@ -185,7 +185,6 @@ test('resolveFloorScene routes temperature-stable weather defaults and pinned gr
         eq(resolveFloorScene(scene, false, 18, 'chalet'), 'S2');
         eq(resolveFloorScene(scene, false, 18, 'koi'), 'K1');
         eq(resolveFloorScene(scene, false, 18, 'frogs'), 'T3');
-        eq(resolveFloorScene(scene, false, 18, 'sf'), 'F1');
     }
 
     // Render all floor scenes cleanly through paintSky, and verify floor: false suppresses them
@@ -204,9 +203,6 @@ test('resolveFloorScene routes temperature-stable weather defaults and pinned gr
         ['moon', true, 18, 0, 0, 'hills'],
         ['cloud', false, 15, 3, 0, 'auto'],
         ['fog', false, 12, 45, 0, 'auto'],
-        ['sun', false, 22, 0, 0, 'sf'],
-        ['fog', false, 12, 45, 0, 'sf'],
-        ['cloud', false, 15, 3, 0, 'sf'],
         ['fog', false, 12, 45, 0, 'beach'],
         ['cloud', false, 15, 3, 0, 'beach'],
         ['fog', false, 12, 45, 0, 'chalet'],

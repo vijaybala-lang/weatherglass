@@ -440,10 +440,10 @@ test('prefs splits Use system theme toggle from sky background style dropdown', 
        prefs.includes("_('Ground scene')") &&
        prefs.includes('floorSceneRow.visible = !themeRow.active && floorRow.active'),
        'prefs must expose Show ground scenes switch and Ground scene selector when enabled');
-    ok(/name="sky-floor"\s+type="b"[\s\S]*?<default>true<\/default>/.test(xml),
-       'gschema must declare sky-floor boolean defaulting to true');
-    ok(/name="sky-floor-scene"\s+type="s"[\s\S]*?<default>'auto'<\/default>/.test(xml),
-       'gschema must declare sky-floor-scene string defaulting to auto');
+    ok(/name="sky-floor"\s+type="b"[\s\S]*?<default>false<\/default>/.test(xml),
+       'gschema must declare sky-floor boolean defaulting to false');
+    ok(/name="sky-floor-scene"\s+type="s"[\s\S]*?<default>'beach'<\/default>/.test(xml),
+       'gschema must declare sky-floor-scene string defaulting to beach');
 });
 
 test('the hourly-view picker mirrors the schema choices', () => {
