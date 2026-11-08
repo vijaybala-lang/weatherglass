@@ -49,12 +49,29 @@ export function paintChart(cr, w, h, state) {
         cr.setSourceRGBA(...FG, alpha);
     };
     const isDarkFg = (0.2126 * FG[0] + 0.7152 * FG[1] + 0.0722 * FG[2]) < 0.35;
+    if (isDarkFg) {
+        // Full-bleed vertical gradient: clear -> light gray scrim -> clear
+        // spanning the graph, weather condition icons, and time text.
+        const [sR, sG, sB] = [226 / 255, 232 / 255, 240 / 255];
+        const scrimG = new Cairo.LinearGradient(0, 0, 0, h);
+        scrimG.addColorStopRGBA(0.00, sR, sG, sB, 0.0);
+        scrimG.addColorStopRGBA(0.14, sR, sG, sB, 0.36);
+        scrimG.addColorStopRGBA(0.48, sR, sG, sB, 0.58);
+        scrimG.addColorStopRGBA(0.78, sR, sG, sB, 0.64);
+        scrimG.addColorStopRGBA(0.94, sR, sG, sB, 0.58);
+        scrimG.addColorStopRGBA(1.00, sR, sG, sB, 0.0);
+        cr.save();
+        cr.setSource(scrimG);
+        cr.rectangle(0, 0, w, h);
+        cr.fill();
+        cr.restore();
+    }
     const haloRgb = isDarkFg ? [1, 1, 1] : [0.02, 0.04, 0.09];
     const showHaloText = (txt, tx, ty, alpha) => {
-        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkFg ? 0.55 : 0.74));
+        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkFg ? 0.78 : 0.74));
         cr.moveTo(tx, ty + 1.0);
         cr.showText(txt);
-        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkFg ? 0.28 : 0.30));
+        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkFg ? 0.52 : 0.30));
         for (const [dx, dy] of [[-0.55, 0], [0.55, 0], [0, -0.55], [0, 0.55]]) {
             cr.moveTo(tx + dx, ty + dy);
             cr.showText(txt);

@@ -155,15 +155,15 @@ export function drawText(cr, text, x, y, { size = 10, bold = false, weight = 0,
     const ty = vcenter === null ? y - pixelHeight : vcenter - pixelHeight / 2;
     const show = PangoCairo.showLayout ?? PangoCairo.show_layout;
     if (halo) {
-        const isDarkInk = lumOf(rgba) < 0.22;
+        const isDarkInk = lumOf(rgba) < 0.25;
         const haloRgb = isDarkInk ? [1, 1, 1] : [0.02, 0.04, 0.09];
         const alpha = rgba[3] ?? 1;
         cr.save();
-        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkInk ? 0.55 : 0.74));
-        cr.moveTo(tx, ty + 1.0);
+        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkInk ? 0.78 : 0.74));
+        cr.moveTo(tx, ty + 0.9);
         show(cr, layout);
-        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkInk ? 0.28 : 0.30));
-        for (const [dx, dy] of [[-0.55, 0], [0.55, 0], [0, -0.55], [0, 0.55]]) {
+        cr.setSourceRGBA(haloRgb[0], haloRgb[1], haloRgb[2], alpha * (isDarkInk ? 0.52 : 0.30));
+        for (const [dx, dy] of [[-0.75, 0], [0.75, 0], [0, -0.75], [0, 0.75]]) {
             cr.moveTo(tx + dx, ty + dy);
             show(cr, layout);
         }
@@ -345,12 +345,32 @@ export function paintChart(cr, opts) {
     const bgFn = opts.bgFn || null;
     const slotsProbe = opts.slotsProbe || NOOP_OBSERVER;
     const stripProbe = opts.stripProbe || NOOP_OBSERVER;
-    const inkAt = yPx => {
-        if (!bgFn)
-            return defaultInk;
-        const bg = bgFn(yPx);
-        return lumOf(bg) >= 0.52 ? INK_DARK : INK_LIGHT;
+    const SCRIM_RGB = [226 / 255, 232 / 255, 240 / 255];
+    const midRawBg = bgFn ? bgFn(height * 0.55) : null;
+    const useLightGrayScrim = !opts.stripProbe && opts.dark !== false &&
+        (!midRawBg || lumOf(midRawBg) >= 0.16);
+    const scrimAlphaAt = yPx => {
+        if (!useLightGrayScrim)
+            return 0;
+        const t = Math.max(0, Math.min(1, yPx / Math.max(1, height)));
+        if (t <= 0.14)
+            return (t / 0.14) * 0.36;
+        if (t <= 0.48)
+            return 0.36 + ((t - 0.14) / 0.34) * 0.22;
+        if (t <= 0.78)
+            return 0.58 + ((t - 0.48) / 0.30) * 0.06;
+        if (t <= 0.94)
+            return 0.64 - ((t - 0.78) / 0.16) * 0.06;
+        return 0.58 * (1 - (t - 0.94) / 0.06);
     };
+    const effectiveBgAt = yPx => {
+        if (!bgFn)
+            return null;
+        const raw = bgFn(yPx);
+        const a = scrimAlphaAt(yPx);
+        return a > 0 ? raw.map((c, i) => c * (1 - a) + SCRIM_RGB[i] * a) : raw;
+    };
+    const inkAt = yPx => (bgFn ? pickInk(effectiveBgAt(yPx)) : defaultInk);
 
     // y window with asymmetric padding (headroom for labels);
     // an enabled condition strip asks for noticeably more sky above the line
@@ -379,26 +399,20 @@ export function paintChart(cr, opts) {
             curveBackdrops.push(bgFn(pts[i][1]));
     const [accentR, accentG, accentB] = lineInk(accent, curveBackdrops);
 
-    if (conditionScenes && opts.stripBottom && !opts.pills) {
-        const isDark = opts.dark !== false;
-        const dockBg = bgFn ? bgFn(height - 24) : null;
-        const useLightDock = !isDark || (dockBg && lumOf(dockBg) >= 0.52);
-        const topY = height - 54, botY = height;
-        const scrimG = new Cairo.LinearGradient(0, topY, 0, botY);
-        if (useLightDock) {
-            scrimG.addColorStopRGBA(0.0, 1, 1, 1, 0.0);
-            scrimG.addColorStopRGBA(0.30, 1, 1, 1, 0.28);
-            scrimG.addColorStopRGBA(0.82, 1, 1, 1, 0.32);
-            scrimG.addColorStopRGBA(1.0, 1, 1, 1, 0.0);
-        } else {
-            scrimG.addColorStopRGBA(0.0, 12 / 255, 16 / 255, 24 / 255, 0.0);
-            scrimG.addColorStopRGBA(0.30, 12 / 255, 16 / 255, 24 / 255, 0.24);
-            scrimG.addColorStopRGBA(0.82, 12 / 255, 16 / 255, 24 / 255, 0.28);
-            scrimG.addColorStopRGBA(1.0, 12 / 255, 16 / 255, 24 / 255, 0.0);
-        }
+    if (useLightGrayScrim) {
+        // Full-bleed vertical gradient: clear -> light gray scrim -> clear
+        // spanning the graph, weather condition icons, and time text.
+        const [sR, sG, sB] = SCRIM_RGB;
+        const scrimG = new Cairo.LinearGradient(0, 0, 0, height);
+        scrimG.addColorStopRGBA(0.00, sR, sG, sB, 0.0);
+        scrimG.addColorStopRGBA(0.14, sR, sG, sB, 0.36);
+        scrimG.addColorStopRGBA(0.48, sR, sG, sB, 0.58);
+        scrimG.addColorStopRGBA(0.78, sR, sG, sB, 0.64);
+        scrimG.addColorStopRGBA(0.94, sR, sG, sB, 0.58);
+        scrimG.addColorStopRGBA(1.00, sR, sG, sB, 0.0);
         cr.save();
         cr.setSource(scrimG);
-        cr.rectangle(0, topY, width, botY - topY);
+        cr.rectangle(0, 0, width, height);
         cr.fill();
         cr.restore();
     }
@@ -690,16 +704,14 @@ export function paintChart(cr, opts) {
             // judge the live backdrop under this glyph (same referee as
             // the ink labels); un-sampled surfaces (accent style, preview)
             // follow the card's theme instead
-            const bgRgb = bgFn ? bgFn(centerY) : null;
+            const bgRgb = bgFn ? effectiveBgAt(centerY) : null;
             const bgLum = bgRgb ? lumOf(bgRgb) : -1;
             // one verdict with the ink labels above: wherever ink text
             // survives on this band the glyph wears ink, else it joins
             // the glow family. (A luminance gate here used to read 0.55
             // -- but lumOf is WCAG, and no ordinary daylight ground
             // reaches that, so day strip glyphs were permanently pale.)
-            const inkHere = opts.stripBottom
-                ? (bgRgb ? bgLum >= 0.52 : !isDark)
-                : (bgRgb ? pickInk(bgRgb) === INK_DARK : !isDark);
+            const inkHere = bgRgb ? pickInk(bgRgb) === INK_DARK : !isDark;
             cr.save();
             cr.translate(centerX - 12 * scale, centerY - 12 * scale);
             cr.scale(scale, scale);
@@ -829,7 +841,7 @@ export function paintChart(cr, opts) {
     // accent is re-safened against the backdrop at ITS y, not the chart mid.
     if (nowPlacement) {
         const nowInk = inkAt(nowPlacement.y) === INK_DARK
-            ? (bgFn ? contrastSafe(accent, bgFn(nowPlacement.y)) : (opts.nowLabel ?? [accentR, accentG, accentB]))
+            ? (bgFn ? contrastSafe(accent, effectiveBgAt(nowPlacement.y)) : (opts.nowLabel ?? [accentR, accentG, accentB]))
             : accent.map(c => c + (1 - c) * 0.32);
         drawValue(nowPlacement.text, nowPlacement.unitText, nowPlacement.labelX,
             nowPlacement.y, nowPlacement.anchor, [...nowInk, 1]);
