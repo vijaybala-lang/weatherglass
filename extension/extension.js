@@ -368,9 +368,11 @@ const WeatherIndicator = GObject.registerClass(
             this._panel = new ForecastPanel({ animate: this._settings.get_boolean('animate') });
             this._panel.onRefresh(() => this._coordinator.fetch(true));
             this._panel.onSettings(() => this._ext.openPreferences());
-            this._panel.onSky((scene, night) => {
+            this._panel.onSky((scene, night, temp) => {
                 this._settings.set_string('live-scene', scene);
                 this._settings.set_boolean('live-night', night);
+                if (Number.isFinite(temp))
+                    this._settings.set_double('live-temp', temp);
             });
 
             this._syncPanelLook();
@@ -605,9 +607,11 @@ const WeatherIndicator = GObject.registerClass(
             this._panel = new ForecastPanel({ animate });
             this._panel.onRefresh(() => this._coordinator.fetch(true));
             this._panel.onSettings(() => this._ext.openPreferences());
-            this._panel.onSky((scene, night) => {
+            this._panel.onSky((scene, night, temp) => {
                 this._settings.set_string('live-scene', scene);
                 this._settings.set_boolean('live-night', night);
+                if (Number.isFinite(temp))
+                    this._settings.set_double('live-temp', temp);
             });
             this._syncPanelLook();
             this._panel.setPlaceName(this._placeName());

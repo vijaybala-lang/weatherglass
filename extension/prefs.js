@@ -183,6 +183,12 @@ class PreviewController {
         return this._scene ? this._scene === 'moon' : this._settings.get_boolean('live-night');
     }
 
+    get temp() {
+        if (this._scene)
+            return (this._scene === 'snow' || this._scene === 'sleet') ? -4 : 20;
+        return this._settings.get_double('live-temp');
+    }
+
     get isPreviewing() {
         return this._scene !== null;
     }
@@ -728,6 +734,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         };
         settings.connect('changed::live-scene', liveSync);
         settings.connect('changed::live-night', liveSync);
+        settings.connect('changed::live-temp', liveSync);
         settings.connect('changed::sky-floor', () => skyArea.queue_draw());
         settings.connect('changed::sky-floor-scene', () => skyArea.queue_draw());
         styleManager.connect('notify::dark-mode', () => {
@@ -867,6 +874,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                 w: width, h: height, time: previewController.elapsed,
                 scene: previewController.scene,
                 night: previewController.isNight,
+                temp: previewController.temp,
                 floor: settings.get_boolean('sky-floor'),
                 floorScene: settings.get_string('sky-floor-scene'),
                 sky: skyPool,

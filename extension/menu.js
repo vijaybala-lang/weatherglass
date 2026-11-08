@@ -1251,7 +1251,7 @@ export class ForecastPanel {
         this._sunCoords = Number.isFinite(state.latitude) && Number.isFinite(state.longitude)
             ? [state.latitude, state.longitude] : null;
         if (this._day === 0 && this._onSky)
-            this._onSky(scene, night);
+            this._onSky(scene, night, this._skyOpts.temp);
         this._skyArea.queue_repaint();
     }
 

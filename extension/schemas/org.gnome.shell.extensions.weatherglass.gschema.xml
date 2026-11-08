@@ -236,6 +236,12 @@ to empty when the preview ends</description>
       <description>Runtime state written by the extension</description>
     </key>
 
+    <key name="live-temp" type="d">
+      <default>20.0</default>
+      <summary>Current temperature (°C) of the sky the menu is painting</summary>
+      <description>Runtime state written by the extension so preferences renders the winter scene when &lt;= 0°C (32°F)</description>
+    </key>
+
     <key name="windy-threshold" type="i">
       <range min="0" max="120"/>
       <default>30</default>

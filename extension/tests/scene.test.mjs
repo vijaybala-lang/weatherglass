@@ -196,6 +196,8 @@ test('resolveFloorScene routes temperature-stable weather defaults and pinned gr
     for (const [scene, night, temp, code, glow, floorScene] of [
         ['snow', false, -21, 75, 0, 'arctic'],
         ['snow', false, -5, 73, 0, 'chalet'],
+        ['moon', true, -4, 0, 0, 'chalet'],
+        ['moon', true, -4, 0, 0, 'hills'],
         ['storm', true, 19, 95, 0, 'frogs'],
         ['sun', false, 20, 0, 0, 'hills'],
         ['moon', true, 18, 0, 0, 'hills'],
