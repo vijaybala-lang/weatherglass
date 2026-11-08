@@ -3664,23 +3664,39 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter 
         cr.lineTo(px(1.000), py(0.550));
     };
 
-    // 0a. Unified Sunlit Swiss Alps Massif (single continuous path = zero internal overlap seams)
+    // 0a. Unified Swiss Alps Massif with Seasonal Altitudinal Zonation:
+    //     - Winter (isWinter): Full snow & glacier blanket from summits to valley floor.
+    //     - Summer (!isWinter):
+    //         * Upper & Mid Alpine Zone (0.00..0.62): Weathered Swiss granite, gneiss & limestone rock
+    //           (warm grey-taupe stone that resists turning sky-blue, topped by per-peak snow-caps in 0c)
+    //         * Subalpine Zone (0.68..1.00): Verdant subalpine forest & grassy lower slopes blending into Hill 1
     const mtnBaseG = new Cairo.LinearGradient(0, yMtnTop, 0, yMtnBase);
     if (isWinter) {
-        mtnBaseG.addColorStopRGBA(0.00, 0.98, 0.99, 1.00, night ? 0.46 : 0.64);
-        mtnBaseG.addColorStopRGBA(0.32, 0.86, 0.92, 0.99, night ? 0.38 : 0.52);
-        mtnBaseG.addColorStopRGBA(0.68, 0.72, 0.82, 0.94, night ? 0.30 : 0.42);
-        mtnBaseG.addColorStopRGBA(1.00, 0.64, 0.75, 0.89, night ? 0.22 : 0.30);
+        mtnBaseG.addColorStopRGBA(0.00, 0.98, 0.99, 1.00, night ? 0.50 : 0.72);
+        mtnBaseG.addColorStopRGBA(0.32, 0.88, 0.93, 1.00, night ? 0.42 : 0.60);
+        mtnBaseG.addColorStopRGBA(0.68, 0.74, 0.84, 0.95, night ? 0.34 : 0.48);
+        mtnBaseG.addColorStopRGBA(1.00, 0.66, 0.77, 0.90, night ? 0.26 : 0.38);
     } else if (night) {
-        mtnBaseG.addColorStopRGBA(0.00, 0.78, 0.86, 0.96, 0.46);
-        mtnBaseG.addColorStopRGBA(0.28, 0.42, 0.53, 0.68, 0.38);
-        mtnBaseG.addColorStopRGBA(0.65, 0.24, 0.34, 0.48, 0.32);
-        mtnBaseG.addColorStopRGBA(1.00, 0.18, 0.27, 0.39, 0.24);
+        // Night Summer: Dark alpine granite/gneiss rock -> deep subalpine pine/meadow green at lower altitudes
+        mtnBaseG.addColorStopRGBA(0.00, 0.36, 0.38, 0.44, 0.64);
+        mtnBaseG.addColorStopRGBA(0.30, 0.28, 0.30, 0.36, 0.60);
+        mtnBaseG.addColorStopRGBA(0.58, 0.23, 0.26, 0.31, 0.56);
+        mtnBaseG.addColorStopRGBA(0.76, 0.16, 0.27, 0.26, 0.54);
+        mtnBaseG.addColorStopRGBA(1.00, 0.14, 0.26, 0.24, 0.52);
+    } else if (subdued) {
+        // Rain/Storm Summer: Wet charcoal-taupe granite rock -> misty olive-green subalpine lower slopes
+        mtnBaseG.addColorStopRGBA(0.00, 0.52, 0.51, 0.52, 0.68);
+        mtnBaseG.addColorStopRGBA(0.32, 0.46, 0.45, 0.46, 0.64);
+        mtnBaseG.addColorStopRGBA(0.58, 0.42, 0.44, 0.43, 0.60);
+        mtnBaseG.addColorStopRGBA(0.76, 0.38, 0.52, 0.38, 0.56);
+        mtnBaseG.addColorStopRGBA(1.00, 0.40, 0.56, 0.40, 0.52);
     } else {
-        mtnBaseG.addColorStopRGBA(0.00, 0.98, 0.99, 1.00, 0.60);
-        mtnBaseG.addColorStopRGBA(0.26, 0.82, 0.89, 0.97, 0.48);
-        mtnBaseG.addColorStopRGBA(0.58, 0.54, 0.66, 0.80, 0.38);
-        mtnBaseG.addColorStopRGBA(1.00, 0.44, 0.58, 0.70, 0.26);
+        // Clear/Sunny Summer: Warm weathered Swiss granite/gneiss rock -> lush green subalpine lower slopes
+        mtnBaseG.addColorStopRGBA(0.00, 0.58, 0.54, 0.50, 0.72);
+        mtnBaseG.addColorStopRGBA(0.30, 0.52, 0.48, 0.44, 0.68);
+        mtnBaseG.addColorStopRGBA(0.56, 0.46, 0.45, 0.41, 0.64);
+        mtnBaseG.addColorStopRGBA(0.74, 0.38, 0.56, 0.32, 0.62);
+        mtnBaseG.addColorStopRGBA(1.00, 0.38, 0.64, 0.32, 0.60);
     }
     cr.setSource(mtnBaseG);
     cr.newPath();
@@ -3692,42 +3708,43 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter 
     cr.closePath();
     cr.fill();
 
-    // Helper for 3D leeward face shading that reaches alpha=0 AT the col elevation (zero vertical seams below cols)
+    // Helper for 3D leeward cliff-face shading (dark charcoal-granite cliff shadow in summer, icy blue in winter)
+    // Reaches alpha=0 AT the col elevation so there are zero vertical seams below the cols.
     const makeLeewardGradient = (topVf, colVf, strength = 1.0) => {
         const g = new Cairo.LinearGradient(0, py(topVf), 0, py(colVf));
         if (isWinter) {
-            g.addColorStopRGBA(0.00, 0.48, 0.62, 0.82, (night ? 0.30 : 0.36) * strength);
-            g.addColorStopRGBA(0.55, 0.44, 0.58, 0.78, (night ? 0.18 : 0.22) * strength);
+            g.addColorStopRGBA(0.00, 0.48, 0.62, 0.82, (night ? 0.32 : 0.38) * strength);
+            g.addColorStopRGBA(0.55, 0.44, 0.58, 0.78, (night ? 0.20 : 0.24) * strength);
             g.addColorStopRGBA(0.95, 0.40, 0.54, 0.74, 0.0);
             g.addColorStopRGBA(1.00, 0.40, 0.54, 0.74, 0.0);
         } else if (night) {
-            g.addColorStopRGBA(0.00, 0.11, 0.19, 0.31, 0.36 * strength);
-            g.addColorStopRGBA(0.55, 0.09, 0.16, 0.27, 0.20 * strength);
-            g.addColorStopRGBA(0.95, 0.08, 0.14, 0.24, 0.0);
-            g.addColorStopRGBA(1.00, 0.08, 0.14, 0.24, 0.0);
+            g.addColorStopRGBA(0.00, 0.10, 0.12, 0.17, 0.46 * strength);
+            g.addColorStopRGBA(0.55, 0.09, 0.11, 0.16, 0.28 * strength);
+            g.addColorStopRGBA(0.95, 0.08, 0.10, 0.15, 0.0);
+            g.addColorStopRGBA(1.00, 0.08, 0.10, 0.15, 0.0);
         } else {
-            g.addColorStopRGBA(0.00, 0.30, 0.42, 0.58, 0.34 * strength);
-            g.addColorStopRGBA(0.55, 0.26, 0.38, 0.54, 0.18 * strength);
-            g.addColorStopRGBA(0.95, 0.24, 0.36, 0.50, 0.0);
-            g.addColorStopRGBA(1.00, 0.24, 0.36, 0.50, 0.0);
+            // Summer dark charcoal-granite cliff shadow (Matterhorn East Face & Eiger Nordwand)
+            g.addColorStopRGBA(0.00, 0.22, 0.21, 0.22, 0.46 * strength);
+            g.addColorStopRGBA(0.55, 0.20, 0.20, 0.21, 0.28 * strength);
+            g.addColorStopRGBA(0.95, 0.18, 0.20, 0.20, 0.0);
+            g.addColorStopRGBA(1.00, 0.18, 0.20, 0.20, 0.0);
         }
         return g;
     };
 
-    // 0b-1. Mönch / Breithorn Soft Curved Glacier Bowl Shadow (reaches alpha=0 at Col 1 vf=0.475)
-    cr.setSource(makeLeewardGradient(0.378, 0.475, 0.65));
+    // 0b-1. Mönch / Breithorn Soft Curved Glacier/Rock Bowl Shadow (reaches alpha=0 at Col 1 vf=0.475)
+    cr.setSource(makeLeewardGradient(0.378, 0.475, 0.70));
     cr.newPath();
     cr.moveTo(px(0.195), py(0.380));
     cr.curveTo(px(0.245), py(0.382), px(0.290), py(0.428), px(0.350), py(0.475));
     cr.lineTo(px(0.350), py(0.52));
     cr.lineTo(px(0.215), py(0.52));
-    // Soft curved glacier trough ascending back to the rounded dome crest
     cr.curveTo(px(0.235), py(0.45), px(0.215), py(0.41), px(0.195), py(0.380));
     cr.closePath();
     cr.fill();
 
     // 0b-2. Matterhorn Shaded East Face with Crooked Zig-Zagging Hörnli Arête (reaches alpha=0 at Col 2 vf=0.452)
-    cr.setSource(makeLeewardGradient(0.226, 0.452, 1.05));
+    cr.setSource(makeLeewardGradient(0.226, 0.452, 1.10));
     cr.newPath();
     cr.moveTo(px(0.496), py(0.226));
     cr.lineTo(px(0.510), py(0.234));
@@ -3738,7 +3755,6 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter 
     cr.lineTo(px(0.620), py(0.452));
     cr.lineTo(px(0.620), py(0.50));
     cr.lineTo(px(0.505), py(0.50));
-    // Crooked Hörnli Ridge spine ascending back to the summit
     cr.lineTo(px(0.492), py(0.43));
     cr.lineTo(px(0.506), py(0.37));
     cr.lineTo(px(0.484), py(0.305));
@@ -3747,7 +3763,7 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter 
     cr.fill();
 
     // 0b-3. Eiger Stepped Cliff Face & Eastern Buttress Shadow (reaches alpha=0 at vf=0.54)
-    cr.setSource(makeLeewardGradient(0.336, 0.54, 0.95));
+    cr.setSource(makeLeewardGradient(0.336, 0.54, 1.05));
     cr.newPath();
     cr.moveTo(px(0.745), py(0.336));
     cr.lineTo(px(0.778), py(0.344));
@@ -3759,59 +3775,114 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter 
     cr.lineTo(px(1.000), py(0.550));
     cr.lineTo(px(1.000), py(0.58));
     cr.lineTo(px(0.715), py(0.58));
-    // Stepped western rock buttress ascending to the flat-tilted Eiger crown
     cr.lineTo(px(0.710), py(0.47));
     cr.lineTo(px(0.732), py(0.41));
     cr.lineTo(px(0.720), py(0.365));
     cr.closePath();
     cr.fill();
 
-    // 0c. Feathered Sunlit Snow Mantles Adapted to Each Swiss Peak's Geometry
+    // 0c. Snow-Capped Summits & Hanging Glaciers (Nival Zone):
+    //     - In Summer (!isWinter): Crisp white snow-caps crowning the upper peaks and glacier tongues
+    //       above the bare weathered granite rock walls and green subalpine lower slopes.
+    //     - In Winter (isWinter): Deep expansive snow mantles sweeping far down the slopes.
     const snowMantles = [
         {
-            // Mönch / Breithorn broad domed glacier ice-cap
-            topVf: 0.378, botVf: 0.50,
+            // Mönch / Breithorn sunlit glacier ice-cap dome
+            topVf: 0.378,
+            botVf: 0.445,
+            alpha: isWinter ? 0.58 : 0.84,
             draw: () => {
-                cr.moveTo(px(0.11), py(0.398));
-                cr.curveTo(px(0.14), py(0.382), px(0.175), py(0.378), px(0.195), py(0.380));
-                cr.curveTo(px(0.215), py(0.41), px(0.235), py(0.45), px(0.22), py(0.48));
-                cr.lineTo(px(0.08), py(0.48));
+                cr.moveTo(px(0.08), py(0.425));
+                cr.curveTo(px(0.12), py(0.385), px(0.165), py(0.378), px(0.195), py(0.380));
+                cr.curveTo(px(0.215), py(0.41), px(0.225), py(0.43), px(0.22), py(0.45));
+                cr.lineTo(px(0.07), py(0.45));
             },
         },
         {
-            // Matterhorn concave Zmutt snow apron
-            topVf: 0.226, botVf: 0.45,
+            // Mönch / Breithorn shaded eastern glacier rim
+            topVf: 0.378,
+            botVf: 0.435,
+            alpha: isWinter ? 0.34 : 0.52,
+            shaded: true,
+            draw: () => {
+                cr.moveTo(px(0.195), py(0.380));
+                cr.curveTo(px(0.235), py(0.382), px(0.270), py(0.408), px(0.305), py(0.44));
+                cr.lineTo(px(0.22), py(0.44));
+                cr.curveTo(px(0.225), py(0.42), px(0.215), py(0.40), px(0.195), py(0.380));
+            },
+        },
+        {
+            // Matterhorn sunlit upper snow-cap & Zmutt glacier rime
+            topVf: 0.226,
+            botVf: 0.355,
+            alpha: isWinter ? 0.62 : 0.88,
             draw: () => {
                 cr.moveTo(px(0.482), py(0.236));
                 cr.lineTo(px(0.496), py(0.226));
                 cr.lineTo(px(0.494), py(0.258));
                 cr.lineTo(px(0.484), py(0.305));
-                cr.lineTo(px(0.506), py(0.37));
-                cr.lineTo(px(0.492), py(0.43));
-                cr.lineTo(px(0.390), py(0.43));
-                cr.curveTo(px(0.420), py(0.395), px(0.455), py(0.315), px(0.482), py(0.236));
+                cr.lineTo(px(0.506), py(0.36));
+                cr.lineTo(px(0.420), py(0.36));
+                cr.curveTo(px(0.442), py(0.325), px(0.464), py(0.280), px(0.482), py(0.236));
             },
         },
         {
-            // Eiger flat-tilted summit snowfield & western ramp
-            topVf: 0.336, botVf: 0.47,
+            // Matterhorn shaded East-Face summit snow-crest (above the sheer rock wall)
+            topVf: 0.226,
+            botVf: 0.335,
+            alpha: isWinter ? 0.36 : 0.56,
+            shaded: true,
+            draw: () => {
+                cr.moveTo(px(0.496), py(0.226));
+                cr.lineTo(px(0.510), py(0.234));
+                cr.lineTo(px(0.506), py(0.252));
+                cr.lineTo(px(0.528), py(0.305));
+                cr.lineTo(px(0.542), py(0.34));
+                cr.lineTo(px(0.498), py(0.34));
+                cr.lineTo(px(0.484), py(0.305));
+                cr.lineTo(px(0.494), py(0.258));
+            },
+        },
+        {
+            // Eiger sunlit western summit snowfield & hanging glacier ramp
+            topVf: 0.336,
+            botVf: 0.420,
+            alpha: isWinter ? 0.58 : 0.84,
             draw: () => {
                 cr.moveTo(px(0.705), py(0.348));
                 cr.lineTo(px(0.745), py(0.336));
                 cr.lineTo(px(0.720), py(0.365));
                 cr.lineTo(px(0.732), py(0.41));
-                cr.lineTo(px(0.710), py(0.45));
-                cr.lineTo(px(0.648), py(0.425));
+                cr.lineTo(px(0.720), py(0.425));
+                cr.lineTo(px(0.652), py(0.425));
                 cr.lineTo(px(0.675), py(0.382));
+            },
+        },
+        {
+            // Eiger shaded tabular crown snow-rim above the dark cliff face
+            topVf: 0.336,
+            botVf: 0.395,
+            alpha: isWinter ? 0.34 : 0.52,
+            shaded: true,
+            draw: () => {
+                cr.moveTo(px(0.745), py(0.336));
+                cr.lineTo(px(0.778), py(0.344));
+                cr.lineTo(px(0.798), py(0.378));
+                cr.lineTo(px(0.818), py(0.395));
+                cr.lineTo(px(0.728), py(0.395));
+                cr.lineTo(px(0.720), py(0.365));
             },
         },
     ];
     for (const m of snowMantles) {
         const g = new Cairo.LinearGradient(0, py(m.topVf), 0, py(m.botVf));
-        g.addColorStopRGBA(0.00, 0.99, 1.00, 1.00, night ? 0.34 : 0.50);
-        g.addColorStopRGBA(0.42, 0.93, 0.97, 1.00, night ? 0.16 : 0.24);
-        g.addColorStopRGBA(0.70, 0.86, 0.93, 0.99, 0.0);
-        g.addColorStopRGBA(1.00, 0.86, 0.93, 0.99, 0.0);
+        const a0 = night ? m.alpha * 0.68 : m.alpha;
+        const cTop = m.shaded ? [0.84, 0.90, 0.98] : [0.99, 1.00, 1.00];
+        const cMid = m.shaded ? [0.76, 0.84, 0.94] : [0.94, 0.97, 1.00];
+        g.addColorStopRGBA(0.00, cTop[0], cTop[1], cTop[2], a0);
+        g.addColorStopRGBA(0.45, cMid[0], cMid[1], cMid[2], a0 * 0.58);
+        g.addColorStopRGBA(0.76, cMid[0], cMid[1], cMid[2], 0.0);
+        g.addColorStopRGBA(1.00, cMid[0], cMid[1], cMid[2], 0.0);
         cr.setSource(g);
         cr.newPath();
         m.draw();
