@@ -1488,7 +1488,7 @@ function drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity) {
 }
 
 /* Layered Submersion + Surface Kiss Koi Pond Floor (0.685h .. 1.0h) */
-function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
+function drawKoiPond(cr, sky, width, height, scale, dt, time, night, isWinter = false) {
     ensureKoiPond(sky, width, height);
     if (!sky.koi || !sky.koi.length)
         return;
@@ -1512,8 +1512,9 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
     cr.fill();
 
     // Pass 2: Step & render submerged Nishikigoi sorted back-to-front by midZ
+    const koiDt = isWinter ? dt * 0.45 : dt;
     for (const koi of sky.koi)
-        stepKoi(koi, dt, width, height, pondTopY, scale);
+        stepKoi(koi, koiDt, width, height, pondTopY, scale);
     const orderedKoi = sky.koi.slice().sort((a, b) => b.pathSpine[5].z - a.pathSpine[5].z);
     for (const koi of orderedKoi)
         drawSubmergedKoi(cr, koi, scale, waterRgb, turbidity);
@@ -1570,6 +1571,52 @@ function drawKoiPond(cr, sky, width, height, scale, dt, time, night) {
     cr.rectangle(0, pondTopY, width, pondH);
     cr.fill();
     cr.restore();
+
+    // Pass 4b (Winter): Translucent frosted ice sheet with an open unfrozen breathing hole over the koi
+    if (isWinter) {
+        const holeX = width * 0.58, holeY = height - 64 * scale;
+        const holeRx = 58 * scale, holeRy = 31 * scale;
+        cr.save();
+        cr.setFillRule(Cairo.FillRule.EVEN_ODD);
+        cr.newPath();
+        cr.rectangle(0, pondTopY - 4 * scale, width, pondH + 4 * scale);
+        cr.save();
+        cr.translate(holeX, holeY);
+        cr.scale(holeRx, holeRy);
+        cr.newSubPath();
+        cr.arc(0, 0, 1.0, 0, TWO_PI);
+        cr.restore();
+        const iceG = new Cairo.LinearGradient(0, pondTopY - 4 * scale, 0, height);
+        iceG.addColorStopRGBA(0.0, 0.80, 0.90, 0.98, 0.0);
+        iceG.addColorStopRGBA(0.28, 0.80, 0.90, 0.98, night ? 0.30 : 0.42);
+        iceG.addColorStopRGBA(1.0, 0.68, 0.82, 0.95, night ? 0.42 : 0.54);
+        cr.setSource(iceG);
+        cr.fill();
+        cr.restore();
+
+        // Frosted ice rim & crystalline fracture lines around the breathing hole
+        cr.save();
+        cr.translate(holeX, holeY);
+        cr.scale(holeRx, holeRy);
+        cr.setSourceRGBA(0.92, 0.97, 1.0, night ? 0.55 : 0.78);
+        cr.setLineWidth(1.5 / holeRx * scale);
+        cr.newPath();
+        cr.arc(0, 0, 1.0, 0, TWO_PI);
+        cr.stroke();
+        cr.restore();
+
+        cr.save();
+        cr.setSourceRGBA(0.92, 0.97, 1.0, night ? 0.34 : 0.48);
+        cr.setLineWidth(0.85 * scale);
+        cr.newPath();
+        cr.moveTo(holeX - holeRx, holeY - 2 * scale);
+        cr.lineTo(holeX - holeRx - 28 * scale, holeY - 12 * scale);
+        cr.lineTo(holeX - holeRx - 52 * scale, holeY - 6 * scale);
+        cr.moveTo(holeX + holeRx * 0.88, holeY + 10 * scale);
+        cr.lineTo(holeX + holeRx + 26 * scale, holeY + 22 * scale);
+        cr.stroke();
+        cr.restore();
+    }
 
     // Pass 5: Floating foreshortened botanical lotus pads, bud & 3D Sacred Lotus blossom
     const lum = night ? 0.54 : 0.72;
@@ -3120,16 +3167,26 @@ function drawArcticChar(cr, x, y, scale, baseAngle, time) {
     cr.restore();
 }
 
-/* S1 (< 0°F Snow & Clear Day): Inuit Ice Fishing, Flexing Arctic Char, Igloo & Husky Sled Trail */
-function drawIceFishingFloor(cr, width, height, scale, time, night) {
+/* S1 (< 0°F Snow & Clear Day, or Arctic scene): Inuit Ice/Fjord Fishing, Flexing Arctic Char, Igloo/Tupiq & Husky Trail */
+function drawIceFishingFloor(cr, width, height, scale, time, night, isWinter = true) {
     const sh = sceneHeight(width, height);
     const groundOffset = height - sh;
     const floorTop = groundOffset + 0.685 * sh;
     const ridgeY = floorTop - 14 * scale;
 
-    // Upper snow ridge wash
+    // Upper ridge wash (snow in winter, mossy Arctic tundra in summer)
     const rg = new Cairo.LinearGradient(0, ridgeY - 6 * scale, 0, floorTop + 14 * scale);
-    if (night) {
+    if (!isWinter) {
+        if (night) {
+            rg.addColorStopRGBA(0, 0.14, 0.26, 0.28, 0.0);
+            rg.addColorStopRGBA(0.35, 0.14, 0.26, 0.28, 0.34);
+            rg.addColorStopRGBA(1, 0.10, 0.20, 0.22, 0.48);
+        } else {
+            rg.addColorStopRGBA(0, 0.42, 0.64, 0.44, 0.0);
+            rg.addColorStopRGBA(0.35, 0.38, 0.60, 0.40, 0.36);
+            rg.addColorStopRGBA(1, 0.28, 0.48, 0.32, 0.48);
+        }
+    } else if (night) {
         rg.addColorStopRGBA(0, 0.24, 0.34, 0.48, 0.0);
         rg.addColorStopRGBA(0.35, 0.24, 0.34, 0.48, 0.28);
         rg.addColorStopRGBA(1, 0.16, 0.24, 0.36, 0.42);
@@ -3147,9 +3204,17 @@ function drawIceFishingFloor(cr, width, height, scale, time, night) {
     cr.closePath();
     cr.fill();
 
-    // Glacial ice sheet floor wash
+    // Glacial ice sheet floor wash (winter) or open Arctic fjord water + mossy shoreline bank (summer)
     const iceG = new Cairo.LinearGradient(0, floorTop + 8 * scale, 0, height);
-    if (night) {
+    if (!isWinter) {
+        if (night) {
+            iceG.addColorStopRGBA(0, 0.06, 0.18, 0.30, 0.42);
+            iceG.addColorStopRGBA(1, 0.04, 0.12, 0.22, 0.64);
+        } else {
+            iceG.addColorStopRGBA(0, 0.12, 0.44, 0.64, 0.44);
+            iceG.addColorStopRGBA(1, 0.08, 0.32, 0.50, 0.62);
+        }
+    } else if (night) {
         iceG.addColorStopRGBA(0, 0.14, 0.24, 0.36, 0.34);
         iceG.addColorStopRGBA(1, 0.08, 0.15, 0.26, 0.56);
     } else {
@@ -3160,75 +3225,97 @@ function drawIceFishingFloor(cr, width, height, scale, time, night) {
     cr.rectangle(0, floorTop + 8 * scale, width, height - floorTop - 8 * scale);
     cr.fill();
 
-    // 1. Qamutiik Dog Sled + Musher + 3 Articulated Huskies on upper ridge
+    if (!isWinter) {
+        // Summer mossy tundra bank curving from left across Alley 1 & Alley 2 to the fjord water's edge
+        const bankG = new Cairo.LinearGradient(0, floorTop + 12 * scale, 0, height);
+        if (night) {
+            bankG.addColorStopRGBA(0, 0.12, 0.24, 0.20, 0.54);
+            bankG.addColorStopRGBA(1, 0.08, 0.18, 0.15, 0.72);
+        } else {
+            bankG.addColorStopRGBA(0, 0.34, 0.56, 0.32, 0.52);
+            bankG.addColorStopRGBA(1, 0.24, 0.44, 0.24, 0.68);
+        }
+        cr.setSource(bankG);
+        cr.newPath();
+        cr.moveTo(0, floorTop + 10 * scale);
+        cr.lineTo(width * 0.56, floorTop + 12 * scale);
+        cr.curveTo(width * 0.64, height - 64 * scale, width * 0.58, height - 24 * scale, width * 0.62, height);
+        cr.lineTo(0, height);
+        cr.closePath();
+        cr.fill();
+    }
+
+    // 1. Qamutiik Dog Sled + Musher (winter) + 3 Articulated Huskies on upper ridge
     const span = width + 180 * scale;
     const dtShift = ((time - 1.1) * 22 * scale % span + span) % span;
     const sledX = ((width * 0.388 + dtShift + 90 * scale) % span) - 90 * scale;
-    cr.save();
-    cr.translate(sledX, ridgeY);
-    cr.scale(1.42 * scale, 1.42 * scale);
+    if (isWinter) {
+        cr.save();
+        cr.translate(sledX, ridgeY);
+        cr.scale(1.42 * scale, 1.42 * scale);
 
-    cr.setSourceRGBA(0.16, 0.24, 0.34, 0.92);
-    cr.setLineWidth(1.3);
-    cr.newPath();
-    cr.moveTo(-28, 0);
-    cr.lineTo(-4, 0);
-    cr.curveTo(0, 0, 2, -3.5, -1, -5.0);
-    cr.lineTo(-22, -5.0);
-    cr.moveTo(-24, 0);
-    cr.lineTo(-22, -9.5);
-    cr.moveTo(-14, 0);
-    cr.lineTo(-14, -5.0);
-    cr.moveTo(-6, 0);
-    cr.lineTo(-6, -5.0);
-    cr.stroke();
+        cr.setSourceRGBA(0.16, 0.24, 0.34, 0.92);
+        cr.setLineWidth(1.3);
+        cr.newPath();
+        cr.moveTo(-28, 0);
+        cr.lineTo(-4, 0);
+        cr.curveTo(0, 0, 2, -3.5, -1, -5.0);
+        cr.lineTo(-22, -5.0);
+        cr.moveTo(-24, 0);
+        cr.lineTo(-22, -9.5);
+        cr.moveTo(-14, 0);
+        cr.lineTo(-14, -5.0);
+        cr.moveTo(-6, 0);
+        cr.lineTo(-6, -5.0);
+        cr.stroke();
 
-    cr.setSourceRGBA(0.30, 0.40, 0.50, 0.92);
-    cr.newPath();
-    cr.moveTo(-20, -5.0);
-    cr.curveTo(-16, -9.2, -8, -8.8, -4, -5.0);
-    cr.closePath();
-    cr.fill();
+        cr.setSourceRGBA(0.30, 0.40, 0.50, 0.92);
+        cr.newPath();
+        cr.moveTo(-20, -5.0);
+        cr.curveTo(-16, -9.2, -8, -8.8, -4, -5.0);
+        cr.closePath();
+        cr.fill();
 
-    const kick = Math.sin(time * 7.0) * 1.8;
-    cr.setSourceRGBA(0.18, 0.26, 0.36, 0.95);
-    cr.setLineWidth(1.5);
-    cr.newPath();
-    cr.moveTo(-25, -4.5);
-    cr.lineTo(-27, 0);
-    cr.moveTo(-25, -4.5);
-    cr.lineTo(-29 - kick, -1.2);
-    cr.moveTo(-23, -9.0);
-    cr.lineTo(-21, -8.5);
-    cr.stroke();
-    cr.newPath();
-    cr.arc(-23, -11.8, 2.0, 0, TWO_PI);
-    cr.fill();
-    cr.rectangle(-25.5, -10.2, 3.6, 5.6);
-    cr.fill();
+        const kick = Math.sin(time * 7.0) * 1.8;
+        cr.setSourceRGBA(0.18, 0.26, 0.36, 0.95);
+        cr.setLineWidth(1.5);
+        cr.newPath();
+        cr.moveTo(-25, -4.5);
+        cr.lineTo(-27, 0);
+        cr.moveTo(-25, -4.5);
+        cr.lineTo(-29 - kick, -1.2);
+        cr.moveTo(-23, -9.0);
+        cr.lineTo(-21, -8.5);
+        cr.stroke();
+        cr.newPath();
+        cr.arc(-23, -11.8, 2.0, 0, TWO_PI);
+        cr.fill();
+        cr.rectangle(-25.5, -10.2, 3.6, 5.6);
+        cr.fill();
 
-    // Sled lantern glow + gangline
-    const lg = new Cairo.RadialGradient(-1, -4.5, 0.5, -1, -4.5, 7.5);
-    lg.addColorStopRGBA(0, 1.0, 0.90, 0.48, 0.95);
-    lg.addColorStopRGBA(1, 1.0, 0.68, 0.20, 0.0);
-    cr.setSource(lg);
-    cr.newPath();
-    cr.arc(-1, -4.5, 7.5, 0, TWO_PI);
-    cr.fill();
+        // Sled lantern glow + gangline
+        const lg = new Cairo.RadialGradient(-1, -4.5, 0.5, -1, -4.5, 7.5);
+        lg.addColorStopRGBA(0, 1.0, 0.90, 0.48, 0.95);
+        lg.addColorStopRGBA(1, 1.0, 0.68, 0.20, 0.0);
+        cr.setSource(lg);
+        cr.newPath();
+        cr.arc(-1, -4.5, 7.5, 0, TWO_PI);
+        cr.fill();
 
-    cr.setSourceRGBA(0.75, 0.85, 0.95, 0.65);
-    cr.setLineWidth(0.75);
-    cr.newPath();
-    cr.moveTo(0, -3.2);
-    cr.lineTo(58, -3.8);
-    cr.stroke();
-    cr.restore();
+        cr.setSourceRGBA(0.75, 0.85, 0.95, 0.65);
+        cr.setLineWidth(0.75);
+        cr.newPath();
+        cr.moveTo(0, -3.2);
+        cr.lineTo(58, -3.8);
+        cr.stroke();
+        cr.restore();
+    }
 
     drawHusky(cr, sledX + 18 * scale, ridgeY, 1.42 * scale, time * 10 + 0.4, 'agouti');
     drawHusky(cr, sledX + 48 * scale, ridgeY - 0.5 * scale, 1.42 * scale, time * 10 + 2.2, 'white');
     drawHusky(cr, sledX + 78 * scale, ridgeY - 1.0 * scale, 1.42 * scale, time * 10 + 4.0, 'black');
 
-    // 2. Spiral-Coursed Snow-Block Igloo in Alley 1 (x = 0.267w, y = h - 70*scale)
+    // 2. Spiral-Coursed Snow-Block Igloo (winter) or Caribou-Hide Summer Tupiq Tent (summer) in Alley 1 (x = 0.267w, y = h - 70*scale)
     const igX = width * 0.267, igY = height - 70 * scale;
     cr.save();
     cr.translate(igX, igY);
@@ -3242,44 +3329,84 @@ function drawIceFishingFloor(cr, width, height, scale, time, night) {
     cr.fill();
     cr.restore();
 
-    const domeG = new Cairo.RadialGradient(-5, -8, 2, 0, 0, 16);
-    domeG.addColorStopRGBA(0, 0.95, 0.98, 1.0, 0.96);
-    domeG.addColorStopRGBA(0.58, 0.72, 0.84, 0.95, 0.95);
-    domeG.addColorStopRGBA(1, 0.46, 0.62, 0.78, 0.96);
-    cr.setSource(domeG);
-    cr.newPath();
-    cr.arc(0, 0, 14, Math.PI, 0);
-    cr.curveTo(14, 3.2, -14, 3.2, -14, 0);
-    cr.closePath();
-    cr.fill();
+    if (isWinter) {
+        const domeG = new Cairo.RadialGradient(-5, -8, 2, 0, 0, 16);
+        domeG.addColorStopRGBA(0, 0.95, 0.98, 1.0, 0.96);
+        domeG.addColorStopRGBA(0.58, 0.72, 0.84, 0.95, 0.95);
+        domeG.addColorStopRGBA(1, 0.46, 0.62, 0.78, 0.96);
+        cr.setSource(domeG);
+        cr.newPath();
+        cr.arc(0, 0, 14, Math.PI, 0);
+        cr.curveTo(14, 3.2, -14, 3.2, -14, 0);
+        cr.closePath();
+        cr.fill();
 
-    cr.setSourceRGBA(0.28, 0.44, 0.62, 0.50);
-    cr.setLineWidth(0.70);
-    cr.newPath();
-    cr.moveTo(-13.2, -3.8);
-    cr.curveTo(-4, -5.8, 4, -5.8, 13.2, -3.8);
-    cr.moveTo(-11.2, -8.2);
-    cr.curveTo(-3, -9.8, 3, -9.8, 11.2, -8.2);
-    cr.moveTo(-6.8, -11.8);
-    cr.curveTo(-2, -12.8, 2, -12.8, 6.8, -11.8);
-    cr.moveTo(-6, 0.8);
-    cr.lineTo(-5.5, -4.4);
-    cr.moveTo(2, 1.2);
-    cr.lineTo(2.2, -4.5);
-    cr.moveTo(-2, -4.6);
-    cr.lineTo(-1.6, -9.0);
-    cr.moveTo(5, -4.2);
-    cr.lineTo(4.4, -8.6);
-    cr.stroke();
+        cr.setSourceRGBA(0.28, 0.44, 0.62, 0.50);
+        cr.setLineWidth(0.70);
+        cr.newPath();
+        cr.moveTo(-13.2, -3.8);
+        cr.curveTo(-4, -5.8, 4, -5.8, 13.2, -3.8);
+        cr.moveTo(-11.2, -8.2);
+        cr.curveTo(-3, -9.8, 3, -9.8, 11.2, -8.2);
+        cr.moveTo(-6.8, -11.8);
+        cr.curveTo(-2, -12.8, 2, -12.8, 6.8, -11.8);
+        cr.moveTo(-6, 0.8);
+        cr.lineTo(-5.5, -4.4);
+        cr.moveTo(2, 1.2);
+        cr.lineTo(2.2, -4.5);
+        cr.moveTo(-2, -4.6);
+        cr.lineTo(-1.6, -9.0);
+        cr.moveTo(5, -4.2);
+        cr.lineTo(4.4, -8.6);
+        cr.stroke();
 
-    // Barrel-vaulted torsuk entrance tunnel + warm seal-oil lamp glow
-    cr.setSourceRGBA(0.76, 0.88, 0.98, 0.96);
-    cr.newPath();
-    cr.arc(10.5, 1.2, 5.2, Math.PI * 1.08, Math.PI * 1.96);
-    cr.lineTo(15.5, 3.8);
-    cr.lineTo(5.5, 3.8);
-    cr.closePath();
-    cr.fill();
+        // Barrel-vaulted torsuk entrance tunnel
+        cr.setSourceRGBA(0.76, 0.88, 0.98, 0.96);
+        cr.newPath();
+        cr.arc(10.5, 1.2, 5.2, Math.PI * 1.08, Math.PI * 1.96);
+        cr.lineTo(15.5, 3.8);
+        cr.lineTo(5.5, 3.8);
+        cr.closePath();
+        cr.fill();
+    } else {
+        // Traditional Inuit summer caribou-skin & driftwood ridge tupiq tent
+        const tentG = new Cairo.LinearGradient(-13, -16, 13, 3);
+        tentG.addColorStopRGBA(0, 0.78, 0.66, 0.50, 0.96);
+        tentG.addColorStopRGBA(0.55, 0.62, 0.48, 0.34, 0.96);
+        tentG.addColorStopRGBA(1, 0.44, 0.32, 0.22, 0.97);
+        cr.setSource(tentG);
+        cr.newPath();
+        cr.moveTo(-14.0, 2.0);
+        cr.lineTo(-2.0, -15.5);
+        cr.lineTo(4.0, -14.5);
+        cr.lineTo(14.5, 2.2);
+        cr.curveTo(6.0, 3.6, -6.0, 3.6, -14.0, 2.0);
+        cr.closePath();
+        cr.fill();
+
+        // Crossed driftwood ridge pole tips & hide seam lines
+        cr.setSourceRGBA(0.32, 0.22, 0.14, 0.85);
+        cr.setLineWidth(0.75);
+        cr.newPath();
+        cr.moveTo(-3.5, -18.0);
+        cr.lineTo(-0.5, -13.5);
+        cr.moveTo(-0.5, -18.0);
+        cr.lineTo(-3.2, -13.5);
+        cr.moveTo(-2.0, -15.5);
+        cr.lineTo(-5.5, 2.8);
+        cr.moveTo(4.0, -14.5);
+        cr.lineTo(5.5, 2.8);
+        cr.stroke();
+
+        // Open doorway flap on right facing the angler
+        cr.setSourceRGBA(0.24, 0.16, 0.10, 0.94);
+        cr.newPath();
+        cr.moveTo(6.5, 2.6);
+        cr.lineTo(9.2, -6.5);
+        cr.lineTo(13.2, 2.2);
+        cr.closePath();
+        cr.fill();
+    }
 
     const lampG = new Cairo.RadialGradient(12.2, 2.2, 0.8, 13.5, 3.2, 10.5);
     lampG.addColorStopRGBA(0, 1.0, 0.88, 0.44, 0.96);
@@ -3291,29 +3418,41 @@ function drawIceFishingFloor(cr, width, height, scale, time, night) {
     cr.fill();
     cr.restore();
 
-    // 3. Inuit Angler in Alley 2 (x = 0.485w) + Glowing Aqua Ice Hole & Flexing Char in Alley 3 (x = 0.715w)
+    // 3. Inuit Angler in Alley 2 (x = 0.485w) + Glowing Aqua Ice Hole / Fjord Ripples & Flexing Char in Alley 3 (x = 0.715w)
     const angX = width * 0.485, angY = height - 50 * scale;
     const holeX = width * 0.715, holeY = height - 46 * scale;
     const haul = 0.5 + 0.5 * Math.sin((time - 1.1) * 1.8 + 0.65);
 
-    // Glowing aqua ice hole in Alley 3
+    // Glowing aqua ice hole (winter) or concentric fjord splash rings (summer) in Alley 3
     cr.save();
     cr.translate(holeX, holeY);
     cr.scale(1.68 * scale, 1.68 * scale);
     cr.save();
     cr.scale(11.0, 3.8);
-    cr.setSourceRGBA(0.86, 0.94, 1.0, 0.94);
-    cr.newPath();
-    cr.arc(0, 0, 1.15, 0, TWO_PI);
-    cr.fill();
-    const hg = new Cairo.RadialGradient(0, 0, 0.1, 0, 0, 1.0);
-    hg.addColorStopRGBA(0, 0.24, 0.88, 0.98, 0.96);
-    hg.addColorStopRGBA(0.65, 0.08, 0.52, 0.74, 0.96);
-    hg.addColorStopRGBA(1, 0.04, 0.26, 0.44, 0.98);
-    cr.setSource(hg);
-    cr.newPath();
-    cr.arc(0, 0, 1.0, 0, TWO_PI);
-    cr.fill();
+    if (isWinter) {
+        cr.setSourceRGBA(0.86, 0.94, 1.0, 0.94);
+        cr.newPath();
+        cr.arc(0, 0, 1.15, 0, TWO_PI);
+        cr.fill();
+        const hg = new Cairo.RadialGradient(0, 0, 0.1, 0, 0, 1.0);
+        hg.addColorStopRGBA(0, 0.24, 0.88, 0.98, 0.96);
+        hg.addColorStopRGBA(0.65, 0.08, 0.52, 0.74, 0.96);
+        hg.addColorStopRGBA(1, 0.04, 0.26, 0.44, 0.98);
+        cr.setSource(hg);
+        cr.newPath();
+        cr.arc(0, 0, 1.0, 0, TWO_PI);
+        cr.fill();
+    } else {
+        cr.setSourceRGBA(0.78, 0.94, 1.0, 0.65);
+        cr.setLineWidth(0.14);
+        cr.newPath();
+        cr.arc(0, 0, 0.75, 0, TWO_PI);
+        cr.stroke();
+        cr.setSourceRGBA(0.78, 0.94, 1.0, 0.35);
+        cr.newPath();
+        cr.arc(0, 0, 1.25, 0, TWO_PI);
+        cr.stroke();
+    }
     cr.restore();
     cr.restore();
 
@@ -3322,8 +3461,11 @@ function drawIceFishingFloor(cr, width, height, scale, time, night) {
     cr.translate(angX, angY);
     cr.scale(1.68 * scale, 1.68 * scale);
 
-    // Snow-block seat
-    cr.setSourceRGBA(0.84, 0.92, 0.99, 0.95);
+    // Snow-block seat (winter) or coastal granite boulder seat (summer)
+    if (isWinter)
+        cr.setSourceRGBA(0.84, 0.92, 0.99, 0.95);
+    else
+        cr.setSourceRGBA(0.42, 0.45, 0.48, 0.95);
     cr.rectangle(-10.5, -3.5, 9.5, 6.2);
     cr.fill();
 
@@ -3404,18 +3546,32 @@ function drawIceFishingFloor(cr, width, height, scale, time, night) {
     cr.stroke();
 
     drawArcticChar(cr, fishX, fishY, 1.52 * scale, -Math.PI * 0.44, time);
-    drawSnowPine(cr, width * 0.945, height - 28 * scale, 36 * scale, true, -1.5 * scale, 1.0, night);
+    drawSnowPine(cr, width * 0.945, height - 28 * scale, 36 * scale, isWinter, -1.5 * scale, 1.0, night);
 }
 
-/* S2 (0°F .. 32°F Snow & Clear Day): Snowman, Pine Woodland & Smaller Distant Thu–Fri Smoking Chalet */
-function drawSnowmanChaletFloor(cr, width, height, scale, time, night) {
+/* S2 (0°F .. 32°F Snow & Clear Day, or Chalet scene): Snowman/Oak, Pine Woodland & Distant Thu–Fri Smoking Chalet */
+function drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter = true, subdued = false) {
     const sh = sceneHeight(width, height);
     const groundOffset = height - sh;
     const floorTop = groundOffset + 0.685 * sh;
 
-    // Distant snow ridge wash
+    // Distant ridge wash (snow in winter, emerald alpine slope in summer)
     const dg = new Cairo.LinearGradient(0, floorTop - 6 * scale, 0, height);
-    if (night) {
+    if (!isWinter) {
+        if (night) {
+            dg.addColorStopRGBA(0, 0.16, 0.28, 0.34, 0.0);
+            dg.addColorStopRGBA(0.28, 0.14, 0.25, 0.31, subdued ? 0.40 : 0.46);
+            dg.addColorStopRGBA(1, 0.12, 0.22, 0.28, subdued ? 0.44 : 0.50);
+        } else if (subdued) {
+            dg.addColorStopRGBA(0, 0.54, 0.66, 0.59, 0.0);
+            dg.addColorStopRGBA(0.28, 0.50, 0.62, 0.55, 0.32);
+            dg.addColorStopRGBA(1, 0.42, 0.56, 0.46, 0.42);
+        } else {
+            dg.addColorStopRGBA(0, 0.50, 0.75, 0.48, 0.0);
+            dg.addColorStopRGBA(0.28, 0.44, 0.69, 0.42, 0.38);
+            dg.addColorStopRGBA(1, 0.34, 0.60, 0.32, 0.46);
+        }
+    } else if (night) {
         dg.addColorStopRGBA(0, 0.22, 0.32, 0.46, 0.0);
         dg.addColorStopRGBA(0.28, 0.20, 0.30, 0.44, 0.34);
         dg.addColorStopRGBA(1, 0.10, 0.18, 0.28, 0.56);
@@ -3433,9 +3589,20 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night) {
     cr.closePath();
     cr.fill();
 
-    // Foreground snowbank contour
+    // Foreground snowbank (winter) or wildflower alpine meadow contour (summer)
     const fgSnow = new Cairo.LinearGradient(0, height - 62 * scale, 0, height);
-    if (night) {
+    if (!isWinter) {
+        if (night) {
+            fgSnow.addColorStopRGBA(0, 0.14, 0.26, 0.24, subdued ? 0.54 : 0.60);
+            fgSnow.addColorStopRGBA(1, 0.10, 0.20, 0.19, subdued ? 0.62 : 0.68);
+        } else if (subdued) {
+            fgSnow.addColorStopRGBA(0, 0.42, 0.57, 0.44, 0.38);
+            fgSnow.addColorStopRGBA(1, 0.34, 0.49, 0.36, 0.44);
+        } else {
+            fgSnow.addColorStopRGBA(0, 0.38, 0.65, 0.34, 0.44);
+            fgSnow.addColorStopRGBA(1, 0.28, 0.53, 0.25, 0.52);
+        }
+    } else if (night) {
         fgSnow.addColorStopRGBA(0, 0.16, 0.26, 0.38, 0.38);
         fgSnow.addColorStopRGBA(1, 0.08, 0.15, 0.24, 0.58);
     } else {
@@ -3500,13 +3667,15 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night) {
         7.6, -33.5);
     cr.stroke();
 
-    // Stone chimney + snow cap
+    // Stone chimney + snow cap (winter)
     cr.setSourceRGBA(0.42, 0.44, 0.50, 0.98);
     cr.rectangle(4.4, -19.2, 3.2, 8.5);
     cr.fill();
-    cr.setSourceRGBA(0.92, 0.96, 1.0, 0.96);
-    cr.rectangle(4.0, -19.6, 4.0, 1.1);
-    cr.fill();
+    if (isWinter) {
+        cr.setSourceRGBA(0.92, 0.96, 1.0, 0.96);
+        cr.rectangle(4.0, -19.6, 4.0, 1.1);
+        cr.fill();
+    }
 
     // Cut-stone masonry foundation + cedar/larch log cabin walls
     cr.setSourceRGBA(0.36, 0.40, 0.46, 0.98);
@@ -3560,9 +3729,9 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night) {
         cr.fill();
     }
 
-    // Gable eaves + thick pillowy snowpack roof
+    // Gable eaves + thick pillowy snowpack roof (winter) or slate-cedar shingle roof & window flower boxes (summer)
     cr.setSourceRGBA(0.24, 0.15, 0.10, 0.98);
-    cr.setLineWidth(1.5);
+    cr.setLineWidth(isWinter ? 1.5 : 2.2);
     cr.setLineJoin(Cairo.LineJoin.ROUND);
     cr.newPath();
     cr.moveTo(-12.2, -9.2);
@@ -3570,27 +3739,58 @@ function drawSnowmanChaletFloor(cr, width, height, scale, time, night) {
     cr.lineTo(12.2, -9.2);
     cr.stroke();
 
-    const roofSnowG = new Cairo.LinearGradient(0, -20.2, 0, -8.5);
-    roofSnowG.addColorStopRGBA(0, 0.96, 0.98, 1.0, 0.98);
-    roofSnowG.addColorStopRGBA(0.65, 0.80, 0.88, 0.97, 0.97);
-    roofSnowG.addColorStopRGBA(1, 0.58, 0.72, 0.88, 0.96);
-    cr.setSource(roofSnowG);
-    cr.newPath();
-    cr.moveTo(-12.8, -9.2);
-    cr.curveTo(-8.0, -13.6, -3.5, -17.6, 0, -20.0);
-    cr.curveTo(3.5, -17.6, 8.0, -13.6, 12.8, -9.2);
-    cr.curveTo(12.2, -7.8, 9.5, -8.8, 0, -16.8);
-    cr.curveTo(-9.5, -8.8, -12.2, -7.8, -12.8, -9.2);
-    cr.closePath();
-    cr.fill();
+    if (isWinter) {
+        const roofSnowG = new Cairo.LinearGradient(0, -20.2, 0, -8.5);
+        roofSnowG.addColorStopRGBA(0, 0.96, 0.98, 1.0, 0.98);
+        roofSnowG.addColorStopRGBA(0.65, 0.80, 0.88, 0.97, 0.97);
+        roofSnowG.addColorStopRGBA(1, 0.58, 0.72, 0.88, 0.96);
+        cr.setSource(roofSnowG);
+        cr.newPath();
+        cr.moveTo(-12.8, -9.2);
+        cr.curveTo(-8.0, -13.6, -3.5, -17.6, 0, -20.0);
+        cr.curveTo(3.5, -17.6, 8.0, -13.6, 12.8, -9.2);
+        cr.curveTo(12.2, -7.8, 9.5, -8.8, 0, -16.8);
+        cr.curveTo(-9.5, -8.8, -12.2, -7.8, -12.8, -9.2);
+        cr.closePath();
+        cr.fill();
+    } else {
+        for (const wx of [-5.6, 5.6]) {
+            cr.setSourceRGBA(0.32, 0.18, 0.10, 0.95);
+            cr.rectangle(wx - 2.0, -3.6, 4.0, 1.0);
+            cr.fill();
+            cr.setSourceRGBA(0.88, 0.22, 0.28, 0.95);
+            for (const dx of [-1.2, 0.0, 1.2]) {
+                cr.newPath();
+                cr.arc(wx + dx, -3.8, 0.65, 0, TWO_PI);
+                cr.fill();
+            }
+        }
+    }
     cr.restore();
 
-    // 2. 4-Tree Snow-Laden Evergreen Pine Woodland (2 distant ridge pines + 2 tall outer framing firs)
+    // 2. 4-Tree Evergreen Pine Woodland (snow-laden in winter, fresh green in summer)
     const sway = Math.sin((time - 1.1) * 1.6) * 0.5 * scale;
-    drawSnowPine(cr, width * 0.480, floorTop + 8 * scale, 24 * scale, true, 0.2 * scale + sway * 0.6, 0.62, night, 0.86);
-    drawSnowPine(cr, width * 0.525, floorTop + 10 * scale, 29 * scale, true, -0.3 * scale + sway * 0.6, 0.66, night, 0.84);
-    drawSnowPine(cr, width * 0.040, height - 52 * scale, 74 * scale, true, 0.7 * scale + sway, 0.96, night, 0.66);
-    drawSnowPine(cr, width * 0.955, height - 44 * scale, 78 * scale, true, -0.9 * scale + sway, 0.98, night, 0.65);
+    drawSnowPine(cr, width * 0.480, floorTop + 8 * scale, 24 * scale, isWinter, 0.2 * scale + sway * 0.6, 0.62, night, 0.86);
+    drawSnowPine(cr, width * 0.525, floorTop + 10 * scale, 29 * scale, isWinter, -0.3 * scale + sway * 0.6, 0.66, night, 0.84);
+    drawSnowPine(cr, width * 0.040, height - 52 * scale, 74 * scale, isWinter, 0.7 * scale + sway, 0.96, night, 0.66);
+    drawSnowPine(cr, width * 0.955, height - 44 * scale, 78 * scale, isWinter, -0.9 * scale + sway, 0.98, night, 0.65);
+
+    if (!isWinter) {
+        // Summer Alpine Meadow: Foreground wildflower dots + Realistic Pastoral Oak in Alley 1 (replaces snowman)
+        const r = seededRand(77);
+        const flLum = night ? 0.54 : (subdued ? 0.80 : 0.96);
+        for (let i = 0; i < 14; i++) {
+            const fx = width * 0.08 + r(0, width * 0.84);
+            const fy = height - (6 + r(0, 14)) * scale;
+            const isGold = i % 3 !== 0;
+            cr.setSourceRGBA((isGold ? 0.95 : 0.88) * flLum, (isGold ? 0.78 : 0.28) * flLum, (isGold ? 0.20 : 0.24) * flLum, subdued ? 0.65 : 0.85);
+            cr.newPath();
+            cr.arc(fx, fy, 1.25 * scale, 0, TWO_PI);
+            cr.fill();
+        }
+        drawRealisticPastoralOak(cr, width * 0.267, height - 46 * scale, 38 * scale, subdued, -0.8 * scale, 23, 0.0, night);
+        return;
+    }
 
     // 3. 3-Tier Snowman in Alley 1 (x = 0.267w, y = h - 54*scale)
     const smX = width * 0.267, smY = height - 54 * scale;
@@ -3989,7 +4189,7 @@ function drawEurasianTreeSparrowOnPad(cr, x, y, sc, lum) {
     cr.restore();
 }
 
-function drawStormFrogsFloor(cr, width, height, scale, time, night) {
+function drawStormFrogsFloor(cr, width, height, scale, time, night, isWinter = false) {
     const sh = sceneHeight(width, height);
     const groundOffset = height - sh;
     const floorTop = groundOffset + 0.685 * sh;
@@ -4001,6 +4201,55 @@ function drawStormFrogsFloor(cr, width, height, scale, time, night) {
     cr.setSource(marshG);
     cr.rectangle(0, floorTop - 10 * scale, width, height - floorTop + 10 * scale);
     cr.fill();
+
+    if (isWinter) {
+        // Translucent frozen marsh ice glaze with an open breathing pocket around the foreground lotus pad
+        const holeX = width * 0.258, holeY = height - 42 * scale;
+        const holeRx = 42 * scale, holeRy = 22 * scale;
+        cr.save();
+        cr.setFillRule(Cairo.FillRule.EVEN_ODD);
+        cr.newPath();
+        cr.rectangle(0, floorTop - 4 * scale, width, height - floorTop + 4 * scale);
+        cr.save();
+        cr.translate(holeX, holeY);
+        cr.scale(holeRx, holeRy);
+        cr.newSubPath();
+        cr.arc(0, 0, 1.0, 0, TWO_PI);
+        cr.restore();
+        const iceG = new Cairo.LinearGradient(0, floorTop - 4 * scale, 0, height);
+        iceG.addColorStopRGBA(0.0, 0.84, 0.92, 0.99, 0.0);
+        iceG.addColorStopRGBA(0.30, 0.84, 0.92, 0.99, night ? 0.26 : 0.36);
+        iceG.addColorStopRGBA(1.0, 0.74, 0.86, 0.96, night ? 0.36 : 0.48);
+        cr.setSource(iceG);
+        cr.fill();
+        cr.restore();
+
+        // Crisp frosted ice rim & crystalline fracture lines around the unfrozen marsh pocket
+        cr.save();
+        cr.translate(holeX, holeY);
+        cr.scale(holeRx, holeRy);
+        cr.setSourceRGBA(0.95, 0.98, 1.0, night ? 0.55 : 0.78);
+        cr.setLineWidth(1.3 / Math.sqrt(holeRx * holeRy));
+        cr.newPath();
+        cr.arc(0, 0, 1.0, 0, TWO_PI);
+        cr.stroke();
+        cr.restore();
+
+        cr.save();
+        cr.setSourceRGBA(0.94, 0.98, 1.0, night ? 0.34 : 0.50);
+        cr.setLineWidth(0.75 * scale);
+        for (const [ang, len] of [[-0.35, 22], [0.42, 26], [2.65, 18], [-2.55, 16]]) {
+            const x0 = holeX + Math.cos(ang) * holeRx;
+            const y0 = holeY + Math.sin(ang) * holeRy;
+            const x1 = holeX + Math.cos(ang + 0.08) * (holeRx + len * scale);
+            const y1 = holeY + Math.sin(ang + 0.08) * (holeRy + len * 0.45 * scale);
+            cr.newPath();
+            cr.moveTo(x0, y0);
+            cr.lineTo(x1, y1);
+            cr.stroke();
+        }
+        cr.restore();
+    }
 
     const lum = night ? 0.68 : 0.74;
 
@@ -5784,17 +6033,20 @@ function drawClearBeachFloor(cr, width, height, scale, time, night = false, twil
     drawPureRosaRugosaAndBeachgrassDune(cr, width * 0.962, height - 24 * scale, 38 * scale,  1.0 * scale, time, night, isGolden);
 }
 
-function drawSceneFloor(cr, sky, width, height, scale, dt, time, scene, night, twilight = 0, floorId = null) {
+function drawSceneFloor(cr, sky, width, height, scale, dt, time, scene, night, temp = null, twilight = 0, floorId = null) {
+    const isWinter = scene === 'snow' || scene === 'sleet'
+        || (temp !== null && temp !== undefined && Number.isFinite(temp) && temp <= 0);
+    const subdued = scene !== 'sun' && scene !== 'clear' && scene !== 'moon';
     if (floorId === 'S1')
-        drawIceFishingFloor(cr, width, height, scale, time, night);
+        drawIceFishingFloor(cr, width, height, scale, time, night, isWinter);
     else if (floorId === 'S2')
-        drawSnowmanChaletFloor(cr, width, height, scale, time, night);
+        drawSnowmanChaletFloor(cr, width, height, scale, time, night, isWinter, subdued);
     else if (floorId === 'T3')
-        drawStormFrogsFloor(cr, width, height, scale, time, night);
+        drawStormFrogsFloor(cr, width, height, scale, time, night, isWinter);
     else if (floorId === 'K1')
-        drawKoiPond(cr, sky, width, height, scale, dt, time, night);
+        drawKoiPond(cr, sky, width, height, scale, dt, time, night, isWinter);
     else if (floorId === 'C1')
-        drawClearHillsFloor(cr, width, height, scale, time, scene !== 'sun' && scene !== 'clear' && scene !== 'moon', night);
+        drawClearHillsFloor(cr, width, height, scale, time, subdued, night);
     else if (floorId === 'C2')
         drawClearBeachFloor(cr, width, height, scale, time, night, twilight);
 }
@@ -6016,7 +6268,7 @@ export function paintSky(cr, { w: width, h: height, time, scene, night, sky,
         drawFog(fc, sky, width, dt, time, night, scale);
         const floorId = floor ? resolveFloorScene(scene, night, temp, floorScene) : null;
         if (floorId)
-            drawSceneFloor(fc, sky, width, height, scale, dt, time, scene, night, twilight, floorId);
+            drawSceneFloor(fc, sky, width, height, scale, dt, time, scene, night, temp, twilight, floorId);
         drawRain(fc, sky, width, height, scale, dt, scene, code, time, night, floor, floorId);
         drawSnow(fc, sky, width, height, scale, dt, time, code, variant);
         drawSleetPellets(fc, sky, width, height, scale, dt);
