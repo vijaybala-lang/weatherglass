@@ -345,7 +345,7 @@ export function paintChart(cr, opts) {
     const bgFn = opts.bgFn || null;
     const slotsProbe = opts.slotsProbe || NOOP_OBSERVER;
     const stripProbe = opts.stripProbe || NOOP_OBSERVER;
-    const SCRIM_RGB = [226 / 255, 232 / 255, 240 / 255];
+    const SCRIM_RGB = [234 / 255, 236 / 255, 238 / 255];
     const midRawBg = bgFn ? bgFn(height * 0.55) : null;
     const useLightGrayScrim = !opts.stripProbe && opts.dark !== false &&
         (!midRawBg || lumOf(midRawBg) >= 0.16);
@@ -353,15 +353,16 @@ export function paintChart(cr, opts) {
         if (!useLightGrayScrim)
             return 0;
         const t = Math.max(0, Math.min(1, yPx / Math.max(1, height)));
-        if (t <= 0.14)
-            return (t / 0.14) * 0.36;
-        if (t <= 0.48)
-            return 0.36 + ((t - 0.14) / 0.34) * 0.22;
-        if (t <= 0.78)
-            return 0.58 + ((t - 0.48) / 0.30) * 0.06;
-        if (t <= 0.94)
-            return 0.64 - ((t - 0.78) / 0.16) * 0.06;
-        return 0.58 * (1 - (t - 0.94) / 0.06);
+        if (t <= 0.17) {
+            const u = t / 0.17;
+            return (u * u * (3 - 2 * u)) * 0.70;
+        }
+        if (t <= 0.50)
+            return 0.70 + ((t - 0.17) / 0.33) * 0.06;
+        if (t <= 0.86)
+            return 0.76 - ((t - 0.50) / 0.36) * 0.04;
+        const u = Math.max(0, Math.min(1, (1 - t) / 0.14));
+        return (u * u * (3 - 2 * u)) * 0.72;
     };
     const effectiveBgAt = yPx => {
         if (!bgFn)
@@ -401,15 +402,19 @@ export function paintChart(cr, opts) {
 
     if (useLightGrayScrim) {
         // Full-bleed vertical gradient: clear -> light gray scrim -> clear
-        // spanning the graph, weather condition icons, and time text.
+        // stretched to the top of the graph and spanning the graph, weather
+        // condition icons, and time text.
         const [sR, sG, sB] = SCRIM_RGB;
         const scrimG = new Cairo.LinearGradient(0, 0, 0, height);
-        scrimG.addColorStopRGBA(0.00, sR, sG, sB, 0.0);
-        scrimG.addColorStopRGBA(0.14, sR, sG, sB, 0.36);
-        scrimG.addColorStopRGBA(0.48, sR, sG, sB, 0.58);
-        scrimG.addColorStopRGBA(0.78, sR, sG, sB, 0.64);
-        scrimG.addColorStopRGBA(0.94, sR, sG, sB, 0.58);
-        scrimG.addColorStopRGBA(1.00, sR, sG, sB, 0.0);
+        scrimG.addColorStopRGBA(0.00, sR, sG, sB, 0.00);
+        scrimG.addColorStopRGBA(0.05, sR, sG, sB, 0.14);
+        scrimG.addColorStopRGBA(0.11, sR, sG, sB, 0.46);
+        scrimG.addColorStopRGBA(0.17, sR, sG, sB, 0.70);
+        scrimG.addColorStopRGBA(0.50, sR, sG, sB, 0.76);
+        scrimG.addColorStopRGBA(0.86, sR, sG, sB, 0.72);
+        scrimG.addColorStopRGBA(0.93, sR, sG, sB, 0.42);
+        scrimG.addColorStopRGBA(0.97, sR, sG, sB, 0.14);
+        scrimG.addColorStopRGBA(1.00, sR, sG, sB, 0.00);
         cr.save();
         cr.setSource(scrimG);
         cr.rectangle(0, 0, width, height);

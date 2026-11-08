@@ -51,15 +51,19 @@ export function paintChart(cr, w, h, state) {
     const isDarkFg = (0.2126 * FG[0] + 0.7152 * FG[1] + 0.0722 * FG[2]) < 0.35;
     if (isDarkFg) {
         // Full-bleed vertical gradient: clear -> light gray scrim -> clear
-        // spanning the graph, weather condition icons, and time text.
-        const [sR, sG, sB] = [226 / 255, 232 / 255, 240 / 255];
+        // stretched to the top of the graph and spanning the graph, weather
+        // condition icons, and time text.
+        const [sR, sG, sB] = [234 / 255, 236 / 255, 238 / 255];
         const scrimG = new Cairo.LinearGradient(0, 0, 0, h);
-        scrimG.addColorStopRGBA(0.00, sR, sG, sB, 0.0);
-        scrimG.addColorStopRGBA(0.14, sR, sG, sB, 0.36);
-        scrimG.addColorStopRGBA(0.48, sR, sG, sB, 0.58);
-        scrimG.addColorStopRGBA(0.78, sR, sG, sB, 0.64);
-        scrimG.addColorStopRGBA(0.94, sR, sG, sB, 0.58);
-        scrimG.addColorStopRGBA(1.00, sR, sG, sB, 0.0);
+        scrimG.addColorStopRGBA(0.00, sR, sG, sB, 0.00);
+        scrimG.addColorStopRGBA(0.05, sR, sG, sB, 0.14);
+        scrimG.addColorStopRGBA(0.11, sR, sG, sB, 0.46);
+        scrimG.addColorStopRGBA(0.17, sR, sG, sB, 0.70);
+        scrimG.addColorStopRGBA(0.50, sR, sG, sB, 0.76);
+        scrimG.addColorStopRGBA(0.86, sR, sG, sB, 0.72);
+        scrimG.addColorStopRGBA(0.93, sR, sG, sB, 0.42);
+        scrimG.addColorStopRGBA(0.97, sR, sG, sB, 0.14);
+        scrimG.addColorStopRGBA(1.00, sR, sG, sB, 0.00);
         cr.save();
         cr.setSource(scrimG);
         cr.rectangle(0, 0, w, h);
