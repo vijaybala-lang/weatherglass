@@ -2,25 +2,25 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-05 18:18-0800\n"
+"POT-Creation-Date: 2026-11-08 14:10-0800\n"
 "Language: ta\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:297 prefs.js:857
+#: extension.js:297 prefs.js:894
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
-#: extension.js:318 menu.js:404
+#: extension.js:318 menu.js:405
 msgid "Fetching weather…"
 msgstr "வானிலை பெறப்படுகிறது…"
 
-#: extension.js:409
+#: extension.js:411
 msgid "My location"
 msgstr "என் இடம்"
 
-#: extension.js:410
+#: extension.js:412
 msgid "Custom location"
 msgstr "தனிப்பயன் இடம்"
 
@@ -36,92 +36,92 @@ msgstr "மழைப்பொழிவு"
 msgid "Wind"
 msgstr "காற்று"
 
-#: menu.js:232 menu.js:1133
+#: menu.js:233 menu.js:1143
 msgid "Now"
 msgstr "இப்போது"
 
-#: menu.js:443 menu.js:747 menu.js:751
+#: menu.js:444 menu.js:748 menu.js:752
 msgid "Weather"
 msgstr "வானிலை"
 
-#: menu.js:456
+#: menu.js:457
 msgid "Refresh now"
 msgstr "இப்போது புதுப்பி"
 
-#: menu.js:462
+#: menu.js:463
 msgid "Preferences"
 msgstr "விருப்பங்கள்"
 
-#: menu.js:501
+#: menu.js:502
 msgid "Show"
 msgstr "காட்டு"
 
-#: menu.js:501
+#: menu.js:502
 msgid "chart"
 msgstr "வரைபடம்"
 
-#: menu.js:519
+#: menu.js:520
 msgid "Previous hours"
 msgstr ""
 
-#: menu.js:520
+#: menu.js:521
 #, fuzzy
 msgid "Next hours"
 msgstr "மணிகளுக்கு மேலே"
 
-#: menu.js:554 menu.js:1368
+#: menu.js:555 menu.js:1378
 msgid "Orange"
 msgstr "ஆரஞ்சு"
 
-#: menu.js:554 menu.js:1368
+#: menu.js:555 menu.js:1378
 msgid "Red"
 msgstr "சிவப்பு"
 
-#: menu.js:554 menu.js:1368
+#: menu.js:555 menu.js:1378
 msgid "Yellow"
 msgstr "மஞ்சள்"
 
-#: menu.js:570
+#: menu.js:571
 msgid "in effect now"
 msgstr "இப்போது அமலில்"
 
-#: menu.js:571 menu.js:576 menu.js:578
+#: menu.js:572 menu.js:577 menu.js:579
 msgid "starts"
 msgstr "தொடக்கம்"
 
-#: menu.js:574
+#: menu.js:575
 msgid "now until"
 msgstr "இப்போது முதல்"
 
-#: menu.js:579
+#: menu.js:580
 msgid "until"
 msgstr "வரை"
 
-#: menu.js:645
+#: menu.js:646
 msgid "Issued by"
 msgstr "வெளியிட்டவர்"
 
-#: menu.js:653
+#: menu.js:654
 msgid "Full advisory"
 msgstr "முழு எச்சரிக்கை"
 
-#: menu.js:721
+#: menu.js:722
 msgid "more advisories"
 msgstr "மேலும் எச்சரிக்கைகள்"
 
-#: menu.js:752
+#: menu.js:753
 msgid "Could not load the forecast"
 msgstr "முன்னறிவிப்பை ஏற்ற முடியவில்லை"
 
-#: menu.js:1056
+#: menu.js:1066
 msgid "Refresh forecast — updated"
 msgstr "முன்னறிவிப்பைப் புதுப்பி — புதுப்பிக்கப்பட்டது"
 
-#: menu.js:1307 menu.js:1370
+#: menu.js:1317 menu.js:1380
 msgid "Today"
 msgstr "இன்று"
 
-#: menu.js:1370
+#: menu.js:1380
 msgid "advisory"
 msgstr "எச்சரிக்கை"
 
@@ -130,278 +130,310 @@ msgstr "எச்சரிக்கை"
 msgid "Use Location"
 msgstr "இடம்"
 
-#: prefs.js:244
+#: prefs.js:250
 msgid "Location"
 msgstr "இடம்"
 
-#: prefs.js:271
+#: prefs.js:277
 msgid "Automatic"
 msgstr "தானியங்கி"
 
-#: prefs.js:272
+#: prefs.js:278
 msgid "Uses system location when available, otherwise your public IP address"
 msgstr ""
 
-#: prefs.js:275
+#: prefs.js:281
 msgid "Detect location automatically"
 msgstr "இடத்தைத் தானாகக் கண்டறி"
 
-#: prefs.js:285
+#: prefs.js:291
 msgid "Search a city"
 msgstr "நகரைத் தேடு"
 
-#: prefs.js:287
+#: prefs.js:293
 msgid "City name — press Enter to search"
 msgstr "நகரின் பெயர் — தேட Enter அழுத்துக"
 
-#: prefs.js:292
+#: prefs.js:298
 msgid "Results"
 msgstr "முடிவுகள்"
 
-#: prefs.js:323
+#: prefs.js:329
 msgid "No matches"
 msgstr "பொருத்தங்கள் இல்லை"
 
-#: prefs.js:349
+#: prefs.js:355
 msgid "Manual"
 msgstr "கைமுறை"
 
-#: prefs.js:350
+#: prefs.js:356
 msgid "Saved when you press Enter in a field"
 msgstr "ஒரு புலத்தில் Enter அழுத்தும்போது சேமிக்கப்படும்"
 
-#: prefs.js:353
+#: prefs.js:359
 msgid "Latitude"
 msgstr "அক্ষாংশம்"
 
-#: prefs.js:354
+#: prefs.js:360
 msgid "Longitude"
 msgstr "தேர்குளங்கம்"
 
-#: prefs.js:355
+#: prefs.js:361
 msgid "Display name"
 msgstr "காட்சிப் பெயர்"
 
-#: prefs.js:403
+#: prefs.js:409
 msgid "Display"
 msgstr "காட்சி"
 
-#: prefs.js:413
+#: prefs.js:419
 msgid "Units"
 msgstr "அலகுகள்"
 
-#: prefs.js:415
+#: prefs.js:421
 msgid "Measurement system"
 msgstr "அளவீட்டு முறை"
 
-#: prefs.js:417
+#: prefs.js:423
 msgid "Imperial (°F, mph)"
 msgstr "இம்பீரியல் (°F, mph)"
 
-#: prefs.js:417
+#: prefs.js:423
 msgid "Metric (°C, km/h)"
 msgstr "மெட்ரிக் (°C, km/h)"
 
-#: prefs.js:426
+#: prefs.js:432
 msgid "Hour format"
 msgstr "நேர வடிவம்"
 
-#: prefs.js:427
+#: prefs.js:433
 msgid "Clock style for chart hours and the preview clock"
 msgstr "விற்பட நேரத்துகளும் முன்தோனற கடிகாரத்துகளும் நேரப் பண்பு"
 
-#: prefs.js:429
+#: prefs.js:435
 msgid "12-hour"
 msgstr "12 மணி"
 
-#: prefs.js:429
+#: prefs.js:435
 msgid "24-hour"
 msgstr "24 மணி"
 
-#: prefs.js:429
+#: prefs.js:435
 msgid "Automatic (system)"
 msgstr "தானியங்கி (முறைமை)"
 
-#: prefs.js:440
+#: prefs.js:446
 msgid "Panel indicator"
 msgstr "பேனல் காட்டி"
 
-#: prefs.js:441
+#: prefs.js:447
 msgid "Show animated icon"
 msgstr "அசைவச் சின்னத்தைக் காட்டு"
 
-#: prefs.js:442
+#: prefs.js:448
 msgid "Show temperature"
 msgstr "வெப்பநிலையைக் காட்டு"
 
-#: prefs.js:444
+#: prefs.js:450
 msgid "Animate the icon"
 msgstr "சின்னத்தை அசக்கு"
 
-#: prefs.js:445
+#: prefs.js:451
 msgid "Turn off to save a little battery"
 msgstr "சிறிது பேட்டரி சேமிக்க முடக்கு"
 
-#: prefs.js:457
+#: prefs.js:463
 msgid "Menu background"
 msgstr "பட்டி பின்னணி"
 
-#: prefs.js:460
+#: prefs.js:466
 msgid "Use system theme"
 msgstr "கணினி தீமைப் பயன்படுத்து"
 
-#: prefs.js:461
+#: prefs.js:467
 msgid "Match GNOME popup background and system accent color"
 msgstr "GNOME பாப்அப் பின்னணி மற்றும் கணினி உச்சரிப்பு நிறத்துடன் பொருத்து"
 
-#: prefs.js:465
+#: prefs.js:471
 msgid "Background style"
 msgstr "பின்னணி பாணி"
 
-#: prefs.js:466
+#: prefs.js:472
 msgid "How the dropdown fills itself behind the forecast"
 msgstr "முன்னறிவிப்புக்குப் பின்னால் கூ-drop-டவுன் எவ்வாறு நிரம்புகிறது"
 
-#: prefs.js:469
+#: prefs.js:475
 msgid "Animated sky"
 msgstr "அசைவூட்டப்பட்ட வானம்"
 
-#: prefs.js:470
+#: prefs.js:476
 msgid "Animated sky with theme tint"
 msgstr "தீம் சாயலுடன் அசைவூட்டப்பட்ட வானம்"
 
-#: prefs.js:477
+#: prefs.js:483
 msgid "Show ground scenes"
 msgstr "தரைக் காட்சிகளைக் காட்டு"
 
-#: prefs.js:478
+#: prefs.js:484
 msgid "Weather landscapes and animations along the bottom of the sky"
 msgstr "வானத்தின் அடிப்பகுதியில் வானிலை நிலப்பரப்புகள் மற்றும் அசைவூட்டங்கள்"
 
+#: prefs.js:490
+msgid "Ground scene"
+msgstr "தரைக் காட்சி"
+
+#: prefs.js:491
+msgid "Landscape shown along the bottom when ground scenes are enabled"
+msgstr "தரைக் காட்சிகள் இயக்கப்பட்டிருக்கும் போது கீழே காட்டப்படும் நிலப்பரப்பு"
+
+#: prefs.js:494
+msgid "Automatic (by weather)"
+msgstr "தானியங்கி (வானிலைப்படி)"
+
 #: prefs.js:495
+msgid "Pastoral hills & windmill"
+msgstr "பசுமைக் குன்றுகளும் காற்றாலையும்"
+
+#: prefs.js:496
+msgid "Cape Cod seashore"
+msgstr "கேப் காட் கடற்கரை"
+
+#: prefs.js:497
+msgid "Alpine chalet & snowman"
+msgstr "ஆல்பைன் குடிலும் பனிமனிதனும்"
+
+#: prefs.js:498
+msgid "Nishikigoi koi pond"
+msgstr "நிஷிகிகோய் கோய் மீன் குளம்"
+
+#: prefs.js:499
+msgid "Lotus & tree frog pond"
+msgstr "தாமரை மற்றும் மரத்தவளை குளம்"
+
+#: prefs.js:528
 msgid "Text emboss"
 msgstr "எழுத்துப் புடைப்பு"
 
-#: prefs.js:496
+#: prefs.js:529
 msgid "Soft shadow under card text and icons over the sky"
 msgstr "வானத்தின்மீது அட்டெழுத்து மற்றும் சின்னங்களுக்குக் கீழ் மென்நிழல்"
 
-#: prefs.js:503
+#: prefs.js:536
 #, fuzzy
 msgid "Hourly forecast"
 msgstr "நேர வடிவம்"
 
-#: prefs.js:504
+#: prefs.js:537
 msgid "Line chart or scrollable hourly pills"
 msgstr ""
 
-#: prefs.js:506
+#: prefs.js:539
 msgid "All-in-one pills"
 msgstr ""
 
-#: prefs.js:506
+#: prefs.js:539
 #, fuzzy
 msgid "Gauge pills"
 msgstr "குழு மாத்திரைகள்"
 
-#: prefs.js:506
+#: prefs.js:539
 #, fuzzy
 msgid "Line chart"
 msgstr "வரைபடம்"
 
-#: prefs.js:515
+#: prefs.js:548
 msgid "Weather conditions"
 msgstr "வானிலை நிலைகள்"
 
-#: prefs.js:516
+#: prefs.js:549
 msgid "How hourly conditions ride the chart"
 msgstr "மணிநேர நிலைகள் வரைபடத்தில் எவ்வாறு செல்கின்றன"
 
-#: prefs.js:518
+#: prefs.js:551
 msgid "Grouped pills"
 msgstr "குழு மாத்திரைகள்"
 
-#: prefs.js:518
+#: prefs.js:551
 msgid "Hourly icons"
 msgstr "மணிநேர சின்னங்கள்"
 
-#: prefs.js:518
+#: prefs.js:551
 msgid "Off"
 msgstr "அணை"
 
-#: prefs.js:529
+#: prefs.js:562
 msgid "Condition band position"
 msgstr "நிலைப் பட்டையின் இடம்"
 
-#: prefs.js:530
+#: prefs.js:563
 msgid "Along the chart top, or above the hour labels"
 msgstr "வரைபடத்தின் மேற்பகுதியில், அல்லது மணி பெயர்களுக்கு மேலே"
 
-#: prefs.js:532
+#: prefs.js:565
 msgid "Above hours"
 msgstr "மணிகளுக்கு மேலே"
 
-#: prefs.js:532
+#: prefs.js:565
 msgid "Chart top"
 msgstr "வரைபட மேல்"
 
-#: prefs.js:554
+#: prefs.js:587
 msgid "Data text"
 msgstr "தரவு உரைய"
 
-#: prefs.js:555
+#: prefs.js:588
 msgid "Bolder or larger metric values and chart hours"
 msgstr "அளவு மதிப்புகளும் வரைபட நேரங்களும் தடித்ததாகவோ பெரிதாகவோ"
 
-#: prefs.js:557
+#: prefs.js:590
 msgid "Bold"
 msgstr "தடித்த"
 
-#: prefs.js:557
+#: prefs.js:590
 msgid "Bold & large"
 msgstr "தடித்தும் பெரியும்"
 
-#: prefs.js:557
+#: prefs.js:590
 msgid "Large"
 msgstr "பெரிய"
 
-#: prefs.js:557
+#: prefs.js:590
 msgid "Normal"
 msgstr "சாதாரண"
 
-#: prefs.js:570
+#: prefs.js:603
 msgid "Data"
 msgstr "தரவு"
 
-#: prefs.js:579
+#: prefs.js:612
 msgid "Data source"
 msgstr "தரவு ஆதாரம்"
 
-#: prefs.js:581
+#: prefs.js:614
 msgid "Weather provider"
 msgstr "வானிலை வழங்கி"
 
-#: prefs.js:582
+#: prefs.js:615
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "அனைத்தும் விசையின்றி · MET Norway தரவு CC BY-SA 4.0 உரிமத்தில்"
 
-#: prefs.js:585
+#: prefs.js:618
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo (இயல்புநிலை)"
 
-#: prefs.js:586
+#: prefs.js:619
 msgid "MET Norway (api.met.no)"
 msgstr "MET Norway (api.met.no)"
 
-#: prefs.js:587
+#: prefs.js:620
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS (அமெரிக்க இடங்கள் மட்டும்)"
 
-#: prefs.js:599
+#: prefs.js:632
 msgid "Forecast model"
 msgstr "முன்னறிவிப்பு மாதிரி"
 
-#: prefs.js:600
+#: prefs.js:633
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
@@ -409,119 +441,119 @@ msgstr ""
 "Open-Meteo மட்டும் · ஒந்று வாரம்வரையும் மாதிரிகள் கருத்தவிககின்றன — வாரமிறைப்பு "
 "பிறககாட்டினாற்று மறறொந்னறை தேர்வுசெய்யுங்"
 
-#: prefs.js:603
+#: prefs.js:636
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "சிறந்த பொருத்தம் (Open-Meteo மண்டலத் தேர்வு; அமெரிக்கா → GFS)"
 
-#: prefs.js:604
+#: prefs.js:637
 #, fuzzy
 msgid "ECMWF IFS high-res (recommended)"
 msgstr "ECMWF IFS (பரிந்துரைக்கப்படுகிறது)"
 
-#: prefs.js:605
+#: prefs.js:638
 #, fuzzy
 msgid "ECMWF IFS (0.25° grid)"
 msgstr "ECMWF IFS (பரிந்துரைக்கப்படுகிறது)"
 
-#: prefs.js:606
+#: prefs.js:639
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON (குறைந்த காலவரை)"
 
-#: prefs.js:607
+#: prefs.js:640
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:608
+#: prefs.js:641
 msgid "GEM global (Canada)"
 msgstr ""
 
-#: prefs.js:609
+#: prefs.js:642
 msgid "JMA (Japan · rain chance derived)"
 msgstr ""
 
-#: prefs.js:610
+#: prefs.js:643
 msgid "UK Met Office global (10 km)"
 msgstr ""
 
-#: prefs.js:630
+#: prefs.js:663
 msgid "Updates"
 msgstr "புதுப்பிப்புகள்"
 
-#: prefs.js:632
+#: prefs.js:665
 msgid "Refresh interval (minutes)"
 msgstr "புதுப்பிப்பு இடைவெளி (நிமிடங்கள்)"
 
-#: prefs.js:641
+#: prefs.js:674
 msgid "Wind animation threshold (km/h)"
 msgstr "காற்று அசைவு வரம்பு (km/h)"
 
-#: prefs.js:642
+#: prefs.js:675
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "காற்று அதிகமுள்ள நாட்களில் சின்னம் காற்று அசைவாக மாறும்"
 
-#: prefs.js:656
+#: prefs.js:689
 msgid "Preview"
 msgstr "முன்னோட்டம்"
 
-#: prefs.js:679
+#: prefs.js:712
 msgid "Panel preview"
 msgstr "பேனல் முன்னோட்டம்"
 
-#: prefs.js:680
+#: prefs.js:713
 #, fuzzy
 msgid ""
 "How the panel button looks for this scene — sample temperature, real icon "
 "animation"
 msgstr "இந்ற க்காட்க்கு பேனல் பட்டன் எவ்வாறு இருக்கும் — போலி வெப்பநிலை, உண்மையான அசைவூட்டம்"
 
-#: prefs.js:685
+#: prefs.js:718
 msgid "Menu backdrop preview"
 msgstr "பட்டி பின்னணி முன்னோட்டம்"
 
-#: prefs.js:686
+#: prefs.js:719
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "உங்களுடைய பட்டியின நடப்பிலுள வான, நேரலை — மேலே ஒந்று நிலையை தேர்வுசெய்து இதில் "
 "அசைவூட்டலாம்"
 
-#: prefs.js:714
+#: prefs.js:749
 msgid "Preview scene"
 msgstr "முன்னோட்டக் காட்சி"
 
-#: prefs.js:715
+#: prefs.js:750
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "இதில் ~12 வினாடிகள் சுழலும் — உண்மையான பேனல் மாறாது"
 
-#: prefs.js:747
+#: prefs.js:782
 msgid "Scene"
 msgstr "காட்சி"
 
-#: prefs.js:853
+#: prefs.js:890
 msgid "About"
 msgstr "பற்றி"
 
-#: prefs.js:859
+#: prefs.js:896
 msgid "Version"
 msgstr "பதிப்பு"
 
-#: prefs.js:863
+#: prefs.js:900
 msgid "Contact"
 msgstr "தொடர்பு"
 
-#: prefs.js:867
+#: prefs.js:904
 msgid "Free and open source"
 msgstr "இலவசம் மற்றும் திறந்தமூலம்"
 
-#: prefs.js:868
+#: prefs.js:905
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "விளம்பரம் இல்லை, கணக்குகள் இல்லை, தரவு சேகரிப்பு இல்லை — வான் வேலை செய்ய வேண்டும்"
 
-#: prefs.js:873
+#: prefs.js:910
 msgid "Support the development"
 msgstr "வளர்ச்சிக்கு ஆதரவு"
 
-#: prefs.js:874
+#: prefs.js:911
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -529,11 +561,11 @@ msgstr ""
 "Weatherglass எப்போதும் இலவசம். உமது மைதானம் அழகாகுமெனில், ஒந்று காபி புள்ளிகளை "
 "வடிவிக்கவைக்கும்."
 
-#: prefs.js:887
+#: prefs.js:924
 msgid "Buy me a coffee"
 msgstr "எனக்கு ஒரு காபி வாங்கு"
 
-#: prefs.js:888
+#: prefs.js:925
 msgid "PayPal"
 msgstr ""
 

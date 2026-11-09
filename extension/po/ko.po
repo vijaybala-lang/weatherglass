@@ -2,25 +2,25 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-05 18:18-0800\n"
+"POT-Creation-Date: 2026-11-08 14:10-0800\n"
 "Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:297 prefs.js:857
+#: extension.js:297 prefs.js:894
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
-#: extension.js:318 menu.js:404
+#: extension.js:318 menu.js:405
 msgid "Fetching weather…"
 msgstr "날씨 가져오는 중…"
 
-#: extension.js:409
+#: extension.js:411
 msgid "My location"
 msgstr "현재 위치"
 
-#: extension.js:410
+#: extension.js:412
 msgid "Custom location"
 msgstr "직접 지정한 위치"
 
@@ -36,92 +36,92 @@ msgstr "강수"
 msgid "Wind"
 msgstr "바람"
 
-#: menu.js:232 menu.js:1133
+#: menu.js:233 menu.js:1143
 msgid "Now"
 msgstr "현재"
 
-#: menu.js:443 menu.js:747 menu.js:751
+#: menu.js:444 menu.js:748 menu.js:752
 msgid "Weather"
 msgstr "날씨"
 
-#: menu.js:456
+#: menu.js:457
 msgid "Refresh now"
 msgstr "지금 새로고침"
 
-#: menu.js:462
+#: menu.js:463
 msgid "Preferences"
 msgstr "설정"
 
-#: menu.js:501
+#: menu.js:502
 msgid "Show"
 msgstr "보기"
 
-#: menu.js:501
+#: menu.js:502
 msgid "chart"
 msgstr "차트"
 
-#: menu.js:519
+#: menu.js:520
 msgid "Previous hours"
 msgstr ""
 
-#: menu.js:520
+#: menu.js:521
 #, fuzzy
 msgid "Next hours"
 msgstr "시간 표시 위"
 
-#: menu.js:554 menu.js:1368
+#: menu.js:555 menu.js:1378
 msgid "Orange"
 msgstr "주황색"
 
-#: menu.js:554 menu.js:1368
+#: menu.js:555 menu.js:1378
 msgid "Red"
 msgstr "적색"
 
-#: menu.js:554 menu.js:1368
+#: menu.js:555 menu.js:1378
 msgid "Yellow"
 msgstr "황색"
 
-#: menu.js:570
+#: menu.js:571
 msgid "in effect now"
 msgstr "현재 발효 중"
 
-#: menu.js:571 menu.js:576 menu.js:578
+#: menu.js:572 menu.js:577 menu.js:579
 msgid "starts"
 msgstr "시작"
 
-#: menu.js:574
+#: menu.js:575
 msgid "now until"
 msgstr "현재~"
 
-#: menu.js:579
+#: menu.js:580
 msgid "until"
 msgstr "~"
 
-#: menu.js:645
+#: menu.js:646
 msgid "Issued by"
 msgstr "발표"
 
-#: menu.js:653
+#: menu.js:654
 msgid "Full advisory"
 msgstr "전체 특보"
 
-#: menu.js:721
+#: menu.js:722
 msgid "more advisories"
 msgstr "개 추가 특보"
 
-#: menu.js:752
+#: menu.js:753
 msgid "Could not load the forecast"
 msgstr "예보를 불러올 수 없습니다"
 
-#: menu.js:1056
+#: menu.js:1066
 msgid "Refresh forecast — updated"
 msgstr "예보 새로고침 — 업데이트:"
 
-#: menu.js:1307 menu.js:1370
+#: menu.js:1317 menu.js:1380
 msgid "Today"
 msgstr "오늘"
 
-#: menu.js:1370
+#: menu.js:1380
 msgid "advisory"
 msgstr "특보"
 
@@ -130,278 +130,310 @@ msgstr "특보"
 msgid "Use Location"
 msgstr "위치"
 
-#: prefs.js:244
+#: prefs.js:250
 msgid "Location"
 msgstr "위치"
 
-#: prefs.js:271
+#: prefs.js:277
 msgid "Automatic"
 msgstr "자동"
 
-#: prefs.js:272
+#: prefs.js:278
 msgid "Uses system location when available, otherwise your public IP address"
 msgstr ""
 
-#: prefs.js:275
+#: prefs.js:281
 msgid "Detect location automatically"
 msgstr "위치 자동 감지"
 
-#: prefs.js:285
+#: prefs.js:291
 msgid "Search a city"
 msgstr "도시 검색"
 
-#: prefs.js:287
+#: prefs.js:293
 msgid "City name — press Enter to search"
 msgstr "도시 이름 — Enter을(를) 눌러 검색"
 
-#: prefs.js:292
+#: prefs.js:298
 msgid "Results"
 msgstr "결과"
 
-#: prefs.js:323
+#: prefs.js:329
 msgid "No matches"
 msgstr "일치하는 결과 없음"
 
-#: prefs.js:349
+#: prefs.js:355
 msgid "Manual"
 msgstr "직접 입력"
 
-#: prefs.js:350
+#: prefs.js:356
 msgid "Saved when you press Enter in a field"
 msgstr "칸에서 Enter을(를) 누르면 저장됩니다"
 
-#: prefs.js:353
+#: prefs.js:359
 msgid "Latitude"
 msgstr "위도"
 
-#: prefs.js:354
+#: prefs.js:360
 msgid "Longitude"
 msgstr "경도"
 
-#: prefs.js:355
+#: prefs.js:361
 msgid "Display name"
 msgstr "표시 이름"
 
-#: prefs.js:403
+#: prefs.js:409
 msgid "Display"
 msgstr "화면"
 
-#: prefs.js:413
+#: prefs.js:419
 msgid "Units"
 msgstr "단위"
 
-#: prefs.js:415
+#: prefs.js:421
 msgid "Measurement system"
 msgstr "측정 단위계"
 
-#: prefs.js:417
+#: prefs.js:423
 msgid "Imperial (°F, mph)"
 msgstr "야드파운드법 (°F, mph)"
 
-#: prefs.js:417
+#: prefs.js:423
 msgid "Metric (°C, km/h)"
 msgstr "미터법 (°C, km/h)"
 
-#: prefs.js:426
+#: prefs.js:432
 msgid "Hour format"
 msgstr "시간 형식"
 
-#: prefs.js:427
+#: prefs.js:433
 msgid "Clock style for chart hours and the preview clock"
 msgstr "차트 시간과 미리보기 시계의 시계 형식"
 
-#: prefs.js:429
+#: prefs.js:435
 msgid "12-hour"
 msgstr "12시간제"
 
-#: prefs.js:429
+#: prefs.js:435
 msgid "24-hour"
 msgstr "24시간제"
 
-#: prefs.js:429
+#: prefs.js:435
 msgid "Automatic (system)"
 msgstr "자동(시스템)"
 
-#: prefs.js:440
+#: prefs.js:446
 msgid "Panel indicator"
 msgstr "패널 표시기"
 
-#: prefs.js:441
+#: prefs.js:447
 msgid "Show animated icon"
 msgstr "애니메이션 아이콘 표시"
 
-#: prefs.js:442
+#: prefs.js:448
 msgid "Show temperature"
 msgstr "기온 표시"
 
-#: prefs.js:444
+#: prefs.js:450
 msgid "Animate the icon"
 msgstr "아이콘 애니메이션"
 
-#: prefs.js:445
+#: prefs.js:451
 msgid "Turn off to save a little battery"
 msgstr "끄면 배터리를 조금 아낄 수 있습니다"
 
-#: prefs.js:457
+#: prefs.js:463
 msgid "Menu background"
 msgstr "메뉴 배경"
 
-#: prefs.js:460
+#: prefs.js:466
 msgid "Use system theme"
 msgstr "시스템 테마 사용"
 
-#: prefs.js:461
+#: prefs.js:467
 msgid "Match GNOME popup background and system accent color"
 msgstr "GNOME 팝업 배경 및 시스템 강조 색상과 일치"
 
-#: prefs.js:465
+#: prefs.js:471
 msgid "Background style"
 msgstr "배경 스타일"
 
-#: prefs.js:466
+#: prefs.js:472
 msgid "How the dropdown fills itself behind the forecast"
 msgstr "드롭다운이 예보 뒤를 어떻게 채우는지"
 
-#: prefs.js:469
+#: prefs.js:475
 msgid "Animated sky"
 msgstr "애니메이션 하늘"
 
-#: prefs.js:470
+#: prefs.js:476
 msgid "Animated sky with theme tint"
 msgstr "테마 색조가 적용된 애니메이션 하늘"
 
-#: prefs.js:477
+#: prefs.js:483
 msgid "Show ground scenes"
 msgstr "바닥 풍경 표시"
 
-#: prefs.js:478
+#: prefs.js:484
 msgid "Weather landscapes and animations along the bottom of the sky"
 msgstr "하늘 하단의 날씨 풍경 및 애니메이션"
 
+#: prefs.js:490
+msgid "Ground scene"
+msgstr "지상 풍경"
+
+#: prefs.js:491
+msgid "Landscape shown along the bottom when ground scenes are enabled"
+msgstr "지상 풍경이 켜져 있을 때 하단에 표시되는 풍경"
+
+#: prefs.js:494
+msgid "Automatic (by weather)"
+msgstr "자동 (날씨에 따라)"
+
 #: prefs.js:495
+msgid "Pastoral hills & windmill"
+msgstr "목가적인 언덕과 풍차"
+
+#: prefs.js:496
+msgid "Cape Cod seashore"
+msgstr "케이프코드 해변"
+
+#: prefs.js:497
+msgid "Alpine chalet & snowman"
+msgstr "알프스 산장과 눈사람"
+
+#: prefs.js:498
+msgid "Nishikigoi koi pond"
+msgstr "비단잉어 연못"
+
+#: prefs.js:499
+msgid "Lotus & tree frog pond"
+msgstr "연꽃과 청개구리 연못"
+
+#: prefs.js:528
 msgid "Text emboss"
 msgstr "텍스트 음각"
 
-#: prefs.js:496
+#: prefs.js:529
 msgid "Soft shadow under card text and icons over the sky"
 msgstr "하늘 위 카드 텍스트와 아이콘 아래 부드러운 그림자"
 
-#: prefs.js:503
+#: prefs.js:536
 #, fuzzy
 msgid "Hourly forecast"
 msgstr "시간 형식"
 
-#: prefs.js:504
+#: prefs.js:537
 msgid "Line chart or scrollable hourly pills"
 msgstr ""
 
-#: prefs.js:506
+#: prefs.js:539
 msgid "All-in-one pills"
 msgstr ""
 
-#: prefs.js:506
+#: prefs.js:539
 #, fuzzy
 msgid "Gauge pills"
 msgstr "묶인 알약형 배지"
 
-#: prefs.js:506
+#: prefs.js:539
 #, fuzzy
 msgid "Line chart"
 msgstr "차트"
 
-#: prefs.js:515
+#: prefs.js:548
 msgid "Weather conditions"
 msgstr "날씨 상태"
 
-#: prefs.js:516
+#: prefs.js:549
 msgid "How hourly conditions ride the chart"
 msgstr "시간별 상태가 차트에 표시되는 방식"
 
-#: prefs.js:518
+#: prefs.js:551
 msgid "Grouped pills"
 msgstr "묶인 알약형 배지"
 
-#: prefs.js:518
+#: prefs.js:551
 msgid "Hourly icons"
 msgstr "시간별 아이콘"
 
-#: prefs.js:518
+#: prefs.js:551
 msgid "Off"
 msgstr "끄기"
 
-#: prefs.js:529
+#: prefs.js:562
 msgid "Condition band position"
 msgstr "상태 밴드 위치"
 
-#: prefs.js:530
+#: prefs.js:563
 msgid "Along the chart top, or above the hour labels"
 msgstr "차트 위쪽을 따라, 또는 시간 표시 위에"
 
-#: prefs.js:532
+#: prefs.js:565
 msgid "Above hours"
 msgstr "시간 표시 위"
 
-#: prefs.js:532
+#: prefs.js:565
 msgid "Chart top"
 msgstr "차트 위쪽"
 
-#: prefs.js:554
+#: prefs.js:587
 msgid "Data text"
 msgstr "데이터 텍스트"
 
-#: prefs.js:555
+#: prefs.js:588
 msgid "Bolder or larger metric values and chart hours"
 msgstr "측정값과 차트 시간을 굵거나 크게 표시"
 
-#: prefs.js:557
+#: prefs.js:590
 msgid "Bold"
 msgstr "굵게"
 
-#: prefs.js:557
+#: prefs.js:590
 msgid "Bold & large"
 msgstr "굵고 크게"
 
-#: prefs.js:557
+#: prefs.js:590
 msgid "Large"
 msgstr "크게"
 
-#: prefs.js:557
+#: prefs.js:590
 msgid "Normal"
 msgstr "표준"
 
-#: prefs.js:570
+#: prefs.js:603
 msgid "Data"
 msgstr "데이터"
 
-#: prefs.js:579
+#: prefs.js:612
 msgid "Data source"
 msgstr "데이터 출처"
 
-#: prefs.js:581
+#: prefs.js:614
 msgid "Weather provider"
 msgstr "날씨 제공 업체"
 
-#: prefs.js:582
+#: prefs.js:615
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "모두 키 불필요 · MET Norway 데이터 CC BY-SA 4.0 라이선스"
 
-#: prefs.js:585
+#: prefs.js:618
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo (기본값)"
 
-#: prefs.js:586
+#: prefs.js:619
 msgid "MET Norway (api.met.no)"
 msgstr "노르웨이 기상청 (api.met.no)"
 
-#: prefs.js:587
+#: prefs.js:620
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS (미국 지역 한정)"
 
-#: prefs.js:599
+#: prefs.js:632
 msgid "Forecast model"
 msgstr "예보 모델"
 
-#: prefs.js:600
+#: prefs.js:633
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
@@ -409,65 +441,65 @@ msgstr ""
 "Open-Meteo 전용 · 1주일 이상은 모델마다 다릅니다 — 주말 예보가 이상하면 다른 "
 "모델을 시도하세요"
 
-#: prefs.js:603
+#: prefs.js:636
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "최적 일치 (Open-Meteo 지역 선택; 미국 → GFS)"
 
-#: prefs.js:604
+#: prefs.js:637
 #, fuzzy
 msgid "ECMWF IFS high-res (recommended)"
 msgstr "ECMWF IFS (권장)"
 
-#: prefs.js:605
+#: prefs.js:638
 #, fuzzy
 msgid "ECMWF IFS (0.25° grid)"
 msgstr "ECMWF IFS (권장)"
 
-#: prefs.js:606
+#: prefs.js:639
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON (예보 기간이 더 짧음)"
 
-#: prefs.js:607
+#: prefs.js:640
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:608
+#: prefs.js:641
 msgid "GEM global (Canada)"
 msgstr ""
 
-#: prefs.js:609
+#: prefs.js:642
 msgid "JMA (Japan · rain chance derived)"
 msgstr ""
 
-#: prefs.js:610
+#: prefs.js:643
 msgid "UK Met Office global (10 km)"
 msgstr ""
 
-#: prefs.js:630
+#: prefs.js:663
 msgid "Updates"
 msgstr "업데이트"
 
-#: prefs.js:632
+#: prefs.js:665
 msgid "Refresh interval (minutes)"
 msgstr "새로고침 간격 (분)"
 
-#: prefs.js:641
+#: prefs.js:674
 msgid "Wind animation threshold (km/h)"
 msgstr "바람 애니메이션 기준 (km/h)"
 
-#: prefs.js:642
+#: prefs.js:675
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "바람이 강한 날에는 아이콘이 바람 애니메이션으로 바뀝니다"
 
-#: prefs.js:656
+#: prefs.js:689
 msgid "Preview"
 msgstr "미리보기"
 
-#: prefs.js:679
+#: prefs.js:712
 msgid "Panel preview"
 msgstr "패널 미리보기"
 
-#: prefs.js:680
+#: prefs.js:713
 #, fuzzy
 msgid ""
 "How the panel button looks for this scene — sample temperature, real icon "
@@ -475,53 +507,53 @@ msgid ""
 msgstr ""
 "이 장면에서 패널 버튼이 보이는 방식 — 기온은 모의, 아이콘 애니메이션은 실제"
 
-#: prefs.js:685
+#: prefs.js:718
 msgid "Menu backdrop preview"
 msgstr "메뉴 배경 미리보기"
 
-#: prefs.js:686
+#: prefs.js:719
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "메뉴의 현재 하늘을 실시간으로 — 상단에서 상태를 선택하면 여기서 재생됩니다"
 
-#: prefs.js:714
+#: prefs.js:749
 msgid "Preview scene"
 msgstr "미리보기 장면"
 
-#: prefs.js:715
+#: prefs.js:750
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "여기서 약 12초 동안 반복 — 실제 패널은 그대로입니다"
 
-#: prefs.js:747
+#: prefs.js:782
 msgid "Scene"
 msgstr "장면"
 
-#: prefs.js:853
+#: prefs.js:890
 msgid "About"
 msgstr "정보"
 
-#: prefs.js:859
+#: prefs.js:896
 msgid "Version"
 msgstr "버전"
 
-#: prefs.js:863
+#: prefs.js:900
 msgid "Contact"
 msgstr "문의"
 
-#: prefs.js:867
+#: prefs.js:904
 msgid "Free and open source"
 msgstr "무료 오픈소스"
 
-#: prefs.js:868
+#: prefs.js:905
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "광고 없음, 계정 없음, 데이터 수집 없음 — 하늘은 그저 동작하면 됩니다"
 
-#: prefs.js:873
+#: prefs.js:910
 msgid "Support the development"
 msgstr "개발 지원"
 
-#: prefs.js:874
+#: prefs.js:911
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -529,11 +561,11 @@ msgstr ""
 "Weatherglass는 영원히 무료입니다. 데스크톱이 더 나아졌다면, 커피 한 잔이 픽셀"
 "을 계속 흘려보냅니다."
 
-#: prefs.js:887
+#: prefs.js:924
 msgid "Buy me a coffee"
 msgstr "커피 한 잔 사 주기"
 
-#: prefs.js:888
+#: prefs.js:925
 msgid "PayPal"
 msgstr ""
 

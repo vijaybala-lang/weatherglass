@@ -2,25 +2,25 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-05 18:18-0800\n"
+"POT-Creation-Date: 2026-11-08 14:10-0800\n"
 "Language: vi\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:297 prefs.js:857
+#: extension.js:297 prefs.js:894
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
-#: extension.js:318 menu.js:404
+#: extension.js:318 menu.js:405
 msgid "Fetching weather…"
 msgstr "Đang tải thời tiết…"
 
-#: extension.js:409
+#: extension.js:411
 msgid "My location"
 msgstr "Vị trí của tôi"
 
-#: extension.js:410
+#: extension.js:412
 msgid "Custom location"
 msgstr "Vị trí tự chọn"
 
@@ -36,92 +36,92 @@ msgstr "Lượng mưa"
 msgid "Wind"
 msgstr "Gió"
 
-#: menu.js:232 menu.js:1133
+#: menu.js:233 menu.js:1143
 msgid "Now"
 msgstr "Bây giờ"
 
-#: menu.js:443 menu.js:747 menu.js:751
+#: menu.js:444 menu.js:748 menu.js:752
 msgid "Weather"
 msgstr "Thời tiết"
 
-#: menu.js:456
+#: menu.js:457
 msgid "Refresh now"
 msgstr "Làm mới ngay"
 
-#: menu.js:462
+#: menu.js:463
 msgid "Preferences"
 msgstr "Tùy chọn"
 
-#: menu.js:501
+#: menu.js:502
 msgid "Show"
 msgstr "Xem"
 
-#: menu.js:501
+#: menu.js:502
 msgid "chart"
 msgstr "biểu đồ"
 
-#: menu.js:519
+#: menu.js:520
 msgid "Previous hours"
 msgstr ""
 
-#: menu.js:520
+#: menu.js:521
 #, fuzzy
 msgid "Next hours"
 msgstr "Trên nhãn giờ"
 
-#: menu.js:554 menu.js:1368
+#: menu.js:555 menu.js:1378
 msgid "Orange"
 msgstr "Cam"
 
-#: menu.js:554 menu.js:1368
+#: menu.js:555 menu.js:1378
 msgid "Red"
 msgstr "Đỏ"
 
-#: menu.js:554 menu.js:1368
+#: menu.js:555 menu.js:1378
 msgid "Yellow"
 msgstr "Vàng"
 
-#: menu.js:570
+#: menu.js:571
 msgid "in effect now"
 msgstr "đang có hiệu lực"
 
-#: menu.js:571 menu.js:576 menu.js:578
+#: menu.js:572 menu.js:577 menu.js:579
 msgid "starts"
 msgstr "bắt đầu"
 
-#: menu.js:574
+#: menu.js:575
 msgid "now until"
 msgstr "đến"
 
-#: menu.js:579
+#: menu.js:580
 msgid "until"
 msgstr "đến"
 
-#: menu.js:645
+#: menu.js:646
 msgid "Issued by"
 msgstr "Ban hành bởi"
 
-#: menu.js:653
+#: menu.js:654
 msgid "Full advisory"
 msgstr "Toàn bộ cảnh báo"
 
-#: menu.js:721
+#: menu.js:722
 msgid "more advisories"
 msgstr "cảnh báo khác"
 
-#: menu.js:752
+#: menu.js:753
 msgid "Could not load the forecast"
 msgstr "Không tải được dự báo"
 
-#: menu.js:1056
+#: menu.js:1066
 msgid "Refresh forecast — updated"
 msgstr "Làm mới dự báo — cập nhật"
 
-#: menu.js:1307 menu.js:1370
+#: menu.js:1317 menu.js:1380
 msgid "Today"
 msgstr "Hôm nay"
 
-#: menu.js:1370
+#: menu.js:1380
 msgid "advisory"
 msgstr "cảnh báo"
 
@@ -130,278 +130,310 @@ msgstr "cảnh báo"
 msgid "Use Location"
 msgstr "Vị trí"
 
-#: prefs.js:244
+#: prefs.js:250
 msgid "Location"
 msgstr "Vị trí"
 
-#: prefs.js:271
+#: prefs.js:277
 msgid "Automatic"
 msgstr "Tự động"
 
-#: prefs.js:272
+#: prefs.js:278
 msgid "Uses system location when available, otherwise your public IP address"
 msgstr ""
 
-#: prefs.js:275
+#: prefs.js:281
 msgid "Detect location automatically"
 msgstr "Tự động xác định vị trí"
 
-#: prefs.js:285
+#: prefs.js:291
 msgid "Search a city"
 msgstr "Tìm thành phố"
 
-#: prefs.js:287
+#: prefs.js:293
 msgid "City name — press Enter to search"
 msgstr "Tên thành phố — nhấn Enter để tìm"
 
-#: prefs.js:292
+#: prefs.js:298
 msgid "Results"
 msgstr "Kết quả"
 
-#: prefs.js:323
+#: prefs.js:329
 msgid "No matches"
 msgstr "Không có kết quả"
 
-#: prefs.js:349
+#: prefs.js:355
 msgid "Manual"
 msgstr "Thủ công"
 
-#: prefs.js:350
+#: prefs.js:356
 msgid "Saved when you press Enter in a field"
 msgstr "Được lưu khi bạn nhấn Enter trong một trường"
 
-#: prefs.js:353
+#: prefs.js:359
 msgid "Latitude"
 msgstr "Vĩ độ"
 
-#: prefs.js:354
+#: prefs.js:360
 msgid "Longitude"
 msgstr "Kinh độ"
 
-#: prefs.js:355
+#: prefs.js:361
 msgid "Display name"
 msgstr "Tên hiển thị"
 
-#: prefs.js:403
+#: prefs.js:409
 msgid "Display"
 msgstr "Hiển thị"
 
-#: prefs.js:413
+#: prefs.js:419
 msgid "Units"
 msgstr "Đơn vị"
 
-#: prefs.js:415
+#: prefs.js:421
 msgid "Measurement system"
 msgstr "Hệ đo lường"
 
-#: prefs.js:417
+#: prefs.js:423
 msgid "Imperial (°F, mph)"
 msgstr "Hệ Anh (°F, mph)"
 
-#: prefs.js:417
+#: prefs.js:423
 msgid "Metric (°C, km/h)"
 msgstr "Hệ mét (°C, km/h)"
 
-#: prefs.js:426
+#: prefs.js:432
 msgid "Hour format"
 msgstr "Định dạng giờ"
 
-#: prefs.js:427
+#: prefs.js:433
 msgid "Clock style for chart hours and the preview clock"
 msgstr "Kiểu đồng hồ cho các giờ trên biểu đồ và đồng hồ xem trước"
 
-#: prefs.js:429
+#: prefs.js:435
 msgid "12-hour"
 msgstr "12 giờ"
 
-#: prefs.js:429
+#: prefs.js:435
 msgid "24-hour"
 msgstr "24 giờ"
 
-#: prefs.js:429
+#: prefs.js:435
 msgid "Automatic (system)"
 msgstr "Tự động (hệ thống)"
 
-#: prefs.js:440
+#: prefs.js:446
 msgid "Panel indicator"
 msgstr "Chỉ báo trên bảng"
 
-#: prefs.js:441
+#: prefs.js:447
 msgid "Show animated icon"
 msgstr "Hiển thị biểu tượng động"
 
-#: prefs.js:442
+#: prefs.js:448
 msgid "Show temperature"
 msgstr "Hiển thị nhiệt độ"
 
-#: prefs.js:444
+#: prefs.js:450
 msgid "Animate the icon"
 msgstr "Làm biểu tượng chuyển động"
 
-#: prefs.js:445
+#: prefs.js:451
 msgid "Turn off to save a little battery"
 msgstr "Tắt để tiết kiệm chút pin"
 
-#: prefs.js:457
+#: prefs.js:463
 msgid "Menu background"
 msgstr "Nền menu"
 
-#: prefs.js:460
+#: prefs.js:466
 msgid "Use system theme"
 msgstr "Dùng giao diện hệ thống"
 
-#: prefs.js:461
+#: prefs.js:467
 msgid "Match GNOME popup background and system accent color"
 msgstr "Khớp nền menu bật lên của GNOME và màu nhấn hệ thống"
 
-#: prefs.js:465
+#: prefs.js:471
 msgid "Background style"
 msgstr "Kiểu nền"
 
-#: prefs.js:466
+#: prefs.js:472
 msgid "How the dropdown fills itself behind the forecast"
 msgstr "Cách danh sách thả phủ nền phía sau dự báo"
 
-#: prefs.js:469
+#: prefs.js:475
 msgid "Animated sky"
 msgstr "Bầu trời động"
 
-#: prefs.js:470
+#: prefs.js:476
 msgid "Animated sky with theme tint"
 msgstr "Bầu trời động pha màu giao diện"
 
-#: prefs.js:477
+#: prefs.js:483
 msgid "Show ground scenes"
 msgstr "Hiện cảnh mặt đất"
 
-#: prefs.js:478
+#: prefs.js:484
 msgid "Weather landscapes and animations along the bottom of the sky"
 msgstr "Phong cảnh thời tiết và hiệu ứng động ở phía dưới bầu trời"
 
+#: prefs.js:490
+msgid "Ground scene"
+msgstr "Cảnh mặt đất"
+
+#: prefs.js:491
+msgid "Landscape shown along the bottom when ground scenes are enabled"
+msgstr "Phong cảnh hiển thị ở phía dưới khi bật cảnh mặt đất"
+
+#: prefs.js:494
+msgid "Automatic (by weather)"
+msgstr "Tự động (theo thời tiết)"
+
 #: prefs.js:495
+msgid "Pastoral hills & windmill"
+msgstr "Đồi thảo nguyên & cối xay gió"
+
+#: prefs.js:496
+msgid "Cape Cod seashore"
+msgstr "Bờ biển Cape Cod"
+
+#: prefs.js:497
+msgid "Alpine chalet & snowman"
+msgstr "Nhà gỗ trên núi & người tuyết"
+
+#: prefs.js:498
+msgid "Nishikigoi koi pond"
+msgstr "Hồ cá koi Nishikigoi"
+
+#: prefs.js:499
+msgid "Lotus & tree frog pond"
+msgstr "Đầm sen & ếch cây"
+
+#: prefs.js:528
 msgid "Text emboss"
 msgstr "Chữ nổi"
 
-#: prefs.js:496
+#: prefs.js:529
 msgid "Soft shadow under card text and icons over the sky"
 msgstr "Bóng mờ dịu dưới chữ và biểu tượng của thẻ trên nền trời"
 
-#: prefs.js:503
+#: prefs.js:536
 #, fuzzy
 msgid "Hourly forecast"
 msgstr "Định dạng giờ"
 
-#: prefs.js:504
+#: prefs.js:537
 msgid "Line chart or scrollable hourly pills"
 msgstr ""
 
-#: prefs.js:506
+#: prefs.js:539
 msgid "All-in-one pills"
 msgstr ""
 
-#: prefs.js:506
+#: prefs.js:539
 #, fuzzy
 msgid "Gauge pills"
 msgstr "Nhãn nhóm"
 
-#: prefs.js:506
+#: prefs.js:539
 #, fuzzy
 msgid "Line chart"
 msgstr "biểu đồ"
 
-#: prefs.js:515
+#: prefs.js:548
 msgid "Weather conditions"
 msgstr "Điều kiện thời tiết"
 
-#: prefs.js:516
+#: prefs.js:549
 msgid "How hourly conditions ride the chart"
 msgstr "Cách điều kiện theo giờ chạy trên biểu đồ"
 
-#: prefs.js:518
+#: prefs.js:551
 msgid "Grouped pills"
 msgstr "Nhãn nhóm"
 
-#: prefs.js:518
+#: prefs.js:551
 msgid "Hourly icons"
 msgstr "Biểu tượng theo giờ"
 
-#: prefs.js:518
+#: prefs.js:551
 msgid "Off"
 msgstr "Tắt"
 
-#: prefs.js:529
+#: prefs.js:562
 msgid "Condition band position"
 msgstr "Vị trí dải điều kiện"
 
-#: prefs.js:530
+#: prefs.js:563
 msgid "Along the chart top, or above the hour labels"
 msgstr "Dọc đỉnh biểu đồ, hoặc phía trên nhãn giờ"
 
-#: prefs.js:532
+#: prefs.js:565
 msgid "Above hours"
 msgstr "Trên nhãn giờ"
 
-#: prefs.js:532
+#: prefs.js:565
 msgid "Chart top"
 msgstr "Đỉnh biểu đồ"
 
-#: prefs.js:554
+#: prefs.js:587
 msgid "Data text"
 msgstr "Văn bản dữ liệu"
 
-#: prefs.js:555
+#: prefs.js:588
 msgid "Bolder or larger metric values and chart hours"
 msgstr "Làm đậm hoặc lớn hơn giá trị và giờ trên biểu đồ"
 
-#: prefs.js:557
+#: prefs.js:590
 msgid "Bold"
 msgstr "Đậm"
 
-#: prefs.js:557
+#: prefs.js:590
 msgid "Bold & large"
 msgstr "Đậm và lớn"
 
-#: prefs.js:557
+#: prefs.js:590
 msgid "Large"
 msgstr "Lớn"
 
-#: prefs.js:557
+#: prefs.js:590
 msgid "Normal"
 msgstr "Bình thường"
 
-#: prefs.js:570
+#: prefs.js:603
 msgid "Data"
 msgstr "Dữ liệu"
 
-#: prefs.js:579
+#: prefs.js:612
 msgid "Data source"
 msgstr "Nguồn dữ liệu"
 
-#: prefs.js:581
+#: prefs.js:614
 msgid "Weather provider"
 msgstr "Nhà cung cấp thời tiết"
 
-#: prefs.js:582
+#: prefs.js:615
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "Đều không cần khóa · dữ liệu MET Norway theo giấy phép CC BY-SA 4.0"
 
-#: prefs.js:585
+#: prefs.js:618
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo (mặc định)"
 
-#: prefs.js:586
+#: prefs.js:619
 msgid "MET Norway (api.met.no)"
 msgstr "MET Na Uy (api.met.no)"
 
-#: prefs.js:587
+#: prefs.js:620
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS (chỉ vị trí ở Mỹ)"
 
-#: prefs.js:599
+#: prefs.js:632
 msgid "Forecast model"
 msgstr "Mô hình dự báo"
 
-#: prefs.js:600
+#: prefs.js:633
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
@@ -409,65 +441,65 @@ msgstr ""
 "Chỉ Open-Meteo · xa một tuần các mô hình bất đồng — nếu cuối tuần trông kỳ "
 "lạ, thử mô hình khác"
 
-#: prefs.js:603
+#: prefs.js:636
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "Khớp nhất (Open-Meteo chọn theo vùng; Mỹ → GFS)"
 
-#: prefs.js:604
+#: prefs.js:637
 #, fuzzy
 msgid "ECMWF IFS high-res (recommended)"
 msgstr "ECMWF IFS (được khuyên dùng)"
 
-#: prefs.js:605
+#: prefs.js:638
 #, fuzzy
 msgid "ECMWF IFS (0.25° grid)"
 msgstr "ECMWF IFS (được khuyên dùng)"
 
-#: prefs.js:606
+#: prefs.js:639
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON (dự báo ngắn hơn)"
 
-#: prefs.js:607
+#: prefs.js:640
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:608
+#: prefs.js:641
 msgid "GEM global (Canada)"
 msgstr ""
 
-#: prefs.js:609
+#: prefs.js:642
 msgid "JMA (Japan · rain chance derived)"
 msgstr ""
 
-#: prefs.js:610
+#: prefs.js:643
 msgid "UK Met Office global (10 km)"
 msgstr ""
 
-#: prefs.js:630
+#: prefs.js:663
 msgid "Updates"
 msgstr "Cập nhật"
 
-#: prefs.js:632
+#: prefs.js:665
 msgid "Refresh interval (minutes)"
 msgstr "Khoảng cách làm mới (phút)"
 
-#: prefs.js:641
+#: prefs.js:674
 msgid "Wind animation threshold (km/h)"
 msgstr "Ngưỡng hiệu ứng gió (km/h)"
 
-#: prefs.js:642
+#: prefs.js:675
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "Ngày nhiều gió đổi biểu tượng sang hiệu ứng gió"
 
-#: prefs.js:656
+#: prefs.js:689
 msgid "Preview"
 msgstr "Xem trước"
 
-#: prefs.js:679
+#: prefs.js:712
 msgid "Panel preview"
 msgstr "Xem trước bảng"
 
-#: prefs.js:680
+#: prefs.js:713
 #, fuzzy
 msgid ""
 "How the panel button looks for this scene — sample temperature, real icon "
@@ -476,56 +508,56 @@ msgstr ""
 "Nút bảng trông thế nào với cảnh này — nhiệt độ mô phỏng, hiệu ứng biểu tượng "
 "thật"
 
-#: prefs.js:685
+#: prefs.js:718
 msgid "Menu backdrop preview"
 msgstr "Xem trước nền menu"
 
-#: prefs.js:686
+#: prefs.js:719
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "Bầu trời hiện tại trong menu của bạn, trực tiếp — chọn một điều kiện phía "
 "trên để xem động ở đây"
 
-#: prefs.js:714
+#: prefs.js:749
 msgid "Preview scene"
 msgstr "Cảnh xem trước"
 
-#: prefs.js:715
+#: prefs.js:750
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "Lặp lại ở đây ~12 giây — bảng thật của bạn không đổi"
 
-#: prefs.js:747
+#: prefs.js:782
 msgid "Scene"
 msgstr "Cảnh"
 
-#: prefs.js:853
+#: prefs.js:890
 msgid "About"
 msgstr "Giới thiệu"
 
-#: prefs.js:859
+#: prefs.js:896
 msgid "Version"
 msgstr "Phiên bản"
 
-#: prefs.js:863
+#: prefs.js:900
 msgid "Contact"
 msgstr "Liên hệ"
 
-#: prefs.js:867
+#: prefs.js:904
 msgid "Free and open source"
 msgstr "Miễn phí và mã nguồn mở"
 
-#: prefs.js:868
+#: prefs.js:905
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr ""
 "Không quảng cáo, không tài khoản, không thu thập dữ liệu — bầu trời chỉ nên "
 "vận hành"
 
-#: prefs.js:873
+#: prefs.js:910
 msgid "Support the development"
 msgstr "Hỗ trợ phát triển"
 
-#: prefs.js:874
+#: prefs.js:911
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -533,11 +565,11 @@ msgstr ""
 "Weatherglass miễn phí mãi mãi. Nếu nó làm màn hình của bạn đẹp hơn, một ly "
 "cà phê sẽ giữ cho các điểm ảnh tiếp tục rơi."
 
-#: prefs.js:887
+#: prefs.js:924
 msgid "Buy me a coffee"
 msgstr "Mua cho tôi ly cà phê"
 
-#: prefs.js:888
+#: prefs.js:925
 msgid "PayPal"
 msgstr ""
 
