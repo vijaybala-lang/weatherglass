@@ -1,4 +1,4 @@
-# EGO upload kit -- integer 13
+# EGO upload kit -- integer 14
 
 The release ritual (every command, in order: review, bump, certify,
 GitHub release, live gate, captures, publish, README links, upload)
@@ -7,43 +7,40 @@ EGO-page material: the artifact identity, the capture list, the
 canonical description block, and the standing reviewer answers.
 
 Upload at: https://extensions.gnome.org/upload/
-Artifact:  dist/weatherglass@vijaybala.dev.zip  (integer 13; certified
+Artifact:  dist/weatherglass@vijaybala.dev.zip  (integer 14; certified
 on every declared shell; the EGO-served bytes must match).
 
 ## Last shipped (the step-0 audit anchor; update at every upload)
 
-Last shipped commit: 8d2e37c
-(integer 12, EGO serial 20 / pk 77276; the integer-13 audit used
-8d2e37c, the release-v12-updates merge, as its base: shipped changes
-since are the `hourly-view` preference (`chart`, `gauge-pills`,
-`rich-pills`) defaulting to `rich-pills` (All-in-one pills) with
-vertical overlay navigation (`menu.js`, `chart.js`, `prefs.js`,
-`stylesheet.css`, `schemas/`, `po/locale`), realistic seasonal and
-weather-themed sky floors in `sky.js` (`drawPondFloor` submerged koi
-pond with connected rain ripples, `drawStormLotusFloor` storm lotus,
-sparrow, and frog, `drawSnowmanChaletFloor` Option A 4-tree snow
-woodland with chalet and snowman, `drawClearHillsFloor` pastoral rolling
-hills with foreground Dutch windmill and hot-air balloon, and
-`drawClearBeachFloor` tropical shoreline), consistent top-crown sheen
-and outer rim across all clouds and light-ground rain droplets in
-`painter.js`, and GNOME Shell 51 support in `metadata.json` and
-`menu.js` replacing `StBoxLayout.vertical` with `Clutter.BoxLayout`
-orientation; dead-code sweep clean.)
+Last shipped commit: 1b543fe
+(integer 13, EGO serial 23 / pk 77951; the integer-14 audit used
+1b543fe, the release-v13 merge, as its base: shipped changes since are
+the `sky-floor` preference (`Show ground scenes` toggle, defaulting to
+`false`) and `sky-floor-scene` preference (`Ground scene` selector:
+`auto`, `hills`, `beach`, `chalet`, `koi`, `frogs`, defaulting to
+`beach` Cape Cod seashore when enabled) in `prefs.js`, `menu.js`,
+`extension.js`, `schemas/`, and `po/locale`, plus `live-temp` runtime
+sync and upgraded seasonal/weather ground scenes in `sky.js` (`C2` Cape
+Cod National Seashore with Nauset Light on headland bluff, spinning
+beacon, gaff schooner, curved bay tides, and beach crab; `S2` 3D faceted
+Swiss Alps massif with Mönch, Matterhorn, and Eiger for the Alpine
+chalet & snowman scene; summer/winter seasonal adaptations across `C1`,
+`C2`, `S2`, `K1`, `T3` at `<= 0°C`; moonlit `C1` pastoral hills & lit
+windmill at night; rolling fog overlay across ground scenes; rain
+splashes/ripples scoped to `K1` and `T3`); dead-code sweep clean.)
 
-Integer 13 adds GNOME Shell 51 support (`"51"` in `shell-version` and
-`Clutter.BoxLayout` vertical orientation in `menu.js` for `StBoxLayout`
-compatibility across GNOME Shell 45-51), introduces hourly forecast pill
-views (`hourly-view` setting in `prefs.js` and `menu.js` with `chart`,
-`gauge-pills`, and `rich-pills` defaulting to `rich-pills` All-in-one
-capsules with horizontal scrolling and vertical overlay `<` / `>`
-buttons), paints realistic seasonal and weather-condition sky floors in
-`sky.js` (submerged koi pond with lily pads and 3-tier rain ripples,
-storm lotus with huddled sparrow and frog, Option A 4-tree snow woodland
-with glowing alpine chalet and snowman, pastoral clear/overcast hills
-with foreground Dutch windmill and hot-air balloon, and tropical beach
-shoreline for hot clear days), and applies a consistent top-crown sheen
-and subtle outer rim across all clouds and light-ground raindrops in
-`painter.js`.
+Integer 14 adds the `Show ground scenes` (`sky-floor`, default `false`)
+and `Ground scene` (`sky-floor-scene`, default `beach`) settings in
+`prefs.js`, `menu.js`, `extension.js`, and `schemas/`, translates the
+new ground scene options across all 21 locales (`po/` and `locale/`),
+and upgrades the ground scene landscapes in `sky.js` (Cape Cod National
+Seashore with Nauset Light on a grassy/rocky headland bluff, spinning
+beacon, gaff schooner, curved S-curve bay tides, and beach crab; 3D
+faceted Swiss Alps massif for the Alpine chalet & snowman scene;
+summer/winter seasonal adaptations across all ground scenes driven by
+`live-temp <= 0°C`; moonlit pastoral hills and lit windmill at night;
+rolling advection fog banks in fog conditions; and rain splashes/ripples
+scoped to the pond scenes).
 The upload imagery is the goldens,
 so the v7-era lesson -- live-photo sets that "photograph whatever bugs
 shipped then" -- no longer applies: see skill step 5.
@@ -195,4 +192,4 @@ way during the v8 review round:
 - The metadata "url" points at the GitHub repo per the EGO review
   guidelines (must be a GitHub/GitLab project URL) -- keep it there even
   after approval; link the EGO page from the repo README instead.
-- Keep integer version bumps for every future upload (next: 14).
+- Keep integer version bumps for every future upload (next: 15).
