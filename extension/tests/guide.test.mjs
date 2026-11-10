@@ -461,4 +461,21 @@ test('the hourly-view picker mirrors the schema choices', () => {
         'hourly-view must default to rich-pills (All-in-one pills)');
 });
 
+test('prefs preview renders card aspect ratio (330x477) and syncs live weather condition', () => {
+    const prefs = read(`${ROOT}/prefs.js`);
+    ok(prefs.includes('const CARD_W = 330;') &&
+       prefs.includes('const CARD_H = 477;') &&
+       prefs.includes('const PREVIEW_W = 220;') &&
+       prefs.includes('const PREVIEW_H = 318;'),
+       'prefs preview must define 330x477 card dimensions and 220x318 (2:3) preview size');
+    ok(prefs.includes('skyArea.set_size_request(PREVIEW_W, PREVIEW_H)') &&
+       prefs.includes('skyArea.set_halign(Gtk.Align.CENTER)') &&
+       prefs.includes('cr.scale(width / CARD_W, height / CARD_H)') &&
+       prefs.includes('w: CARD_W, h: CARD_H'),
+       'prefs skyArea must center at PREVIEW_W x PREVIEW_H and scale Cairo context from CARD_W x CARD_H');
+    ok(prefs.includes('legendIndexFor(previewController.scene, previewController.isNight)') &&
+       prefs.includes("windy: scene === 'wind'"),
+       'prefs preview must sync sceneRow to live scene/night and only set windy for wind scene');
+});
+
 report('guide');

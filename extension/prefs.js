@@ -9,8 +9,8 @@ import Cairo from 'gi://cairo';
 
 import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import { WeatherClient } from './weather.js';
-import { paintWeather } from './painter.js';
+import { WeatherClient, fmtTemp } from './weather.js';
+import { paintWeather, createParticles } from './painter.js';
 import { createSky, paintSky } from './sky.js';
 import { drawText } from './chart.js';
 
@@ -61,6 +61,19 @@ const LEGEND = [
     ['storm', 'Thunderstorm'],
 ];
 const LEGEND_PRECIP_INTENSITY = { rain: 6, sleet: 5, snow: 4, hail: 5, storm: 7 };
+
+const CARD_W = 330;
+const CARD_H = 477;
+const PREVIEW_W = 220;
+const PREVIEW_H = 318;
+
+function legendIndexFor(scene, night = false) {
+    const key = (scene === 'sun' || scene === 'clear') && night
+        ? 'moon'
+        : scene === 'clear' ? 'sun' : scene;
+    const idx = LEGEND.findIndex(([sceneKey]) => sceneKey === key);
+    return idx >= 0 ? idx : 2;
+}
 
 const COFFEE_URL = 'https://buymeacoffee.com/vbala';
 const PAYPAL_URL = 'https://paypal.me/vijaybaladev';
@@ -172,7 +185,8 @@ class PreviewController {
         this._scene = null;
         this._tickTimerId = 0;
         this._stopTimeoutId = 0;
-        this._startTimestampUs = 0;
+        this._lastTickUs = 0;
+        this._elapsed = 4.1;
     }
 
     get scene() {
@@ -194,35 +208,47 @@ class PreviewController {
     }
 
     get elapsed() {
-        return this._tickTimerId ? (GLib.get_monotonic_time() - this._startTimestampUs) / 1e6 : 4.1;
+        return this._elapsed;
     }
 
-    start(scene) {
-        this._scene = scene;
-        this._startTimestampUs = GLib.get_monotonic_time();
-        if (!this._tickTimerId)
-            this._tickTimerId = GLib.timeout_add(GLib.PRIORITY_LOW, 33, this._onTick);
+    _startClock() {
+        this._lastTickUs = GLib.get_monotonic_time();
+        if (!this._tickTimerId) {
+            this._tickTimerId = GLib.timeout_add(GLib.PRIORITY_LOW, 33, () => {
+                const nowUs = GLib.get_monotonic_time();
+                this._elapsed += Math.max(0, Math.min(0.1, (nowUs - this._lastTickUs) / 1e6));
+                this._lastTickUs = nowUs;
+                return this._onTick();
+            });
+        }
         if (this._stopTimeoutId)
             GLib.source_remove(this._stopTimeoutId);
         this._stopTimeoutId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 12, () => {
             this._stopTimeoutId = 0;
-            this._scene = null;
             if (this._tickTimerId) {
                 GLib.source_remove(this._tickTimerId);
                 this._tickTimerId = 0;
             }
             this._onTick();
+            return GLib.SOURCE_REMOVE;
         });
+    }
+
+    start(scene) {
+        this._scene = scene;
+        this._startClock();
         this._onTick();
     }
 
+    clearOverride() {
+        this._scene = null;
+    }
+
     resume() {
-        if (this._scene && !this._tickTimerId)
-            this._tickTimerId = GLib.timeout_add(GLib.PRIORITY_LOW, 33, this._onTick);
+        this._startClock();
     }
 
     stop() {
-        this._scene = null;
         if (this._tickTimerId)
             GLib.source_remove(this._tickTimerId);
         if (this._stopTimeoutId)
@@ -703,7 +729,8 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
         const previewController = new PreviewController(settings, tick);
 
-        const { sceneGroup, glyphArea: previewGlyphArea } = this._buildPreviewSceneGroup(previewController, styleManager);
+        const { sceneGroup, glyphArea: previewGlyphArea, syncSceneRow } =
+            this._buildPreviewSceneGroup(previewController, styleManager);
         glyphArea = previewGlyphArea;
         barArea = this._buildBarPreview(settings, previewController, styleManager);
         skyArea = this._buildLiveSky(settings, previewController, styleManager);
@@ -727,13 +754,23 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         barArea.connect('unrealize', () => previewController.stop());
         barArea.connect('realize', () => previewController.resume());
         settings.connect('changed::hour-format', () => barArea.queue_draw());
+        settings.connect('changed::units', () => barArea.queue_draw());
+        settings.connect('changed::show-icon', () => barArea.queue_draw());
+        settings.connect('changed::show-temperature', () => barArea.queue_draw());
         const liveSync = () => {
+            previewController.clearOverride();
+            syncSceneRow();
             skyArea.queue_draw();
             barArea.queue_draw();
+            glyphArea.queue_draw();
         };
         settings.connect('changed::live-scene', liveSync);
         settings.connect('changed::live-night', liveSync);
-        settings.connect('changed::live-temp', liveSync);
+        settings.connect('changed::live-temp', () => {
+            skyArea.queue_draw();
+            barArea.queue_draw();
+        });
+        settings.connect('changed::menu-style', () => skyArea.queue_draw());
         settings.connect('changed::sky-floor', () => skyArea.queue_draw());
         settings.connect('changed::sky-floor-scene', () => skyArea.queue_draw());
         styleManager.connect('notify::dark-mode', () => {
@@ -750,19 +787,21 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             subtitle: _('Loops right here for ~12 s — your real panel stays put'),
             model: new Gtk.StringList({ strings: LEGEND.map(([, labelStr]) => _(labelStr)) }),
         });
+        const glyphParticles = createParticles();
         const glyphArea = new Gtk.DrawingArea();
         glyphArea.set_size_request(30, 30);
         glyphArea.set_valign(Gtk.Align.CENTER);
         glyphArea.set_draw_func((widget, cr, width, height) => {
-            const [scene] = LEGEND[sceneRow.get_selected()] ?? LEGEND[2];
+            const scene = previewController.scene;
             cr.save();
             const scaleFactor = Math.min(width, height) / 24;
             cr.scale(scaleFactor, scaleFactor);
             paintWeather(cr, {
                 scene,
                 time: previewController.elapsed,
+                particles: glyphParticles,
                 dark: styleManager.dark,
-                night: scene === 'moon',
+                night: previewController.isNight,
                 intensity: LEGEND_PRECIP_INTENSITY[scene] ?? 0,
             });
             cr.restore();
@@ -770,21 +809,30 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         sceneRow.add_prefix(glyphArea);
 
         let armed = false;
+        const syncSceneRow = () => {
+            const targetIdx = legendIndexFor(previewController.scene, previewController.isNight);
+            if (sceneRow.get_selected() !== targetIdx) {
+                armed = false;
+                sceneRow.set_selected(targetIdx);
+                armed = true;
+            }
+        };
         sceneRow.connect('notify::selected', () => {
             if (!armed)
                 return;
             const [scene] = LEGEND[sceneRow.get_selected()] ?? LEGEND[2];
             previewController.start(scene);
         });
-        sceneRow.set_selected(2);
+        syncSceneRow();
         armed = true;
 
         const sceneGroup = new Adw.PreferencesGroup({ title: _('Scene') });
         sceneGroup.add(sceneRow);
-        return { sceneGroup, glyphArea };
+        return { sceneGroup, glyphArea, syncSceneRow };
     }
 
     _buildBarPreview(settings, previewController, styleManager) {
+        const barParticles = createParticles();
         const barArea = new Gtk.DrawingArea();
         barArea.set_size_request(-1, 58);
         barArea.set_draw_func((widget, cr, width, height) => {
@@ -815,7 +863,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
             const scene = previewController.scene;
             const tempTxt = settings.get_boolean('show-temperature')
-                ? (settings.get_string('units') === 'metric' ? '20°' : '68°') : '';
+                ? fmtTemp(previewController.temp, settings.get_string('units')) : '';
             const items = [];
             if (settings.get_boolean('show-icon')) {
                 items.push({
@@ -827,10 +875,11 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                         paintWeather(cr, {
                             scene,
                             time: previewController.elapsed,
+                            particles: barParticles,
                             dark,
                             night: previewController.isNight,
-                            windy: ['sun', 'moon', 'partly', 'cloud', 'fog', 'wind'].includes(scene),
-                            windKmh: 34,
+                            windy: scene === 'wind',
+                            windKmh: scene === 'wind' ? 34 : 0,
                             intensity: previewController.isPreviewing ? 7 : (LEGEND_PRECIP_INTENSITY[scene] ?? 0),
                         });
                         cr.restore();
@@ -866,21 +915,28 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
     _buildLiveSky(settings, previewController, styleManager) {
         let skyPool = null;
         const skyArea = new Gtk.DrawingArea();
-        skyArea.set_size_request(-1, 170);
+        skyArea.set_size_request(PREVIEW_W, PREVIEW_H);
+        skyArea.set_halign(Gtk.Align.CENTER);
         skyArea.set_draw_func((widget, cr, width, height) => {
             skyPool ??= createSky();
+            const scrim = settings.get_string('menu-style') === 'solid'
+                ? (styleManager.dark ? [0.03, 0.045, 0.08, 0.78] : [0.97, 0.975, 0.995, 0.80])
+                : null;
+            cr.save();
+            cr.scale(width / CARD_W, height / CARD_H);
             paintSky(cr, {
-                w: width, h: height, time: previewController.elapsed,
+                w: CARD_W, h: CARD_H, time: previewController.elapsed,
                 scene: previewController.scene,
                 night: previewController.isNight,
                 temp: previewController.temp,
                 floor: settings.get_boolean('sky-floor'),
                 floorScene: settings.get_string('sky-floor-scene'),
                 sky: skyPool,
-                radius: 14,
-                scrim: styleManager.dark ? null : [1, 1, 1, 0.42],
+                radius: 18,
+                scrim,
                 fxScale: 1,
             });
+            cr.restore();
         });
         return skyArea;
     }
