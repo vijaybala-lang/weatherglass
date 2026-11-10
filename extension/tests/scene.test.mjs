@@ -4,6 +4,7 @@
  * the source so a wrong scene never reaches a correct-looking cell.
  */
 import Cairo from 'gi://cairo';
+import GdkPixbuf from 'gi://GdkPixbuf';
 import { file, test, ok, near, eq, report } from './harness.mjs';
 import { sceneFor, fmtTemp, sunGeometry, daySlice } from '../weather.js';
 import { createSky, paintSky, resolveFloorScene } from '../sky.js';
@@ -120,7 +121,7 @@ test('rain sky initializes submerged Nishikigoi pond floor and connects drop imp
     const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
     const cr = new Cairo.Context(surf);
     const sky = createSky();
-    paintSky(cr, { w: 330, h: 472, time: 1.0, scene: 'rain', night: false, sky, code: 63 });
+    paintSky(cr, { w: 330, h: 472, time: 1.0, scene: 'rain', night: false, sky, code: 63, floor: true, floorScene: 'koi' });
 
     eq(sky.koi.length, 2, 'rain pond must initialize two Nishikigoi');
     eq(sky.koi[0].variant, 'kohaku');
@@ -138,13 +139,13 @@ test('rain sky initializes submerged Nishikigoi pond floor and connects drop imp
     const drop0 = sky.drops[0];
     drop0.x = 180;
     drop0.y = drop0.floorY - 2;
-    paintSky(cr, { w: 330, h: 472, time: 1.05, scene: 'rain', night: false, sky, code: 63 });
+    paintSky(cr, { w: 330, h: 472, time: 1.05, scene: 'rain', night: false, sky, code: 63, floor: true, floorScene: 'koi' });
     near(sky.ripples[0].phase, 0.02, 1e-6, 'falling drop impact must reset expired ripple phase');
     near(sky.ripples[0].y, drop0.floorY, 1e-6, 'spawned ripple must sit at the drop floorY');
 
     // Step 120 frames (6.0 s) and verify pathSpine never accumulates runaway bend
     for (let f = 1; f <= 120; f++)
-        paintSky(cr, { w: 330, h: 472, time: 1.05 + f * 0.05, scene: 'rain', night: false, sky, code: 63 });
+        paintSky(cr, { w: 330, h: 472, time: 1.05 + f * 0.05, scene: 'rain', night: false, sky, code: 63, floor: true, floorScene: 'koi' });
     for (const koi of sky.koi) {
         for (let i = 2; i < koi.pathSpine.length; i++) {
             const p0 = koi.pathSpine[i - 2], p1 = koi.pathSpine[i - 1], p2 = koi.pathSpine[i];
@@ -161,41 +162,80 @@ test('rain sky initializes submerged Nishikigoi pond floor and connects drop imp
     cr.$dispose();
 });
 
-test('resolveFloorScene routes snow, storm, and temperature-banded clear day floors (S1, S2, T3, C1, C2)', () => {
-    eq(resolveFloorScene('storm', false, 20), 'T3');
-    eq(resolveFloorScene('storm', true, 15), 'T3');
-
-    // Snow and Clear Day share S1 (< 0°F / < -17.78°C) and S2 (0..32°F / -17.78..0°C)
-    eq(resolveFloorScene('snow', false, -21), 'S1', '-21°C (-5.8°F) snow -> S1 ice fishing');
-    eq(resolveFloorScene('sun', false, -21), 'S1', '-21°C (-5.8°F) clear day -> S1 ice fishing');
-    eq(resolveFloorScene('snow', false, -5), 'S2', '-5°C (23°F) snow -> S2 snowman & chalet');
-    eq(resolveFloorScene('sun', false, -5), 'S2', '-5°C (23°F) clear day -> S2 snowman & chalet');
-    eq(resolveFloorScene('snow', true, -2), 'S2', 'snow night stays S2');
-
-    // Clear Day C1 (55..75°F) and C2 (>= 76°F / >= 24.44°C), plus Overcast / Partly Cloudy Day -> C1
-    eq(resolveFloorScene('sun', false, 18), 'C1', '18°C (64.4°F) clear day -> C1 rolling hills & balloon');
-    eq(resolveFloorScene('cloud', false, 15), 'C1', '15°C overcast day -> subdued C1 rolling hills, mill & balloon');
-    eq(resolveFloorScene('partly', false, 16), 'C1', '16°C partly cloudy day -> subdued C1 rolling hills, mill & balloon');
-    eq(resolveFloorScene('cloud', true, 12), null, 'overcast night does not paint daytime floor');
-    eq(resolveFloorScene('sun', false, 28), 'C2', '28°C (82.4°F) clear day -> C2 sandy beach & sailboat');
-    eq(resolveFloorScene('sun', true, 20), null, 'clear night does not paint daytime floor');
-    eq(resolveFloorScene('moon', true, -20), null, 'moon night does not paint daytime floor');
-
-    // Render all floor scenes cleanly through paintSky
-    const surf = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
-    const cr = new Cairo.Context(surf);
-    const sky = createSky();
-    for (const [scene, night, temp] of [
-        ['snow', false, -21],
-        ['snow', false, -5],
-        ['storm', true, 19],
-        ['sun', false, 20],
-        ['cloud', false, 15],
-        ['sun', false, 29],
-    ]) {
-        paintSky(cr, { w: 330, h: 472, time: 1.5, scene, night, sky, temp });
+test('resolveFloorScene routes temperature-stable weather defaults and pinned ground scenes (S2, T3, K1, C1, C2)', () => {
+    // Auto mode is temperature-stable across all temperatures
+    for (const temp of [-25, -5, 15, 30, null]) {
+        eq(resolveFloorScene('storm', false, temp, 'auto'), 'T3', `storm temp=${temp} -> T3`);
+        eq(resolveFloorScene('storm', true, temp, 'auto'), 'T3', `storm night temp=${temp} -> T3`);
+        eq(resolveFloorScene('rain', false, temp, 'auto'), 'K1', `rain temp=${temp} -> K1`);
+        eq(resolveFloorScene('snow', false, temp, 'auto'), 'S2', `snow temp=${temp} -> S2`);
+        eq(resolveFloorScene('snow', true, temp, 'auto'), 'S2', `snow night temp=${temp} -> S2`);
+        eq(resolveFloorScene('fog', false, temp, 'auto'), 'C1', `fog temp=${temp} -> C1`);
+        eq(resolveFloorScene('fog', true, temp, 'auto'), 'C1', `fog night temp=${temp} -> C1`);
+        eq(resolveFloorScene('sun', false, temp, 'auto'), 'C1', `sun temp=${temp} -> C1`);
+        eq(resolveFloorScene('moon', true, temp, 'auto'), 'C1', `moon temp=${temp} -> C1`);
+        eq(resolveFloorScene('cloud', false, temp, 'auto'), 'C1', `cloud temp=${temp} -> C1`);
+        eq(resolveFloorScene('partly', false, temp, 'auto'), 'C1', `partly temp=${temp} -> C1`);
     }
-    cr.$dispose();
+
+    // Explicit ground scene selector pins the chosen landscape across all weather conditions
+    for (const scene of ['sun', 'moon', 'cloud', 'fog', 'rain', 'snow', 'storm']) {
+        eq(resolveFloorScene(scene, false, 18, 'hills'), 'C1');
+        eq(resolveFloorScene(scene, false, 18, 'beach'), 'C2');
+        eq(resolveFloorScene(scene, false, 18, 'chalet'), 'S2');
+        eq(resolveFloorScene(scene, false, 18, 'koi'), 'K1');
+        eq(resolveFloorScene(scene, false, 18, 'frogs'), 'T3');
+    }
+
+    // Render all floor scenes cleanly through paintSky, and verify floor: false suppresses them
+    const surfOn = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
+    const surfOff = new Cairo.ImageSurface(Cairo.Format.ARGB32, 330, 472);
+    const crOn = new Cairo.Context(surfOn);
+    const crOff = new Cairo.Context(surfOff);
+    const tmpOn = '/tmp/wg-test-floor-on.png';
+    const tmpOff = '/tmp/wg-test-floor-off.png';
+    for (const [scene, night, temp, code, glow, floorScene] of [
+        ['snow', false, -5, 73, 0, 'chalet'],
+        ['moon', true, -4, 0, 0, 'chalet'],
+        ['moon', true, -4, 0, 0, 'hills'],
+        ['storm', true, 19, 95, 0, 'frogs'],
+        ['sun', false, 20, 0, 0, 'hills'],
+        ['moon', true, 18, 0, 0, 'hills'],
+        ['cloud', false, 15, 3, 0, 'auto'],
+        ['fog', false, 12, 45, 0, 'auto'],
+        ['fog', false, 12, 45, 0, 'beach'],
+        ['cloud', false, 15, 3, 0, 'beach'],
+        ['fog', false, 12, 45, 0, 'chalet'],
+        ['sun', false, 29, 0, 0, 'beach'],
+        ['sun', false, 29, 0, 0.9, 'beach'],
+        ['moon', true, 29, 0, 0, 'beach'],
+        ['rain', false, 16, 63, 0, 'koi'],
+        ['sun', false, 22, 0, 0, 'koi'],
+        ['rain', false, 18, 63, 0, 'beach'],
+    ]) {
+        const sky = createSky();
+        paintSky(crOn, { w: 330, h: 472, time: 1.5, scene, night, sky, temp, code, glow, floor: true, floorScene, fxScale: 1 });
+        sky.fx.writeToPNG(tmpOn);
+        paintSky(crOff, { w: 330, h: 472, time: 1.5, scene, night, sky, temp, code, glow, floor: false, floorScene, fxScale: 1 });
+        sky.fx.writeToPNG(tmpOff);
+        const pbOn = GdkPixbuf.Pixbuf.new_from_file(tmpOn);
+        const pbOff = GdkPixbuf.Pixbuf.new_from_file(tmpOff);
+        const pxOn = pbOn.get_pixels(), pxOff = pbOff.get_pixels();
+        const stride = pbOn.get_rowstride(), nChan = pbOn.get_n_channels();
+        let bottomDiff = 0;
+        for (let y = 390; y < 470; y += 2) {
+            for (let x = 16; x < 314; x += 4) {
+                const idx = y * stride + x * nChan;
+                if (Math.abs(pxOn[idx] - pxOff[idx]) +
+                    Math.abs(pxOn[idx + 1] - pxOff[idx + 1]) +
+                    Math.abs(pxOn[idx + 2] - pxOff[idx + 2]) > 12)
+                    bottomDiff++;
+            }
+        }
+        ok(bottomDiff > 20, `${scene} (temp=${temp}) floor: true must suppress bottom floor art (diff=${bottomDiff})`);
+    }
+    crOn.$dispose();
+    crOff.$dispose();
 });
 
 report('scene');

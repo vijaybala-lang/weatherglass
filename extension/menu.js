@@ -148,7 +148,8 @@ const SkyArea = GObject.registerClass(
                     sky: skyOptions.sky, radius: skyOptions.radius ?? 0, phase: skyOptions.phase ?? null,
                     code: skyOptions.scene === 'wind' || skyOptions.scene === 'rain'
                         ? skyOptions.code : null,
-                    temp: skyOptions.temp,
+                    temp: skyOptions.temp, floor: skyOptions.floor !== false,
+                    floorScene: skyOptions.floorScene ?? 'beach',
                     glow, solar, fxScale: 1,
                 });
             }
@@ -335,7 +336,7 @@ export class ForecastPanel {
         // radius 18 matches the shell's polished-popup corner radius
         this._skyOpts = {
             scene: 'loading', night: false, scrim: null, code: null, temp: null,
-            sky: this._sky, radius: 18
+            floor: false, floorScene: 'beach', sky: this._sky, radius: 18
         };
         this._nowFrac = null;
         this._style = 'animated';                 // animated | solid | accent
@@ -801,6 +802,24 @@ export class ForecastPanel {
         this._chart.queue_repaint();
     }
 
+    /** bottom floor scenes & animations (hills, beach, winter snow, koi/storm pond) */
+    setFloor(enabled) {
+        const showFloor = enabled !== false;
+        if (this._skyOpts.floor === showFloor)
+            return;
+        this._skyOpts.floor = showFloor;
+        this._skyArea.queue_repaint();
+    }
+
+    /** selected ground scene: 'auto' | 'hills' | 'beach' | 'chalet' | 'koi' | 'frogs' */
+    setFloorScene(floorScene) {
+        const nextScene = floorScene || 'beach';
+        if (this._skyOpts.floorScene === nextScene)
+            return;
+        this._skyOpts.floorScene = nextScene;
+        this._skyArea.queue_repaint();
+    }
+
     /** hourly forecast view: 'chart' | 'gauge-pills' | 'rich-pills' */
     setHourlyView(view) {
         const nextView = ['chart', 'gauge-pills', 'rich-pills'].includes(view) ? view : 'rich-pills';
@@ -1232,7 +1251,7 @@ export class ForecastPanel {
         this._sunCoords = Number.isFinite(state.latitude) && Number.isFinite(state.longitude)
             ? [state.latitude, state.longitude] : null;
         if (this._day === 0 && this._onSky)
-            this._onSky(scene, night);
+            this._onSky(scene, night, this._skyOpts.temp);
         this._skyArea.queue_repaint();
     }
 

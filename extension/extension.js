@@ -368,9 +368,11 @@ const WeatherIndicator = GObject.registerClass(
             this._panel = new ForecastPanel({ animate: this._settings.get_boolean('animate') });
             this._panel.onRefresh(() => this._coordinator.fetch(true));
             this._panel.onSettings(() => this._ext.openPreferences());
-            this._panel.onSky((scene, night) => {
+            this._panel.onSky((scene, night, temp) => {
                 this._settings.set_string('live-scene', scene);
                 this._settings.set_boolean('live-night', night);
+                if (Number.isFinite(temp))
+                    this._settings.set_double('live-temp', temp);
             });
 
             this._syncPanelLook();
@@ -421,6 +423,8 @@ const WeatherIndicator = GObject.registerClass(
             this._panel.setHourFormat(this._resolveHour24());
             this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
             this._panel.setStyle(this._settings.get_string('menu-style'));
+            this._panel.setFloor(this._settings.get_boolean('sky-floor'));
+            this._panel.setFloorScene(this._settings.get_string('sky-floor-scene'));
             this._panel.setHourlyView(this._settings.get_string('hourly-view'));
             this._panel.setConditions(this._settings.get_string('condition-strip'));
             this._panel.setCondPos(this._settings.get_string('condition-pos'));
@@ -544,6 +548,12 @@ const WeatherIndicator = GObject.registerClass(
                 case 'menu-style':
                     this._panel.setStyle(this._settings.get_string('menu-style'));
                     break;
+                case 'sky-floor':
+                    this._panel.setFloor(this._settings.get_boolean('sky-floor'));
+                    break;
+                case 'sky-floor-scene':
+                    this._panel.setFloorScene(this._settings.get_string('sky-floor-scene'));
+                    break;
                 case 'hourly-view':
                     this._panel.setHourlyView(this._settings.get_string('hourly-view'));
                     break;
@@ -597,9 +607,11 @@ const WeatherIndicator = GObject.registerClass(
             this._panel = new ForecastPanel({ animate });
             this._panel.onRefresh(() => this._coordinator.fetch(true));
             this._panel.onSettings(() => this._ext.openPreferences());
-            this._panel.onSky((scene, night) => {
+            this._panel.onSky((scene, night, temp) => {
                 this._settings.set_string('live-scene', scene);
                 this._settings.set_boolean('live-night', night);
+                if (Number.isFinite(temp))
+                    this._settings.set_double('live-temp', temp);
             });
             this._syncPanelLook();
             this._panel.setPlaceName(this._placeName());

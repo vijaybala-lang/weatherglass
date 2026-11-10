@@ -191,6 +191,30 @@ under a wash, accent = no sky: the shell theme's own popup background with
 the charts drawn in the OS accent colour</description>
     </key>
 
+    <key name="sky-floor" type="b">
+      <default>false</default>
+      <summary>Show ground scenes in the sky backdrop</summary>
+      <description>Render weather-specific ground art and animations (pastoral
+hills, beach, winter snow scenes, koi pond, and storm lotus pond) along the
+bottom of the sky backdrop</description>
+    </key>
+
+    <key name="sky-floor-scene" type="s">
+      <choices>
+        <choice value="auto"/>
+        <choice value="hills"/>
+        <choice value="beach"/>
+        <choice value="chalet"/>
+        <choice value="koi"/>
+        <choice value="frogs"/>
+      </choices>
+      <default>'beach'</default>
+      <summary>Ground scene to render along the bottom of the sky</summary>
+      <description>auto matches the current weather condition across all
+temperatures; hills, beach, chalet, koi, and frogs pin a specific
+ground landscape across all weather conditions</description>
+    </key>
+
     <key name="preview-scene" type="s">
       <default>''</default>
       <summary>Temporarily preview an animation on the panel icon</summary>
@@ -209,6 +233,12 @@ to empty when the preview ends</description>
       <default>false</default>
       <summary>Whether that sky is the night variant</summary>
       <description>Runtime state written by the extension</description>
+    </key>
+
+    <key name="live-temp" type="d">
+      <default>20.0</default>
+      <summary>Current temperature (°C) of the sky the menu is painting</summary>
+      <description>Runtime state written by the extension so preferences renders the winter scene when &lt;= 0°C (32°F)</description>
     </key>
 
     <key name="windy-threshold" type="i">
