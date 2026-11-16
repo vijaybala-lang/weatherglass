@@ -470,11 +470,11 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
 
     _buildIndicatorGroup(settings) {
         const lookGroup = new Adw.PreferencesGroup({ title: _('Panel indicator') });
-        const iconRow = new Adw.SwitchRow({ title: _('Show animated icon') });
+        const iconRow = new Adw.SwitchRow({ title: _('Show weather icon') });
         const tempRow = new Adw.SwitchRow({ title: _('Show temperature') });
         const animRow = new Adw.SwitchRow({
             title: _('Animate the icon'),
-            subtitle: _('Turn off to save a little battery'),
+            subtitle: _('Turn off for zero idle GPU and battery use'),
         });
         settings.bind('show-icon', iconRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         settings.bind('show-temperature', tempRow, 'active', Gio.SettingsBindFlags.DEFAULT);
@@ -547,6 +547,12 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         });
         bgGroup.add(themeRow);
         bgGroup.add(styleRow);
+        const animMenuRow = new Adw.SwitchRow({
+            title: _('Animate menu sky'),
+            subtitle: _('Animate the sky backdrop and chart transitions when open'),
+        });
+        settings.bind('animate-menu', animMenuRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        bgGroup.add(animMenuRow);
         bgGroup.add(floorRow);
         bgGroup.add(floorSceneRow);
 
@@ -757,6 +763,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
         settings.connect('changed::units', () => barArea.queue_draw());
         settings.connect('changed::show-icon', () => barArea.queue_draw());
         settings.connect('changed::show-temperature', () => barArea.queue_draw());
+        settings.connect('changed::animate', () => barArea.queue_draw());
         const liveSync = () => {
             previewController.clearOverride();
             syncSceneRow();
@@ -771,6 +778,7 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             barArea.queue_draw();
         });
         settings.connect('changed::menu-style', () => skyArea.queue_draw());
+        settings.connect('changed::animate-menu', () => skyArea.queue_draw());
         settings.connect('changed::sky-floor', () => skyArea.queue_draw());
         settings.connect('changed::sky-floor-scene', () => skyArea.queue_draw());
         styleManager.connect('notify::dark-mode', () => {
@@ -872,10 +880,12 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
                         cr.save();
                         cr.translate(x + 2, centerY - 10);
                         cr.scale(20 / 24, 20 / 24);
+                        const animBar = settings.get_boolean('animate') || previewController.isPreviewing;
                         paintWeather(cr, {
                             scene,
-                            time: previewController.elapsed,
+                            time: animBar ? previewController.elapsed : 1.1,
                             particles: barParticles,
+                            staticPose: !animBar,
                             dark,
                             night: previewController.isNight,
                             windy: scene === 'wind',
@@ -922,10 +932,11 @@ export default class AnimatedWeatherPrefs extends ExtensionPreferences {
             const scrim = settings.get_string('menu-style') === 'solid'
                 ? (styleManager.dark ? [0.03, 0.045, 0.08, 0.78] : [0.97, 0.975, 0.995, 0.80])
                 : null;
+            const animSky = settings.get_boolean('animate-menu') || previewController.isPreviewing;
             cr.save();
             cr.scale(width / CARD_W, height / CARD_H);
             paintSky(cr, {
-                w: CARD_W, h: CARD_H, time: previewController.elapsed,
+                w: CARD_W, h: CARD_H, time: animSky ? previewController.elapsed : 1.1,
                 scene: previewController.scene,
                 night: previewController.isNight,
                 temp: previewController.temp,

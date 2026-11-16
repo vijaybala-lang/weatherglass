@@ -478,4 +478,30 @@ test('prefs preview renders card aspect ratio (330x477) and syncs live weather c
        'prefs preview must sync sceneRow to live scene/night and only set windy for wind scene');
 });
 
+test('panel icon animation and menu animation are decoupled (#107)', () => {
+    const ext = sources['extension.js'];
+    const anim = sources['animation.js'];
+    const menu = sources['menu.js'];
+    const prefs = sources['prefs.js'];
+    const xml = read(`${ROOT}/schemas/org.gnome.shell.extensions.weatherglass.gschema.xml`);
+    ok(/name="animate"\s+type="b"[\s\S]{0,80}<default>true<\/default>/.test(xml),
+       'gschema must keep panel animate boolean defaulting to true');
+    ok(/name="animate-menu"\s+type="b"[\s\S]{0,80}<default>true<\/default>/.test(xml),
+       'gschema must declare animate-menu boolean defaulting to true');
+    ok(ext.includes("new WeatherIcon({\n                size: PANEL_ICON_SIZE,\n                animate: this._settings.get_boolean('animate'),") &&
+       ext.includes("new ForecastPanel({ animate: this._settings.get_boolean('animate-menu') })"),
+       'extension must wire WeatherIcon to animate and ForecastPanel to animate-menu independently');
+    silence(scan(/_rebuildPanel/, ['extension.js']));
+    ok(/case 'animate':\s*this\._icon\.setAnimate\(this\._settings\.get_boolean\('animate'\)\);\s*break;/.test(ext) &&
+       /case 'animate-menu':\s*this\._panel\.setAnimate\(this\._settings\.get_boolean\('animate-menu'\)\);\s*break;/.test(ext),
+       'toggling panel or menu animation must update only its own surface in place');
+    ok(/setAnimate\(enabled\)\s*\{[\s\S]{0,260}this\.queue_repaint\(\);/.test(anim),
+       'WeatherIcon.setAnimate must queue_repaint so disabling animation snaps to staticPose');
+    ok(/this\._animate && this\.actor\.mapped[\s\S]{0,60}morphPair/.test(menu),
+       'menu._morphTo must skip morph timers while the popup card is unmapped');
+    ok(prefs.includes("settings.bind('animate', animRow, 'active'") &&
+       prefs.includes("settings.bind('animate-menu', animMenuRow, 'active'"),
+       'prefs must expose independent switches for panel icon and menu animations');
+});
+
 report('guide');

@@ -182,11 +182,15 @@ export const WeatherIcon = GObject.registerClass(
         }
 
         setAnimate(enabled) {
-            this._animate = enabled;
-            if (enabled)
+            const next = !!enabled;
+            if (this._animate === next)
+                return;
+            this._animate = next;
+            if (next)
                 this._startClock();
             else
                 this._stopClock();
+            this.queue_repaint();
         }
 
         get scene() {

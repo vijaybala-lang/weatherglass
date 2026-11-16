@@ -2,25 +2,25 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Weatherglass 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-08 14:10-0800\n"
+"POT-Creation-Date: 2026-11-09 22:17-0800\n"
 "Language: ur\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:297 prefs.js:894
+#: extension.js:297 prefs.js:961
 msgid "Weatherglass"
 msgstr "Weatherglass"
 
-#: extension.js:318 menu.js:405
+#: extension.js:318 menu.js:419
 msgid "Fetching weather…"
 msgstr "موسم کی معلومات لی جا رہی ہیں…"
 
-#: extension.js:411
+#: extension.js:410
 msgid "My location"
 msgstr "میرا مقام"
 
-#: extension.js:412
+#: extension.js:411
 msgid "Custom location"
 msgstr "اپنا مقام"
 
@@ -36,404 +36,412 @@ msgstr "برسات"
 msgid "Wind"
 msgstr "ہوا"
 
-#: menu.js:233 menu.js:1143
+#: menu.js:247 menu.js:1183
 msgid "Now"
 msgstr "اب"
 
-#: menu.js:444 menu.js:748 menu.js:752
+#: menu.js:458 menu.js:762 menu.js:766
 msgid "Weather"
 msgstr "موسم"
 
-#: menu.js:457
+#: menu.js:471
 msgid "Refresh now"
 msgstr "ابھی تازہ کریں"
 
-#: menu.js:463
+#: menu.js:477
 msgid "Preferences"
 msgstr "ترجیحات"
 
-#: menu.js:502
+#: menu.js:516
 msgid "Show"
 msgstr "دکھائیں"
 
-#: menu.js:502
+#: menu.js:516
 msgid "chart"
 msgstr "چارٹ"
 
-#: menu.js:520
+#: menu.js:534
 msgid "Previous hours"
 msgstr ""
 
-#: menu.js:521
+#: menu.js:535
 #, fuzzy
 msgid "Next hours"
 msgstr "گھنٹوں کے اوپر"
 
-#: menu.js:555 menu.js:1378
+#: menu.js:569 menu.js:1419
 msgid "Orange"
 msgstr "نارنجی"
 
-#: menu.js:555 menu.js:1378
+#: menu.js:569 menu.js:1419
 msgid "Red"
 msgstr "سرخ"
 
-#: menu.js:555 menu.js:1378
+#: menu.js:569 menu.js:1419
 msgid "Yellow"
 msgstr "پیلا"
 
-#: menu.js:571
+#: menu.js:585
 msgid "in effect now"
 msgstr "ابھی نافذ"
 
-#: menu.js:572 menu.js:577 menu.js:579
+#: menu.js:586 menu.js:591 menu.js:593
 msgid "starts"
 msgstr "شروع"
 
-#: menu.js:575
+#: menu.js:589
 msgid "now until"
 msgstr "اب سے"
 
-#: menu.js:580
+#: menu.js:594
 msgid "until"
 msgstr "تک"
 
-#: menu.js:646
+#: menu.js:660
 msgid "Issued by"
 msgstr "جاری کردہ"
 
-#: menu.js:654
+#: menu.js:668
 msgid "Full advisory"
 msgstr "مکمل انتباہ"
 
-#: menu.js:722
+#: menu.js:736
 msgid "more advisories"
 msgstr "مزید انتباہات"
 
-#: menu.js:753
+#: menu.js:767
 msgid "Could not load the forecast"
 msgstr "پیش گوئی لوڈ نہیں ہو سکی"
 
-#: menu.js:1066
+#: menu.js:1106
 msgid "Refresh forecast — updated"
 msgstr "پیش گوئی تازہ — اپ ڈیٹ ہو گئی"
 
-#: menu.js:1317 menu.js:1380
+#: menu.js:1358 menu.js:1421
 msgid "Today"
 msgstr "آج"
 
-#: menu.js:1380
+#: menu.js:1421
 msgid "advisory"
 msgstr "انتباہ"
 
-#: prefs.js:92
+#: prefs.js:105
 #, fuzzy
 msgid "Use Location"
 msgstr "مقام"
 
-#: prefs.js:250
+#: prefs.js:276
 msgid "Location"
 msgstr "مقام"
 
-#: prefs.js:277
+#: prefs.js:303
 msgid "Automatic"
 msgstr "خودکار"
 
-#: prefs.js:278
+#: prefs.js:304
 msgid "Uses system location when available, otherwise your public IP address"
 msgstr ""
 
-#: prefs.js:281
+#: prefs.js:307
 msgid "Detect location automatically"
 msgstr "مقام خودکار طور پر معلوم کریں"
 
-#: prefs.js:291
+#: prefs.js:317
 msgid "Search a city"
 msgstr "شہر تلاش کریں"
 
-#: prefs.js:293
+#: prefs.js:319
 msgid "City name — press Enter to search"
 msgstr "شہر کا نام — تلاش کے لیے Enter دبائیں"
 
-#: prefs.js:298
+#: prefs.js:324
 msgid "Results"
 msgstr "نتائج"
 
-#: prefs.js:329
+#: prefs.js:355
 msgid "No matches"
 msgstr "کوئی مطابقت نہیں"
 
-#: prefs.js:355
+#: prefs.js:381
 msgid "Manual"
 msgstr "دستی"
 
-#: prefs.js:356
+#: prefs.js:382
 msgid "Saved when you press Enter in a field"
 msgstr "فیلڈ میں Enter دبانے پر محفوظ ہو جاتا ہے"
 
-#: prefs.js:359
+#: prefs.js:385
 msgid "Latitude"
 msgstr "عرضِ بلد"
 
-#: prefs.js:360
+#: prefs.js:386
 msgid "Longitude"
 msgstr "طولِ بلد"
 
-#: prefs.js:361
+#: prefs.js:387
 msgid "Display name"
 msgstr "نمائشی نام"
 
-#: prefs.js:409
+#: prefs.js:435
 msgid "Display"
 msgstr "نمائش"
 
-#: prefs.js:419
+#: prefs.js:445
 msgid "Units"
 msgstr "اکائیاں"
 
-#: prefs.js:421
+#: prefs.js:447
 msgid "Measurement system"
 msgstr "پیمائشی نظام"
 
-#: prefs.js:423
+#: prefs.js:449
 msgid "Imperial (°F, mph)"
 msgstr "امپیریل (°F، میل/گھنٹہ)"
 
-#: prefs.js:423
+#: prefs.js:449
 msgid "Metric (°C, km/h)"
 msgstr "میطری (°C، کلومیٹر/گھنٹہ)"
 
-#: prefs.js:432
+#: prefs.js:458
 msgid "Hour format"
 msgstr "وقت کا فارمیٹ"
 
-#: prefs.js:433
+#: prefs.js:459
 msgid "Clock style for chart hours and the preview clock"
 msgstr "چارٹ کے گھنٹوں اور پیش منظر گھڑی کا انداز"
 
-#: prefs.js:435
+#: prefs.js:461
 msgid "12-hour"
 msgstr "12 گھنٹے"
 
-#: prefs.js:435
+#: prefs.js:461
 msgid "24-hour"
 msgstr "24 گھنٹے"
 
-#: prefs.js:435
+#: prefs.js:461
 msgid "Automatic (system)"
 msgstr "خودکار (نظام)"
 
-#: prefs.js:446
+#: prefs.js:472
 msgid "Panel indicator"
 msgstr "پینل کا اشاریہ"
 
-#: prefs.js:447
-msgid "Show animated icon"
-msgstr "متحرک علامت دکھائیں"
+#: prefs.js:473
+msgid "Show weather icon"
+msgstr "موسم کا آئیکن دکھائیں"
 
-#: prefs.js:448
+#: prefs.js:474
 msgid "Show temperature"
 msgstr "درجہ حرارت دکھائیں"
 
-#: prefs.js:450
+#: prefs.js:476
 msgid "Animate the icon"
 msgstr "علامت کو متحرک کریں"
 
-#: prefs.js:451
-msgid "Turn off to save a little battery"
-msgstr "تھوڑی بیٹری بچانے کے لیے بند کریں"
+#: prefs.js:477
+msgid "Turn off for zero idle GPU and battery use"
+msgstr "بیکار حالت میں صفر GPU اور بیٹری استعمال کے لیے بند کریں"
 
-#: prefs.js:463
+#: prefs.js:489
 msgid "Menu background"
 msgstr "فہرست کا پس منظر"
 
-#: prefs.js:466
+#: prefs.js:492
 msgid "Use system theme"
 msgstr "سسٹم تھیم استعمال کریں"
 
-#: prefs.js:467
+#: prefs.js:493
 msgid "Match GNOME popup background and system accent color"
 msgstr "گنوم پاپ اپ پس منظر اور سسٹم ایکسینٹ رنگ سے ملائیں"
 
-#: prefs.js:471
+#: prefs.js:497
 msgid "Background style"
 msgstr "پس منظر کا انداز"
 
-#: prefs.js:472
+#: prefs.js:498
 msgid "How the dropdown fills itself behind the forecast"
 msgstr "ڈراپ ڈاؤن پیش گوئی کے پیچھے کیسے بھرتا ہے"
 
-#: prefs.js:475
+#: prefs.js:501
 msgid "Animated sky"
 msgstr "متحرک آسمان"
 
-#: prefs.js:476
+#: prefs.js:502
 msgid "Animated sky with theme tint"
 msgstr "تھیم رنگت کے ساتھ متحرک آسمان"
 
-#: prefs.js:483
+#: prefs.js:509
 msgid "Show ground scenes"
 msgstr "زمینی مناظر دکھائیں"
 
-#: prefs.js:484
+#: prefs.js:510
 msgid "Weather landscapes and animations along the bottom of the sky"
 msgstr "آسمان کے نچلے حصے میں موسمی مناظر اور متحرک تصاویر"
 
-#: prefs.js:490
+#: prefs.js:516
 msgid "Ground scene"
 msgstr "زمینی منظر"
 
-#: prefs.js:491
+#: prefs.js:517
 msgid "Landscape shown along the bottom when ground scenes are enabled"
 msgstr "زمینی مناظر فعال ہونے پر نیچے دکھایا جانے والا منظر"
 
-#: prefs.js:494
+#: prefs.js:520
 msgid "Automatic (by weather)"
 msgstr "خودکار (موسم کے مطابق)"
 
-#: prefs.js:495
+#: prefs.js:521
 msgid "Pastoral hills & windmill"
 msgstr "سرسبز پہاڑیاں اور پون چکی"
 
-#: prefs.js:496
+#: prefs.js:522
 msgid "Cape Cod seashore"
 msgstr "کیپ کوڈ ساحل"
 
-#: prefs.js:497
+#: prefs.js:523
 msgid "Alpine chalet & snowman"
 msgstr "الپائن کاٹیج اور برفانی پتلا"
 
-#: prefs.js:498
+#: prefs.js:524
 msgid "Nishikigoi koi pond"
 msgstr "نیشیکیگوئی کوئی تالاب"
 
-#: prefs.js:499
+#: prefs.js:525
 msgid "Lotus & tree frog pond"
 msgstr "کنول اور درختی مینڈک کا تالاب"
 
-#: prefs.js:528
+#: prefs.js:551
+msgid "Animate menu sky"
+msgstr "مینو کے آسمان کو متحرک کریں"
+
+#: prefs.js:552
+msgid "Animate the sky backdrop and chart transitions when open"
+msgstr "کھلنے پر آسمان کے پس منظر اور چارٹ کی تبدیلیوں کو متحرک کریں"
+
+#: prefs.js:560
 msgid "Text emboss"
 msgstr "متن کا ابھار"
 
-#: prefs.js:529
+#: prefs.js:561
 msgid "Soft shadow under card text and icons over the sky"
 msgstr "آسمان پر کارڈ کے متن اور علامتوں کے نرم سائے"
 
-#: prefs.js:536
+#: prefs.js:568
 #, fuzzy
 msgid "Hourly forecast"
 msgstr "وقت کا فارمیٹ"
 
-#: prefs.js:537
+#: prefs.js:569
 msgid "Line chart or scrollable hourly pills"
 msgstr ""
 
-#: prefs.js:539
+#: prefs.js:571
 msgid "All-in-one pills"
 msgstr ""
 
-#: prefs.js:539
+#: prefs.js:571
 #, fuzzy
 msgid "Gauge pills"
 msgstr "گروپ شدہ پیلز"
 
-#: prefs.js:539
+#: prefs.js:571
 #, fuzzy
 msgid "Line chart"
 msgstr "چارٹ"
 
-#: prefs.js:548
+#: prefs.js:580
 msgid "Weather conditions"
 msgstr "موسمی حالات"
 
-#: prefs.js:549
+#: prefs.js:581
 msgid "How hourly conditions ride the chart"
 msgstr "گھنٹہ وار حالات چارٹ پر کیسے نظر آتے ہیں"
 
-#: prefs.js:551
+#: prefs.js:583
 msgid "Grouped pills"
 msgstr "گروپ شدہ پیلز"
 
-#: prefs.js:551
+#: prefs.js:583
 msgid "Hourly icons"
 msgstr "گھنٹہ وار علامتیں"
 
-#: prefs.js:551
+#: prefs.js:583
 msgid "Off"
 msgstr "بند"
 
-#: prefs.js:562
+#: prefs.js:594
 msgid "Condition band position"
 msgstr "حالات کی پٹی کی جگہ"
 
-#: prefs.js:563
+#: prefs.js:595
 msgid "Along the chart top, or above the hour labels"
 msgstr "چارٹ کے اوپری کنارے پر، یا گھنٹوں کی لیبلوں کے اوپر"
 
-#: prefs.js:565
+#: prefs.js:597
 msgid "Above hours"
 msgstr "گھنٹوں کے اوپر"
 
-#: prefs.js:565
+#: prefs.js:597
 msgid "Chart top"
 msgstr "چارٹ کے بالا"
 
-#: prefs.js:587
+#: prefs.js:619
 msgid "Data text"
 msgstr "ڈیٹا کا متن"
 
-#: prefs.js:588
+#: prefs.js:620
 msgid "Bolder or larger metric values and chart hours"
 msgstr "پیمانون کی قدریں اور چارٹ کے گھنٹے گندے یا بڑے"
 
-#: prefs.js:590
+#: prefs.js:622
 msgid "Bold"
 msgstr "گندا"
 
-#: prefs.js:590
+#: prefs.js:622
 msgid "Bold & large"
 msgstr "گندا اور بڑا"
 
-#: prefs.js:590
+#: prefs.js:622
 msgid "Large"
 msgstr "بڑا"
 
-#: prefs.js:590
+#: prefs.js:622
 msgid "Normal"
 msgstr "عام"
 
-#: prefs.js:603
+#: prefs.js:635
 msgid "Data"
 msgstr "ڈیٹا"
 
-#: prefs.js:612
+#: prefs.js:644
 msgid "Data source"
 msgstr "ڈیٹا کا ذریعہ"
 
-#: prefs.js:614
+#: prefs.js:646
 msgid "Weather provider"
 msgstr "موسم کا فراہم کنندہ"
 
-#: prefs.js:615
+#: prefs.js:647
 msgid "All keyless · MET Norway data licensed CC BY-SA 4.0"
 msgstr "سب بغیر کلید · MET Norway ڈیٹا CC BY-SA 4.0 کے تحت"
 
-#: prefs.js:618
+#: prefs.js:650
 msgid "Open-Meteo (default)"
 msgstr "Open-Meteo (طے شدہ)"
 
-#: prefs.js:619
+#: prefs.js:651
 msgid "MET Norway (api.met.no)"
 msgstr "MET Norway (api.met.no)"
 
-#: prefs.js:620
+#: prefs.js:652
 msgid "NOAA NWS (US locations only)"
 msgstr "NOAA NWS (صرف امریکہ کے مقامات)"
 
-#: prefs.js:632
+#: prefs.js:664
 msgid "Forecast model"
 msgstr "پیش گوئی کا ماڈل"
 
-#: prefs.js:633
+#: prefs.js:665
 msgid ""
 "Open-Meteo only · out to a week models disagree — if the weekend looks off, "
 "try another"
@@ -441,65 +449,65 @@ msgstr ""
 "صرف Open-Meteo · ایک ہفتے تک ماڈلز میں اختلاف ہے — اگر ویک اینڈ عجیب لگے تو "
 "دوسرا ماڈل آزمائیں"
 
-#: prefs.js:636
+#: prefs.js:668
 msgid "Best match (Open-Meteo regional pick; US → GFS)"
 msgstr "بہترین مطابقت (Open-Meteo کا علاقائی انتخاب؛ امریکہ ← GFS)"
 
-#: prefs.js:637
+#: prefs.js:669
 #, fuzzy
 msgid "ECMWF IFS high-res (recommended)"
 msgstr "ECMWF IFS (تجویز کردہ)"
 
-#: prefs.js:638
+#: prefs.js:670
 #, fuzzy
 msgid "ECMWF IFS (0.25° grid)"
 msgstr "ECMWF IFS (تجویز کردہ)"
 
-#: prefs.js:639
+#: prefs.js:671
 msgid "DWD ICON (shorter range)"
 msgstr "DWD ICON (چھوٹے عرصے تک)"
 
-#: prefs.js:640
+#: prefs.js:672
 msgid "NOAA GFS"
 msgstr "NOAA GFS"
 
-#: prefs.js:641
+#: prefs.js:673
 msgid "GEM global (Canada)"
 msgstr ""
 
-#: prefs.js:642
+#: prefs.js:674
 msgid "JMA (Japan · rain chance derived)"
 msgstr ""
 
-#: prefs.js:643
+#: prefs.js:675
 msgid "UK Met Office global (10 km)"
 msgstr ""
 
-#: prefs.js:663
+#: prefs.js:695
 msgid "Updates"
 msgstr "اپ ڈیٹس"
 
-#: prefs.js:665
+#: prefs.js:697
 msgid "Refresh interval (minutes)"
 msgstr "تازگی کا وقفہ (منٹ)"
 
-#: prefs.js:674
+#: prefs.js:706
 msgid "Wind animation threshold (km/h)"
 msgstr "ہوا کی اینیمیشن کی حد (کلومیٹر/گھنٹہ)"
 
-#: prefs.js:675
+#: prefs.js:707
 msgid "Breezier days swap the icon to the wind animation"
 msgstr "زیادہ ہوا والے دنوں میں علامت ہوا کی اینیمیشن میں بدل جاتی ہے"
 
-#: prefs.js:689
+#: prefs.js:721
 msgid "Preview"
 msgstr "جھلک"
 
-#: prefs.js:712
+#: prefs.js:745
 msgid "Panel preview"
 msgstr "پینل کی جھلک"
 
-#: prefs.js:713
+#: prefs.js:746
 #, fuzzy
 msgid ""
 "How the panel button looks for this scene — sample temperature, real icon "
@@ -507,54 +515,54 @@ msgid ""
 msgstr ""
 "اس منظر کے لیے پینل بٹن کیسا دکھتا ہے — فرضی درجہ حرارت، علامت کی اصل حرکت"
 
-#: prefs.js:718
+#: prefs.js:751
 msgid "Menu backdrop preview"
 msgstr "فہرست کے پس منظر کی جھلک"
 
-#: prefs.js:719
+#: prefs.js:752
 msgid ""
 "Your menu's current sky, live — pick a condition above to animate it here"
 msgstr ""
 "آپ کی فہرست کا موجودہ آسمان، براہ راست — اسے یہاں متحرک کرنے کے لیے اوپر "
 "کوئی حالت چنیں"
 
-#: prefs.js:749
+#: prefs.js:794
 msgid "Preview scene"
 msgstr "منظر کی جھلک"
 
-#: prefs.js:750
+#: prefs.js:795
 msgid "Loops right here for ~12 s — your real panel stays put"
 msgstr "یہاں تقریباً 12 سیکنڈ لوپ ہوتا ہے — آپ کا اصل پینل ویسا ہی رہتا ہے"
 
-#: prefs.js:782
+#: prefs.js:837
 msgid "Scene"
 msgstr "منظر"
 
-#: prefs.js:890
+#: prefs.js:957
 msgid "About"
 msgstr "تعارف"
 
-#: prefs.js:896
+#: prefs.js:963
 msgid "Version"
 msgstr "ورژن"
 
-#: prefs.js:900
+#: prefs.js:967
 msgid "Contact"
 msgstr "رابطہ"
 
-#: prefs.js:904
+#: prefs.js:971
 msgid "Free and open source"
 msgstr "مفت اور اوپن سورس"
 
-#: prefs.js:905
+#: prefs.js:972
 msgid "No ads, no accounts, no data collection — the sky should just work"
 msgstr "نہ اشتہارات، نہ اکاؤنٹ، نہ ڈیٹا کی جمع — آسمان کو بس چلنا چاہیے"
 
-#: prefs.js:910
+#: prefs.js:977
 msgid "Support the development"
 msgstr "ترقی میں تعاون کریں"
 
-#: prefs.js:911
+#: prefs.js:978
 msgid ""
 "Weatherglass is free forever. If it makes your desktop nicer, a coffee keeps "
 "the pixels falling."
@@ -562,11 +570,11 @@ msgstr ""
 "Weatherglass ہمیشہ مفت رہے گا۔ اگر یہ آپ کے ڈیسک ٹاپ کو خوبصورت بناتا ہے تو "
 "ایک کافی پکسلز کی بارش جاری رکھے گی۔"
 
-#: prefs.js:924
+#: prefs.js:991
 msgid "Buy me a coffee"
 msgstr "میرے لیے کافی خریدیں"
 
-#: prefs.js:925
+#: prefs.js:992
 msgid "PayPal"
 msgstr ""
 

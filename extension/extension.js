@@ -365,7 +365,7 @@ const WeatherIndicator = GObject.registerClass(
             this._icon.visible = this._settings.get_boolean('show-icon');
             this.add_child(panelButtonBox);
 
-            this._panel = new ForecastPanel({ animate: this._settings.get_boolean('animate') });
+            this._panel = new ForecastPanel({ animate: this._settings.get_boolean('animate-menu') });
             this._panel.onRefresh(() => this._coordinator.fetch(true));
             this._panel.onSettings(() => this._ext.openPreferences());
             this._panel.onSky((scene, night, temp) => {
@@ -381,7 +381,6 @@ const WeatherIndicator = GObject.registerClass(
             section.actor.add_child(this._panel.actor);
             this.menu.addMenuItem(section);
             this.menu.actor.add_style_class_name('aw-menu');
-            this._section = section;
 
             for (let ancestor = this._panel.actor; ancestor; ancestor = ancestor.get_parent()) {
                 ancestor.set_style('padding: 0px; margin: 0px; border-width: 0px;');
@@ -422,6 +421,7 @@ const WeatherIndicator = GObject.registerClass(
             this._panel.setAccent(this._themeWatcher.accentColor);
             this._panel.setHourFormat(this._resolveHour24());
             this._panel.setTextEmph(this._settings.get_string('text-emphasis'));
+            this._panel.setAnimate(this._settings.get_boolean('animate-menu'));
             this._panel.setStyle(this._settings.get_string('menu-style'));
             this._panel.setFloor(this._settings.get_boolean('sky-floor'));
             this._panel.setFloorScene(this._settings.get_string('sky-floor-scene'));
@@ -518,15 +518,12 @@ const WeatherIndicator = GObject.registerClass(
                 case 'refresh-minutes':
                     this._coordinator.restartTimer();
                     break;
-                case 'animate': {
-                    const isAnimated = this._settings.get_boolean('animate');
-                    this._icon.setAnimate(isAnimated);
-                    this._panel.destroy();
-                    this._rebuildPanel(isAnimated);
-                    if (this._coordinator.data)
-                        this._update();
+                case 'animate':
+                    this._icon.setAnimate(this._settings.get_boolean('animate'));
                     break;
-                }
+                case 'animate-menu':
+                    this._panel.setAnimate(this._settings.get_boolean('animate-menu'));
+                    break;
                 case 'show-icon':
                     this._icon.visible = this._settings.get_boolean('show-icon');
                     if (this._icon.visible && this._alertIcon.visible)
@@ -599,23 +596,6 @@ const WeatherIndicator = GObject.registerClass(
                     this._icon.setScene('loading');
                 return GLib.SOURCE_REMOVE;
             });
-        }
-
-        _rebuildPanel(animate) {
-            this._section.actor.remove_child(this._panel.actor);
-            this._panel.destroy();
-            this._panel = new ForecastPanel({ animate });
-            this._panel.onRefresh(() => this._coordinator.fetch(true));
-            this._panel.onSettings(() => this._ext.openPreferences());
-            this._panel.onSky((scene, night, temp) => {
-                this._settings.set_string('live-scene', scene);
-                this._settings.set_boolean('live-night', night);
-                if (Number.isFinite(temp))
-                    this._settings.set_double('live-temp', temp);
-            });
-            this._syncPanelLook();
-            this._panel.setPlaceName(this._placeName());
-            this._section.actor.add_child(this._panel.actor);
         }
 
         destroy() {

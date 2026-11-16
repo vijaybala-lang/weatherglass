@@ -159,6 +159,20 @@ const SkyArea = GObject.registerClass(
             cr.$dispose();
         }
 
+        setAnimate(enabled) {
+            const next = !!enabled;
+            if (this._animate === next)
+                return;
+            this._animate = next;
+            if (next) {
+                this._start();
+            } else {
+                this._stop();
+                this._time = STATIC_TIME;
+            }
+            this.queue_repaint();
+        }
+
         _start() {
             if (this._animTimerId || !this._animate || !this.mapped ||
                 this._panel._style === 'accent')
@@ -773,6 +787,32 @@ export class ForecastPanel {
             this._applyTheme();
     }
 
+    /** Menu animations: sky backdrop loop, chart morphs, and smooth pill scroll. */
+    setAnimate(enabled) {
+        const next = !!enabled;
+        if (this._animate === next)
+            return;
+        this._animate = next;
+        this._skyArea.setAnimate(next);
+        this._placeholderIcon.setAnimate(next);
+        if (!next) {
+            if (this._morphId) {
+                GLib.source_remove(this._morphId);
+                this._morphId = 0;
+                if (this._state)
+                    this._shown = this._chartValues();
+                this._chart.queue_repaint();
+            }
+            if (this._pillScrollId) {
+                GLib.source_remove(this._pillScrollId);
+                this._pillScrollId = 0;
+                this._pillScroll = this._pillTargetScroll;
+                this._syncHourNav();
+                this._chart.queue_repaint();
+            }
+        }
+    }
+
     /** Menu background treatment: 'animated' | 'solid' | 'accent'. */
     setStyle(style) {
         this._style = style;
@@ -1265,7 +1305,8 @@ export class ForecastPanel {
         // morphPair resamples the old series onto the new grid so Today
         // morphs like its neighbours instead of snapping (the old
         // equal-length guard was the whole difference the users saw).
-        const pair = this._animate ? morphPair(this._shown, targetValues) : null;
+        const pair = (this._animate && this.actor.mapped)
+            ? morphPair(this._shown, targetValues) : null;
         if (!pair) {
             this._shown = targetValues.slice();
             return;

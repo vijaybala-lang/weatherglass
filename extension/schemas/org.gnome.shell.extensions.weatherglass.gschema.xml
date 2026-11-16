@@ -47,13 +47,13 @@
 
     <key name="show-icon" type="b">
       <default>true</default>
-      <summary>Show the animated icon in the panel</summary>
+      <summary>Show the weather icon in the panel</summary>
     </key>
 
     <key name="animate" type="b">
       <default>true</default>
       <summary>Animate the panel icon</summary>
-      <description>When off, the icon renders a single static frame</description>
+      <description>When off, the panel icon renders a single static frame for zero idle GPU and battery use</description>
     </key>
 
     <key name="refresh-minutes" type="i">
@@ -189,6 +189,13 @@ makes the shadows unnecessary.</description>
       <description>animated = translucent weather sky, solid = the sky dimmed
 under a wash, accent = no sky: the shell theme's own popup background with
 the charts drawn in the OS accent colour</description>
+    </key>
+
+    <key name="animate-menu" type="b">
+      <default>true</default>
+      <summary>Animate the forecast menu</summary>
+      <description>When off, the menu sky backdrop, chart transitions, and
+hourly scroll stay static when open</description>
     </key>
 
     <key name="sky-floor" type="b">
